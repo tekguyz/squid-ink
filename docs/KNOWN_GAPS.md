@@ -171,3 +171,103 @@ built here contradicts them. Four things worth carrying forward:
   notes" mode alongside the existing "Ask this note…" composer, in Core UX/UI.
   The composer here reads "Ask this note…" and has no scope toggle, which is the
   correct MVP state.
+
+## Supabase persistence layer (recorded 2026-08-30)
+
+Added by the prompt that introduced `notes`, `note_chunks`, RLS, auth, and the
+real-data swap on `/notes/[id]`. Everything below was **deliberately not
+started**, or is a known incompleteness in what shipped.
+
+### Deferred, no consumer exists yet
+
+- **Google OAuth, Drive, Calendar, Tasks — and any token-storage table.**
+  Nothing Google-related was built. No `google_connections` table, no provider
+  tokens stored, no connect flow. DECISIONS.md keeps Google as a separate
+  "Connect Calendar/Drive" action in settings, never tied to login, and no
+  surface consumes it yet. **Provider-token refresh behaviour is therefore
+  unverified**: Supabase does not refresh Google provider tokens for you, so
+  whoever builds this must handle refresh, expiry, and re-consent explicitly.
+
+- **Audio Storage bucket.** `notes.audio_storage_path` ships as a nullable
+  placeholder column and nothing writes to it. There is **no bucket, no Storage
+  policies, no upload code, and no playback UI**. Build it when the in-line
+  context timeline bar (ROADMAP §8, Advanced) is actually scheduled. Note when
+  you do: Storage upsert needs INSERT + SELECT + UPDATE policies together —
+  granting INSERT alone makes file replacement fail silently.
+
+- **Google connection table.** Same reason as above. Deferred until a consumer
+  exists rather than built speculatively.
+
+### Incompleteness in what did ship
+
+- **Migration generation needs Docker, which is not installed.** `supabase db
+  pull` and `supabase db dump` both build a shadow database in Docker and fail
+  here (`LegacyImagePrepullError`). `db query`, `db advisors`, `migration new`,
+  `migration list` and `migration repair` all work without it. The initial
+  migration is therefore the verbatim concatenation of `supabase/schemas/*.sql`,
+  verified byte-identical with `git hash-object`. That is provably equivalent
+  for a from-empty schema. **The second migration will not be** — it needs
+  either Docker or a hand-authored file, plus the catalog-diff check in the
+  plan's Task 4 Step 5.
+
+- **View types still live in `lib/mock/types.ts`.** The frozen Note Detail
+  components import `Note`, `Segment`, `Speaker` and friends from there, so
+  `lib/notes/*` has to import them from the same path. Real code depends on a
+  module named "mock". The fix is mechanical — move them to
+  `lib/notes/view-types.ts` and update the component imports — but
+  `components/` and `lib/mock/` were both frozen for that prompt.
+
+- **Three of four personas are hardcoded.** Only `neutral-analyst` takeaways
+  come from real `takeaway` chunks. Sales Coach, Investor and Engineering Lead
+  live in `lib/notes/persona-presets.ts`. There is no `personas` table and no
+  `persona_id` on `note_chunks`, so a takeaway cannot yet be attributed to a
+  lens. Core UX/UI phase.
+
+- **`waveform`, `playhead` and `sampleExchange` are constants, not data.** No
+  column backs any of them. The timeline bar is Advanced-phase, playhead is
+  client state, and the sample exchange is placeholder chat content.
+
+- **Speaker stats are recomputed on every read.** By decision — no column. Cheap
+  for one note; if the dashboard ever shows stats per row this becomes an N+1
+  and should be materialised. Filler counts read `0` for the seeded note because
+  its transcript genuinely contains no filler words; the mock's 11/6/4 were
+  invented figures, not a target to match.
+
+- **The client name was dropped from `meta`.** The mock rendered
+  "Wed 26 Aug 2026 · 41 min · Northwind Health". No column holds a client or
+  account name, so `meta` is now built from `created_at` and
+  `audio_duration_seconds` only. Adding it back needs a schema decision, not a
+  formatting change.
+
+- **`scripts/verify-rls.mjs` is not part of `npm test`.** It needs network
+  access and the secret key, so it stays a manually run script. Run it after any
+  change to a policy, a grant, or the `user_id` column on either table.
+
+- **RLS proof covers two paths, and both must be re-run together.** Path A
+  (`scripts/verify-rls.mjs`) proves the database enforces RLS against a real
+  password-grant JWT. Path B (a browser or cookie-jar request through
+  `proxy.ts`) proves the app hands the database the right identity. Neither
+  substitutes for the other.
+
+- **`anon` holds no privileges on either table, by design.** The schema files
+  `revoke all` before granting, because Supabase's project defaults hand `anon`
+  and `authenticated` TRUNCATE, REFERENCES and TRIGGER on every new public
+  table. TRUNCATE is not row-level, so RLS does not constrain it. If a future
+  feature needs public reads, grant them explicitly rather than removing the
+  revoke.
+
+### Accepted advisor finding
+
+- **`auth_leaked_password_protection` (WARN, security).** Supabase Auth can
+  check passwords against HaveIBeenPwned; it is off on this project.
+  **Accepted, for now.** The app has no password sign-in surface at all — auth
+  is magic-link only, and the only passwords in existence belong to the two
+  `@example.test` fixtures that `scripts/verify-rls.mjs` needs for its password
+  grant. Enabling it is a one-toggle dashboard change (Authentication →
+  Policies) and is worth doing before any real password flow ships. It was not
+  changed here because it is a project-level account setting, not schema.
+
+  All other advisor findings are `INFO`-level `unused_index` on indexes that
+  exist for query shapes the app does not run yet (HNSW and GIN back retrieval,
+  which is not built). Not removable without breaking the RAG design in
+  ROADMAP §4.

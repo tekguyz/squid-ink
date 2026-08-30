@@ -90,12 +90,92 @@ working or otherwise — anywhere in code.** User-facing copy stays generic
 ("your notes", page titles with no brand). The only exception is the
 `package.json` `name` field.
 
+## Supabase
+
+Hosted project only. There is no local stack — **Docker is not installed on
+this machine**, and `supabase db pull` / `supabase db dump` both fail without
+it because they build a shadow database. Everything below runs against the
+linked project through the management API, needing neither Docker nor the
+database password.
+
+### Pinned versions
+
+Exact pins, verified against the live npm registry on 2026-08-30.
+
+| Package | Version |
+|---|---|
+| @supabase/ssr | 0.12.5 |
+| @supabase/supabase-js | 2.112.4 |
+| supabase (CLI, installed) | 2.115.0 |
+
+`@supabase/ssr` 0.12.5 takes the `getAll` / `setAll` cookie API. The
+`get` / `set` / `remove` form is deprecated and will be removed.
+
+### Declarative schema workflow
+
+`supabase/schemas/*.sql` is the source of truth. `config.toml` lists them in
+dependency order — **not** a glob, which would sort `note_chunks.sql` before
+`notes.sql` and break the foreign key.
+
+**Schema-file-first, no exceptions.** Never paste DDL into `db query` as an
+inline argument. Edit the `.sql` file, then apply that exact file. Every
+statement is idempotent, so iterating means re-running the whole file. Inline
+`db query` is for `select` verification only.
+
+    npx supabase db query --linked --project-ref <ref> --file supabase/schemas/notes.sql
+    npx supabase db advisors --linked --project-ref <ref> --type all --level info
+
+Never call `apply_migration` while iterating — it writes a migration history
+entry on every call and blocks further diffing.
+
+When the shape is final: `supabase migration new <name>`, fill it with `cat`
+of the schema files in order, `supabase migration repair --status applied`,
+then confirm with `supabase migration list --linked`. Verify with
+`git hash-object` that the migration and the concatenated schema files match,
+and read the live catalog back — `pg_policies`, `pg_indexes`,
+`information_schema.columns`, `pg_constraint` — since `db diff` is unavailable.
+
+### RLS rules
+
+Four per-operation policies per table — select, insert, update, delete. Never
+one blanket `for all`.
+
+- Predicate is always `(select auth.uid()) = user_id`, wrapped. Bare
+  `auth.uid()` is re-evaluated per row.
+- Every policy carries `to authenticated` **and** an ownership predicate.
+  `to authenticated` alone is authentication without authorization.
+- UPDATE needs both `using` and `with check`. Without `with check` a user can
+  reassign `user_id` and hand their row to somebody else.
+- Grants are separate from RLS. This project was created with "Automatically
+  expose new tables" off, so each table grants `authenticated` explicitly.
+  Schema files `revoke all` first: the project defaults hand `anon` and
+  `authenticated` TRUNCATE, which is not row-level and which RLS does not
+  constrain. `anon` is granted nothing.
+- Queries never filter on `user_id` in application code. RLS supplies it, and
+  a redundant filter would mask an RLS failure instead of exposing it.
+
+### Keys
+
+Publishable key only in app code, via `NEXT_PUBLIC_SUPABASE_*`. The secret key
+bypasses RLS and appears in exactly one place: `scripts/verify-rls.mjs`, read
+from the gitignored `.env.local`. Never give it a `NEXT_PUBLIC_` prefix —
+Next.js ships every such variable to the browser.
+
+### Proving RLS
+
+`node scripts/verify-rls.mjs` after any change to a policy, a grant, or a
+`user_id` column. It signs in two real users and runs the identical query as
+each; the second must get a genuine empty result, not `permission denied`.
+That proves the database. It does **not** prove the app's cookie plumbing —
+that needs a request through `proxy.ts` with a real session. Run both.
+
 ## Commands
 
     npm run dev        # dev server
     npm run build      # production build
     npm run typecheck  # tsc --noEmit
     npm test           # vitest run
+    node scripts/verify-rls.mjs   # two-user RLS proof, needs .env.local
 
 <!-- BEGIN:nextjs-agent-rules -->
 
