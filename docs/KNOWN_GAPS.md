@@ -15,8 +15,11 @@ layout, the locked token spec (3c), the mock data, and the citation-click
 behavior. `App_Surfaces_dc.html` was reference-only for shared-component
 patterns; `support.js` was explicitly not to be shipped. Nothing was guessed at.
 
-Open: shared badge/button/nav conventions from App Surfaces are unverified.
-Revisit before building a second surface.
+**RESOLVED 2026-08-30.** Both files were supplied after the build. `App Surfaces.dc.html`
+holds ten surfaces (01 dashboard, 02 recorder, 02b record HUD, 03 personas,
+04 auth, 05 onboarding, 06 settings, 07 collections, 08 share, 09 live assistant,
+10 newsprint light). None was in scope and none was built — correct.
+`support.js` is the canvas runtime and is gitignored, not shipped.
 
 ## State management — Zustand not used here (recorded 2026-08-30)
 
@@ -54,8 +57,26 @@ Not in 3c:
   `--meta-5`, `--muted`, `--faint`, `--placeholder`, `--rail-idle`, `--notice`.
   3c gives one dark ink value and a hue range; 3b uses ten steps within it.
 
-Impact: low, but these are the values most likely to drift if a second surface is
-built from 3c alone. If App Surfaces is ever supplied, reconcile against it.
+**RECONCILED against App Surfaces 2026-08-30 — no drift found.**
+
+Of the 64 colour values in `app/globals.css`, 50 appear verbatim in
+`App Surfaces.dc.html`. Every grey step listed above is confirmed there, most of
+them heavily used (`0.58 0.012 80` 40 times, `0.60 0.012 80` 35, `0.62 0.012 80`
+34) — so they are real system tokens, not note-detail improvisation. The three
+extra Espresso surfaces are confirmed too (`0.155 0.013 46` 9 uses,
+`0.215 0.015 50` 13, `0.165 0.013 48` 6), as is `--rule-3` and dark
+`--tint-hover`.
+
+The 14 values that do *not* appear in App Surfaces are all expected to be
+absent: seven come from 3c's own "Extended steps — note detail only" block
+(cite chip hover and fill, waveform, ink 2/3, muted, faint), the dark segment
+wash is note-detail only, and the six remaining are the per-speaker tones and
+their avatar fills, which exist only where a transcript is shown.
+
+All eight locked accents are present in App Surfaces, confirming 3c's claim that
+the two documents match exactly.
+
+This gap is closed. No token needs changing.
 
 ## Additions and decisions outside the design (recorded 2026-08-30)
 
