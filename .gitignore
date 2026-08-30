@@ -11,3 +11,6 @@ next-env.d.ts
 
 # Claude Design canvas runtime — read-only tooling, not part of this app
 design-reference/support.js
+
+# The .env* rule above would otherwise swallow the committed example file.
+!.env.local.example
