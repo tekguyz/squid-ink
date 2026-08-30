@@ -110,6 +110,13 @@ const QUERIES = [
     sql: `select id, chunk_type, user_id from note_chunks where note_id = '${SEEDED_NOTE_ID}'`,
     run: (c) => c.from("note_chunks").select("id, chunk_type, user_id").eq("note_id", SEEDED_NOTE_ID),
   },
+  {
+    // No id filter here: the point is that the second user sees zero rows of
+    // a table the first user has four rows in. A filter would weaken that.
+    table: "personas",
+    sql: "select id, slug, name, user_id from personas",
+    run: (c) => c.from("personas").select("id, slug, name, user_id"),
+  },
 ];
 
 const env = loadEnv(".env.local");
