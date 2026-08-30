@@ -9,7 +9,9 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
     include: ["**/__tests__/**/*.test.{ts,tsx}"],
-    exclude: ["node_modules/**", ".next/**"],
+    // Nested node_modules (worktrees, sub-packages) ship their own type-stub
+    // "tests"; a bare "node_modules/**" only matches the top level.
+    exclude: ["**/node_modules/**", "**/.next/**", "**/.worktrees/**"],
   },
   resolve: { alias: { "@": path.resolve(import.meta.dirname, ".") } },
 });

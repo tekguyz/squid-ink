@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><style>body{margin:0;background:oklch(0.145 0.012 46);font-family:'Archivo',system-ui,sans-serif}a{color:oklch(0.82 0.15 140)}a:hover{color:oklch(0.90 0.13 140)}.bd{padding:44px 48px 40px;border-bottom:1px solid oklch(0.26 0.014 48)}.bhd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}.bid{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;padding:3px 7px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);text-decoration:none}.bname{font:600 14px/1.2 'Bitter',serif;color:oklch(0.93 0.010 88)}.bsub{margin:0 0 22px;font:400 11.5px/1.5 'Archivo',sans-serif;color:oklch(0.62 0.012 80);max-width:900px}.brow{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}.bcard{border:1px solid oklch(0.30 0.016 50);box-shadow:0 3px 14px rgba(0,0,0,.35);overflow:hidden;scroll-margin-top:16px}.blabel{display:flex;align-items:baseline;gap:9px;font:400 11px/1.3 'Archivo',sans-serif;color:oklch(0.60 0.012 80);margin-bottom:9px}.bwrap{display:flex;flex-direction:column;scroll-margin-top:16px}</style></helmet>
+
+<section class="bd" id="s-notes">
+<div class="bhd"><a class="bid" href="#s-notes">Crispy Bacon</a><span class="bname">Nine surfaces · espresso dark + newsprint light, one green accent hue, Bitter / Archivo / Plex Mono</span></div>
+<p class="bsub">Structure borrowed from your references — identity rail with day-grouped recents, team switcher popover, source-type filters with counts, settings nav with Update/Discard, tabbed auth. Look and density are ours: no cards-for-cards'-sake, timestamps and speaker tags in mono, one accent used only for grounding and primary action. Google connect appears only in Settings, never in auth.</p>
+<div class="brow">
+
+<div class="bwrap" id="dashboard"><div class="blabel"><a class="bid" href="#dashboard">01</a>Dashboard / meeting feed — rail, day-grouped rows (not cards), right column of modular widgets</div>
+<div class="bcard" style="width:1320px;height:812px;display:grid;grid-template-rows:minmax(0,812px);grid-template-columns:212px 1fr 300px;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:14px 14px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid oklch(0.26 0.015 48)">
+      <div style="width:26px;height:26px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);font-family:'IBM Plex Mono',monospace;font-size:10px;display:flex;align-items:center;justify-content:center">KD</div>
+      <div style="min-width:0">
+        <div style="font-family:'Bitter',serif;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Kevin Dukkon</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80)">FINTORY · 3 MEMBERS</div>
+      </div>
+      <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.58 0.012 80);cursor:pointer">⌄</div>
+    </div>
+    <div style="padding:10px 8px 4px;display:flex;flex-direction:column;gap:1px">
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;background:oklch(0.235 0.016 50);border-left:2px solid oklch(0.82 0.15 140);font-size:13px">All notes<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.66 0.012 80)">128</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;border-left:2px solid transparent;font-size:13px;color:oklch(0.80 0.012 84)" style-hover="background:oklch(0.21 0.015 50)">Calendar<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">4 today</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;border-left:2px solid transparent;font-size:13px;color:oklch(0.80 0.012 84)" style-hover="background:oklch(0.21 0.015 50)">Collections<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">7</span></div>
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;border-left:2px solid transparent;font-size:13px;color:oklch(0.80 0.012 84)" style-hover="background:oklch(0.21 0.015 50)">Sources<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">31</span></div>
+    </div>
+    <div style="padding:16px 14px 6px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.55 0.012 80)">Today</div>
+    <div style="display:flex;flex-direction:column;gap:1px;padding:0 8px">
+      <div style="padding:5px 8px;font-size:12.5px;color:oklch(0.86 0.012 86);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Northwind pilot pricing</div>
+      <div style="padding:5px 8px;font-size:12.5px;color:oklch(0.86 0.012 86);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Standup — platform</div>
+    </div>
+    <div style="padding:14px 14px 6px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.55 0.012 80)">Yesterday</div>
+    <div style="display:flex;flex-direction:column;gap:1px;padding:0 8px">
+      <div style="padding:5px 8px;font-size:12.5px;color:oklch(0.80 0.012 84);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Ashgrove renewal call</div>
+      <div style="padding:5px 8px;font-size:12.5px;color:oklch(0.80 0.012 84);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Hiring debrief — SRE</div>
+      <div style="padding:5px 8px;font-size:12.5px;color:oklch(0.80 0.012 84);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Design review v2</div>
+    </div>
+    <div style="margin-top:auto;border-top:1px solid oklch(0.26 0.015 48);padding:10px 14px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:12.5px;color:oklch(0.72 0.012 82)">Settings</span>
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.012 80)">⌘,</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden">
+    <div style="padding:18px 24px 13px;border-bottom:1px solid oklch(0.28 0.015 50);display:flex;align-items:center;gap:14px">
+      <div style="font-family:'Bitter',serif;font-size:22px;font-weight:600;letter-spacing:-0.01em">All notes</div>
+      <div style="flex:1;display:flex;align-items:center;gap:8px;border:1px solid oklch(0.30 0.016 50);padding:6px 10px;max-width:320px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.58 0.012 80)">/</span><span style="font-size:12.5px;color:oklch(0.58 0.012 80)">Search notes, speakers, sources</span></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <div style="padding:7px 11px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.012 84);cursor:pointer">Import audio</div>
+        <div style="padding:7px 13px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">● Record</div>
+      </div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 24px 7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Today · Wed 26 Aug</span><span style="flex:1;height:1px;background:oklch(0.28 0.015 50)"></span></div>
+
+      <div style="display:grid;grid-template-columns:62px 1fr 148px 96px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48);background:oklch(0.205 0.015 50);cursor:pointer" style-hover="background:oklch(0.225 0.015 50)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.70 0.012 80)">10:00<br><span style="color:oklch(0.55 0.012 80)">41 min</span></div>
+        <div style="min-width:0">
+          <div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Northwind Health — pilot pricing &amp; rollout</div>
+          <div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Per-clinic pricing with a 40-seat cap, pending legal; two clinics blocked on a Sept 9 security review.</div>
+        </div>
+        <div style="display:flex;gap:4px">
+          <span style="width:22px;height:22px;border-radius:50%;background:oklch(0.30 0.05 252);color:oklch(0.78 0.09 252);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">PR</span>
+          <span style="width:22px;height:22px;border-radius:50%;background:oklch(0.29 0.05 155);color:oklch(0.78 0.08 155);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">ML</span>
+          <span style="width:22px;height:22px;border-radius:50%;background:oklch(0.30 0.05 60);color:oklch(0.80 0.08 60);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">DA</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);text-align:right">3 ACTIONS<br><span style="color:oklch(0.86 0.15 142)">{{ spans }}</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:62px 1fr 148px 96px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.70 0.012 80)">09:15<br><span style="color:oklch(0.55 0.012 80)">14 min</span></div>
+        <div style="min-width:0">
+          <div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Standup — platform</div>
+          <div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:3px">Ingest backlog cleared; mapping table still hand-written. No decisions.</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">no speaker labels</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);text-align:right">1 ACTION<br><span style="color:oklch(0.86 0.15 142)">6 SPANS</span></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding:14px 24px 7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Yesterday</span><span style="flex:1;height:1px;background:oklch(0.28 0.015 50)"></span></div>
+
+      <div style="display:grid;grid-template-columns:62px 1fr 148px 96px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.70 0.012 80)">15:30<br><span style="color:oklch(0.55 0.012 80)">52 min</span></div>
+        <div style="min-width:0">
+          <div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Ashgrove renewal call</div>
+          <div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:3px">Renewal at flat headcount; they want SSO before signing. Owner asked for a written scope.</div>
+        </div>
+        <div style="display:flex;gap:4px"><span style="width:22px;height:22px;border-radius:50%;background:oklch(0.30 0.05 252);color:oklch(0.78 0.09 252);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">PR</span><span style="width:22px;height:22px;border-radius:50%;background:oklch(0.29 0.05 155);color:oklch(0.78 0.08 155);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">TW</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);text-align:right">2 ACTIONS<br><span style="color:oklch(0.86 0.15 142)">19 SPANS</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:62px 1fr 148px 96px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.70 0.012 80)">11:00<br><span style="color:oklch(0.55 0.012 80)">37 min</span></div>
+        <div style="min-width:0">
+          <div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Hiring debrief — SRE</div>
+          <div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:3px">Two yes, one no-with-reasons. Reference check assigned before offer.</div>
+        </div>
+        <div style="display:flex;gap:4px"><span style="width:22px;height:22px;border-radius:50%;background:oklch(0.29 0.05 155);color:oklch(0.78 0.08 155);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">ML</span><span style="width:22px;height:22px;border-radius:50%;background:oklch(0.30 0.05 60);color:oklch(0.80 0.08 60);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center">DA</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);text-align:right">4 ACTIONS<br><span style="color:oklch(0.86 0.15 142)">22 SPANS</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:62px 1fr 148px 96px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48);cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.70 0.012 80)">09:00<br><span style="color:oklch(0.55 0.012 80)">28 min</span></div>
+        <div style="min-width:0">
+          <div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Design review v2</div>
+          <div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:3px">Citation chips land in the note body, not a side panel. Persona rail stays visible.</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">imported · no audio</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);text-align:right">1 ACTION<br><span style="color:oklch(0.86 0.15 142)">4 SPANS</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:oklch(0.165 0.013 48);border-left:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:14px 16px 13px;border-bottom:1px solid oklch(0.27 0.015 48)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Next up · 14:00</div>
+      <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600;margin-top:6px;line-height:1.25">Northwind — legal review of SOW v4</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.66 0.012 80);margin-top:5px">GOOGLE MEET · 4 INVITED</div>
+      <div style="margin-top:10px;display:flex;gap:6px">
+        <div style="flex:1;text-align:center;padding:7px 0;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Record on join</div>
+        <div style="padding:7px 10px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.78 0.012 84);cursor:pointer">Prep</div>
+      </div>
+    </div>
+    <div style="padding:14px 16px 12px;border-bottom:1px solid oklch(0.27 0.015 48)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Open actions · 6</div>
+      <div style="margin-top:9px;display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;gap:8px;align-items:baseline"><span style="width:10px;height:10px;border:1px solid oklch(0.50 0.014 78);flex:none;margin-top:3px"></span><span style="font-size:12.5px;line-height:1.4">Draft per-clinic terms into SOW v4<span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);display:block">due Aug 31 · Northwind</span></span></div>
+        <div style="display:flex;gap:8px;align-items:baseline"><span style="width:10px;height:10px;border:1px solid oklch(0.50 0.014 78);flex:none;margin-top:3px"></span><span style="font-size:12.5px;line-height:1.4">Reference check before SRE offer<span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);display:block">due today · Hiring</span></span></div>
+        <div style="display:flex;gap:8px;align-items:baseline"><span style="width:10px;height:10px;border:1px solid oklch(0.50 0.014 78);flex:none;margin-top:3px"></span><span style="font-size:12.5px;line-height:1.4">Send Ashgrove written SSO scope<span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);display:block">overdue 1d · Ashgrove</span></span></div>
+      </div>
+    </div>
+    <div style="padding:14px 16px 12px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Sources · 31</div>
+      <div style="margin-top:9px;display:flex;flex-wrap:wrap;gap:5px">
+        <span style="padding:3px 7px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.82 0.012 84)">docs 12</span>
+        <span style="padding:3px 7px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.82 0.012 84)">audio 9</span>
+        <span style="padding:3px 7px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.82 0.012 84)">notes 7</span>
+        <span style="padding:3px 7px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.82 0.012 84)">sheets 3</span>
+      </div>
+      <div style="margin-top:11px;border:1px dashed oklch(0.34 0.016 50);padding:14px 10px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80);line-height:1.6">DROP AUDIO OR PDF<br>to attach to a note</div>
+    </div>
+    <div style="margin-top:auto;padding:11px 16px;border-top:1px solid oklch(0.27 0.015 48);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.58 0.012 80)">capture<span style="float:right;color:oklch(0.86 0.15 142)">system + mic</span><br>bots on calls<span style="float:right;color:oklch(0.80 0.012 84)">never</span></div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="recorder"><div class="blabel"><a class="bid" href="#recorder">02</a>Recorder — minimal chrome, rough notes are the focus; the model gets out of the way until you stop</div>
+<div class="bcard" style="width:900px;height:812px;display:grid;grid-template-rows:minmax(0,812px);grid-template-columns:1fr;background:oklch(0.155 0.013 46);color:oklch(0.93 0.010 88)">
+  <div style="display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:16px 22px 14px;border-bottom:1px solid oklch(0.28 0.015 50);display:flex;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:7px"><span style="width:8px;height:8px;border-radius:50%;background:oklch(0.66 0.19 25)"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:oklch(0.80 0.09 25)">Recording</span></div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;letter-spacing:-0.01em">18:42</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);line-height:1.5">SYSTEM AUDIO + MIC<br>NO BOT ON THIS CALL</div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <div style="padding:7px 11px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.012 84);cursor:pointer">Pause</div>
+        <div style="padding:7px 13px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Stop &amp; structure</div>
+      </div>
+    </div>
+
+    <div style="padding:14px 22px 12px;border-bottom:1px solid oklch(0.26 0.015 48)">
+      <div style="display:flex;align-items:flex-end;gap:2px;height:52px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="60"><div style="width:100%;background:oklch(0.38 0.06 140);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80);margin-top:5px"><span>LEVEL OK · −12 dB</span><span>18:42</span></div>
+    </div>
+
+    <div style="flex:1;min-height:0;overflow:auto;padding:18px 22px 12px">
+      <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.62 0.012 80)">Your rough notes</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.012 80)">merged at stop · never shown to others</span></div>
+      <div style="margin-top:12px;font-size:15px;line-height:1.72;color:oklch(0.90 0.010 88);text-wrap:pretty">two clinics live, two blocked — VPN/security review<br><span style="color:oklch(0.72 0.012 82)">— ask Priya for the exact review date</span><br><br>they want per-clinic not per-seat<br>Marcus: cap above 40 seats or we subsidise growth<br><span style="color:oklch(0.72 0.012 82)">— check SOW §4.2 still says per-seat</span><br><br>mapping = 6–8h first EHR, &lt;2h after<br>Q4 clinics 5–6 collide with migration freeze<span style="display:inline-block;width:2px;height:17px;background:oklch(0.82 0.15 140);vertical-align:-3px;margin-left:3px"></span></div>
+      <div style="margin-top:18px;display:flex;gap:7px;flex-wrap:wrap">
+        <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.78 0.012 84);cursor:pointer">⌘⏎ mark decision</span>
+        <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.78 0.012 84);cursor:pointer">⌘K action item</span>
+        <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.78 0.012 84);cursor:pointer">⌘T timestamp</span>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid oklch(0.28 0.015 50);background:oklch(0.185 0.014 48);padding:12px 22px 14px;display:flex;align-items:center;gap:16px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Structuring as</div>
+        <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600;margin-top:3px">{{ persona }}</div>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.7;color:oklch(0.62 0.012 80)">DIARIZATION<span style="color:oklch(0.86 0.15 142);margin-left:8px">ON · 3 VOICES</span><br>FALLS BACK TO PLAIN TRANSCRIPT PAST 28 MIN</div>
+      <div style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.78 0.012 84);border-bottom:1px solid oklch(0.40 0.016 50);cursor:pointer">CHANGE PERSONA</div>
+    </div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="hud"><div class="blabel"><a class="bid" href="#hud">02b</a>Record HUD — the always-on trigger. Lives above every app, opens the full pane at <a class="bid" href="#recorder">02</a> only when you ask it to</div>
+<div class="bcard" style="box-sizing:border-box;width:900px;height:812px;background:oklch(0.135 0.012 46);color:oklch(0.93 0.010 88);padding:30px 34px;display:flex;flex-direction:column;gap:26px;overflow:hidden">
+
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Idle · docked bottom-right, above every app</div>
+    <div style="display:flex;align-items:center;gap:11px;align-self:flex-start;padding:9px 13px;background:oklch(0.205 0.015 50);border:1px solid oklch(0.30 0.016 50);box-shadow:0 8px 24px oklch(0.10 0.01 46 / 0.6)">
+      <span style="width:9px;height:9px;background:oklch(0.82 0.15 140)"></span>
+      <span style="font-family:'Bitter',serif;font-size:13.5px;font-weight:600">Record</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80);padding-left:2px">⌘⇧R</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Recording · collapsed</div>
+    <div style="display:flex;align-items:center;gap:13px;align-self:flex-start;padding:9px 11px 9px 13px;background:oklch(0.205 0.015 50);border:1px solid oklch(0.34 0.016 50);box-shadow:0 8px 24px oklch(0.10 0.01 46 / 0.6)">
+      <span style="width:9px;height:9px;border-radius:50%;background:oklch(0.66 0.19 25)"></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:500;letter-spacing:-0.01em">12:41</span>
+      <span style="display:flex;align-items:flex-end;gap:2px;height:15px">
+        <span style="width:2px;height:5px;background:oklch(0.40 0.06 140)"></span><span style="width:2px;height:11px;background:oklch(0.52 0.10 140)"></span><span style="width:2px;height:15px;background:oklch(0.72 0.14 140)"></span><span style="width:2px;height:8px;background:oklch(0.52 0.10 140)"></span><span style="width:2px;height:13px;background:oklch(0.62 0.12 140)"></span><span style="width:2px;height:4px;background:oklch(0.38 0.05 140)"></span><span style="width:2px;height:9px;background:oklch(0.48 0.09 140)"></span>
+      </span>
+      <span style="width:1px;height:20px;background:oklch(0.30 0.016 50)"></span>
+      <span style="padding:5px 8px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.012 84);cursor:pointer">Pause</span>
+      <span style="padding:5px 9px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Stop</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:oklch(0.62 0.012 80);cursor:pointer;padding-left:1px">⌃</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.52 0.012 80);letter-spacing:0.04em">DRAG ANYWHERE · SNAPS TO THE NEAREST CORNER · NEVER OVER A SHARED SCREEN</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Paused · capture held, nothing discarded</div>
+    <div style="display:flex;align-items:center;gap:13px;align-self:flex-start;padding:9px 11px 9px 13px;background:oklch(0.185 0.014 48);border:1px solid oklch(0.28 0.015 50);box-shadow:0 8px 24px oklch(0.10 0.01 46 / 0.6)">
+      <span style="width:9px;height:9px;border:1.5px solid oklch(0.52 0.012 80);box-sizing:border-box"></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:500;letter-spacing:-0.01em;color:oklch(0.66 0.012 82)">12:41</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Paused</span>
+      <span style="width:1px;height:20px;background:oklch(0.28 0.015 50)"></span>
+      <span style="padding:5px 9px;border:1px solid oklch(0.42 0.09 140);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.86 0.15 142);cursor:pointer">Resume</span>
+      <span style="padding:5px 8px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.72 0.012 82);cursor:pointer">Discard</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:9px;min-height:0">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Expanded · jot without leaving what you're doing</div>
+    <div style="width:352px;background:oklch(0.185 0.014 48);border:1px solid oklch(0.34 0.016 50);box-shadow:0 12px 32px oklch(0.10 0.01 46 / 0.66);display:flex;flex-direction:column;min-height:0">
+      <div style="padding:10px 13px;border-bottom:1px solid oklch(0.28 0.015 50);display:flex;align-items:center;gap:10px">
+        <span style="width:9px;height:9px;border-radius:50%;background:oklch(0.66 0.19 25)"></span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:500">12:41</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;line-height:1.45;color:oklch(0.60 0.012 80)">SYSTEM AUDIO + MIC<br>NO BOT ON THIS CALL</span>
+        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;color:oklch(0.62 0.012 80);cursor:pointer">⌄</span>
+      </div>
+      <div style="padding:11px 13px;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Northwind Health · sales lens</div>
+        <div style="margin-top:8px;font-size:13px;line-height:1.65;color:oklch(0.88 0.010 88);text-wrap:pretty">they want per-clinic not per-seat<br><span style="color:oklch(0.70 0.012 82)">— cap above 40 seats</span><span style="display:inline-block;width:2px;height:14px;background:oklch(0.82 0.15 140);vertical-align:-3px;margin-left:3px"></span></div>
+      </div>
+      <div style="padding:9px 13px;display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <span style="padding:3px 7px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.78 0.012 84);cursor:pointer">⌘⏎ decision</span>
+        <span style="padding:3px 7px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.78 0.012 84);cursor:pointer">⌘K action</span>
+        <span style="padding:3px 7px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.78 0.012 84);cursor:pointer">⌘T stamp</span>
+      </div>
+      <div style="padding:9px 13px;display:flex;align-items:center;gap:9px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);border-bottom:1px solid oklch(0.40 0.016 50);cursor:pointer">OPEN FULL PANE</span>
+        <span style="margin-left:auto;padding:5px 8px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.012 84);cursor:pointer">Pause</span>
+        <span style="padding:5px 9px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Stop &amp; structure</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:auto;padding:11px 13px;background:oklch(0.175 0.013 48);border-left:2px solid oklch(0.82 0.15 140);font-size:12.5px;line-height:1.55;color:oklch(0.78 0.012 84);text-wrap:pretty">The HUD never structures anything. It captures, and it stops. Every model pass happens after <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:oklch(0.90 0.010 88)">Stop &amp; structure</span> — in the full pane, where you can see what it did.</div>
+
+</div></div>
+
+<div class="bwrap" id="personas"><div class="blabel"><a class="bid" href="#personas">03</a>Personas — rail is the switcher; the pane shows a persona's anatomy (lens, depth, quick actions, output shape)</div>
+<div class="bcard" style="width:1120px;height:812px;display:grid;grid-template-rows:minmax(0,812px);grid-template-columns:236px 1fr;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:15px 15px 11px;border-bottom:1px solid oklch(0.26 0.015 48)">
+      <div style="font-family:'Bitter',serif;font-size:16px;font-weight:600">Personas</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.60 0.012 80);margin-top:4px">5 BUILT-IN · CUSTOM COMING</div>
+    </div>
+    <div style="padding:8px 0;display:flex;flex-direction:column">
+      <div style="padding:10px 14px;border-left:2px solid oklch(0.82 0.15 140);background:oklch(0.235 0.016 50);cursor:pointer">
+        <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Neutral Analyst</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.66 0.012 80);margin-top:3px">DEFAULT · DENSE · NO FRAMING</div>
+      </div>
+      <div style="padding:10px 14px;border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600;color:oklch(0.82 0.012 84)">Sales Coach</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80);margin-top:3px">COACHING · DIRECT</div>
+      </div>
+      <div style="padding:10px 14px;border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600;color:oklch(0.82 0.012 84)">Investor</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80);margin-top:3px">ECONOMICS · RISK</div>
+      </div>
+      <div style="padding:10px 14px;border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600;color:oklch(0.82 0.012 84)">Engineering Lead</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80);margin-top:3px">SCOPE · SEQUENCING</div>
+      </div>
+      <div style="padding:10px 14px;border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">
+        <div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600;color:oklch(0.82 0.012 84)">Interviewer</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80);margin-top:3px">SIGNAL · EVIDENCE</div>
+      </div>
+      <div style="padding:10px 14px;border-left:2px dashed oklch(0.34 0.016 50);font-family:'Bitter',serif;font-size:14.5px;color:oklch(0.60 0.012 80);cursor:pointer">+ New persona</div>
+    </div>
+    <div style="margin-top:auto;padding:11px 15px;border-top:1px solid oklch(0.26 0.015 48);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.58 0.012 80)">applies to<span style="float:right;color:oklch(0.80 0.012 84)">new notes</span><br>re-run cost<span style="float:right;color:oklch(0.86 0.15 142)">free</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden">
+    <div style="padding:20px 26px 15px;border-bottom:1px solid oklch(0.28 0.015 50);display:flex;align-items:flex-end;gap:14px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Persona</div>
+        <div style="font-family:'Bitter',serif;font-size:26px;font-weight:600;letter-spacing:-0.012em;margin-top:5px">Neutral Analyst</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <div style="padding:7px 11px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.012 84);cursor:pointer">Duplicate</div>
+        <div style="padding:7px 13px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Set as default</div>
+      </div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px 24px">
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:18px;padding:16px 0;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.60 0.012 80);line-height:1.7">Lens</div>
+        <div>
+          <div style="font-size:14px;line-height:1.6">No expertise framing. Reports what was said and decided, in the order it happened, without inferring intent.</div>
+          <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap">
+            <span style="padding:4px 9px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);font-family:'IBM Plex Mono',monospace;font-size:9.5px">neutral</span>
+            <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.72 0.012 82)">sales coach</span>
+            <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.72 0.012 82)">investor</span>
+            <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.72 0.012 82)">eng lead</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:18px;padding:16px 0;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.60 0.012 80);line-height:1.7">Depth</div>
+        <div>
+          <div style="display:flex;gap:0;border:1px solid oklch(0.32 0.016 50);width:fit-content">
+            <span style="padding:6px 13px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.72 0.012 82);border-right:1px solid oklch(0.32 0.016 50);cursor:pointer">Brief</span>
+            <span style="padding:6px 13px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);border-right:1px solid oklch(0.32 0.016 50);cursor:pointer">Dense</span>
+            <span style="padding:6px 13px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.72 0.012 82);cursor:pointer">Exhaustive</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80);margin-top:8px">DENSE · ~180 WORDS OF SUMMARY, EVERY DECISION, NO PROSE PADDING</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:18px;padding:16px 0;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.60 0.012 80);line-height:1.7">Quick actions</div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:grid;grid-template-columns:1fr 130px 20px;gap:10px;align-items:center;padding:8px 10px;background:oklch(0.215 0.015 50);font-size:13px"><span>Extract decisions only</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80)">decisions · cited</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.58 0.012 80);cursor:pointer">⋮</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 20px;gap:10px;align-items:center;padding:8px 10px;background:oklch(0.215 0.015 50);font-size:13px"><span>Timeline of blockers</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80)">timeline · cited</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.58 0.012 80);cursor:pointer">⋮</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 20px;gap:10px;align-items:center;padding:8px 10px;background:oklch(0.215 0.015 50);font-size:13px"><span>Unanswered questions</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80)">list · cited</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.58 0.012 80);cursor:pointer">⋮</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 20px;gap:10px;align-items:center;padding:8px 10px;background:oklch(0.215 0.015 50);font-size:13px"><span>Diff against last call</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80)">compare · cited</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.58 0.012 80);cursor:pointer">⋮</span></div>
+          <div style="padding:8px 10px;border:1px dashed oklch(0.34 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80);cursor:pointer">+ ADD QUICK ACTION</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:110px 1fr;gap:18px;padding:16px 0">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.60 0.012 80);line-height:1.7">Output shape</div>
+        <div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <span style="padding:5px 10px;background:oklch(0.215 0.015 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.012 86)">summary ×1</span>
+            <span style="padding:5px 10px;background:oklch(0.215 0.015 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.012 86)">takeaway ×3–5</span>
+            <span style="padding:5px 10px;background:oklch(0.215 0.015 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.012 86)">action_item ×n</span>
+            <span style="padding:5px 10px;background:oklch(0.215 0.015 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.012 86)">per-speaker stats</span>
+            <span style="padding:5px 10px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);font-family:'IBM Plex Mono',monospace;font-size:9.5px">every claim cited</span>
+          </div>
+          <div style="margin-top:12px;padding:12px 13px;background:oklch(0.165 0.013 48);border-left:2px solid oklch(0.82 0.15 140)">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Preview on last note</div>
+            <div style="font-size:13.5px;line-height:1.6;margin-top:7px">Pricing moved from per-seat to per-clinic with a 40-seat cap, pending legal<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:5px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142)">03:31</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="auth"><div class="blabel"><a class="bid" href="#auth">04</a>Login / signup / recovery — no Google button anywhere in auth; connect happens later, in Settings</div>
+<div class="bcard" style="width:1180px;height:560px;display:grid;grid-template-rows:minmax(0,560px);grid-template-columns:repeat(3,1fr);background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+  <div style="border-right:1px solid oklch(0.28 0.015 50);padding:34px 32px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="width:18px;height:18px;background:oklch(0.82 0.15 140)"></span>
+      <span style="font-family:'Bitter',serif;font-size:15px;font-weight:700;letter-spacing:-0.01em">Crispy Bacon</span>
+    </div>
+    <div style="font-family:'Bitter',serif;font-size:25px;font-weight:600;line-height:1.2;margin-top:26px">Sign in</div>
+    <div style="display:flex;gap:16px;margin-top:16px;border-bottom:1px solid oklch(0.30 0.016 50)">
+      <span style="padding-bottom:8px;border-bottom:2px solid oklch(0.82 0.15 140);font-size:13px;font-weight:500">Sign in</span>
+      <span style="padding-bottom:8px;border-bottom:2px solid transparent;font-size:13px;color:oklch(0.66 0.012 80);cursor:pointer">Create account</span>
+    </div>
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:11px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Email</div>
+        <div style="margin-top:5px;border:1px solid oklch(0.34 0.016 50);padding:9px 11px;font-size:13.5px;color:oklch(0.90 0.010 88)">kevin@fintory.com</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Password</div>
+        <div style="margin-top:5px;border:1px solid oklch(0.30 0.016 50);padding:9px 11px;display:flex;align-items:center"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:oklch(0.78 0.012 84);letter-spacing:0.18em">••••••••••</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);cursor:pointer">SHOW</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span style="font-size:12.5px;color:oklch(0.80 0.012 84)">Keep me signed in on this Mac</span></div>
+    </div>
+    <div style="margin-top:18px;padding:10px 0;text-align:center;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;cursor:pointer">Sign in</div>
+    <div style="margin-top:12px;font-size:12.5px;color:oklch(0.70 0.012 80)">Forgot password?</div>
+    <div style="margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.75;color:oklch(0.55 0.012 80)">NO CALENDAR OR DRIVE ACCESS IS REQUESTED HERE.<br>YOU CONNECT THOSE LATER, IN SETTINGS.</div>
+  </div>
+
+  <div style="border-right:1px solid oklch(0.28 0.015 50);padding:34px 32px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Step 1 of 2</div>
+    <div style="font-family:'Bitter',serif;font-size:25px;font-weight:600;line-height:1.2;margin-top:8px">Create account</div>
+    <div style="font-size:13px;line-height:1.55;color:oklch(0.72 0.012 82);margin-top:8px">Audio stays on your machine until you stop a recording. Nothing is uploaded during capture.</div>
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:11px">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Name</div>
+        <div style="margin-top:5px;border:1px solid oklch(0.30 0.016 50);padding:9px 11px;font-size:13.5px;color:oklch(0.60 0.012 80)">Your name</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Work email</div>
+        <div style="margin-top:5px;border:1px solid oklch(0.30 0.016 50);padding:9px 11px;font-size:13.5px;color:oklch(0.60 0.012 80)">you@company.com</div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Password</div>
+        <div style="margin-top:5px;border:1px solid oklch(0.30 0.016 50);padding:9px 11px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:oklch(0.78 0.012 84);letter-spacing:0.18em">••••••••</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px">
+        <span style="color:oklch(0.86 0.15 142)">✓ 12 characters or more</span>
+        <span style="color:oklch(0.86 0.15 142)">✓ one number</span>
+        <span style="color:oklch(0.62 0.012 80)">· upper and lower case</span>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:10px 0;text-align:center;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;cursor:pointer">Continue</div>
+    <div style="margin-top:auto;font-size:11.5px;line-height:1.5;color:oklch(0.62 0.012 80)">By continuing you accept the terms and privacy policy.</div>
+  </div>
+
+  <div style="padding:34px 32px;display:flex;flex-direction:column;min-height:0;overflow:hidden;background:oklch(0.165 0.013 48)">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Password recovery</div>
+    <div style="font-family:'Bitter',serif;font-size:25px;font-weight:600;line-height:1.2;margin-top:8px">Check your email</div>
+    <div style="font-size:13px;line-height:1.6;color:oklch(0.76 0.012 82);margin-top:9px">We sent a six-digit code to <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:oklch(0.92 0.010 88)">kevin@fintory.com</span>. It expires in 10 minutes.</div>
+    <div style="margin-top:18px;display:flex;gap:7px">
+      <span style="width:40px;height:46px;border:1px solid oklch(0.82 0.15 140);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px">4</span>
+      <span style="width:40px;height:46px;border:1px solid oklch(0.34 0.016 50);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px">1</span>
+      <span style="width:40px;height:46px;border:1px solid oklch(0.34 0.016 50);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px;color:oklch(0.45 0.014 78)">·</span>
+      <span style="width:40px;height:46px;border:1px solid oklch(0.30 0.016 50);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px;color:oklch(0.45 0.014 78)">·</span>
+      <span style="width:40px;height:46px;border:1px solid oklch(0.30 0.016 50);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px;color:oklch(0.45 0.014 78)">·</span>
+      <span style="width:40px;height:46px;border:1px solid oklch(0.30 0.016 50);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:18px;color:oklch(0.45 0.014 78)">·</span>
+    </div>
+    <div style="margin-top:16px;padding:10px 0;text-align:center;border:1px solid oklch(0.34 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Verify</div>
+    <div style="margin-top:12px;font-size:12.5px;color:oklch(0.72 0.012 82)">Resend code <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:oklch(0.58 0.012 80)">in 0:42</span></div>
+    <div style="margin-top:auto;padding:11px 12px;background:oklch(0.205 0.015 50);font-size:12px;line-height:1.55;color:oklch(0.78 0.012 84)">Wrong address? <span style="border-bottom:1px solid oklch(0.40 0.016 50);cursor:pointer">Start over</span> — no account is created until the code is verified.</div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="onboarding"><div class="blabel"><a class="bid" href="#onboarding">05</a>Onboarding — four steps, permission before persuasion; calendar connect is skippable and lives in step 4</div>
+<div class="bcard" style="width:1000px;height:620px;display:grid;grid-template-rows:minmax(0,620px);grid-template-columns:264px 1fr;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);padding:26px 22px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:8px"><span style="width:16px;height:16px;background:oklch(0.82 0.15 140)"></span><span style="font-family:'Bitter',serif;font-size:14px;font-weight:700">Crispy Bacon</span></div>
+    <div style="margin-top:26px;display:flex;flex-direction:column;gap:2px">
+      <div style="display:grid;grid-template-columns:20px 1fr;gap:10px;padding:9px 0;align-items:baseline">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.15 142)">✓</span>
+        <span><span style="font-size:13.5px;color:oklch(0.72 0.012 82)">Name this workspace</span><br><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.012 80)">FINTORY</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:20px 1fr;gap:10px;padding:9px 0;align-items:baseline;border-left:2px solid oklch(0.82 0.15 140);padding-left:10px;background:oklch(0.205 0.015 50);margin-left:-12px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.15 142)">2</span>
+        <span><span style="font-size:13.5px;font-weight:500">Allow audio capture</span><br><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80)">SYSTEM + MIC</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:20px 1fr;gap:10px;padding:9px 0;align-items:baseline">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.55 0.012 80)">3</span>
+        <span><span style="font-size:13.5px;color:oklch(0.72 0.012 82)">Pick a default persona</span><br><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.012 80)">CHANGEABLE ANY TIME</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:20px 1fr;gap:10px;padding:9px 0;align-items:baseline">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.55 0.012 80)">4</span>
+        <span><span style="font-size:13.5px;color:oklch(0.72 0.012 82)">Connect calendar</span><br><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.012 80)">OPTIONAL · SKIPPABLE</span></span>
+      </div>
+    </div>
+    <div style="margin-top:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.8;color:oklch(0.55 0.012 80)">NO BOT EVER JOINS YOUR CALLS.<br>NOTHING UPLOADS DURING CAPTURE.</div>
+  </div>
+  <div style="padding:30px 32px;display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="font-family:'Bitter',serif;font-size:26px;font-weight:600;letter-spacing:-0.012em;line-height:1.18">Allow audio capture</div>
+    <div style="font-size:13.5px;line-height:1.6;color:oklch(0.76 0.012 82);margin-top:9px;max-width:520px">Crispy Bacon records the meeting the same way you hear it — the call's output plus your microphone. macOS asks once per permission.</div>
+    <div style="margin-top:22px;display:flex;flex-direction:column;gap:9px">
+      <div style="display:grid;grid-template-columns:1fr 120px;gap:14px;align-items:center;padding:13px 14px;background:oklch(0.215 0.015 50)">
+        <div><div style="font-size:14px;font-weight:500">System audio</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.64 0.012 80);margin-top:3px">CAPTURES WHAT THE OTHER PEOPLE SAY</div></div>
+        <div style="text-align:center;padding:7px 0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142)">Granted</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 120px;gap:14px;align-items:center;padding:13px 14px;background:oklch(0.215 0.015 50)">
+        <div><div style="font-size:14px;font-weight:500">Microphone</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.64 0.012 80);margin-top:3px">CAPTURES YOU · REQUIRED FOR SPEAKER LABELS</div></div>
+        <div style="text-align:center;padding:7px 0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-weight:500;cursor:pointer">Allow</div>
+      </div>
+    </div>
+    <div style="margin-top:20px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Input test</div>
+      <div style="margin-top:9px;display:flex;align-items:flex-end;gap:2px;height:36px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="50"><div style="width:100%;background:oklch(0.36 0.06 140);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.60 0.012 80);margin-top:5px">SAY SOMETHING — LEVEL SHOULD REACH THE MIDDLE</div>
+    </div>
+    <div style="margin-top:auto;display:flex;align-items:center;gap:12px">
+      <div style="padding:9px 16px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;cursor:pointer">Continue</div>
+      <div style="font-size:12.5px;color:oklch(0.68 0.012 80)">You can record without a microphone — you just lose speaker labels.</div>
+    </div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="settings"><div class="blabel"><a class="bid" href="#settings">06</a>Settings — Connect Calendar/Drive is an action here and only here; light/dark are one switch, both first-class</div>
+<div class="bcard" style="width:1180px;height:760px;display:grid;grid-template-rows:minmax(0,760px);grid-template-columns:210px 1fr;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;min-height:0;overflow:hidden;padding-top:16px">
+    <div style="padding:0 14px 12px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80)">KEVIN@FINTORY.COM</div>
+    <div style="display:flex;flex-direction:column">
+      <div style="padding:8px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Account</div>
+      <div style="padding:8px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Capture &amp; audio</div>
+      <div style="padding:8px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Personas</div>
+      <div style="padding:8px 14px;font-size:13px;font-weight:500;background:oklch(0.235 0.016 50);border-left:2px solid oklch(0.82 0.15 140)">Connected apps</div>
+      <div style="padding:8px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Appearance</div>
+      <div style="padding:8px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Sharing</div>
+      <div style="padding:8px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Data &amp; privacy</div>
+    </div>
+    <div style="margin-top:auto;padding:12px 14px;border-top:1px solid oklch(0.26 0.015 48)">
+      <div style="padding:6px 10px;border:1px solid oklch(0.42 0.10 25);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.76 0.12 25);text-align:center;cursor:pointer">Log me out</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden">
+    <div style="padding:20px 26px 14px;border-bottom:1px solid oklch(0.28 0.015 50)">
+      <div style="font-family:'Bitter',serif;font-size:22px;font-weight:600;letter-spacing:-0.01em">Connected apps</div>
+      <div style="font-size:13px;color:oklch(0.72 0.012 82);margin-top:5px">Read-only access, revocable here. Connecting is never required to record.</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px 22px">
+      <div style="display:grid;grid-template-columns:1fr 300px 120px;gap:16px;align-items:center;padding:15px 0;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div><div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Google Calendar</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);margin-top:4px">READ EVENTS · TITLES, TIMES, ATTENDEES</div></div>
+        <div style="font-size:12.5px;line-height:1.5;color:oklch(0.74 0.012 82)">Matches a recording to the meeting it belongs to and pre-titles the note.</div>
+        <div style="text-align:center;padding:8px 0;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Connect</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 300px 120px;gap:16px;align-items:center;padding:15px 0;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div><div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Google Drive</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);margin-top:4px">READ FILES YOU PICK · NO BROWSING</div></div>
+        <div style="font-size:12.5px;line-height:1.5;color:oklch(0.74 0.012 82)">Lets you attach a doc as an imported source so the model can cite it alongside the transcript.</div>
+        <div style="text-align:center;padding:8px 0;border:1px solid oklch(0.34 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.84 0.012 86);cursor:pointer">Connect</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 300px 120px;gap:16px;align-items:center;padding:15px 0;border-bottom:1px solid oklch(0.26 0.015 48)">
+        <div><div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Meeting apps</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);margin-top:4px">DETECTED LOCALLY · NOTHING TO AUTHORISE</div></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="padding:4px 9px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.84 0.012 86)">Meet</span><span style="padding:4px 9px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.84 0.012 86)">Zoom</span><span style="padding:4px 9px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.84 0.012 86)">Teams</span><span style="padding:4px 9px;background:oklch(0.235 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.84 0.012 86)">Phone</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.15 142);text-align:center">ACTIVE</div>
+      </div>
+
+      <div style="margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Appearance</div>
+      <div style="margin-top:11px;display:flex;gap:12px">
+        <div style="width:180px;border:1px solid oklch(0.82 0.15 140);padding:9px">
+          <div style="height:52px;background:oklch(0.185 0.014 48);border:1px solid oklch(0.30 0.016 50);display:flex"><span style="width:34px;background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50)"></span><span style="flex:1;padding:7px"><span style="display:block;height:5px;width:60%;background:oklch(0.40 0.015 50)"></span><span style="display:block;height:5px;width:80%;background:oklch(0.32 0.015 50);margin-top:5px"></span><span style="display:block;height:5px;width:40%;background:oklch(0.60 0.10 140);margin-top:5px"></span></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;margin-top:8px;display:flex;align-items:center"><span>ESPRESSO DARK</span><span style="margin-left:auto;color:oklch(0.86 0.15 142)">ACTIVE</span></div>
+        </div>
+        <div style="width:180px;border:1px solid oklch(0.32 0.016 50);padding:9px;cursor:pointer">
+          <div style="height:52px;background:oklch(0.948 0.016 82);border:1px solid oklch(0.856 0.023 80);display:flex"><span style="width:34px;background:oklch(0.922 0.019 80);border-right:1px solid oklch(0.856 0.023 80)"></span><span style="flex:1;padding:7px"><span style="display:block;height:5px;width:60%;background:oklch(0.72 0.010 90)"></span><span style="display:block;height:5px;width:80%;background:oklch(0.82 0.008 92);margin-top:5px"></span><span style="display:block;height:5px;width:40%;background:oklch(0.55 0.11 140);margin-top:5px"></span></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;margin-top:8px;color:oklch(0.80 0.012 84)">NEWSPRINT LIGHT</div>
+        </div>
+        <div style="width:132px;border:1px solid oklch(0.32 0.016 50);padding:9px;cursor:pointer;display:flex;flex-direction:column;justify-content:center">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.84 0.012 86);line-height:1.7">MATCH SYSTEM<br><span style="color:oklch(0.60 0.012 80)">SWITCHES AT SUNSET</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Capture defaults</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:0">
+        <div style="display:grid;grid-template-columns:1fr 88px;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid oklch(0.26 0.015 48)"><div><div style="font-size:13.5px">Speaker diarization</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);margin-top:3px">ON UNDER 28 MIN · FALLS BACK SILENTLY ABOVE</div></div><div style="justify-self:end;width:34px;height:19px;background:oklch(0.30 0.06 140);position:relative"><span style="position:absolute;top:2px;right:2px;width:15px;height:15px;background:oklch(0.86 0.15 142)"></span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 88px;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid oklch(0.26 0.015 48)"><div><div style="font-size:13.5px">Keep local audio after structuring</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);margin-top:3px">DELETES AFTER 30 DAYS WHEN OFF</div></div><div style="justify-self:end;width:34px;height:19px;background:oklch(0.28 0.015 50);position:relative"><span style="position:absolute;top:2px;left:2px;width:15px;height:15px;background:oklch(0.52 0.014 78)"></span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 88px;gap:14px;align-items:center;padding:11px 0;border-bottom:1px solid oklch(0.26 0.015 48)"><div><div style="font-size:13.5px">Require a citation for every claim</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80);margin-top:3px">UNGROUNDED CLAIMS ARE DROPPED, NOT SHOWN</div></div><div style="justify-self:end;width:34px;height:19px;background:oklch(0.30 0.06 140);position:relative"><span style="position:absolute;top:2px;right:2px;width:15px;height:15px;background:oklch(0.86 0.15 142)"></span></div></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid oklch(0.28 0.015 50);background:oklch(0.165 0.013 48);padding:12px 26px;display:flex;align-items:center;gap:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80)">2 UNSAVED CHANGES</span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <div style="padding:7px 13px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.78 0.012 84);cursor:pointer">Discard</div>
+        <div style="padding:7px 15px;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Update</div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="collections"><div class="blabel"><a class="bid" href="#collections">07</a>Collections &amp; tags — tags are cheap and colourful; collections carry auto-rules so the feed files itself</div>
+<div class="bcard" style="width:1180px;height:700px;display:grid;grid-template-rows:minmax(0,700px);grid-template-columns:212px 1fr 296px;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;min-height:0;overflow:hidden;padding-top:15px">
+    <div style="padding:0 14px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Collections · 7</div>
+    <div style="display:flex;flex-direction:column">
+      <div style="padding:7px 14px;font-size:13px;background:oklch(0.235 0.016 50);border-left:2px solid oklch(0.82 0.15 140);display:flex">Northwind pilot<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.66 0.012 80)">14</span></div>
+      <div style="padding:7px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;display:flex;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Ashgrove renewal<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">9</span></div>
+      <div style="padding:7px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;display:flex;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Hiring · SRE<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">6</span></div>
+      <div style="padding:7px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;display:flex;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Board &amp; investors<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">5</span></div>
+      <div style="padding:7px 14px;font-size:13px;color:oklch(0.82 0.012 84);border-left:2px solid transparent;display:flex;cursor:pointer" style-hover="background:oklch(0.21 0.015 50)">Platform weekly<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.58 0.012 80)">22</span></div>
+      <div style="padding:7px 14px;border-left:2px dashed oklch(0.34 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80);cursor:pointer">+ NEW COLLECTION</div>
+    </div>
+    <div style="padding:18px 14px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Tags</div>
+    <div style="padding:0 12px;display:flex;flex-wrap:wrap;gap:5px">
+      <span style="padding:3px 8px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);font-family:'IBM Plex Mono',monospace;font-size:9.5px">pricing 11</span>
+      <span style="padding:3px 8px;background:oklch(0.30 0.05 252);color:oklch(0.82 0.09 252);font-family:'IBM Plex Mono',monospace;font-size:9.5px">blocker 8</span>
+      <span style="padding:3px 8px;background:oklch(0.30 0.05 60);color:oklch(0.84 0.08 60);font-family:'IBM Plex Mono',monospace;font-size:9.5px">legal 5</span>
+      <span style="padding:3px 8px;background:oklch(0.30 0.05 320);color:oklch(0.82 0.08 320);font-family:'IBM Plex Mono',monospace;font-size:9.5px">hiring 6</span>
+      <span style="padding:3px 8px;background:oklch(0.28 0.015 50);color:oklch(0.80 0.012 84);font-family:'IBM Plex Mono',monospace;font-size:9.5px">follow-up 13</span>
+    </div>
+    <div style="margin-top:auto;padding:11px 14px;border-top:1px solid oklch(0.26 0.015 48);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80);line-height:1.7">DRAG A NOTE ONTO A COLLECTION<br>OR TYPE # IN A NOTE</div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden">
+    <div style="padding:18px 24px 13px;border-bottom:1px solid oklch(0.28 0.015 50)">
+      <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'Bitter',serif;font-size:21px;font-weight:600;letter-spacing:-0.01em">Northwind pilot</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.62 0.012 80)">14 NOTES · 3 SOURCES · SINCE 12 JUN</span></div>
+      <div style="font-size:12.5px;color:oklch(0.74 0.012 82);margin-top:6px">Everything touching the four-clinic pilot: pricing, security review, mapping work.</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0">
+      <div style="display:grid;grid-template-columns:74px 1fr 150px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48);background:oklch(0.205 0.015 50)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.68 0.012 80)">26 AUG<br><span style="color:oklch(0.55 0.012 80)">41 min</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Pilot pricing &amp; rollout</div><div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:2px">Per-clinic with a 40-seat cap, pending legal.</div></div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><span style="padding:2px 7px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);font-family:'IBM Plex Mono',monospace;font-size:9px">pricing</span><span style="padding:2px 7px;background:oklch(0.30 0.05 60);color:oklch(0.84 0.08 60);font-family:'IBM Plex Mono',monospace;font-size:9px">legal</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:74px 1fr 150px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.68 0.012 80)">19 AUG<br><span style="color:oklch(0.55 0.012 80)">33 min</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Clinic 3 &amp; 4 access review</div><div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:2px">VPN request sits behind their security review; no date given.</div></div>
+        <div style="display:flex;gap:4px;justify-content:flex-end"><span style="padding:2px 7px;background:oklch(0.30 0.05 252);color:oklch(0.82 0.09 252);font-family:'IBM Plex Mono',monospace;font-size:9px">blocker</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:74px 1fr 150px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.68 0.012 80)">12 AUG<br><span style="color:oklch(0.55 0.012 80)">imported</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Pilot SOW v3.pdf</div><div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:2px">§4.2 pricing schedule · 2 spans cited across notes</div></div>
+        <div style="display:flex;gap:4px;justify-content:flex-end"><span style="padding:2px 7px;background:oklch(0.28 0.015 50);color:oklch(0.80 0.012 84);font-family:'IBM Plex Mono',monospace;font-size:9px">source</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:74px 1fr 150px;gap:14px;align-items:center;padding:11px 24px;border-bottom:1px solid oklch(0.245 0.014 48)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.68 0.012 80)">05 AUG<br><span style="color:oklch(0.55 0.012 80)">26 min</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Mapping table walkthrough</div><div style="font-size:12.5px;color:oklch(0.68 0.012 80);margin-top:2px">Field naming differs per clinic; 6–8h first pass per EHR family.</div></div>
+        <div style="display:flex;gap:4px;justify-content:flex-end"><span style="padding:2px 7px;background:oklch(0.28 0.015 50);color:oklch(0.80 0.012 84);font-family:'IBM Plex Mono',monospace;font-size:9px">follow-up</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="background:oklch(0.165 0.013 48);border-left:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;min-height:0;overflow:hidden;padding:15px 16px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Auto-file rules</div>
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:7px">
+      <div style="padding:10px 11px;background:oklch(0.215 0.015 50)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.15 142)">WHEN</div><div style="font-size:12.5px;line-height:1.45;margin-top:3px">an attendee's email ends in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">@northwind.health</span></div></div>
+      <div style="padding:10px 11px;background:oklch(0.215 0.015 50)"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.86 0.15 142)">OR WHEN</div><div style="font-size:12.5px;line-height:1.45;margin-top:3px">the title contains <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">pilot</span> or <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px">clinic</span></div></div>
+      <div style="padding:10px 11px;border:1px dashed oklch(0.34 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80);cursor:pointer">+ ADD CONDITION</div>
+    </div>
+    <div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Applied last 30 days</div>
+    <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.9;color:oklch(0.70 0.012 80)">matched<span style="float:right;color:oklch(0.92 0.010 88)">9 notes</span><br>needed review<span style="float:right;color:oklch(0.92 0.010 88)">1</span><br>false positives<span style="float:right;color:oklch(0.92 0.010 88)">0</span></div>
+    <div style="margin-top:auto;padding:11px 12px;background:oklch(0.205 0.015 50);font-size:12px;line-height:1.5;color:oklch(0.78 0.012 84)">Rules only file notes. They never edit, re-run, or delete a note.</div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="share"><div class="blabel"><a class="bid" href="#share">08</a>Share link — read-only, transcript withheld by default, citations still resolvable; OG card below at half size</div>
+<div style="display:flex;flex-direction:column;gap:14px">
+<div class="bcard" style="width:920px;height:600px;display:grid;grid-template-rows:minmax(0,600px);grid-template-columns:1fr;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88)">
+  <div style="display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:11px 26px;background:oklch(0.155 0.013 46);border-bottom:1px solid oklch(0.30 0.016 50);display:flex;align-items:center;gap:10px">
+      <span style="width:14px;height:14px;background:oklch(0.82 0.15 140)"></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:oklch(0.72 0.012 82)">Shared read-only by Kevin Dukkon · 26 Aug</span>
+      <span style="margin-left:auto;padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.76 0.012 84)">TRANSCRIPT WITHHELD</span>
+      <span style="padding:4px 9px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.76 0.012 84);cursor:pointer">COPY LINK</span>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:26px 46px 24px;max-width:760px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Northwind Health · Wed 26 Aug 2026 · 41 min</div>
+      <div style="font-family:'Bitter',serif;font-size:30px;font-weight:600;letter-spacing:-0.014em;line-height:1.15;margin-top:8px">Pilot pricing &amp; rollout</div>
+      <div style="font-size:14.5px;line-height:1.66;margin-top:16px;text-wrap:pretty">Two of four pilot clinics have live data; the remaining two are blocked on Northwind's security review, closing the 9th<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);vertical-align:1px">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap, pending legal<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);vertical-align:1px">03:31</span>.</div>
+      <div style="margin-top:20px;display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.62 0.012 80)">Decisions</span><span style="flex:1;height:1px;background:oklch(0.30 0.016 50)"></span></div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;gap:11px;align-items:baseline"><span style="font-family:'Bitter',serif;font-size:15px;color:oklch(0.82 0.15 140);width:16px">01</span><span style="font-size:14px;line-height:1.55">Per-clinic pricing with a cap at 40 seats goes into SOW v4 for legal review.<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);vertical-align:1px">04:12</span></span></div>
+        <div style="display:flex;gap:11px;align-items:baseline"><span style="font-family:'Bitter',serif;font-size:15px;color:oklch(0.82 0.15 140);width:16px">02</span><span style="font-size:14px;line-height:1.55">Rollout is planned around the customer's Sept 9 review date, not our readiness.<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);vertical-align:1px">00:58</span></span></div>
+      </div>
+      <div style="margin-top:20px;padding:12px 14px;background:oklch(0.165 0.013 48);border-left:2px solid oklch(0.40 0.016 50);font-size:12.5px;line-height:1.6;color:oklch(0.78 0.012 84)">Citations open the exact quoted line and its timestamp. The full transcript and the recording stay with the owner unless they share them explicitly.</div>
+    </div>
+  </div>
+</div>
+<div class="blabel" style="margin:0"><a class="bid" href="#share">08b</a>OG / share preview card — drawn at 600×315, ships at 1200×630</div>
+<div class="bcard" style="box-sizing:border-box;width:600px;height:315px;background:oklch(0.155 0.013 46);color:oklch(0.93 0.010 88);padding:30px 32px;display:flex;flex-direction:column">
+  <div style="display:flex;align-items:center;gap:8px"><span style="width:14px;height:14px;background:oklch(0.82 0.15 140)"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.72 0.012 82)">Crispy Bacon · shared note</span></div>
+  <div style="font-family:'Bitter',serif;font-size:31px;font-weight:600;letter-spacing:-0.015em;line-height:1.14;margin-top:18px;text-wrap:pretty">Northwind Health — pilot pricing &amp; rollout</div>
+  <div style="font-size:13.5px;line-height:1.55;color:oklch(0.78 0.012 84);margin-top:12px;max-width:470px">Per-clinic pricing with a 40-seat cap, pending legal. Two clinics blocked on a Sept 9 security review.</div>
+  <div style="margin-top:auto;display:flex;align-items:flex-end;gap:20px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.8;color:oklch(0.66 0.012 80)">41 MIN · 3 SPEAKERS<br><span style="color:oklch(0.86 0.15 142)">EVERY CLAIM CITED · 27 SPANS</span></div>
+    <div style="margin-left:auto;display:flex;align-items:flex-end;gap:1.5px;height:26px;width:190px">
+      <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.34 0.05 140);height:{{ b.h }}"></div></sc-for>
+    </div>
+  </div>
+</div>
+</div></div>
+
+<div class="bwrap" id="assistant"><div class="blabel"><a class="bid" href="#assistant">09</a>Live assistant overlay — proposes silently, speaks only on <em>Say it</em>. One card, always dismissible, never voices anything it can't cite</div>
+<div class="bcard" style="box-sizing:border-box;width:760px;height:460px;background:oklch(0.13 0.010 44);display:flex;align-items:flex-end;justify-content:flex-end;padding:22px;position:relative">
+  <div style="position:absolute;top:22px;left:24px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.8;color:oklch(0.42 0.012 80)">MEETING WINDOW (BACKDROP)<br>OVERLAY FLOATS ABOVE, 380PX WIDE</div>
+  <div style="width:380px;background:oklch(0.185 0.014 48);border:1px solid oklch(0.34 0.016 50);box-shadow:0 12px 32px rgba(0,0,0,.5)">
+    <div style="padding:10px 13px;border-bottom:1px solid oklch(0.28 0.015 50);display:flex;align-items:center;gap:8px">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(0.66 0.19 25)"></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:oklch(0.76 0.012 84)">Live · 18:42 · {{ persona }}</span>
+      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.58 0.012 80);cursor:pointer">–</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.58 0.012 80);cursor:pointer">✕</span>
+    </div>
+    <div style="padding:12px 13px 13px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.60 0.012 80)">Unanswered question · 40s ago</div>
+      <div style="font-size:13.5px;line-height:1.55;margin-top:6px">Marcus asked how long mapping takes per clinic and the answer covered only the first pass.<span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:5px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);vertical-align:1px">02:20</span></div>
+      <div style="margin-top:11px;padding:10px 11px;background:oklch(0.215 0.015 50);border-left:2px solid oklch(0.82 0.15 140)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.86 0.15 142)">FROM YOUR NOTES · 05 AUG</div>
+        <div style="font-size:12.5px;line-height:1.5;margin-top:4px">Second pass on a known EHR family measured 1h50m, not "under two hours" as estimated.</div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:7px">
+        <div style="flex:1;text-align:center;padding:7px 0;background:oklch(0.82 0.15 140);color:oklch(0.18 0.05 140);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500;cursor:pointer">Say it</div>
+        <div style="flex:1;text-align:center;padding:7px 0;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.012 84);cursor:pointer">Note only</div>
+        <div style="padding:7px 10px;border:1px solid oklch(0.32 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.66 0.012 80);cursor:pointer">Mute 10m</div>
+      </div>
+    </div>
+    <div style="padding:9px 13px;border-top:1px solid oklch(0.28 0.015 50);font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.58 0.012 80)">SILENT UNLESS IT CAN CITE · 2 PROMPTS THIS CALL</div>
+  </div>
+</div></div>
+
+<div class="bwrap" id="light"><div class="blabel"><a class="bid" href="#light">10</a>Newsprint light — same tokens, same accent hue, parity not afterthought (feed shown)</div>
+<div class="bcard" style="width:900px;height:560px;display:grid;grid-template-rows:minmax(0,560px);grid-template-columns:196px 1fr;background:oklch(0.948 0.016 82);color:oklch(0.226 0.022 62);border-color:oklch(0.845 0.008 92)">
+  <div style="background:oklch(0.922 0.019 80);border-right:1px solid oklch(0.856 0.023 80);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:13px 13px 11px;display:flex;align-items:center;gap:9px;border-bottom:1px solid oklch(0.870 0.021 82)">
+      <div style="width:24px;height:24px;background:oklch(0.905 0.064 142);color:oklch(0.402 0.138 146);font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">KD</div>
+      <div><div style="font-family:'Bitter',serif;font-size:12.5px;font-weight:600">Kevin Dukkon</div><div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:oklch(0.530 0.017 64)">FINTORY</div></div>
+    </div>
+    <div style="padding:9px 7px 4px;display:flex;flex-direction:column;gap:1px">
+      <div style="display:flex;padding:6px 8px;background:oklch(0.979 0.011 84);border-left:2px solid oklch(0.452 0.148 146);font-size:12.5px">All notes<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.50 0.010 70)">128</span></div>
+      <div style="display:flex;padding:6px 8px;border-left:2px solid transparent;font-size:12.5px;color:oklch(0.415 0.019 62)">Calendar<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.010 70)">4</span></div>
+      <div style="display:flex;padding:6px 8px;border-left:2px solid transparent;font-size:12.5px;color:oklch(0.415 0.019 62)">Collections<span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.010 70)">7</span></div>
+    </div>
+    <div style="padding:14px 13px 5px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Today</div>
+    <div style="padding:0 7px;display:flex;flex-direction:column;gap:1px">
+      <div style="padding:5px 8px;font-size:12px">Northwind pilot pricing</div>
+      <div style="padding:5px 8px;font-size:12px;color:oklch(0.415 0.019 62)">Standup — platform</div>
+    </div>
+    <div style="margin-top:auto;padding:10px 13px;border-top:1px solid oklch(0.870 0.021 82);font-size:12px;color:oklch(0.450 0.018 62)">Settings</div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.979 0.011 84)">
+    <div style="padding:16px 22px 12px;border-bottom:1px solid oklch(0.870 0.021 82);display:flex;align-items:center;gap:12px">
+      <div style="font-family:'Bitter',serif;font-size:20px;font-weight:600;letter-spacing:-0.01em">All notes</div>
+      <div style="margin-left:auto;padding:6px 12px;background:oklch(0.452 0.148 146);color:oklch(0.978 0.024 140);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">● Record</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 22px 6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Today · Wed 26 Aug</span><span style="flex:1;height:1px;background:oklch(0.875 0.008 93)"></span></div>
+      <div style="display:grid;grid-template-columns:58px 1fr 88px;gap:12px;align-items:center;padding:10px 22px;border-bottom:1px solid oklch(0.898 0.019 82);background:oklch(0.960 0.014 82)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">10:00<br><span style="color:oklch(0.585 0.016 66)">41 min</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Northwind Health — pilot pricing</div><div style="font-size:12px;color:oklch(0.455 0.018 62);margin-top:2px">Per-clinic with a 40-seat cap, pending legal.</div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.50 0.010 70);text-align:right">3 ACTIONS<br><span style="color:oklch(0.402 0.138 146)">27 SPANS</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:58px 1fr 88px;gap:12px;align-items:center;padding:10px 22px;border-bottom:1px solid oklch(0.898 0.019 82)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">09:15<br><span style="color:oklch(0.585 0.016 66)">14 min</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Standup — platform</div><div style="font-size:12px;color:oklch(0.455 0.018 62);margin-top:2px">Ingest backlog cleared; no decisions.</div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.50 0.010 70);text-align:right">1 ACTION<br><span style="color:oklch(0.402 0.138 146)">6 SPANS</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:13px 22px 6px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Yesterday</span><span style="flex:1;height:1px;background:oklch(0.875 0.008 93)"></span></div>
+      <div style="display:grid;grid-template-columns:58px 1fr 88px;gap:12px;align-items:center;padding:10px 22px;border-bottom:1px solid oklch(0.898 0.019 82)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">15:30<br><span style="color:oklch(0.585 0.016 66)">52 min</span></div>
+        <div><div style="font-family:'Bitter',serif;font-size:14.5px;font-weight:600">Ashgrove renewal call</div><div style="font-size:12px;color:oklch(0.455 0.018 62);margin-top:2px">SSO required before signing; written scope requested.</div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.50 0.010 70);text-align:right">2 ACTIONS<br><span style="color:oklch(0.402 0.138 146)">19 SPANS</span></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+</div>
+<p class="bsub" style="margin:24px 0 0">Try next: "make <a href="#dashboard">01</a> the light theme by default" · "tighten <a href="#settings">06</a> to one column" · "now wire <a href="#recorder">02</a> → note detail as a clickable flow"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;persona&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Neutral Analyst&quot;,&quot;Sales Coach&quot;,&quot;Investor&quot;,&quot;Engineering Lead&quot;,&quot;Interviewer&quot;],&quot;default&quot;:&quot;Neutral Analyst&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Persona&quot;},&quot;showGroundingCounts&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data states&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const showSpans = this.props.showGroundingCounts ?? true;
+    return {
+      persona: this.props.persona ?? "Neutral Analyst",
+      spans: showSpans ? "27 SPANS" : "",
+      bars: Array.from({ length: 72 }, (_, i) => ({
+        h: Math.round(14 + 46 * Math.abs(Math.sin(i * 0.57)) + 28 * Math.abs(Math.cos(i * 1.73))) + "%"
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>
