@@ -88,3 +88,66 @@ select
   seed.metadata
 from seed cross join owner
 on conflict (id) do nothing;
+
+-- The four personas, migrated verbatim out of lib/notes/persona-presets.ts.
+-- Owner resolved by email, same as the note above, so this file carries no
+-- environment-specific user id.
+--
+-- sort_order is the rail order: neutral-analyst first, which is what
+-- DEFAULT_PERSONA_ID selects on mount.
+--
+-- depth: the pre-change file encoded no depth for any persona. 'dense' is the
+-- column default and matches the only subtitle that names one. No per-persona
+-- depth is invented.
+with owner as (
+  select id from auth.users where email = 'squid-ink-owner@example.test'
+),
+seed (id, slug, name, sub, depth, quick_actions, sort_order) as (
+  values
+    ('66666666-0000-4000-8000-000000000001'::uuid, 'neutral-analyst', 'Neutral Analyst', 'dense · no framing', 'dense',
+      array['Extract decisions only', 'Timeline of blockers', 'Unanswered questions', 'Diff against last call'], 0),
+    ('66666666-0000-4000-8000-000000000002'::uuid, 'sales-coach', 'Sales Coach', 'coaching · direct', 'dense',
+      array['Score objection handling', 'Draft follow-up email', 'Next-call agenda', 'Concessions made'], 1),
+    ('66666666-0000-4000-8000-000000000003'::uuid, 'investor', 'Investor', 'economics · risk', 'dense',
+      array['Unit-economics read', 'Expansion risk memo', 'Diligence questions', 'Quantified risks'], 2),
+    ('66666666-0000-4000-8000-000000000004'::uuid, 'engineering-lead', 'Engineering Lead', 'scope · sequencing', 'dense',
+      array['Scope the mapping work', 'Risk register entry', 'Sequencing plan', 'Handoff brief'], 3)
+)
+insert into public.personas (id, user_id, slug, name, sub, depth, quick_actions, sort_order)
+select seed.id, owner.id, seed.slug, seed.name, seed.sub, seed.depth, seed.quick_actions, seed.sort_order
+from seed cross join owner
+on conflict (id) do nothing;
+
+-- Takeaways for the three non-default personas, migrated verbatim out of
+-- PRESET_PERSONAS in lib/notes/persona-presets.ts. These are new rows, not a
+-- backfill of the existing three, which stay null-attributed and therefore
+-- belong to the default persona.
+with owner as (
+  select id from auth.users where email = 'squid-ink-owner@example.test'
+),
+seed (id, persona_slug, content, metadata) as (
+  values
+    ('77777777-0000-4000-8000-000000000001'::uuid, 'sales-coach', 'The per-seat objection was never tested — you moved to per-clinic in one turn.', $j${"n":"01","seq":1,"ts_start":"03:04","segment_id":7}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000002'::uuid, 'sales-coach', 'Your side named the 40-seat cap first; the customer never had to price their own growth.', $j${"n":"02","seq":2,"ts_start":"03:31","segment_id":8}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000003'::uuid, 'sales-coach', 'The Sept 9 date is the only hard commitment on the call — anchor the next agenda on it.', $j${"n":"03","seq":3,"ts_start":"00:58","segment_id":3}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000004'::uuid, 'investor', 'Capped per-clinic pricing shifts expansion upside to the customer above 40 seats.', $j${"n":"01","seq":1,"ts_start":"03:31","segment_id":8}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000005'::uuid, 'investor', 'Onboarding cost falls sharply after the first EHR of a family — margin improves with clustering, not headcount.', $j${"n":"02","seq":2,"ts_start":"02:26","segment_id":6}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000006'::uuid, 'investor', 'Q4 expansion collides with a migration freeze: revenue timing risk, not demand risk.', $j${"n":"03","seq":3,"ts_start":"04:48","segment_id":10}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000007'::uuid, 'engineering-lead', 'Hand-written field maps are the bottleneck — clinic count is not the scaling variable.', $j${"n":"01","seq":1,"ts_start":"01:35","segment_id":4}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000008'::uuid, 'engineering-lead', 'Clinics 5–6 in Q4 would land mapping work inside the migration freeze week.', $j${"n":"02","seq":2,"ts_start":"04:48","segment_id":10}$j$::jsonb),
+    ('77777777-0000-4000-8000-000000000009'::uuid, 'engineering-lead', 'Two clinics stay dark until the customer''s Sept 9 security review clears — plan a staged cutover.', $j${"n":"03","seq":3,"ts_start":"00:58","segment_id":3}$j$::jsonb)
+)
+insert into public.note_chunks (id, note_id, user_id, chunk_type, content, metadata, persona_id)
+select
+  seed.id,
+  '11111111-1111-4111-8111-111111111111',
+  owner.id,
+  'takeaway',
+  seed.content,
+  seed.metadata,
+  persona.id
+from seed
+cross join owner
+join public.personas persona
+  on persona.user_id = owner.id and persona.slug = seed.persona_slug
+on conflict (id) do nothing;
