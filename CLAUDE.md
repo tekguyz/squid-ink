@@ -77,8 +77,15 @@ purpose-named extraction, never a raised ceiling. The convention test enforces 4
 
 ## Data
 
-Mock only. No `fetch`, no API client, no environment variables, no backend.
-Everything the screen renders comes from `lib/mock/note.ts`.
+Note Detail reads from Supabase. `lib/notes/get-note.ts` fetches the note and its
+chunks through the server client and `lib/notes/note-view-model.ts` shapes them
+into what the components render. There is still no `fetch` and no API client —
+the Supabase SDK is the only data path, and it is called from server components.
+
+`lib/mock/note.ts` is no longer rendered. `mockNote` has no importer outside its
+own tests; the file survives only for `DEFAULT_PERSONA_ID`, and `lib/mock/types.ts`
+remains the shared type source the components import. Do not add new mock rows —
+new data goes in the database.
 
 Nothing calls `Math.random()` or `Date.now()` in a render path — the waveform bar
 heights are precomputed constants.

@@ -171,6 +171,98 @@ const pkg = JSON.parse(read("package.json"));
   }
 }
 
+/* 8 — Supabase key hygiene ------------------------------------------------ */
+{
+  const SECRET_HINT = /(SECRET|SERVICE_ROLE)/;
+  const sources = [];
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir)) {
+      if (entry === "node_modules" || entry === ".next") continue;
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.(tsx?|mjs|js)$/.test(entry)) sources.push(path.relative(ROOT, full));
+    }
+  };
+  for (const dir of ["app", "components", "lib", "scripts"]) walk(path.join(ROOT, dir));
+
+  const ALLOWED_SECRET_FILE = "scripts/verify-rls.mjs";
+  let scanned = 0;
+  for (const file of sources) {
+    scanned++;
+    const src = read(file);
+    const rel = file.split(path.sep).join("/");
+
+    for (const m of src.matchAll(/NEXT_PUBLIC_[A-Z0-9_]+/g)) {
+      if (SECRET_HINT.test(m[0])) {
+        findings.push(`${rel} reads ${m[0]} — a NEXT_PUBLIC_ prefix ships the value to the browser, and this one names a secret`);
+      }
+    }
+    for (const m of src.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
+      if (SECRET_HINT.test(m[1]) && rel !== ALLOWED_SECRET_FILE) {
+        findings.push(`${rel} reads ${m[1]}; the secret key belongs only in ${ALLOWED_SECRET_FILE}`);
+      }
+    }
+    // A literal key pasted into source rather than read from the environment.
+    if (/\bsb_secret_[A-Za-z0-9_-]{8,}|\beyJ[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{20,}/.test(src)) {
+      findings.push(`${rel} contains a literal Supabase key — keys are read from the environment, never committed`);
+    }
+  }
+
+  // .env* must stay ignored, with the example file the only exception.
+  if (has(".gitignore")) {
+    const ignore = read(".gitignore");
+    if (!/^\.env\*?/m.test(ignore)) {
+      findings.push(".gitignore does not ignore .env* — the secret key can be committed");
+    }
+  }
+  notes.push(`supabase keys: ${scanned} files scanned, secret confined to ${ALLOWED_SECRET_FILE}`);
+}
+
+/* 9 — four per-operation RLS policies per table, wrapped auth.uid() ------- */
+{
+  const dir = path.join(ROOT, "supabase/schemas");
+  if (!existsSync(dir)) {
+    notes.push("supabase schemas: none present, RLS shape not checked");
+  } else {
+    const files = readdirSync(dir).filter((f) => f.endsWith(".sql"));
+    if (files.length === 0) findings.push("supabase/schemas holds no .sql file, but CLAUDE.md calls it the source of truth");
+    for (const file of files) {
+      const rel = `supabase/schemas/${file}`;
+      // Strip `--` comments first: the schema files explain these very rules in
+      // prose, and a rule quoted in a comment is not a policy.
+      const sql = read(rel)
+        .toLowerCase()
+        .split("\n")
+        .map((line) => line.split("--")[0])
+        .join(" ")
+        .replace(/\s+/g, " ");
+
+      if (/for all\b/.test(sql)) {
+        findings.push(`${rel} has a blanket \`for all\` policy; the rule is four per-operation policies`);
+      }
+      for (const op of ["select", "insert", "update", "delete"]) {
+        if (!sql.includes(`for ${op} to authenticated`)) {
+          findings.push(`${rel} has no \`for ${op} to authenticated\` policy`);
+        }
+      }
+      const updateBlock = sql.split("create policy").find((b) => b.includes("for update")) ?? "";
+      if (updateBlock && !updateBlock.includes("with check")) {
+        findings.push(`${rel} UPDATE policy has no \`with check\`; a user could reassign user_id`);
+      }
+      const uidTotal = (sql.match(/auth\.uid\(\)/g) ?? []).length;
+      const uidWrapped = (sql.match(/\( *select auth\.uid\(\)/g) ?? []).length;
+      if (uidTotal !== uidWrapped) {
+        findings.push(`${rel} uses ${uidTotal - uidWrapped} bare \`auth.uid()\`; each must be wrapped as \`(select auth.uid())\` or it re-evaluates per row`);
+      }
+      if (!/revoke\s+all/.test(sql)) {
+        findings.push(`${rel} does not \`revoke all\` before granting; project defaults hand anon and authenticated TRUNCATE`);
+      }
+    }
+    notes.push(`RLS: ${files.length} schema file(s), four per-operation policies each`);
+  }
+}
+
 /* ------------------------------------------------------------------------- */
 if (findings.length === 0) {
   for (const note of notes) console.log(`ok   ${note}`);

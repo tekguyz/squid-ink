@@ -46,7 +46,7 @@ claim in chat — as something to verify, not something to cite.
 node .claude/skills/handoff/check-docs.mjs
 ```
 
-Repo-only. No browser, no dev server, no network. It measures seven things:
+Repo-only. No browser, no dev server, no network. It measures nine things:
 
 1. **The pinned-version table in `CLAUDE.md` against `package.json`** — both
    directions, so a package added to one and not the other is a finding, and any
@@ -66,11 +66,24 @@ Repo-only. No browser, no dev server, no network. It measures seven things:
 7. `app/layout.tsx` loads exactly Bitter, Archivo and IBM Plex Mono — no fourth
    face. The design file contains Newsreader, Zilla Slab and Libre Franklin in
    its earlier turns, which is how a wrong font gets in.
+8. **Supabase key hygiene.** No `NEXT_PUBLIC_` variable whose name says
+   `SECRET` or `SERVICE_ROLE`; no source file outside `scripts/verify-rls.mjs`
+   reading a secret key; no literal key committed anywhere in `app/`,
+   `components/`, `lib/` or `scripts/`; `.env*` still ignored. The secret key
+   bypasses RLS, so this is the one drift in the repo that is a breach rather
+   than a blemish.
+9. **RLS shape in `supabase/schemas/*.sql`** — four per-operation policies per
+   table, never a blanket `for all`; every policy `to authenticated`; every
+   `auth.uid()` wrapped as `(select auth.uid())`; UPDATE carrying `with check`;
+   a `revoke all` before the grants. Comments are stripped first, because these
+   files explain the rules in prose and a rule quoted in a comment is not a
+   policy. This is the shape, not the behaviour — `node scripts/verify-rls.mjs`
+   is still the only thing that proves the live database.
 
 Exit `0` clean, `1` findings one per line, `2` means it could not read
 something and **is not a pass** — fix the script before continuing.
 
-All seven were verified to catch real drift when the script was written, by
+All nine were verified to catch real drift when the script was written, by
 breaking each one and watching it fail. If you change a check, do that again;
 a check that has never failed is decoration.
 
@@ -97,8 +110,10 @@ closed this way on 2026-08-30.
 
 `git status --short` and `git status -sb`. Work in the tree is **not** shipped —
 say "uncommitted in the working tree" explicitly, never fold it into "shipped".
-There is currently no remote, so nothing has deployed anywhere; do not describe
-anything as deployed until one exists and you have checked it.
+`git remote -v`: there **is** a remote (`origin`, GitHub), so report ahead/behind
+from `git status -sb` rather than assuming nothing is pushed. Pushed is still not
+deployed — there is no hosting yet, so never describe anything as deployed until
+one exists and you have checked it.
 
 ### Check 5 — the gates, if the handoff will call anything done
 
@@ -153,7 +168,7 @@ not re-derive them here.
 ```markdown
 ## squid-ink — handoff <YYYY-MM-DD>
 
-**Repo:** <clean / N uncommitted files> · <no remote — nothing deployed / N unpushed>
+**Repo:** <clean / N uncommitted files> · <in sync with origin/main / N unpushed> · not deployed anywhere
 **Gates:** <build / tsc / test — real result, or "not run this session">
 
 ### Shipped since last handoff
@@ -170,7 +185,7 @@ not re-derive them here.
 - <visual sign-off, a copy or naming decision, anything flagged as the owner's call>
 
 ### Reserved — do not brief around these blind
-- <the locked token set, the three typefaces, the flat-components rule, the 400-line ceiling, mock-data-only, the no-app-name rule>
+- <the locked token set, the three typefaces, the flat-components rule, the 400-line ceiling, the no-app-name rule, and the Supabase rules: publishable key only in app code, four per-operation RLS policies, never filter on user_id in application code>
 
 ### Attach to this Project
 CLAUDE.md · docs/KNOWN_GAPS.md

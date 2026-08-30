@@ -217,6 +217,13 @@ started**, or is a known incompleteness in what shipped.
   `lib/notes/view-types.ts` and update the component imports — but
   `components/` and `lib/mock/` were both frozen for that prompt.
 
+  **Measured 2026-08-30 during the handoff audit:** `mockNote` now has no
+  importer outside its own tests. `lib/mock/note.ts` survives only for
+  `DEFAULT_PERSONA_ID`, and `lib/mock/types.ts` only for the view types. Both
+  should be folded into `lib/notes/` when `components/` next unfreezes.
+  `CLAUDE.md`'s "Data: mock only, no environment variables, no backend" rule was
+  still asserting the pre-Supabase state and was corrected in the same audit.
+
 - **Three of four personas are hardcoded.** Only `neutral-analyst` takeaways
   come from real `takeaway` chunks. Sales Coach, Investor and Engineering Lead
   live in `lib/notes/persona-presets.ts`. There is no `personas` table and no
