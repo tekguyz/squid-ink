@@ -174,6 +174,14 @@ one blanket `for all`.
   constrain. `anon` is granted nothing.
 - Queries never filter on `user_id` in application code. RLS supplies it, and
   a redundant filter would mask an RLS failure instead of exposing it.
+- A foreign key between two user-owned tables is composite, carrying
+  `user_id`: `note_chunks.persona_id` references `personas (id, user_id)`,
+  not `personas (id)`. Foreign keys are validated as the referenced table's
+  owner and are **not** subject to RLS, so a single-column reference lets one
+  user point their row at another user's row. The referenced table needs a
+  matching `unique (id, user_id)` for this. `on delete set null` then names
+  the nullable column — `on delete set null (persona_id)`, Postgres 15 and
+  later — or it would try to null `user_id` too.
 
 ### Keys
 

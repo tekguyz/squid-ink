@@ -213,15 +213,33 @@ started**, or is a known incompleteness in what shipped.
 
 ### Incompleteness in what did ship
 
+- **Deleting a persona re-attributes its takeaways, it does not orphan them.**
+  `note_chunks.persona_id` is `on delete set null`, and a null `persona_id`
+  means "the default persona". Those two rules are each correct on their own,
+  but together they mean deleting Sales Coach hands its three takeaways to
+  Neutral Analyst, where they render as that lens's output. Nothing deletes a
+  persona today. Whoever builds persona deletion has to decide: null the
+  chunks and soft-delete them, or accept the re-attribution and say so in the
+  delete confirmation.
+
 - **Migration generation needs Docker, which is not installed.** `supabase db
   pull` and `supabase db dump` both build a shadow database in Docker and fail
   here (`LegacyImagePrepullError`). `db query`, `db advisors`, `migration new`,
   `migration list` and `migration repair` all work without it. The initial
   migration is therefore the verbatim concatenation of `supabase/schemas/*.sql`,
   verified byte-identical with `git hash-object`. That is provably equivalent
-  for a from-empty schema. **The second migration will not be** — it needs
-  either Docker or a hand-authored file, plus the catalog-diff check in the
-  plan's Task 4 Step 5.
+  for a from-empty schema.
+
+  **Resolved for the second migration, 2026-08-30.**
+  `20260830223821_personas_and_chunk_attribution.sql` is hand-authored: the
+  whole of `personas.sql` (new, and idempotent throughout) plus only the
+  `persona_id` column, foreign key and index lifted from `note_chunks.sql`.
+  It was executed against the linked project before
+  `migration repair --status applied`, the embedded `personas.sql` was
+  machine-checked as byte-identical to the schema file, and the shape was
+  read back from `pg_policies`, `pg_constraint`, `pg_indexes` and
+  `information_schema.columns`. Every later migration needs the same
+  treatment — there is still no `db diff`.
 
 - **View types used to live in `lib/mock/types.ts`.** The frozen Note Detail
   components import `Note`, `Segment`, `Speaker` and friends from there, so

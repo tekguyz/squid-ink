@@ -1,6 +1,9 @@
 import type { Note, Speaker } from "@/lib/notes/view-types";
 
-export const DEFAULT_PERSONA_ID = "neutral-analyst";
+// Imported, not redeclared: the fixture must not drift from the app.
+import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
+
+export { DEFAULT_PERSONA_ID };
 
 const PRIYA: Speaker = { name: "Priya Raghavan", initials: "PR", token: "speaker-1" };
 const MARCUS: Speaker = { name: "Marcus Lund", initials: "ML", token: "speaker-2" };

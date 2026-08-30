@@ -1,3 +1,27 @@
+-- Second migration: the personas table and takeaway attribution.
+--
+-- Hand-authored, not generated. `supabase db diff` builds a shadow database
+-- in Docker, which is not installed on this machine (docs/KNOWN_GAPS.md), so
+-- the delta is assembled here from the declarative schema files instead:
+--
+--   * supabase/schemas/personas.sql, verbatim and in full. The file is new,
+--     and every statement in it is idempotent, so the whole file IS the
+--     delta.
+--   * the persona_id column, its foreign key and its index, lifted from
+--     supabase/schemas/note_chunks.sql. Nothing else in that file changed;
+--     migration 20260830134926 already carries the rest.
+--
+-- Ordering matters: personas must exist before note_chunks references it.
+--
+-- Verified after applying by reading pg_constraint, pg_indexes, pg_policies
+-- and information_schema.columns back from the linked project, since
+-- `db diff` is unavailable. The seed data is NOT here — seeding is
+-- supabase/seed.sql, not schema.
+
+-- ---------------------------------------------------------------------------
+-- supabase/schemas/personas.sql
+-- ---------------------------------------------------------------------------
+
 -- personas: one row per lens a user can read a note through.
 --
 -- Was a hardcoded array in lib/notes/persona-presets.ts. Three of the four
@@ -104,3 +128,42 @@ revoke all on public.personas from anon, authenticated;
 
 -- anon is deliberately granted nothing — this app has no public reads.
 grant select, insert, update, delete on public.personas to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- supabase/schemas/note_chunks.sql — the persona_id delta only
+-- ---------------------------------------------------------------------------
+
+-- The table already exists in the linked project, so create-table-if-not-
+-- exists above is a no-op there. This is how the new column actually lands.
+alter table public.note_chunks
+  add column if not exists persona_id uuid;
+
+-- The foreign key, stated once for both the fresh and the existing table.
+--
+-- It is composite on purpose. Foreign keys are validated as the referenced
+-- table's owner and are not subject to row level security, so a plain
+-- references personas (id) would happily let one user point a chunk at
+-- another user's persona. Carrying user_id into the key makes the database
+-- refuse it.
+--
+-- The key is MATCH SIMPLE (the default), so a null persona_id satisfies the
+-- constraint without any lookup — null still means "the default persona".
+--
+-- set null names persona_id explicitly (Postgres 15 and later). Without the
+-- column list, deleting a persona would try to null note_chunks.user_id too,
+-- which is not null.
+--
+-- Drop-then-add rather than add-if-not-exists: Postgres has no
+-- if-not-exists for constraints, and both statements are idempotent. This
+-- also replaces the earlier single-column form of the same constraint.
+alter table public.note_chunks
+  drop constraint if exists note_chunks_persona_id_fkey;
+alter table public.note_chunks
+  add constraint note_chunks_persona_id_fkey
+  foreign key (persona_id, user_id) references public.personas (id, user_id)
+  on delete set null (persona_id);
+
+-- Postgres does not index foreign keys automatically, and the takeaway read
+-- groups by exactly this column.
+create index if not exists note_chunks_persona_id_idx
+  on public.note_chunks (persona_id);

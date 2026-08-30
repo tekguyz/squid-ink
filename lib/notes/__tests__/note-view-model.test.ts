@@ -226,6 +226,19 @@ describe("persona assembly", () => {
     expect(note.personas[0].takeaways).toHaveLength(1);
   });
 
+  it("still places null-attributed takeaways when no row uses the default slug", () => {
+    // A user whose personas were renamed, or provisioned by some path other
+    // than the seed. Pre-attribution takeaways must not vanish from the page;
+    // they go to the first row in rail order.
+    const note = buildNoteViewModel(row, [takeaway(null, 1)], [
+      personaRow("investor", 0),
+      personaRow("sales-coach", 1),
+    ]);
+    expect(note.personas[0].takeaways).toHaveLength(1);
+    expect(note.personas[1].takeaways).toEqual([]);
+    expect(note.spansLinked).toBe(1);
+  });
+
   it("counts every persona's takeaways in spansLinked", () => {
     const note = buildNoteViewModel(row, [takeaway(null, 1), takeaway("id-investor", 1)], [
       personaRow(DEFAULT_PERSONA_ID, 0),

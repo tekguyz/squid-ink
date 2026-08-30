@@ -30,8 +30,9 @@ create table if not exists public.note_chunks (
   -- which is what keeps the rendered page unchanged.
   --
   -- on delete set null, never cascade: deleting a lens must not delete the
-  -- takeaways written through it.
-  persona_id uuid references public.personas (id) on delete set null,
+  -- takeaways written through it. The foreign key itself is declared below,
+  -- as a composite, so that it is stated in exactly one place.
+  persona_id uuid,
   content text not null,
   -- voyage-3-large output width (ROADMAP.md §3). Null until the embedding
   -- pipeline ships — no embedding code is in scope for this prompt.
@@ -46,7 +47,32 @@ create table if not exists public.note_chunks (
 -- The table already exists in the linked project, so create-table-if-not-
 -- exists above is a no-op there. This is how the new column actually lands.
 alter table public.note_chunks
-  add column if not exists persona_id uuid references public.personas (id) on delete set null;
+  add column if not exists persona_id uuid;
+
+-- The foreign key, stated once for both the fresh and the existing table.
+--
+-- It is composite on purpose. Foreign keys are validated as the referenced
+-- table's owner and are not subject to row level security, so a plain
+-- references personas (id) would happily let one user point a chunk at
+-- another user's persona. Carrying user_id into the key makes the database
+-- refuse it.
+--
+-- The key is MATCH SIMPLE (the default), so a null persona_id satisfies the
+-- constraint without any lookup — null still means "the default persona".
+--
+-- set null names persona_id explicitly (Postgres 15 and later). Without the
+-- column list, deleting a persona would try to null note_chunks.user_id too,
+-- which is not null.
+--
+-- Drop-then-add rather than add-if-not-exists: Postgres has no
+-- if-not-exists for constraints, and both statements are idempotent. This
+-- also replaces the earlier single-column form of the same constraint.
+alter table public.note_chunks
+  drop constraint if exists note_chunks_persona_id_fkey;
+alter table public.note_chunks
+  add constraint note_chunks_persona_id_fkey
+  foreign key (persona_id, user_id) references public.personas (id, user_id)
+  on delete set null (persona_id);
 
 -- Postgres does not index foreign keys automatically. This composite also
 -- serves the main read pattern: every chunk of one note, of one type.

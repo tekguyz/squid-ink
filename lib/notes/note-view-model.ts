@@ -87,12 +87,23 @@ function toPersonas(personaRows: PersonaRow[], takeaways: ChunkRow[]): Persona[]
   const unattributed: ChunkRow[] = [];
   for (const chunk of takeaways) {
     if (chunk.persona_id === null) unattributed.push(chunk);
-    else byPersonaId.set(chunk.persona_id, [...(byPersonaId.get(chunk.persona_id) ?? []), chunk]);
+    else {
+      const bucket = byPersonaId.get(chunk.persona_id);
+      if (bucket) bucket.push(chunk);
+      else byPersonaId.set(chunk.persona_id, [chunk]);
+    }
   }
 
-  return personaRows.map((row) => {
+  // Where the unattributed chunks land. Normally the neutral-analyst row,
+  // but a user whose personas were renamed or provisioned by another path
+  // may have no row with that slug — and losing their takeaways silently is
+  // worse than showing them under the first lens in rail order.
+  const named = personaRows.findIndex((row) => row.slug === DEFAULT_PERSONA_ID);
+  const defaultIndex = named === -1 ? 0 : named;
+
+  return personaRows.map((row, index) => {
     const own = byPersonaId.get(row.id) ?? [];
-    const mine = row.slug === DEFAULT_PERSONA_ID ? [...own, ...unattributed] : own;
+    const mine = index === defaultIndex ? [...own, ...unattributed] : own;
     return {
       id: row.slug,
       name: row.name,
