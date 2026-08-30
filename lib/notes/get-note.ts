@@ -14,22 +14,21 @@ import type { ChunkRow, NoteRow } from "./types";
 export async function getNote(id: string): Promise<Note | null> {
   const supabase = await createClient();
 
-  const { data: note, error: noteError } = await supabase
-    .from("notes")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle<NoteRow>();
+  // Issued together, not in sequence. Neither query depends on the other's
+  // result, so awaiting the note first would add a whole round trip to every
+  // successful load. The cost is one wasted chunk query when the note is not
+  // visible — the rarer path, and RLS makes it return empty rather than leak.
+  const [
+    { data: note, error: noteError },
+    { data: chunks, error: chunkError },
+  ] = await Promise.all([
+    supabase.from("notes").select("*").eq("id", id).maybeSingle<NoteRow>(),
+    supabase.from("note_chunks").select("*").eq("note_id", id).returns<ChunkRow[]>(),
+  ]);
 
   if (noteError) throw new Error(`Failed to load note: ${noteError.message}`);
-  if (!note) return null;
-
-  const { data: chunks, error: chunkError } = await supabase
-    .from("note_chunks")
-    .select("*")
-    .eq("note_id", id)
-    .returns<ChunkRow[]>();
-
   if (chunkError) throw new Error(`Failed to load note chunks: ${chunkError.message}`);
+  if (!note) return null;
 
   return buildNoteViewModel(note, chunks ?? []);
 }
