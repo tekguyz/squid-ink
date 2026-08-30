@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600;700&family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;450;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Archivo:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Libre+Franklin:wght@400;500;600&display=swap" rel="stylesheet"><style>body{margin:0;background:oklch(0.80 0.022 76);font-family:'IBM Plex Sans',system-ui,sans-serif}a{color:oklch(0.42 0.13 252)}a:hover{color:oklch(0.34 0.14 252)}.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.10);scroll-margin-top:16px}.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}.dv-tid{font:600 10px 'IBM Plex Mono',monospace;padding:3px 7px;background:oklch(0.24 0.015 60);color:oklch(0.95 0.01 85);border-radius:4px;text-decoration:none}.dv-tname{font:500 13px/1.2 'IBM Plex Sans',sans-serif;color:oklch(0.28 0.015 60)}.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}.dv-oid{font:600 10.5px 'IBM Plex Mono',monospace;padding:3px 7px;background:rgba(0,0,0,.09);color:oklch(0.26 0.015 60);border-radius:5px;text-decoration:none}.dv-olabel{display:flex;align-items:baseline;gap:9px;font:400 11.5px/1.35 'IBM Plex Sans',sans-serif;color:rgba(0,0,0,.56);max-width:900px}.dv-card{max-width:100%;border:1px solid rgba(0,0,0,.14);box-shadow:0 2px 10px rgba(0,0,0,.10);overflow:hidden}.dv-opt:target .dv-oid{background:oklch(0.46 0.13 252);color:#fff}.dv-next{margin:26px 0 0;font:12px/1.6 'IBM Plex Sans',sans-serif;color:rgba(0,0,0,.52)}</style></helmet>
+
+<section class="dv-turn" id="t3">
+<div class="dv-thd"><a class="dv-tid" href="#t3">3</a><span class="dv-tname">Final — consolidated note detail. <a class="dv-oid" href="#1b">1b</a>'s layout, locked palette and type. This is the reference; turns 1 and 2 are history.</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="3a"><div class="dv-olabel"><a class="dv-oid" href="#3a">3a</a>Newsprint (light) — warmed paper at hue 80–84, green at 0.148 chroma. Click any <span style="font-family:'IBM Plex Mono',monospace;font-size:10px">§ chip</span> to jump the transcript.</div>
+<div class="dv-card" data-opt="3l" onClick="{{ onCite }}" style="width:1348px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:136px 1fr 404px;background:oklch(0.948 0.016 82);color:oklch(0.226 0.022 62);font-family:'Archivo',sans-serif">
+  <div style="background:oklch(0.922 0.019 80);border-right:1px solid oklch(0.856 0.023 80);display:flex;flex-direction:column;padding-top:14px;min-height:0;overflow:hidden">
+    <div style="padding:0 12px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Lens</div>
+    <sc-for list="{{ personas3l }}" as="p" hint-placeholder-count="4">
+      <div style="padding:8px 11px 9px;border-left:2px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.960 0.014 82)">
+        <div style="font-family:'Bitter',serif;font-weight:600;font-size:14px;line-height:1.25;color:{{ p.fg }}">{{ p.name }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:8px 11px 9px;border-left:2px solid transparent;font-family:'Bitter',serif;font-weight:600;font-size:14px;color:oklch(0.585 0.016 66);cursor:pointer">+ New lens</div>
+    <div style="margin-top:22px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Actions</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:6px 8px;font-size:11.5px;line-height:1.35;color:oklch(0.300 0.021 62);background:oklch(0.960 0.014 82);border:1px solid oklch(0.870 0.021 82);cursor:pointer" style-hover="background:oklch(0.979 0.011 84)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:11px 12px;border-top:1px solid oklch(0.856 0.023 80);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.530 0.017 64)">grounding<br><span style="color:oklch(0.452 0.148 146)">27 spans linked</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.856 0.023 80);background:oklch(0.979 0.011 84)">
+    <div style="padding:20px 26px 15px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Wed 26 Aug 2026 · 41 min · Northwind Health</div>
+      <div style="font-family:'Bitter',serif;font-weight:600;font-size:29px;font-weight:500;letter-spacing:-0.012em;line-height:1.14;margin-top:7px">Pilot pricing &amp; rollout</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.500 0.018 64)">Summary</span><span style="flex:1;height:1px;background:oklch(0.870 0.021 82)"></span></div>
+      <div style="font-size:14.5px;line-height:1.66;text-wrap:pretty;padding-bottom:20px">Two of four pilot clinics have live data; the other two are blocked on Northwind's security review, closing the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.905 0.064 142);color:oklch(0.352 0.130 146);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.858 0.098 142)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.905 0.064 142);color:oklch(0.352 0.130 146);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.858 0.098 142)">03:31</span>, pending legal. Field mapping is the live risk: 6–8h per unfamiliar EHR, colliding with the Q4 freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.905 0.064 142);color:oklch(0.352 0.130 146);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.858 0.098 142)">04:48</span>.</div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.500 0.018 64)">Takeaways · {{ personaLabel }}</span><span style="flex:1;height:1px;background:oklch(0.870 0.021 82)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:20px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline">
+            <div style="font-family:'Bitter',serif;font-weight:600;font-size:15px;color:oklch(0.452 0.148 146);flex:none;width:16px">{{ tk.n }}</div>
+            <div style="font-size:14px;line-height:1.55;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.905 0.064 142);color:oklch(0.352 0.130 146);cursor:pointer;vertical-align:1px">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.500 0.018 64)">Action items</span><span style="flex:1;height:1px;background:oklch(0.870 0.021 82)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:20px">
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.898 0.019 82)"><span style="width:11px;height:11px;border:1px solid oklch(0.660 0.015 68)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.402 0.138 146);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.898 0.019 82)"><span style="width:11px;height:11px;border:1px solid oklch(0.660 0.015 68)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.402 0.138 146);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.898 0.019 82)"><span style="width:11px;height:11px;border:1px solid oklch(0.660 0.015 68)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.455 0.018 62)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.402 0.138 146);cursor:pointer">04:48</span></div>
+      </div>
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.500 0.018 64)">Per-speaker</span><span style="flex:1;height:1px;background:oklch(0.870 0.021 82)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="background:oklch(0.948 0.016 82);border:1px solid oklch(0.870 0.021 82);padding:10px 11px">
+                <div style="font-family:'Bitter',serif;font-weight:600;font-size:14px;color:{{ p.tone }}">{{ p.name }}</div>
+                <div style="display:flex;gap:13px;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64)"><div>talk<br><span style="font-size:14px;color:oklch(0.226 0.022 62)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.226 0.022 62)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.226 0.022 62)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="border-top:1px solid oklch(0.856 0.023 80);background:oklch(0.960 0.014 82);padding:12px 26px 14px">
+      <div style="display:flex;gap:9px;align-items:baseline;padding-bottom:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64);flex:none">YOU</span><span style="font-size:13px">Did anyone commit to a date for the SOW redraft?</span></div>
+      <div style="display:flex;gap:9px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.452 0.148 146);flex:none">NOTE</span><span style="font-size:13px;line-height:1.55;color:oklch(0.300 0.021 62)">No date was said aloud. Marcus agreed to put per-clinic terms in the SOW<span data-cite="9" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 3px;background:oklch(0.905 0.064 142);color:oklch(0.352 0.130 146);cursor:pointer;vertical-align:1px">04:12</span>and the Aug 31 due date is yours, added after the call.</span></div>
+      <div style="margin-top:11px;display:flex;gap:9px;align-items:center;border:1px solid oklch(0.856 0.023 80);background:oklch(0.979 0.011 84);padding:8px 10px">
+        <span style="font-size:13px;color:oklch(0.585 0.016 66);flex:1">Ask this note…</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.452 0.148 146)">{{ personaLabel }}</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.922 0.019 80)">
+    <div style="padding:15px 18px 11px;border-bottom:1px solid oklch(0.870 0.021 82)">
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Bitter',serif;font-weight:600;font-size:16px">Transcript</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64)">12 TURNS</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64);cursor:pointer">SEARCH</span></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.898 0.019 82);font-size:11.5px;line-height:1.5;color:oklch(0.415 0.019 62)">Speaker labels unavailable for this recording. Timestamps and source spans unaffected.</div>
+      </sc-if>
+      <div style="margin-top:12px;display:flex;align-items:flex-end;gap:1.5px;height:32px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.800 0.052 142);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64);margin-top:4px"><span>00:00</span><span style="color:oklch(0.402 0.138 146)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:8px 0 20px">
+      <sc-for list="{{ segs3l }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="display:grid;grid-template-columns:26px 1fr;gap:10px;padding:9px 18px 10px 14px;border-left:2px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}">
+            <div style="width:26px;height:26px;border-radius:50%;background:{{ seg.avatarLight }};color:{{ seg.tone }};font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ seg.initials }}</div>
+          </sc-if>
+          <div style="min-width:0">
+            <div style="display:flex;gap:8px;align-items:baseline">
+              <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:{{ seg.tone }}">{{ seg.name }}</span></sc-if>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.530 0.017 64)">{{ seg.t }}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.56;color:oklch(0.310 0.020 62);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="3b"><div class="dv-olabel"><a class="dv-oid" href="#3b">3b</a>Espresso (dark) — the same file, same accent hue family. Nothing but surface and ink values differ from <a class="dv-oid" href="#3a">3a</a>.</div>
+<div class="dv-card" data-opt="3d" onClick="{{ onCite }}" style="width:1348px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:136px 1fr 404px;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88);font-family:'Archivo',sans-serif;border-color:oklch(0.32 0.016 50)">
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;padding-top:14px;min-height:0;overflow:hidden">
+    <div style="padding:0 12px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Lens</div>
+    <sc-for list="{{ personas3d }}" as="p" hint-placeholder-count="4">
+      <div style="padding:8px 11px 9px;border-left:2px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.235 0.016 50)">
+        <div style="font-family:'Bitter',serif;font-weight:600;font-size:14px;line-height:1.25;color:{{ p.fg }}">{{ p.name }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:8px 11px 9px;border-left:2px solid transparent;font-family:'Bitter',serif;font-weight:600;font-size:14px;color:oklch(0.55 0.012 80);cursor:pointer">+ New lens</div>
+    <div style="margin-top:22px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Actions</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:6px 8px;font-size:11.5px;line-height:1.35;color:oklch(0.88 0.010 88);background:oklch(0.235 0.016 50);cursor:pointer" style-hover="background:oklch(0.30 0.016 50)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:11px 12px;border-top:1px solid oklch(0.30 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.60 0.012 80)">grounding<br><span style="color:oklch(0.82 0.15 140)">27 spans linked</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.30 0.016 50)">
+    <div style="padding:20px 26px 15px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.62 0.012 80)">Wed 26 Aug 2026 · 41 min · Northwind Health</div>
+      <div style="font-family:'Bitter',serif;font-weight:600;font-size:29px;font-weight:500;letter-spacing:-0.012em;line-height:1.14;margin-top:7px">Pilot pricing &amp; rollout</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Summary</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+      <div style="font-size:14.5px;line-height:1.66;color:oklch(0.90 0.010 88);text-wrap:pretty;padding-bottom:20px">Two of four pilot clinics have live data; the other two are blocked on Northwind's security review, closing the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.42 0.09 140)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.42 0.09 140)">03:31</span>, pending legal. Field mapping is the live risk: 6–8h per unfamiliar EHR, colliding with the Q4 freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.42 0.09 140)">04:48</span>.</div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Takeaways · {{ personaLabel }}</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:20px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline">
+            <div style="font-family:'Bitter',serif;font-weight:600;font-size:15px;color:oklch(0.82 0.15 140);flex:none;width:16px">{{ tk.n }}</div>
+            <div style="font-size:14px;line-height:1.55;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);cursor:pointer;vertical-align:1px">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Action items</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:20px">
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.015 48)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.15 142);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.015 48)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.15 142);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.015 48)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.15 142);cursor:pointer">04:48</span></div>
+      </div>
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Per-speaker</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="background:oklch(0.235 0.016 50);padding:10px 11px">
+                <div style="font-family:'Bitter',serif;font-weight:600;font-size:14px;color:{{ p.toneDark }}">{{ p.name }}</div>
+                <div style="display:flex;gap:13px;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.64 0.012 80)"><div>talk<br><span style="font-size:14px;color:oklch(0.92 0.010 88)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.92 0.010 88)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.92 0.010 88)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="border-top:1px solid oklch(0.30 0.016 50);background:oklch(0.165 0.013 48);padding:12px 26px 14px">
+      <div style="display:flex;gap:9px;align-items:baseline;padding-bottom:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);flex:none">YOU</span><span style="font-size:13px;color:oklch(0.88 0.010 88)">Did anyone commit to a date for the SOW redraft?</span></div>
+      <div style="display:flex;gap:9px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.82 0.15 140);flex:none">NOTE</span><span style="font-size:13px;line-height:1.55;color:oklch(0.88 0.010 88)">No date was said aloud. Marcus agreed to put per-clinic terms in the SOW<span data-cite="9" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 3px;background:oklch(0.30 0.06 140);color:oklch(0.86 0.15 142);cursor:pointer;vertical-align:1px">04:12</span>and the Aug 31 due date is yours, added after the call.</span></div>
+      <div style="margin-top:11px;display:flex;gap:9px;align-items:center;border:1px solid oklch(0.32 0.016 50);padding:8px 10px">
+        <span style="font-size:13px;color:oklch(0.58 0.012 80);flex:1">Ask this note…</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.82 0.15 140)">{{ personaLabel }}</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.215 0.015 50)">
+    <div style="padding:15px 18px 11px;border-bottom:1px solid oklch(0.30 0.016 50)">
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Bitter',serif;font-weight:600;font-size:16px">Transcript</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80)">12 TURNS</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);cursor:pointer">SEARCH</span></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.235 0.016 50);font-size:11.5px;line-height:1.5;color:oklch(0.78 0.012 84)">Speaker labels unavailable for this recording. Timestamps and source spans unaffected.</div>
+      </sc-if>
+      <div style="margin-top:12px;display:flex;align-items:flex-end;gap:1.5px;height:32px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.40 0.06 140);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.60 0.012 80);margin-top:4px"><span>00:00</span><span style="color:oklch(0.86 0.15 142)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:8px 0 20px">
+      <sc-for list="{{ segs3d }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="display:grid;grid-template-columns:26px 1fr;gap:10px;padding:9px 18px 10px 14px;border-left:2px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}">
+            <div style="width:26px;height:26px;border-radius:50%;background:{{ seg.avatarBg }};color:{{ seg.toneDark }};font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ seg.initials }}</div>
+          </sc-if>
+          <div style="min-width:0">
+            <div style="display:flex;gap:8px;align-items:baseline">
+              <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:{{ seg.toneDark }}">{{ seg.name }}</span></sc-if>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80)">{{ seg.t }}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.56;color:oklch(0.88 0.010 88);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="3c"><div class="dv-olabel"><a class="dv-oid" href="#3c">3c</a>Locked tokens — the exact values <a class="dv-oid" href="#3a">3a</a> / <a class="dv-oid" href="#3b">3b</a> and every surface in App Surfaces are built from. Check handoff against these.</div>
+<div class="dv-card" style="width:404px;background:oklch(0.979 0.011 84);color:oklch(0.226 0.022 62);font-family:'Archivo',sans-serif;padding:20px 22px 22px;display:flex;flex-direction:column;gap:16px">
+  <div style="font-family:'Bitter',serif;font-size:17px;font-weight:600;letter-spacing:-0.01em">Crispy Bacon tokens v1</div>
+  <div style="display:flex;flex-direction:column;gap:7px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Green — one hue family, two ramps</div>
+    <div style="display:grid;grid-template-columns:20px 1fr;gap:8px 10px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5">
+      <span style="width:20px;height:20px;background:oklch(0.452 0.148 146)"></span><span>0.452 0.148 146 · light accent</span>
+      <span style="width:20px;height:20px;background:oklch(0.402 0.138 146)"></span><span>0.402 0.138 146 · light accent pressed</span>
+      <span style="width:20px;height:20px;background:oklch(0.905 0.064 142)"></span><span>0.905 0.064 142 · light tint / cite wash</span>
+      <span style="width:20px;height:20px;background:oklch(0.978 0.024 140)"></span><span>0.978 0.024 140 · on-accent (light)</span>
+      <span style="width:20px;height:20px;background:oklch(0.82 0.15 140)"></span><span>0.82 0.15 140 · dark accent</span>
+      <span style="width:20px;height:20px;background:oklch(0.86 0.15 142)"></span><span>0.86 0.15 142 · dark accent text</span>
+      <span style="width:20px;height:20px;background:oklch(0.30 0.06 140)"></span><span>0.30 0.06 140 · dark tint chip</span>
+      <span style="width:20px;height:20px;background:oklch(0.18 0.05 140)"></span><span>0.18 0.05 140 · on-accent (dark)</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:7px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Newsprint — hue 80–84, chroma 0.010–0.023</div>
+    <div style="display:grid;grid-template-columns:20px 1fr;gap:8px 10px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5">
+      <span style="width:20px;height:20px;background:oklch(0.979 0.011 84);border:1px solid oklch(0.856 0.023 80)"></span><span>0.979 0.011 84 · paper</span>
+      <span style="width:20px;height:20px;background:oklch(0.960 0.014 82)"></span><span>0.960 0.014 82 · raised</span>
+      <span style="width:20px;height:20px;background:oklch(0.948 0.016 82)"></span><span>0.948 0.016 82 · canvas</span>
+      <span style="width:20px;height:20px;background:oklch(0.922 0.019 80)"></span><span>0.922 0.019 80 · rail</span>
+      <span style="width:20px;height:20px;background:oklch(0.856 0.023 80)"></span><span>0.856 0.023 80 · rule</span>
+      <span style="width:20px;height:20px;background:oklch(0.226 0.022 62)"></span><span>0.226 0.022 62 · ink · hue 62–66 for text</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:7px">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Espresso — hue 46–50, chroma 0.012–0.016</div>
+    <div style="display:grid;grid-template-columns:20px 1fr;gap:8px 10px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5">
+      <span style="width:20px;height:20px;background:oklch(0.145 0.012 46)"></span><span>0.145 0.012 46 · deep</span>
+      <span style="width:20px;height:20px;background:oklch(0.185 0.014 48)"></span><span>0.185 0.014 48 · canvas</span>
+      <span style="width:20px;height:20px;background:oklch(0.235 0.016 50)"></span><span>0.235 0.016 50 · active row</span>
+      <span style="width:20px;height:20px;background:oklch(0.30 0.016 50)"></span><span>0.30 0.016 50 · rule</span>
+      <span style="width:20px;height:20px;background:oklch(0.93 0.010 88)"></span><span>0.93 0.010 88 · ink · hue 80–88 for text</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:7px;padding-top:2px;border-top:1px solid oklch(0.870 0.021 82)">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Extended steps — note detail only</div>
+    <div style="display:grid;grid-template-columns:20px 1fr;gap:8px 10px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5">
+      <span style="width:20px;height:20px;background:oklch(0.352 0.130 146)"></span><span>0.352 0.130 146 · cite chip hover</span>
+      <span style="width:20px;height:20px;background:oklch(0.858 0.098 142)"></span><span>0.858 0.098 142 · cite chip fill</span>
+      <span style="width:20px;height:20px;background:oklch(0.800 0.052 142)"></span><span>0.800 0.052 142 · waveform</span>
+      <span style="width:20px;height:20px;background:oklch(0.300 0.021 62)"></span><span>0.300 0.021 62 · ink 2</span>
+      <span style="width:20px;height:20px;background:oklch(0.310 0.020 62)"></span><span>0.310 0.020 62 · ink 3</span>
+      <span style="width:20px;height:20px;background:oklch(0.500 0.018 64)"></span><span>0.500 0.018 64 · muted</span>
+      <span style="width:20px;height:20px;background:oklch(0.660 0.015 68)"></span><span>0.660 0.015 68 · faint</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;padding-top:2px;border-top:1px solid oklch(0.870 0.021 82)">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Type</div>
+    <div style="font-family:'Bitter',serif;font-size:15px;font-weight:600">Bitter 500/600/700 — headers, names, numerals</div>
+    <div style="font-size:13.5px;line-height:1.5">Archivo 400/500/600 — body prose and UI labels</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px">IBM Plex Mono 400/500 — time, counts, metadata</div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Locked: Bitter / Archivo / IBM Plex Mono · accent <span style="font-family:'IBM Plex Mono',monospace">oklch(0.452 0.148 146)</span> light, <span style="font-family:'IBM Plex Mono',monospace">oklch(0.82 0.15 140)</span> dark. Both match App Surfaces exactly.</p>
+</section>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Three palettes on <a class="dv-oid" href="#1b">1b</a>'s layout — same structure and type, colour is the only variable</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a"><div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Newsprint — the light half of the pair. Warm grey paper, deep forest green reserved for grounding.</div>
+<div class="dv-card" data-opt="2a" onClick="{{ onCite }}" style="width:1348px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:136px 1fr 404px;background:oklch(0.948 0.016 82);color:oklch(0.226 0.022 62);font-family:'Archivo',sans-serif">
+  <div style="background:oklch(0.922 0.019 80);border-right:1px solid oklch(0.856 0.023 80);display:flex;flex-direction:column;padding-top:14px;min-height:0;overflow:hidden">
+    <div style="padding:0 12px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Lens</div>
+    <sc-for list="{{ personas2a }}" as="p" hint-placeholder-count="4">
+      <div style="padding:8px 11px 9px;border-left:2px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.955 0.006 95)">
+        <div style="font-family:'Newsreader',serif;font-size:14px;line-height:1.25;color:{{ p.fg }}">{{ p.name }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:8px 11px 9px;border-left:2px solid transparent;font-family:'Newsreader',serif;font-size:14px;color:oklch(0.60 0.010 70);cursor:pointer">+ New lens</div>
+    <div style="margin-top:22px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Actions</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:6px 8px;font-size:11.5px;line-height:1.35;color:oklch(0.30 0.010 70);background:oklch(0.955 0.006 95);border:1px solid oklch(0.865 0.008 92);cursor:pointer" style-hover="background:oklch(0.98 0.005 95)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:11px 12px;border-top:1px solid oklch(0.856 0.023 80);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.530 0.017 64)">grounding<br><span style="color:oklch(0.42 0.11 155)">27 spans linked</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.856 0.023 80);background:oklch(0.979 0.011 84)">
+    <div style="padding:20px 26px 15px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.530 0.017 64)">Wed 26 Aug 2026 · 41 min · Northwind Health</div>
+      <div style="font-family:'Newsreader',serif;font-size:29px;font-weight:500;letter-spacing:-0.012em;line-height:1.14;margin-top:7px">Pilot pricing &amp; rollout</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.50 0.010 70)">Summary</span><span style="flex:1;height:1px;background:oklch(0.865 0.008 92)"></span></div>
+      <div style="font-size:14.5px;line-height:1.66;text-wrap:pretty;padding-bottom:20px">Two of four pilot clinics have live data; the other two are blocked on Northwind's security review, closing the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.90 0.05 155);color:oklch(0.34 0.10 155);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.85 0.08 155)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.90 0.05 155);color:oklch(0.34 0.10 155);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.85 0.08 155)">03:31</span>, pending legal. Field mapping is the live risk: 6–8h per unfamiliar EHR, colliding with the Q4 freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.90 0.05 155);color:oklch(0.34 0.10 155);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.85 0.08 155)">04:48</span>.</div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.50 0.010 70)">Takeaways · {{ personaLabel }}</span><span style="flex:1;height:1px;background:oklch(0.865 0.008 92)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:20px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline">
+            <div style="font-family:'Newsreader',serif;font-size:15px;color:oklch(0.44 0.11 155);flex:none;width:16px">{{ tk.n }}</div>
+            <div style="font-size:14px;line-height:1.55;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.90 0.05 155);color:oklch(0.34 0.10 155);cursor:pointer;vertical-align:1px">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.50 0.010 70)">Action items</span><span style="flex:1;height:1px;background:oklch(0.865 0.008 92)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:20px">
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.885 0.008 93)"><span style="width:11px;height:11px;border:1px solid oklch(0.66 0.010 70)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.47 0.010 70)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.47 0.010 70)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.38 0.10 155);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.885 0.008 93)"><span style="width:11px;height:11px;border:1px solid oklch(0.66 0.010 70)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.47 0.010 70)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.47 0.010 70)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.38 0.10 155);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.885 0.008 93)"><span style="width:11px;height:11px;border:1px solid oklch(0.66 0.010 70)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.47 0.010 70)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.47 0.010 70)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.38 0.10 155);cursor:pointer">04:48</span></div>
+      </div>
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.50 0.010 70)">Per-speaker</span><span style="flex:1;height:1px;background:oklch(0.865 0.008 92)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="background:oklch(0.935 0.007 95);border:1px solid oklch(0.875 0.008 93);padding:10px 11px">
+                <div style="font-family:'Newsreader',serif;font-size:14px;color:{{ p.tone }}">{{ p.name }}</div>
+                <div style="display:flex;gap:13px;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64)"><div>talk<br><span style="font-size:14px;color:oklch(0.25 0.010 70)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.25 0.010 70)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.25 0.010 70)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="border-top:1px solid oklch(0.856 0.023 80);background:oklch(0.960 0.014 82);padding:12px 26px 14px">
+      <div style="display:flex;gap:9px;align-items:baseline;padding-bottom:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64);flex:none">YOU</span><span style="font-size:13px">Did anyone commit to a date for the SOW redraft?</span></div>
+      <div style="display:flex;gap:9px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.42 0.11 155);flex:none">NOTE</span><span style="font-size:13px;line-height:1.55;color:oklch(0.30 0.010 70)">No date was said aloud. Marcus agreed to put per-clinic terms in the SOW<span data-cite="9" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 3px;background:oklch(0.90 0.05 155);color:oklch(0.34 0.10 155);cursor:pointer;vertical-align:1px">04:12</span>and the Aug 31 due date is yours, added after the call.</span></div>
+      <div style="margin-top:11px;display:flex;gap:9px;align-items:center;border:1px solid oklch(0.856 0.023 80);background:oklch(0.975 0.005 95);padding:8px 10px">
+        <span style="font-size:13px;color:oklch(0.585 0.016 66);flex:1">Ask this note…</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.42 0.11 155)">{{ personaLabel }}</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.925 0.007 95)">
+    <div style="padding:15px 18px 11px;border-bottom:1px solid oklch(0.865 0.008 92)">
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Newsreader',serif;font-size:16px">Transcript</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64)">12 TURNS</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64);cursor:pointer">SEARCH</span></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.895 0.008 93);font-size:11.5px;line-height:1.5;color:oklch(0.415 0.019 62)">Speaker labels unavailable for this recording. Timestamps and source spans unaffected.</div>
+      </sc-if>
+      <div style="margin-top:12px;display:flex;align-items:flex-end;gap:1.5px;height:32px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.78 0.035 155);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.530 0.017 64);margin-top:4px"><span>00:00</span><span style="color:oklch(0.40 0.10 155)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:8px 0 20px">
+      <sc-for list="{{ segs2a }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="display:grid;grid-template-columns:26px 1fr;gap:10px;padding:9px 18px 10px 14px;border-left:2px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}">
+            <div style="width:26px;height:26px;border-radius:50%;background:{{ seg.avatarLight }};color:{{ seg.tone }};font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ seg.initials }}</div>
+          </sc-if>
+          <div style="min-width:0">
+            <div style="display:flex;gap:8px;align-items:baseline">
+              <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:{{ seg.tone }}">{{ seg.name }}</span></sc-if>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.53 0.010 70)">{{ seg.t }}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.56;color:oklch(0.31 0.010 70);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2b"><div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Espresso — warmer and darker than <a class="dv-oid" href="#1b">1b</a>, brown-black paper with a sharp chartreuse citation signal.</div>
+<div class="dv-card" data-opt="2b" onClick="{{ onCite }}" style="width:1348px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:136px 1fr 404px;background:oklch(0.185 0.014 48);color:oklch(0.93 0.010 88);font-family:'Archivo',sans-serif;border-color:oklch(0.32 0.016 50)">
+  <div style="background:oklch(0.155 0.013 46);border-right:1px solid oklch(0.30 0.016 50);display:flex;flex-direction:column;padding-top:14px;min-height:0;overflow:hidden">
+    <div style="padding:0 12px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Lens</div>
+    <sc-for list="{{ personas2b }}" as="p" hint-placeholder-count="4">
+      <div style="padding:8px 11px 9px;border-left:2px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.25 0.016 50)">
+        <div style="font-family:'Newsreader',serif;font-size:14px;line-height:1.25;color:{{ p.fg }}">{{ p.name }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:8px 11px 9px;border-left:2px solid transparent;font-family:'Newsreader',serif;font-size:14px;color:oklch(0.55 0.012 80);cursor:pointer">+ New lens</div>
+    <div style="margin-top:22px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 80)">Actions</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:6px 8px;font-size:11.5px;line-height:1.35;color:oklch(0.86 0.010 88);background:oklch(0.235 0.016 50);cursor:pointer" style-hover="background:oklch(0.29 0.017 52)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:11px 12px;border-top:1px solid oklch(0.30 0.016 50);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.60 0.012 80)">grounding<br><span style="color:oklch(0.82 0.16 125)">27 spans linked</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.30 0.016 50)">
+    <div style="padding:20px 26px 15px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.62 0.012 80)">Wed 26 Aug 2026 · 41 min · Northwind Health</div>
+      <div style="font-family:'Newsreader',serif;font-size:29px;font-weight:500;letter-spacing:-0.012em;line-height:1.14;margin-top:7px">Pilot pricing &amp; rollout</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Summary</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+      <div style="font-size:14.5px;line-height:1.66;color:oklch(0.90 0.010 88);text-wrap:pretty;padding-bottom:20px">Two of four pilot clinics have live data; the other two are blocked on Northwind's security review, closing the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 125);color:oklch(0.86 0.16 128);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.38 0.09 125)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 125);color:oklch(0.86 0.16 128);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.38 0.09 125)">03:31</span>, pending legal. Field mapping is the live risk: 6–8h per unfamiliar EHR, colliding with the Q4 freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.30 0.06 125);color:oklch(0.86 0.16 128);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.38 0.09 125)">04:48</span>.</div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Takeaways · {{ personaLabel }}</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:20px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline">
+            <div style="font-family:'Newsreader',serif;font-size:15px;color:oklch(0.82 0.16 125);flex:none;width:16px">{{ tk.n }}</div>
+            <div style="font-size:14px;line-height:1.55;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.30 0.06 125);color:oklch(0.86 0.16 128);cursor:pointer;vertical-align:1px">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Action items</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:20px">
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.015 50)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.16 128);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.015 50)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.16 128);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.015 50)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 80)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.86 0.16 128);cursor:pointer">04:48</span></div>
+      </div>
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 80)">Per-speaker</span><span style="flex:1;height:1px;background:oklch(0.32 0.016 50)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="background:oklch(0.235 0.016 50);padding:10px 11px">
+                <div style="font-family:'Newsreader',serif;font-size:14px;color:{{ p.toneDark }}">{{ p.name }}</div>
+                <div style="display:flex;gap:13px;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.64 0.012 80)"><div>talk<br><span style="font-size:14px;color:oklch(0.92 0.010 88)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.92 0.010 88)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.92 0.010 88)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="border-top:1px solid oklch(0.30 0.016 50);background:oklch(0.165 0.013 48);padding:12px 26px 14px">
+      <div style="display:flex;gap:9px;align-items:baseline;padding-bottom:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);flex:none">YOU</span><span style="font-size:13px;color:oklch(0.88 0.010 88)">Did anyone commit to a date for the SOW redraft?</span></div>
+      <div style="display:flex;gap:9px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.82 0.16 125);flex:none">NOTE</span><span style="font-size:13px;line-height:1.55;color:oklch(0.86 0.010 88)">No date was said aloud. Marcus agreed to put per-clinic terms in the SOW<span data-cite="9" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 3px;background:oklch(0.30 0.06 125);color:oklch(0.86 0.16 128);cursor:pointer;vertical-align:1px">04:12</span>and the Aug 31 due date is yours, added after the call.</span></div>
+      <div style="margin-top:11px;display:flex;gap:9px;align-items:center;border:1px solid oklch(0.32 0.016 50);padding:8px 10px">
+        <span style="font-size:13px;color:oklch(0.58 0.012 80);flex:1">Ask this note…</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.82 0.16 125)">{{ personaLabel }}</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.215 0.015 50)">
+    <div style="padding:15px 18px 11px;border-bottom:1px solid oklch(0.30 0.016 50)">
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Newsreader',serif;font-size:16px">Transcript</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80)">12 TURNS</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 80);cursor:pointer">SEARCH</span></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.25 0.016 50);font-size:11.5px;line-height:1.5;color:oklch(0.78 0.012 82)">Speaker labels unavailable for this recording. Timestamps and source spans unaffected.</div>
+      </sc-if>
+      <div style="margin-top:12px;display:flex;align-items:flex-end;gap:1.5px;height:32px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.40 0.06 125);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.60 0.012 80);margin-top:4px"><span>00:00</span><span style="color:oklch(0.86 0.16 128)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:8px 0 20px">
+      <sc-for list="{{ segs2b }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="display:grid;grid-template-columns:26px 1fr;gap:10px;padding:9px 18px 10px 14px;border-left:2px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}">
+            <div style="width:26px;height:26px;border-radius:50%;background:{{ seg.avatarBg }};color:{{ seg.toneDark }};font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ seg.initials }}</div>
+          </sc-if>
+          <div style="min-width:0">
+            <div style="display:flex;gap:8px;align-items:baseline">
+              <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:{{ seg.toneDark }}">{{ seg.name }}</span></sc-if>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 80)">{{ seg.t }}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.56;color:oklch(0.87 0.010 88);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="2c"><div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Slate ink — cool blue-black instead of warm, with a single warm coral for grounding. The most contrast between chrome and citation.</div>
+<div class="dv-card" data-opt="2c" onClick="{{ onCite }}" style="width:1348px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:136px 1fr 404px;background:oklch(0.205 0.020 265);color:oklch(0.93 0.008 250);font-family:'Archivo',sans-serif;border-color:oklch(0.33 0.022 265)">
+  <div style="background:oklch(0.178 0.018 265);border-right:1px solid oklch(0.31 0.022 265);display:flex;flex-direction:column;padding-top:14px;min-height:0;overflow:hidden">
+    <div style="padding:0 12px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 255)">Lens</div>
+    <sc-for list="{{ personas2c }}" as="p" hint-placeholder-count="4">
+      <div style="padding:8px 11px 9px;border-left:2px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.26 0.021 265)">
+        <div style="font-family:'Newsreader',serif;font-size:14px;line-height:1.25;color:{{ p.fg }}">{{ p.name }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:8px 11px 9px;border-left:2px solid transparent;font-family:'Newsreader',serif;font-size:14px;color:oklch(0.55 0.012 255);cursor:pointer">+ New lens</div>
+    <div style="margin-top:22px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.012 255)">Actions</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:6px 8px;font-size:11.5px;line-height:1.35;color:oklch(0.86 0.008 250);background:oklch(0.248 0.021 265);cursor:pointer" style-hover="background:oklch(0.30 0.022 265)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:11px 12px;border-top:1px solid oklch(0.31 0.022 265);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.60 0.012 255)">grounding<br><span style="color:oklch(0.72 0.15 28)">27 spans linked</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.31 0.022 265)">
+    <div style="padding:20px 26px 15px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.62 0.012 255)">Wed 26 Aug 2026 · 41 min · Northwind Health</div>
+      <div style="font-family:'Newsreader',serif;font-size:29px;font-weight:500;letter-spacing:-0.012em;line-height:1.14;margin-top:7px">Pilot pricing &amp; rollout</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 255)">Summary</span><span style="flex:1;height:1px;background:oklch(0.32 0.022 265)"></span></div>
+      <div style="font-size:14.5px;line-height:1.66;color:oklch(0.90 0.008 250);text-wrap:pretty;padding-bottom:20px">Two of four pilot clinics have live data; the other two are blocked on Northwind's security review, closing the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.32 0.06 28);color:oklch(0.82 0.14 30);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.40 0.09 28)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.32 0.06 28);color:oklch(0.82 0.14 30);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.40 0.09 28)">03:31</span>, pending legal. Field mapping is the live risk: 6–8h per unfamiliar EHR, colliding with the Q4 freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.32 0.06 28);color:oklch(0.82 0.14 30);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.40 0.09 28)">04:48</span>.</div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 255)">Takeaways · {{ personaLabel }}</span><span style="flex:1;height:1px;background:oklch(0.32 0.022 265)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:20px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline">
+            <div style="font-family:'Newsreader',serif;font-size:15px;color:oklch(0.72 0.15 28);flex:none;width:16px">{{ tk.n }}</div>
+            <div style="font-size:14px;line-height:1.55;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.32 0.06 28);color:oklch(0.82 0.14 30);cursor:pointer;vertical-align:1px">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 255)">Action items</span><span style="flex:1;height:1px;background:oklch(0.32 0.022 265)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:20px">
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.021 265)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 255)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 255)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 255)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.82 0.14 30);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.021 265)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 255)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 255)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 255)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.82 0.14 30);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.021 265)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 255)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 255)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.012 255)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.82 0.14 30);cursor:pointer">04:48</span></div>
+      </div>
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.012 255)">Per-speaker</span><span style="flex:1;height:1px;background:oklch(0.32 0.022 265)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="background:oklch(0.248 0.021 265);padding:10px 11px">
+                <div style="font-family:'Newsreader',serif;font-size:14px;color:{{ p.toneDark }}">{{ p.name }}</div>
+                <div style="display:flex;gap:13px;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.64 0.012 255)"><div>talk<br><span style="font-size:14px;color:oklch(0.92 0.008 250)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.92 0.008 250)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.92 0.008 250)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+    <div style="border-top:1px solid oklch(0.31 0.022 265);background:oklch(0.185 0.019 265);padding:12px 26px 14px">
+      <div style="display:flex;gap:9px;align-items:baseline;padding-bottom:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 255);flex:none">YOU</span><span style="font-size:13px;color:oklch(0.88 0.008 250)">Did anyone commit to a date for the SOW redraft?</span></div>
+      <div style="display:flex;gap:9px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.72 0.15 28);flex:none">NOTE</span><span style="font-size:13px;line-height:1.55;color:oklch(0.86 0.008 250)">No date was said aloud. Marcus agreed to put per-clinic terms in the SOW<span data-cite="9" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 3px;background:oklch(0.32 0.06 28);color:oklch(0.82 0.14 30);cursor:pointer;vertical-align:1px">04:12</span>and the Aug 31 due date is yours, added after the call.</span></div>
+      <div style="margin-top:11px;display:flex;gap:9px;align-items:center;border:1px solid oklch(0.32 0.022 265);padding:8px 10px">
+        <span style="font-size:13px;color:oklch(0.58 0.012 255);flex:1">Ask this note…</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.72 0.15 28)">{{ personaLabel }}</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.228 0.021 265)">
+    <div style="padding:15px 18px 11px;border-bottom:1px solid oklch(0.31 0.022 265)">
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Newsreader',serif;font-size:16px">Transcript</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 255)">12 TURNS</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.012 255);cursor:pointer">SEARCH</span></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.26 0.021 265);font-size:11.5px;line-height:1.5;color:oklch(0.78 0.012 255)">Speaker labels unavailable for this recording. Timestamps and source spans unaffected.</div>
+      </sc-if>
+      <div style="margin-top:12px;display:flex;align-items:flex-end;gap:1.5px;height:32px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.40 0.06 28);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.60 0.012 255);margin-top:4px"><span>00:00</span><span style="color:oklch(0.82 0.14 30)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:8px 0 20px">
+      <sc-for list="{{ segs2c }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="display:grid;grid-template-columns:26px 1fr;gap:10px;padding:9px 18px 10px 14px;border-left:2px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}">
+            <div style="width:26px;height:26px;border-radius:50%;background:{{ seg.avatarBg }};color:{{ seg.toneDark }};font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ seg.initials }}</div>
+          </sc-if>
+          <div style="min-width:0">
+            <div style="display:flex;gap:8px;align-items:baseline">
+              <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:{{ seg.toneDark }}">{{ seg.name }}</span></sc-if>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.012 255)">{{ seg.t }}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.56;color:oklch(0.87 0.008 250);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "pair <a class="dv-oid" href="#2a">2a</a> as light with <a class="dv-oid" href="#2c">2c</a> as dark" · "keep <a class="dv-oid" href="#2b">2b</a> but calmer accent" · "try a different serif on <a class="dv-oid" href="#2c">2c</a>"</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Note detail — three treatments · same meeting, same chunks</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a"><div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Kraft ledger — gutter-labelled chunks, three panes, citations inline in prose. Zilla Slab / IBM Plex. Click any timestamp chip.</div>
+<div class="dv-card" data-opt="a" onClick="{{ onCite }}" style="width:1400px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:184px 1fr 428px;background:oklch(0.905 0.019 80);color:oklch(0.255 0.015 60)">
+
+  <div style="background:oklch(0.855 0.024 74);border-right:1px solid oklch(0.755 0.022 72);display:flex;flex-direction:column;min-height:0;overflow:hidden">
+    <div style="padding:16px 16px 10px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:oklch(0.52 0.02 65)">Persona rail</div>
+    <sc-for list="{{ personasA }}" as="p" hint-placeholder-count="4">
+      <div style="padding:9px 14px 10px 12px;border-left:3px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.885 0.022 76)">
+        <div style="font-family:'Zilla Slab',serif;font-size:14px;font-weight:500;color:{{ p.fg }}">{{ p.name }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.04em;color:oklch(0.55 0.02 65);margin-top:2px">{{ p.sub }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:9px 14px 10px 15px;font-family:'Zilla Slab',serif;font-size:13.5px;color:oklch(0.6 0.02 65);border-left:3px dashed oklch(0.78 0.02 72);cursor:pointer">+ New persona</div>
+    <div style="margin-top:20px;padding:0 16px 10px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:oklch(0.52 0.02 65)">Quick actions</div>
+    <div style="display:flex;flex-direction:column;gap:1px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:7px 8px;font-size:12.5px;color:oklch(0.34 0.015 60);background:oklch(0.885 0.02 78);border:1px solid oklch(0.795 0.02 74);cursor:pointer" style-hover="background:oklch(0.93 0.015 80)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:12px 16px;border-top:1px solid oklch(0.775 0.022 72);font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.7;color:oklch(0.55 0.02 65)">depth<span style="float:right;color:oklch(0.36 0.015 60)">dense</span><br>citations<span style="float:right;color:oklch(0.36 0.015 60)">required</span></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.755 0.022 72)">
+    <div style="padding:18px 26px 14px;border-bottom:1px solid oklch(0.775 0.022 72);display:flex;align-items:flex-end;gap:20px">
+      <div style="min-width:0">
+        <div style="font-family:'Zilla Slab',serif;font-size:23px;font-weight:600;letter-spacing:-0.01em;line-height:1.15">Northwind Health — pilot pricing &amp; rollout</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.05em;color:oklch(0.5 0.02 65);margin-top:6px">WED 26 AUG 2026 · 10:00–10:41 · 41 MIN · 3 SPEAKERS · <span style="color:oklch(0.42 0.13 252)">27 SOURCE SPANS</span></div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex:none">
+        <div style="padding:6px 11px;border:1px solid oklch(0.72 0.022 70);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer" style-hover="background:oklch(0.94 0.015 80)">Export</div>
+        <div style="padding:6px 11px;background:oklch(0.26 0.015 60);color:oklch(0.95 0.01 85);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer">Share link</div>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow:auto;min-height:0">
+      <div style="display:grid;grid-template-columns:96px 1fr;gap:18px;padding:18px 26px 20px;border-bottom:1px solid oklch(0.80 0.02 74)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.52 0.02 65);line-height:1.8">summary<br><span style="color:oklch(0.63 0.02 68)">00:12–05:33</span></div>
+        <div style="font-size:14.5px;line-height:1.64;text-wrap:pretty">Two of four pilot clinics have live data; the remaining two are blocked on Northwind's own security review, which closes on the 9th<span data-cite="1" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.84 0.085 250)">00:58</span>. Pricing shifted from per-seat to per-clinic with a 40-seat cap, to be tested against legal<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.84 0.085 250)">03:31</span>. The operational risk is field mapping — six to eight hours per unfamiliar EHR, colliding with the Q4 migration freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.84 0.085 250)">04:48</span>.</div>
+      </div>
+
+      <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+        <div style="display:grid;grid-template-columns:96px 1fr;gap:18px;padding:14px 26px 15px;border-bottom:1px solid oklch(0.80 0.02 74)">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.52 0.02 65);line-height:1.8">takeaway</div>
+          <div style="font-size:14px;line-height:1.58;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.84 0.085 250)">{{ tk.t }}</span></div>
+        </div>
+      </sc-for>
+
+      <div style="display:grid;grid-template-columns:96px 1fr;gap:18px;padding:16px 26px 18px;border-bottom:1px solid oklch(0.80 0.02 74)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.52 0.02 65);line-height:1.8">action items<br><span style="color:oklch(0.63 0.02 68)">3</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <div style="display:grid;grid-template-columns:1fr 96px 74px 52px;gap:12px;align-items:center;padding:8px 10px;background:oklch(0.935 0.014 82);border:1px solid oklch(0.805 0.02 74);font-size:13.5px">
+            <div>Confirm security-review outcome with Northwind IT</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.42 0.015 60)">P. Raghavan</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.42 0.015 60)">due Sep 9</div>
+            <div data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;text-align:center">00:58</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 96px 74px 52px;gap:12px;align-items:center;padding:8px 10px;background:oklch(0.935 0.014 82);border:1px solid oklch(0.805 0.02 74);font-size:13.5px">
+            <div>Draft per-clinic / 40-seat-cap terms into SOW v4</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.42 0.015 60)">M. Lund</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.42 0.015 60)">due Aug 31</div>
+            <div data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;text-align:center">04:12</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 96px 74px 52px;gap:12px;align-items:center;padding:8px 10px;background:oklch(0.935 0.014 82);border:1px solid oklch(0.805 0.02 74);font-size:13.5px">
+            <div>Estimate mapping hours for clinics 5–6 against Q4 freeze</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.42 0.015 60)">D. Achebe</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:oklch(0.42 0.015 60)">due Sep 4</div>
+            <div data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;text-align:center">04:48</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:96px 1fr;gap:18px;padding:16px 26px 18px;border-bottom:1px solid oklch(0.80 0.02 74)">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.52 0.02 65);line-height:1.8">imported doc</div>
+        <div>
+          <div style="display:flex;align-items:baseline;gap:10px"><div style="font-family:'Zilla Slab',serif;font-size:14.5px;font-weight:500">Pilot SOW v3.pdf</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.52 0.02 65)">2 SPANS USED · ADDED 24 AUG</div></div>
+          <div style="font-size:13.5px;line-height:1.55;color:oklch(0.36 0.015 60);margin-top:5px">§4.2 pricing schedule still states per-seat; contradicts the 40-seat cap agreed on this call<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.90 0.05 250);color:oklch(0.40 0.13 252);cursor:pointer;vertical-align:1px">03:31</span></div>
+        </div>
+      </div>
+
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:96px 1fr;gap:18px;padding:16px 26px 24px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.11em;text-transform:uppercase;color:oklch(0.52 0.02 65);line-height:1.8">speakers</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="border:1px solid oklch(0.805 0.02 74);background:oklch(0.935 0.014 82);padding:10px 12px">
+                <div style="font-family:'Zilla Slab',serif;font-size:13.5px;font-weight:500;color:{{ p.tone }}">{{ p.name }}</div>
+                <div style="display:flex;gap:14px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.52 0.02 65)">
+                  <div>talk<br><span style="font-size:15px;color:oklch(0.28 0.015 60)">{{ p.talk }}</span></div>
+                  <div>asked<br><span style="font-size:15px;color:oklch(0.28 0.015 60)">{{ p.q }}</span></div>
+                  <div>fillers<br><span style="font-size:15px;color:oklch(0.28 0.015 60)">{{ p.f }}</span></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="border-top:1px solid oklch(0.755 0.022 72);background:oklch(0.875 0.02 78);padding:10px 26px;display:flex;align-items:center;gap:12px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:oklch(0.5 0.02 65);flex:none">Ask</div>
+      <div style="flex:1;background:oklch(0.955 0.01 84);border:1px solid oklch(0.775 0.022 72);padding:7px 10px;font-size:13px;color:oklch(0.58 0.02 65)">What did we actually commit to on pricing?</div>
+      <div style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.5 0.02 65)">{{ personaLabel }} · cites sources</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;background:oklch(0.93 0.014 82);min-width:0;min-height:0;overflow:hidden">
+    <div style="padding:14px 18px 10px;border-bottom:1px solid oklch(0.795 0.02 74)">
+      <div style="display:flex;align-items:baseline;gap:8px"><div style="font-family:'Zilla Slab',serif;font-size:15px;font-weight:600">Transcript</div><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.52 0.02 65)">12 TURNS · 41 MIN</div></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.885 0.018 78);border-left:2px solid oklch(0.66 0.02 70);font-size:11.5px;line-height:1.5;color:oklch(0.42 0.015 60)">No speaker labels on this recording. Timestamps and source spans are unaffected.</div>
+      </sc-if>
+      <div style="margin-top:11px;display:flex;align-items:flex-end;gap:1.5px;height:34px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40">
+          <div style="width:100%;background:oklch(0.70 0.035 250);height:{{ b.h }}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.02 65);margin-top:4px"><span>00:00</span><span style="color:oklch(0.40 0.13 252)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:4px 0 20px">
+      <sc-for list="{{ segsA }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="padding:9px 18px 10px 15px;border-left:3px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <div style="display:flex;gap:8px;align-items:baseline;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.04em">
+            <span style="color:oklch(0.55 0.02 65)">{{ seg.t }}</span>
+            <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="color:{{ seg.tone }};text-transform:uppercase;letter-spacing:0.09em">{{ seg.name }}</span></sc-if>
+          </div>
+          <div style="font-size:13px;line-height:1.55;color:oklch(0.32 0.015 60);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="1b"><div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Ink dossier (dark) — chat-style transcript, ask-your-notes docked under the note, amber reserved for grounding. Newsreader / Archivo.</div>
+<div class="dv-card" data-opt="b" onClick="{{ onCite }}" style="width:1348px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:136px 1fr 404px;background:oklch(0.205 0.012 68);color:oklch(0.93 0.012 85);font-family:'Archivo',sans-serif;border-color:oklch(0.32 0.014 70)">
+
+  <div style="background:oklch(0.175 0.012 68);border-right:1px solid oklch(0.30 0.014 70);display:flex;flex-direction:column;padding-top:14px;min-height:0;overflow:hidden">
+    <div style="padding:0 12px 10px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.014 78)">Lens</div>
+    <sc-for list="{{ personasB }}" as="p" hint-placeholder-count="4">
+      <div style="padding:8px 11px 9px;border-left:2px solid {{ p.rule }};background:{{ p.bg }};cursor:pointer" style-hover="background:oklch(0.26 0.013 70)">
+        <div style="font-family:'Newsreader',serif;font-size:14px;line-height:1.25;color:{{ p.fg }}">{{ p.name }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:8px 11px 9px;border-left:2px solid transparent;font-family:'Newsreader',serif;font-size:14px;color:oklch(0.55 0.014 78);cursor:pointer">+ New lens</div>
+    <div style="margin-top:22px;padding:0 12px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.58 0.014 78)">Actions</div>
+    <div style="display:flex;flex-direction:column;gap:4px;padding:0 10px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="padding:6px 8px;font-size:11.5px;line-height:1.35;color:oklch(0.86 0.012 85);background:oklch(0.245 0.013 70);cursor:pointer" style-hover="background:oklch(0.30 0.014 72)">{{ qa }}</div>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:11px 12px;border-top:1px solid oklch(0.30 0.014 70);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.7;color:oklch(0.60 0.014 78)">grounding<br><span style="color:oklch(0.80 0.135 82)">27 spans linked</span></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;border-right:1px solid oklch(0.30 0.014 70)">
+    <div style="padding:20px 26px 15px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.62 0.014 78)">Wed 26 Aug 2026 · 41 min · Northwind Health</div>
+      <div style="font-family:'Newsreader',serif;font-size:29px;font-weight:500;letter-spacing:-0.012em;line-height:1.14;margin-top:7px">Pilot pricing &amp; rollout</div>
+    </div>
+    <div style="flex:1;overflow:auto;min-height:0;padding:0 26px">
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:7px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.014 78)">Summary</span><span style="flex:1;height:1px;background:oklch(0.32 0.014 70)"></span></div>
+      <div style="font-size:14.5px;line-height:1.66;color:oklch(0.90 0.012 85);text-wrap:pretty;padding-bottom:20px">Two of four pilot clinics have live data; the other two are blocked on Northwind's security review, closing the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.32 0.05 82);color:oklch(0.85 0.13 84);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.40 0.08 82)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.32 0.05 82);color:oklch(0.85 0.13 84);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.40 0.08 82)">03:31</span>, pending legal. Field mapping is the live risk: 6–8h per unfamiliar EHR, colliding with the Q4 freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 2px;background:oklch(0.32 0.05 82);color:oklch(0.85 0.13 84);cursor:pointer;vertical-align:1px" style-hover="background:oklch(0.40 0.08 82)">04:48</span>.</div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.014 78)">Takeaways · {{ personaLabel }}</span><span style="flex:1;height:1px;background:oklch(0.32 0.014 70)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;padding-bottom:20px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:baseline">
+            <div style="font-family:'Newsreader',serif;font-size:15px;color:oklch(0.80 0.135 82);flex:none;width:16px">{{ tk.n }}</div>
+            <div style="font-size:14px;line-height:1.55;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin-left:6px;background:oklch(0.32 0.05 82);color:oklch(0.85 0.13 84);cursor:pointer;vertical-align:1px">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.014 78)">Action items</span><span style="flex:1;height:1px;background:oklch(0.32 0.014 70)"></span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;padding-bottom:20px">
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.013 70)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.014 80)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.014 80)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.85 0.13 84);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.013 70)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.014 80)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.014 80)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.85 0.13 84);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:18px 1fr 92px 70px 50px;gap:11px;align-items:center;font-size:13.5px;padding:6px 0;border-bottom:1px solid oklch(0.27 0.013 70)"><span style="width:11px;height:11px;border:1px solid oklch(0.50 0.014 78)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.014 80)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.70 0.014 80)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.85 0.13 84);cursor:pointer">04:48</span></div>
+      </div>
+
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="padding-bottom:24px">
+          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.66 0.014 78)">Per-speaker</span><span style="flex:1;height:1px;background:oklch(0.32 0.014 70)"></span></div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="background:oklch(0.245 0.013 70);padding:10px 11px">
+                <div style="font-family:'Newsreader',serif;font-size:14px;color:{{ p.toneDark }}">{{ p.name }}</div>
+                <div style="display:flex;gap:13px;margin-top:7px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.64 0.014 78)"><div>talk<br><span style="font-size:14px;color:oklch(0.92 0.012 85)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.92 0.012 85)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.92 0.012 85)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="border-top:1px solid oklch(0.30 0.014 70);background:oklch(0.185 0.012 68);padding:12px 26px 14px">
+      <div style="display:flex;gap:9px;align-items:baseline;padding-bottom:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.014 78);flex:none">YOU</span><span style="font-size:13px;color:oklch(0.88 0.012 85)">Did anyone commit to a date for the SOW redraft?</span></div>
+      <div style="display:flex;gap:9px;align-items:baseline"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.80 0.135 82);flex:none">NOTE</span><span style="font-size:13px;line-height:1.55;color:oklch(0.86 0.012 85)">No date was said aloud. Marcus agreed to put per-clinic terms in the SOW<span data-cite="9" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:1px 5px;margin:0 3px;background:oklch(0.32 0.05 82);color:oklch(0.85 0.13 84);cursor:pointer;vertical-align:1px">04:12</span>and the Aug 31 due date is yours, added after the call.</span></div>
+      <div style="margin-top:11px;display:flex;gap:9px;align-items:center;border:1px solid oklch(0.32 0.014 70);padding:8px 10px">
+        <span style="font-size:13px;color:oklch(0.58 0.014 78);flex:1">Ask this note…</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;color:oklch(0.80 0.135 82)">{{ personaLabel }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;background:oklch(0.225 0.012 68)">
+    <div style="padding:15px 18px 11px;border-bottom:1px solid oklch(0.30 0.014 70)">
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'Newsreader',serif;font-size:16px">Transcript</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.014 78)">12 TURNS</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.62 0.014 78);cursor:pointer">SEARCH</span></div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:9px;padding:7px 9px;background:oklch(0.255 0.013 70);font-size:11.5px;line-height:1.5;color:oklch(0.78 0.014 82)">Speaker labels unavailable for this recording. Timestamps and source spans unaffected.</div>
+      </sc-if>
+      <div style="margin-top:12px;display:flex;align-items:flex-end;gap:1.5px;height:32px">
+        <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.42 0.05 82);height:{{ b.h }}"></div></sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.60 0.014 78);margin-top:4px"><span>00:00</span><span style="color:oklch(0.85 0.13 84)">▮ 03:31</span><span>41:07</span></div>
+    </div>
+    <div data-scroll="1" style="flex:1;overflow:auto;min-height:0;padding:8px 0 20px">
+      <sc-for list="{{ segsB }}" as="seg" hint-placeholder-count="8">
+        <div data-seg="{{ seg.id }}" style="display:grid;grid-template-columns:26px 1fr;gap:10px;padding:9px 18px 10px 14px;border-left:2px solid {{ seg.rule }};background:{{ seg.bg }}">
+          <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}">
+            <div style="width:26px;height:26px;border-radius:50%;background:{{ seg.avatarBg }};color:{{ seg.toneDark }};font-family:'IBM Plex Mono',monospace;font-size:9.5px;display:flex;align-items:center;justify-content:center">{{ seg.initials }}</div>
+          </sc-if>
+          <div style="min-width:0">
+            <div style="display:flex;gap:8px;align-items:baseline">
+              <sc-if value="{{ seg.showName }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:{{ seg.toneDark }}">{{ seg.name }}</span></sc-if>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.60 0.014 78)">{{ seg.t }}</span>
+            </div>
+            <div style="font-size:13px;line-height:1.56;color:oklch(0.87 0.012 85);margin-top:3px;text-wrap:pretty">{{ seg.text }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div></div>
+
+<div class="dv-opt" id="1c"><div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Editorial column — no third pane: the source span opens as marginalia in the gutter beside the claim, transcript stays a peek-drawer. Instrument Serif / Libre Franklin.</div>
+<div class="dv-card" data-opt="c" onClick="{{ onCite }}" style="width:1188px;height:884px;display:grid;grid-template-rows:minmax(0,884px);grid-template-columns:152px 1fr 316px;background:oklch(0.958 0.010 88);color:oklch(0.225 0.018 45);font-family:'Libre Franklin',sans-serif">
+
+  <div style="border-right:1px solid oklch(0.875 0.012 85);display:flex;flex-direction:column;padding-top:16px;background:oklch(0.935 0.014 86)">
+    <div style="padding:0 14px 12px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.52 0.02 60)">Reading as</div>
+    <sc-for list="{{ personasC }}" as="p" hint-placeholder-count="4">
+      <div style="padding:9px 13px 10px;background:{{ p.bg }};border-left:3px solid {{ p.rule }};cursor:pointer" style-hover="background:oklch(0.965 0.008 88)">
+        <div style="font-family:'Instrument Serif',serif;font-size:17px;line-height:1.1;color:{{ p.fg }}">{{ p.name }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.04em;color:oklch(0.55 0.02 60);margin-top:3px">{{ p.sub }}</div>
+      </div>
+    </sc-for>
+    <div style="padding:9px 13px;border-left:3px solid transparent;font-family:'Instrument Serif',serif;font-size:17px;color:oklch(0.62 0.02 60);cursor:pointer">+ New</div>
+    <div style="margin-top:auto;padding:12px 14px;border-top:1px solid oklch(0.875 0.012 85);display:flex;flex-direction:column;gap:5px">
+      <sc-for list="{{ quickActions }}" as="qa" hint-placeholder-count="3">
+        <div style="font-size:11.5px;line-height:1.35;color:oklch(0.40 0.018 50);border-bottom:1px dotted oklch(0.78 0.014 80);padding-bottom:4px;cursor:pointer" style-hover="color:oklch(0.47 0.14 335)">{{ qa }}</div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-width:0;background:oklch(0.978 0.006 90)">
+    <div style="flex:1;overflow:auto;min-height:0;padding:30px 40px 24px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.53 0.02 60)">Northwind Health · Wed 26 Aug 2026 · 41 min</div>
+      <div style="font-family:'Instrument Serif',serif;font-size:38px;line-height:1.06;letter-spacing:-0.01em;margin-top:9px">Pilot pricing &amp; rollout</div>
+      <div style="height:1px;background:oklch(0.235 0.018 45);margin:16px 0 18px"></div>
+
+      <div style="font-size:15px;line-height:1.66;text-wrap:pretty">Two of four pilot clinics have live data; the remaining two are blocked on Northwind's own security review, closing on the 9th<span data-cite="3" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0 4px;margin:0 2px;border-bottom:2px solid oklch(0.47 0.14 335);color:oklch(0.44 0.14 335);cursor:pointer" style-hover="background:oklch(0.93 0.05 335)">00:58</span>. Pricing moved from per-seat to per-clinic with a 40-seat cap, to be tested against legal<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0 4px;margin:0 2px;border-bottom:2px solid oklch(0.47 0.14 335);color:oklch(0.44 0.14 335);cursor:pointer" style-hover="background:oklch(0.93 0.05 335)">03:31</span>. Field mapping is the operational risk — six to eight hours per unfamiliar EHR<span data-cite="6" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0 4px;margin:0 2px;border-bottom:2px solid oklch(0.47 0.14 335);color:oklch(0.44 0.14 335);cursor:pointer" style-hover="background:oklch(0.93 0.05 335)">02:26</span>, colliding with the Q4 migration freeze if clinics five and six land in Q4<span data-cite="10" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0 4px;margin:0 2px;border-bottom:2px solid oklch(0.47 0.14 335);color:oklch(0.44 0.14 335);cursor:pointer" style-hover="background:oklch(0.93 0.05 335)">04:48</span>.</div>
+
+      <div style="margin-top:24px;display:flex;align-items:baseline;gap:9px"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.53 0.02 60)">Takeaways</span><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:oklch(0.62 0.02 60)">{{ personaLabel }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:11px;margin-top:11px">
+        <sc-for list="{{ takeaways }}" as="tk" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:20px 1fr;gap:11px;align-items:baseline;padding-bottom:11px;border-bottom:1px solid oklch(0.895 0.01 85)">
+            <div style="font-family:'Instrument Serif',serif;font-size:20px;color:oklch(0.47 0.14 335)">{{ tk.n }}</div>
+            <div style="font-size:14.5px;line-height:1.56;text-wrap:pretty">{{ tk.text }}<span data-cite="{{ tk.seg }}" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0 4px;margin-left:6px;border-bottom:2px solid oklch(0.47 0.14 335);color:oklch(0.44 0.14 335);cursor:pointer">{{ tk.t }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:22px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.53 0.02 60)">Action items</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:0">
+        <div style="display:grid;grid-template-columns:16px 1fr 88px 66px 48px;gap:11px;align-items:center;font-size:13.5px;padding:9px 0;border-bottom:1px solid oklch(0.895 0.01 85)"><span style="width:11px;height:11px;border:1px solid oklch(0.62 0.02 60)"></span><span>Confirm security-review outcome with Northwind IT</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.45 0.018 50)">P. Raghavan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.45 0.018 50)">Sep 9</span><span data-cite="3" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.44 0.14 335);cursor:pointer">00:58</span></div>
+        <div style="display:grid;grid-template-columns:16px 1fr 88px 66px 48px;gap:11px;align-items:center;font-size:13.5px;padding:9px 0;border-bottom:1px solid oklch(0.895 0.01 85)"><span style="width:11px;height:11px;border:1px solid oklch(0.62 0.02 60)"></span><span>Draft per-clinic / 40-seat-cap terms into SOW v4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.45 0.018 50)">M. Lund</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.45 0.018 50)">Aug 31</span><span data-cite="9" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.44 0.14 335);cursor:pointer">04:12</span></div>
+        <div style="display:grid;grid-template-columns:16px 1fr 88px 66px 48px;gap:11px;align-items:center;font-size:13.5px;padding:9px 0;border-bottom:1px solid oklch(0.895 0.01 85)"><span style="width:11px;height:11px;border:1px solid oklch(0.62 0.02 60)"></span><span>Estimate mapping hours for clinics 5–6 vs Q4 freeze</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.45 0.018 50)">D. Achebe</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.45 0.018 50)">Sep 4</span><span data-cite="10" style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:oklch(0.44 0.14 335);cursor:pointer">04:48</span></div>
+      </div>
+
+      <div style="margin-top:22px;display:flex;align-items:baseline;gap:10px;padding:11px 13px;background:oklch(0.945 0.012 86);border:1px solid oklch(0.885 0.012 85)">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.53 0.02 60);flex:none">Imported</span>
+        <span style="font-size:13px;line-height:1.55">Pilot SOW v3.pdf §4.2 still states per-seat pricing — contradicts this call<span data-cite="8" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:0 4px;margin-left:5px;border-bottom:2px solid oklch(0.47 0.14 335);color:oklch(0.44 0.14 335);cursor:pointer">03:31</span></span>
+      </div>
+
+      <sc-if value="{{ showInsights }}" hint-placeholder-val="{{ true }}">
+        <div style="margin-top:22px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.16em;text-transform:uppercase;color:oklch(0.53 0.02 60)">Per-speaker</div>
+          <div style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid oklch(0.895 0.01 85)">
+            <sc-for list="{{ insights }}" as="p" hint-placeholder-count="3">
+              <div style="padding:10px 12px 12px 0">
+                <div style="font-family:'Instrument Serif',serif;font-size:18px;color:{{ p.tone }}">{{ p.name }}</div>
+                <div style="display:flex;gap:14px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.55 0.02 60)"><div>talk<br><span style="font-size:14px;color:oklch(0.26 0.018 45)">{{ p.talk }}</span></div><div>asked<br><span style="font-size:14px;color:oklch(0.26 0.018 45)">{{ p.q }}</span></div><div>fillers<br><span style="font-size:14px;color:oklch(0.26 0.018 45)">{{ p.f }}</span></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="border-top:1px solid oklch(0.875 0.012 85);background:oklch(0.945 0.012 86);padding:9px 40px 11px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.44 0.018 50);flex:none">03:31 / 41:07</span>
+        <div style="flex:1;display:flex;align-items:flex-end;gap:1.5px;height:24px">
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="40"><div style="width:100%;background:oklch(0.80 0.02 85);height:{{ b.h }}"></div></sc-for>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:oklch(0.44 0.14 335);flex:none;cursor:pointer;border-bottom:1px solid oklch(0.44 0.14 335)">FULL TRANSCRIPT ↑</span>
+      </div>
+      <sc-if value="{{ diarOff }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:7px;font-size:11.5px;color:oklch(0.46 0.018 50)">No speaker labels on this recording — timestamps and source spans unaffected.</div>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="background:oklch(0.945 0.012 86);border-left:1px solid oklch(0.875 0.012 85);display:flex;flex-direction:column;min-width:0">
+    <div style="padding:16px 16px 14px;border-bottom:1px solid oklch(0.885 0.012 85)">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.53 0.02 60)">Ask this note</div>
+      <div style="margin-top:8px;background:oklch(0.978 0.006 90);border:1px solid oklch(0.875 0.012 85);padding:8px 10px;font-size:13px;color:oklch(0.55 0.02 60)">What survived from the last call?</div>
+    </div>
+    <div style="padding:16px 16px 8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:oklch(0.53 0.02 60)">Source span</div>
+    <sc-if value="{{ hasActive }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:0 16px 16px">
+        <div style="background:oklch(0.978 0.006 90);border-left:3px solid oklch(0.47 0.14 335);padding:12px 13px">
+          <div style="display:flex;gap:8px;align-items:baseline;font-family:'IBM Plex Mono',monospace;font-size:9.5px"><span style="color:oklch(0.44 0.14 335)">{{ activeT }}</span><span style="color:oklch(0.46 0.018 50);text-transform:uppercase;letter-spacing:0.08em">{{ activeName }}</span></div>
+          <div style="font-size:13.5px;line-height:1.6;margin-top:6px;text-wrap:pretty">{{ activeText }}</div>
+        </div>
+        <div style="margin-top:9px;display:flex;flex-direction:column;gap:7px">
+          <sc-for list="{{ context }}" as="c" hint-placeholder-count="2">
+            <div style="padding-left:13px;border-left:1px solid oklch(0.86 0.012 85)">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.56 0.02 60)">{{ c.t }} · {{ c.name }}</div>
+              <div style="font-size:12px;line-height:1.5;color:oklch(0.48 0.018 50);margin-top:2px">{{ c.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:oklch(0.44 0.14 335);cursor:pointer">OPEN IN TRANSCRIPT →</div>
+      </div>
+    </sc-if>
+    <div style="margin-top:auto;padding:14px 16px;border-top:1px solid oklch(0.885 0.012 85);font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:1.8;color:oklch(0.53 0.02 60)">chunks<span style="float:right;color:oklch(0.30 0.018 45)">1 summary · 3 takeaways · 3 actions</span><br>spans linked<span style="float:right;color:oklch(0.30 0.018 45)">27 of 27</span></div>
+  </div>
+</div></div>
+
+</div>
+<p class="dv-next">Try next: "take <a class="dv-oid" href="#1c">1c</a>'s marginalia gutter into <a class="dv-oid" href="#1a">1a</a>" · "show <a class="dv-oid" href="#1b">1b</a> in its light theme at parity" · "now do the dashboard/feed in the direction of <a class="dv-oid" href="#1a">1a</a>"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;persona&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Neutral Analyst&quot;,&quot;Sales Coach&quot;,&quot;Investor&quot;,&quot;Engineering Lead&quot;],&quot;default&quot;:&quot;Neutral Analyst&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Persona&quot;},&quot;showSpeakerLabels&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data states&quot;},&quot;showInsightCards&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Data states&quot;}}">
+class Component extends DCLogic {
+  state = { active: 8 };
+
+  segs = [
+    { id: 1, t: "00:12", name: "Priya Raghavan", initials: "PR", text: "Before pricing, I want to be honest about where the pilot stands: two of the four clinics have live data flowing, the other two are stuck on the VPN request." },
+    { id: 2, t: "00:41", name: "Marcus Lund", initials: "ML", text: "Stuck how? Is that an IT queue thing or a contract thing?" },
+    { id: 3, t: "00:58", name: "Priya Raghavan", initials: "PR", text: "IT queue. Their security review closes on the 9th and nothing moves before that. I'd rather we plan the rollout around the 9th than pretend it's a two-day fix." },
+    { id: 4, t: "01:35", name: "Devon Achebe", initials: "DA", text: "From our side the ingest pipeline doesn't care whether it's two clinics or four. The risk is the mapping table — every clinic names its fields differently and we're hand-writing those maps." },
+    { id: 5, t: "02:20", name: "Marcus Lund", initials: "ML", text: "How long per clinic?" },
+    { id: 6, t: "02:26", name: "Devon Achebe", initials: "DA", text: "Six to eight hours the first time. Under two once we've seen a similar EHR." },
+    { id: 7, t: "03:04", name: "Priya Raghavan", initials: "PR", text: "Which brings us to price. They pushed back on the per-seat number — they want per-clinic, capped." },
+    { id: 8, t: "03:31", name: "Marcus Lund", initials: "ML", text: "Per-clinic capped is fine if the cap sits above 40 seats. Below that we're subsidising their growth." },
+    { id: 9, t: "04:12", name: "Priya Raghavan", initials: "PR", text: "Then let's put per-clinic with a 40-seat cap in the SOW and see if it survives legal." },
+    { id: 10, t: "04:48", name: "Devon Achebe", initials: "DA", text: "One flag: if they add clinics five and six in Q4, the mapping work lands in the same week as the migration freeze." },
+    { id: 11, t: "05:20", name: "Marcus Lund", initials: "ML", text: "Note that as a risk and we'll staff for it. Anything else before we close?" },
+    { id: 12, t: "05:33", name: "Priya Raghavan", initials: "PR", text: "Just the security review date — everything hangs off the 9th." }
+  ];
+
+  tones = {
+    "Priya Raghavan": { light: "oklch(0.50 0.10 252)", dark: "oklch(0.78 0.09 252)", avatar: "oklch(0.30 0.05 252)", avatarLight: "oklch(0.90 0.04 252)" },
+    "Marcus Lund": { light: "oklch(0.47 0.09 155)", dark: "oklch(0.78 0.08 155)", avatar: "oklch(0.29 0.05 155)", avatarLight: "oklch(0.90 0.04 155)" },
+    "Devon Achebe": { light: "oklch(0.48 0.09 55)", dark: "oklch(0.80 0.08 60)", avatar: "oklch(0.30 0.05 60)", avatarLight: "oklch(0.90 0.04 60)" }
+  };
+
+  personaSet = {
+    "Neutral Analyst": {
+      sub: "dense · no framing",
+      takeaways: [
+        { n: "01", seg: 3, t: "00:58", text: "Rollout dates hang off the customer's Sept 9 security review, not our readiness." },
+        { n: "02", seg: 8, t: "03:31", text: "Per-clinic pricing is only non-dilutive above a 40-seat cap." },
+        { n: "03", seg: 6, t: "02:26", text: "Mapping cost is front-loaded per EHR family, not per clinic — 6–8h first, under 2h thereafter." }
+      ],
+      actions: ["Extract decisions only", "Timeline of blockers", "Unanswered questions", "Diff against last call"]
+    },
+    "Sales Coach": {
+      sub: "coaching · direct",
+      takeaways: [
+        { n: "01", seg: 7, t: "03:04", text: "The per-seat objection was never tested — you moved to per-clinic in one turn." },
+        { n: "02", seg: 8, t: "03:31", text: "Your side named the 40-seat cap first; the customer never had to price their own growth." },
+        { n: "03", seg: 3, t: "00:58", text: "The Sept 9 date is the only hard commitment on the call — anchor the next agenda on it." }
+      ],
+      actions: ["Score objection handling", "Draft follow-up email", "Next-call agenda", "Concessions made"]
+    },
+    "Investor": {
+      sub: "economics · risk",
+      takeaways: [
+        { n: "01", seg: 8, t: "03:31", text: "Capped per-clinic pricing shifts expansion upside to the customer above 40 seats." },
+        { n: "02", seg: 6, t: "02:26", text: "Onboarding cost falls sharply after the first EHR of a family — margin improves with clustering, not headcount." },
+        { n: "03", seg: 10, t: "04:48", text: "Q4 expansion collides with a migration freeze: revenue timing risk, not demand risk." }
+      ],
+      actions: ["Unit-economics read", "Expansion risk memo", "Diligence questions", "Quantified risks"]
+    },
+    "Engineering Lead": {
+      sub: "scope · sequencing",
+      takeaways: [
+        { n: "01", seg: 4, t: "01:35", text: "Hand-written field maps are the bottleneck — clinic count is not the scaling variable." },
+        { n: "02", seg: 10, t: "04:48", text: "Clinics 5–6 in Q4 would land mapping work inside the migration freeze week." },
+        { n: "03", seg: 3, t: "00:58", text: "Two clinics stay dark until the customer's Sept 9 security review clears — plan a staged cutover." }
+      ],
+      actions: ["Scope the mapping work", "Risk register entry", "Sequencing plan", "Handoff brief"]
+    }
+  };
+
+  onCite = (e) => {
+    const chip = e.target.closest("[data-cite]");
+    if (!chip) return;
+    const id = Number(chip.getAttribute("data-cite"));
+    if (!id) return;
+    this.setState({ active: id });
+    requestAnimationFrame(() => {
+      const opt = chip.closest("[data-opt]");
+      if (!opt) return;
+      const target = opt.querySelector('[data-seg="' + id + '"]');
+      if (!target) return;
+      const sc = target.closest("[data-scroll]");
+      if (sc) sc.scrollTop = target.offsetTop - sc.offsetTop - 56;
+    });
+  };
+
+  bars() {
+    return Array.from({ length: 68 }, (_, i) => ({
+      h: Math.round(18 + 44 * Math.abs(Math.sin(i * 0.63)) + 26 * Math.abs(Math.cos(i * 1.91))) + "%"
+    }));
+  }
+
+  rail(name, theme) {
+    const active = name === (this.props.persona ?? "Neutral Analyst");
+    const t = {
+      a: { bg: active ? "oklch(0.945 0.014 82)" : "transparent", fg: active ? "oklch(0.24 0.015 60)" : "oklch(0.44 0.018 62)", rule: active ? "oklch(0.46 0.13 252)" : "transparent" },
+      b: { bg: active ? "oklch(0.245 0.013 70)" : "transparent", fg: active ? "oklch(0.95 0.012 85)" : "oklch(0.68 0.014 80)", rule: active ? "oklch(0.80 0.135 82)" : "transparent" },
+      c: { bg: active ? "oklch(0.978 0.006 90)" : "transparent", fg: active ? "oklch(0.22 0.018 45)" : "oklch(0.46 0.018 50)", rule: active ? "oklch(0.47 0.14 335)" : "transparent" },
+      n: { bg: active ? "oklch(0.979 0.011 84)" : "transparent", fg: active ? "oklch(0.22 0.010 70)" : "oklch(0.47 0.010 70)", rule: active ? "oklch(0.44 0.11 155)" : "transparent" },
+      e: { bg: active ? "oklch(0.235 0.016 50)" : "transparent", fg: active ? "oklch(0.95 0.010 88)" : "oklch(0.68 0.012 80)", rule: active ? "oklch(0.82 0.16 125)" : "transparent" },
+      L: { bg: active ? "oklch(0.979 0.011 84)" : "transparent", fg: active ? "oklch(0.226 0.022 62)" : "oklch(0.450 0.018 62)", rule: active ? "oklch(0.452 0.148 146)" : "transparent" },
+      D: { bg: active ? "oklch(0.235 0.016 50)" : "transparent", fg: active ? "oklch(0.93 0.010 88)" : "oklch(0.72 0.012 82)", rule: active ? "oklch(0.82 0.15 140)" : "transparent" },
+      s: { bg: active ? "oklch(0.255 0.022 265)" : "transparent", fg: active ? "oklch(0.95 0.008 250)" : "oklch(0.68 0.012 255)", rule: active ? "oklch(0.70 0.15 28)" : "transparent" }
+    }[theme];
+    return { name, sub: this.personaSet[name].sub, ...t };
+  }
+
+  renderVals() {
+    const personaLabel = this.props.persona ?? "Neutral Analyst";
+    const p = this.personaSet[personaLabel] || this.personaSet["Neutral Analyst"];
+    const diar = this.props.showSpeakerLabels ?? true;
+    const active = this.state.active;
+    const names = Object.keys(this.personaSet);
+
+    const mk = (wash, rule, dark) => this.segs.map(s => {
+      const tone = this.tones[s.name];
+      return {
+        ...s,
+        showName: diar,
+        name: diar ? s.name : "",
+        tone: tone.light,
+        toneDark: tone.dark,
+        avatarBg: tone.avatar,
+        avatarLight: tone.avatarLight,
+        bg: active === s.id ? wash : "transparent",
+        rule: active === s.id ? rule : "transparent"
+      };
+    });
+
+    const cur = this.segs.find(s => s.id === active);
+    const ctx = this.segs.filter(s => s.id === active + 1 || s.id === active + 2)
+      .map(s => ({ t: s.t, name: diar ? s.name : "Unlabelled", text: s.text }));
+
+    return {
+      onCite: this.onCite,
+      personaLabel,
+      takeaways: p.takeaways,
+      quickActions: p.actions.slice(0, 4),
+      personasA: names.map(n => this.rail(n, "a")),
+      personasB: names.map(n => this.rail(n, "b")),
+      personasC: names.map(n => this.rail(n, "c")),
+      segsA: mk("oklch(0.90 0.05 250)", "oklch(0.46 0.13 252)"),
+      segsB: mk("oklch(0.28 0.04 82)", "oklch(0.80 0.135 82)"),
+      personas2a: names.map(n => this.rail(n, "n")),
+      personas2b: names.map(n => this.rail(n, "e")),
+      personas2c: names.map(n => this.rail(n, "s")),
+      segs2a: mk("oklch(0.91 0.045 155)", "oklch(0.44 0.11 155)"),
+      segs2b: mk("oklch(0.27 0.045 125)", "oklch(0.82 0.16 125)"),
+      personas3l: names.map(n => this.rail(n, "L")),
+      personas3d: names.map(n => this.rail(n, "D")),
+      segs3l: mk("oklch(0.905 0.064 142)", "oklch(0.452 0.148 146)"),
+      segs3d: mk("oklch(0.26 0.045 140)", "oklch(0.82 0.15 140)"),
+      segs2c: mk("oklch(0.29 0.05 28)", "oklch(0.70 0.15 28)"),
+      bars: this.bars(),
+      diarOff: !diar,
+      showInsights: this.props.showInsightCards ?? true,
+      insights: [
+        { name: "Priya Raghavan", talk: "46%", q: "5", f: "11", tone: this.tones["Priya Raghavan"].light, toneDark: this.tones["Priya Raghavan"].dark },
+        { name: "Marcus Lund", talk: "31%", q: "7", f: "6", tone: this.tones["Marcus Lund"].light, toneDark: this.tones["Marcus Lund"].dark },
+        { name: "Devon Achebe", talk: "23%", q: "1", f: "4", tone: this.tones["Devon Achebe"].light, toneDark: this.tones["Devon Achebe"].dark }
+      ],
+      hasActive: !!cur,
+      activeT: cur ? cur.t : "",
+      activeName: cur ? (diar ? cur.name : "Unlabelled speaker") : "",
+      activeText: cur ? cur.text : "",
+      context: ctx
+    };
+  }
+}
+</script>
+</body>
+</html>
