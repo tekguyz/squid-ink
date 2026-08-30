@@ -146,13 +146,18 @@ Both are knowledge files in the owner's Claude.ai planning Project, not in this
 repo. Read directly on 2026-08-30 and reconciled against what shipped. Nothing
 built here contradicts them. Four things worth carrying forward:
 
-- **`Persona` has no depth field.** ROADMAP §5 defines a Persona as three
-  things: lens, **depth/goal (Brief / Dense / Exhaustive)**, and quick-actions.
-  `lib/mock/types.ts` models only lens + quick-actions, because the Note Detail
-  design surfaces only those. Depth is a real part of the type and will need
-  adding — it also carries routing behaviour (Exhaustive may route note
-  generation to Gemini Pro rather than Flash), so it is not purely cosmetic.
-  Not a defect in this build; a known incompleteness in the shape.
+- **`Persona.depth` exists but nothing consumes it.** ROADMAP §5 defines a
+  Persona as three things: lens, **depth/goal (Brief / Dense / Exhaustive)**,
+  and quick-actions.
+
+  **RESOLVED 2026-08-30, partly.** `depth` is now a `PersonaDepth` field on the
+  view type in `lib/notes/view-types.ts` and a checked `depth` column on
+  `public.personas`. All four seeded personas carry `'dense'`, the column
+  default — the pre-change constants encoded no depth, so none was invented.
+  What is still owed is the *behaviour*: no UI control sets depth and no
+  routing reads it (Exhaustive may route note generation to Gemini Pro rather
+  than Flash). The shape is complete; the pipeline that would honour it does
+  not exist yet.
 
 - **Four personas exist, not five.** DECISIONS.md § "Already covered" said to
   fold framework-template naming "into the 5 built-in Personas". Both design
@@ -163,7 +168,8 @@ built here contradicts them. Four things worth carrying forward:
   **RESOLVED 2026-08-30.** The doc's figure was stale, not a missing fifth
   persona. DECISIONS.md was edited to say four and the owner reports the count
   as confirmed and locked. Four is now the only figure in play, and it matches
-  both design files and `lib/notes/persona-presets.ts`. No fifth persona is
+  both design files and the four seeded `public.personas` rows. No fifth
+  persona is
   owed. DECISIONS.md is not in this repo — it lives in the owner's Claude.ai
   planning Project — so this closure rests on the owner's report of that edit,
   not on a file this audit can read.
@@ -217,7 +223,7 @@ started**, or is a known incompleteness in what shipped.
   either Docker or a hand-authored file, plus the catalog-diff check in the
   plan's Task 4 Step 5.
 
-- **View types still live in `lib/mock/types.ts`.** The frozen Note Detail
+- **View types used to live in `lib/mock/types.ts`.** The frozen Note Detail
   components import `Note`, `Segment`, `Speaker` and friends from there, so
   `lib/notes/*` has to import them from the same path. Real code depends on a
   module named "mock". The fix is mechanical — move them to
@@ -225,17 +231,30 @@ started**, or is a known incompleteness in what shipped.
   `components/` and `lib/mock/` were both frozen for that prompt.
 
   **Measured 2026-08-30 during the handoff audit:** `mockNote` now has no
-  importer outside its own tests. `lib/mock/note.ts` survives only for
-  `DEFAULT_PERSONA_ID`, and `lib/mock/types.ts` only for the view types. Both
-  should be folded into `lib/notes/` when `components/` next unfreezes.
+  importer outside its own tests.
+
+  **RESOLVED 2026-08-30.** `lib/mock/types.ts` moved wholesale to
+  `lib/notes/view-types.ts` and was deleted; `DEFAULT_PERSONA_ID` now lives in
+  `lib/notes/default-persona.ts`. `lib/mock/note.ts` remains only as a fixture
+  for the component tests.
   `CLAUDE.md`'s "Data: mock only, no environment variables, no backend" rule was
   still asserting the pre-Supabase state and was corrected in the same audit.
 
-- **Three of four personas are hardcoded.** Only `neutral-analyst` takeaways
-  come from real `takeaway` chunks. Sales Coach, Investor and Engineering Lead
-  live in `lib/notes/persona-presets.ts`. There is no `personas` table and no
-  `persona_id` on `note_chunks`, so a takeaway cannot yet be attributed to a
-  lens. Core UX/UI phase.
+- **Three of four personas were hardcoded.**
+
+  **RESOLVED 2026-08-30.** All four personas are rows in `public.personas`,
+  owner-scoped under the same four-policy RLS pattern as `notes` and
+  `note_chunks`. `note_chunks.persona_id` (nullable, `on delete set null`)
+  attributes a takeaway to a lens; a null `persona_id` reads as the default
+  persona, which is what keeps chunks written before the table rendering
+  unchanged. `lib/notes/persona-presets.ts` is deleted.
+
+- **Personas are not provisioned for new users.** There is no trigger on
+  `auth.users` and no persona authoring UI, so a fresh account gets zero rows
+  and falls back to the single `DEFAULT_PERSONA_FALLBACK` in
+  `lib/notes/default-persona.ts` — one lens, no Sales Coach / Investor /
+  Engineering Lead. Only the seed owner has the four. Provisioning belongs with
+  the Personas UI (ROADMAP §5).
 
 - **`waveform`, `playhead` and `sampleExchange` are constants, not data.** No
   column backs any of them. The timeline bar is Advanced-phase, playhead is

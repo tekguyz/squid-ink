@@ -77,15 +77,27 @@ purpose-named extraction, never a raised ceiling. The convention test enforces 4
 
 ## Data
 
-Note Detail reads from Supabase. `lib/notes/get-note.ts` fetches the note and its
-chunks through the server client and `lib/notes/note-view-model.ts` shapes them
-into what the components render. There is still no `fetch` and no API client —
-the Supabase SDK is the only data path, and it is called from server components.
+Note Detail reads from Supabase. `lib/notes/get-note.ts` fetches the note, its
+chunks and the user's personas through the server client and
+`lib/notes/note-view-model.ts` shapes them into what the components render.
+There is still no `fetch` and no API client — the Supabase SDK is the only data
+path, and it is called from server components.
 
-`lib/mock/note.ts` is no longer rendered. `mockNote` has no importer outside its
-own tests; the file survives only for `DEFAULT_PERSONA_ID`, and `lib/mock/types.ts`
-remains the shared type source the components import. Do not add new mock rows —
-new data goes in the database.
+The view types the components consume live in `lib/notes/view-types.ts`.
+`lib/notes/types.ts` holds the database row shapes that mirror
+`supabase/schemas/*.sql`. `lib/mock/types.ts` is gone.
+
+All four personas are rows in `public.personas`; there is no hardcoded persona
+array. `note_chunks.persona_id` attributes a takeaway to a lens, and a null
+`persona_id` means the default persona — which is why chunks written before the
+table existed still render under Neutral Analyst. `DEFAULT_PERSONA_ID` and the
+one fallback persona for a user with no rows live in
+`lib/notes/default-persona.ts`, which is client-safe by design: the shell is a
+client component and must not pull in the server Supabase client.
+
+`lib/mock/note.ts` is no longer rendered. `mockNote` has no importer outside
+component tests, which use it as a fixture. Do not add new mock rows — new data
+goes in the database.
 
 Nothing calls `Math.random()` or `Date.now()` in a render path — the waveform bar
 heights are precomputed constants.
@@ -122,7 +134,9 @@ Exact pins, verified against the live npm registry on 2026-08-30.
 
 `supabase/schemas/*.sql` is the source of truth. `config.toml` lists them in
 dependency order — **not** a glob, which would sort `note_chunks.sql` before
-`notes.sql` and break the foreign key.
+`notes.sql` and break the foreign key. The order is `notes.sql`,
+`personas.sql`, `note_chunks.sql`: personas needs `set_updated_at()` from
+notes, and note_chunks carries a foreign key to personas.
 
 **Schema-file-first, no exceptions.** Never paste DDL into `db query` as an
 inline argument. Edit the `.sql` file, then apply that exact file. Every
