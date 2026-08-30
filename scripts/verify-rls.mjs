@@ -18,7 +18,7 @@
  *   through the publishable key plus a user JWT.
  *
  * NOT COVERED HERE — PROOF PATH B: real session cookies through
- * middleware.ts into a server component. That is the app's own plumbing and
+ * proxy.ts into a server component. That is the app's own plumbing and
  * is verified separately in the browser. Neither path substitutes for the
  * other; report both.
  *
@@ -133,7 +133,7 @@ const intruder = await signIn(
 );
 
 console.log("proof path : A - real password-grant JWT via Authorization header");
-console.log("             (NOT session cookies through middleware - see path B)");
+console.log("             (NOT session cookies through the proxy - see path B)");
 console.log(`owner      : ${owner.email}  ${owner.userId}  role=${owner.role}`);
 console.log(`second user: ${intruder.email}  ${intruder.userId}  role=${intruder.role}`);
 console.log("");

@@ -22,7 +22,7 @@ export async function createClient() {
               cookieStore.set(name, value, options);
             }
           } catch {
-            // Server components cannot write cookies. The middleware
+            // Server components cannot write cookies. The proxy
             // refreshes the session on every request, so a write that
             // lands here is already covered.
           }
