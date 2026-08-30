@@ -1,4 +1,4 @@
-import type { Persona } from "@/lib/mock/types";
+import type { Persona } from "@/lib/notes/view-types";
 
 /** The default persona's id. Its takeaways come from real `takeaway` chunks;
  *  only its name, subtitle and quick-actions are constants. */

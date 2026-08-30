@@ -1,7 +1,7 @@
 /** Database row shapes. These mirror supabase/schemas/*.sql — they are not
- *  the view types the components consume, which live in lib/mock/types.ts. */
+ *  the view types the components consume, which live in lib/notes/view-types.ts. */
 
-import type { SpeakerToken } from "@/lib/mock/types";
+import type { SpeakerToken } from "@/lib/notes/view-types";
 
 export type ChunkType =
   | "summary"

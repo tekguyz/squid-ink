@@ -1,5 +1,6 @@
-/** Shapes for the Note Detail mock. No colours live here — speakers carry a
- *  token name, and the token resolves in `app/globals.css`. */
+/** View types the Note Detail components consume. Shaped by
+ *  lib/notes/note-view-model.ts from database rows. No colours live here —
+ *  speakers carry a token name, and the token resolves in `app/globals.css`. */
 
 export type SpeakerToken = "speaker-1" | "speaker-2" | "speaker-3";
 

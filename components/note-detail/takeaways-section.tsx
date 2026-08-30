@@ -1,6 +1,6 @@
 "use client";
 
-import type { Takeaway } from "@/lib/mock/types";
+import type { Takeaway } from "@/lib/notes/view-types";
 import { CitationChip } from "./citation-chip";
 import { SectionRule } from "./section-rule";
 

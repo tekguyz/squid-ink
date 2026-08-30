@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { CiteRun } from "@/lib/mock/types";
+import type { CiteRun } from "@/lib/notes/view-types";
 import { CitationChip } from "./citation-chip";
 
 export interface ChatComposerProps {

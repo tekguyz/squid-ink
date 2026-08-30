@@ -1,4 +1,4 @@
-import type { Speaker } from "@/lib/mock/types";
+import type { Speaker } from "@/lib/notes/view-types";
 import { SPEAKER_AVATAR } from "./speaker-colors";
 
 export function SpeakerAvatar({ speaker }: { speaker: Speaker }) {

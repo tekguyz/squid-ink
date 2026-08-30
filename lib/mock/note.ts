@@ -1,4 +1,4 @@
-import type { Note, Speaker } from "./types";
+import type { Note, Speaker } from "@/lib/notes/view-types";
 
 export const DEFAULT_PERSONA_ID = "neutral-analyst";
 

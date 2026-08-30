@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildNoteViewModel } from "./note-view-model";
-import type { Note } from "@/lib/mock/types";
+import type { Note } from "@/lib/notes/view-types";
 import type { ChunkRow, NoteRow } from "./types";
 
 /**

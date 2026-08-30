@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Note } from "@/lib/mock/types";
+import type { Note } from "@/lib/notes/view-types";
 import { DEFAULT_PERSONA_ID } from "@/lib/mock/note";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ActionItemsTable } from "./action-items-table";

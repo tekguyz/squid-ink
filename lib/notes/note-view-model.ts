@@ -5,7 +5,7 @@ import type {
   Persona,
   Segment,
   Takeaway,
-} from "@/lib/mock/types";
+} from "@/lib/notes/view-types";
 import {
   DEFAULT_PERSONA_ACTIONS,
   DEFAULT_PERSONA_ID,

@@ -1,4 +1,4 @@
-import type { SpeakerStat } from "@/lib/mock/types";
+import type { SpeakerStat } from "@/lib/notes/view-types";
 import { SectionRule } from "./section-rule";
 import { SPEAKER_TEXT } from "./speaker-colors";
 
