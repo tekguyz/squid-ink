@@ -271,3 +271,26 @@ started**, or is a known incompleteness in what shipped.
   exist for query shapes the app does not run yet (HNSW and GIN back retrieval,
   which is not built). Not removable without breaking the RAG design in
   ROADMAP §4.
+
+### Deliberate deviations from the written plan
+
+- **`lib/supabase/middleware.ts` shipped as `lib/supabase/session.ts`.** Renamed
+  on purpose, not drift. Next.js 16 deprecates the root `middleware.ts`
+  convention in favour of `proxy.ts` (with the export renamed from `middleware`
+  to `proxy`), so the root file was migrated. Keeping a helper called
+  "middleware" next to a `proxy.ts` that no longer uses that word would have
+  been actively misleading. `session.ts` names what it does — refresh the auth
+  session — and `updateSession` kept its name. Verified: `npm run build` lists
+  the route as `ƒ Proxy (Middleware)`, so Next resolves the new convention.
+
+- **`config.toml` uses an explicit ordered `schema_paths` list, not the glob**
+  the plan showed. A glob sorts alphabetically, which would apply
+  `note_chunks.sql` before `notes.sql` and break the foreign key.
+
+- **`app/page.tsx` and `scripts/verify-rls.mjs` were added beyond the plan's
+  file list.** The former because the root route hardcoded the mock slug
+  `pilot-pricing-rollout`, which stops existing once note ids are database
+  UUIDs; the latter because the RLS proof needs somewhere to live. The auth
+  route files (`app/login/*`, `app/auth/confirm/route.ts`, `proxy.ts`) were
+  likewise added — with RLS on, a session-less page renders nothing, so
+  "auth wired in" is not true without them.
