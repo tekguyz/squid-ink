@@ -1,1 +1,209 @@
 @import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Design tokens. Locked values from Note Detail turn 3c.
+   Every colour in this app resolves here. Components never write oklch().
+
+   `@theme inline` maps Tailwind's namespace onto indirection variables; the
+   real values are set on :root and re-set under .dark, so the theme can swap
+   at runtime without any component knowing which theme is active.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-raised: var(--raised);
+  --color-canvas: var(--canvas);
+  --color-rail: var(--rail);
+  --color-pane: var(--pane);
+  --color-dock: var(--dock);
+
+  --color-rule: var(--rule);
+  --color-rule-2: var(--rule-2);
+  --color-rule-3: var(--rule-3);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-prose: var(--ink-prose);
+  --color-ink-stat: var(--ink-stat);
+
+  --color-muted: var(--muted);
+  --color-meta: var(--meta);
+  --color-meta-2: var(--meta-2);
+  --color-meta-3: var(--meta-3);
+  --color-meta-4: var(--meta-4);
+  --color-meta-5: var(--meta-5);
+  --color-faint: var(--faint);
+  --color-placeholder: var(--placeholder);
+  --color-rail-idle: var(--rail-idle);
+  --color-notice: var(--notice);
+  --color-notice-bg: var(--notice-bg);
+
+  --color-accent: var(--accent);
+  --color-accent-pressed: var(--accent-pressed);
+  --color-accent-text: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-tint: var(--tint);
+  --color-tint-hover: var(--tint-hover);
+  --color-seg-wash: var(--seg-wash);
+  --color-waveform: var(--waveform);
+
+  --color-speaker-1: var(--speaker-1);
+  --color-speaker-1-avatar: var(--speaker-1-avatar);
+  --color-speaker-2: var(--speaker-2);
+  --color-speaker-2-avatar: var(--speaker-2-avatar);
+  --color-speaker-3: var(--speaker-3);
+  --color-speaker-3-avatar: var(--speaker-3-avatar);
+
+  --font-header: var(--font-bitter), Georgia, serif;
+  --font-body: var(--font-archivo), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+/* --- Newsprint (light) — 3c ---------------------------------------------- */
+:root {
+  --paper: oklch(0.979 0.011 84);
+  --raised: oklch(0.960 0.014 82);
+  --canvas: oklch(0.948 0.016 82);
+  --rail: oklch(0.922 0.019 80);
+  --pane: oklch(0.922 0.019 80);
+  --dock: oklch(0.960 0.014 82);
+
+  --rule: oklch(0.856 0.023 80);
+  --rule-2: oklch(0.870 0.021 82);
+  --rule-3: oklch(0.898 0.019 82);
+
+  --ink: oklch(0.226 0.022 62);
+  --ink-2: oklch(0.300 0.021 62);
+  --ink-3: oklch(0.310 0.020 62);
+  --ink-prose: oklch(0.226 0.022 62);
+  --ink-stat: oklch(0.226 0.022 62);
+
+  --muted: oklch(0.500 0.018 64);
+  --meta: oklch(0.530 0.017 64);
+  --meta-2: oklch(0.530 0.017 64);
+  --meta-3: oklch(0.455 0.018 62);
+  --meta-4: oklch(0.530 0.017 64);
+  --meta-5: oklch(0.530 0.017 64);
+  --faint: oklch(0.660 0.015 68);
+  --placeholder: oklch(0.585 0.016 66);
+  --rail-idle: oklch(0.450 0.018 62);
+  --notice: oklch(0.415 0.019 62);
+  --notice-bg: oklch(0.898 0.019 82);
+
+  --accent: oklch(0.452 0.148 146);
+  --accent-pressed: oklch(0.402 0.138 146);
+  --accent-text: oklch(0.352 0.130 146);
+  --on-accent: oklch(0.978 0.024 140);
+  --tint: oklch(0.905 0.064 142);
+  --tint-hover: oklch(0.858 0.098 142);
+  --seg-wash: oklch(0.905 0.064 142);
+  --waveform: oklch(0.800 0.052 142);
+
+  --speaker-1: oklch(0.50 0.10 252);
+  --speaker-1-avatar: oklch(0.90 0.04 252);
+  --speaker-2: oklch(0.47 0.09 155);
+  --speaker-2-avatar: oklch(0.90 0.04 155);
+  --speaker-3: oklch(0.48 0.09 55);
+  --speaker-3-avatar: oklch(0.90 0.04 60);
+}
+
+/* --- Espresso (dark) — 3c + 3b ------------------------------------------- */
+
+.dark {
+  --paper: oklch(0.185 0.014 48);
+  --raised: oklch(0.235 0.016 50);
+  --canvas: oklch(0.185 0.014 48);
+  --rail: oklch(0.155 0.013 46);
+  --pane: oklch(0.215 0.015 50);
+  --dock: oklch(0.165 0.013 48);
+
+  --rule: oklch(0.30 0.016 50);
+  --rule-2: oklch(0.32 0.016 50);
+  --rule-3: oklch(0.27 0.015 48);
+
+  --ink: oklch(0.93 0.010 88);
+  --ink-2: oklch(0.88 0.010 88);
+  --ink-3: oklch(0.88 0.010 88);
+  --ink-prose: oklch(0.90 0.010 88);
+  --ink-stat: oklch(0.92 0.010 88);
+
+  --muted: oklch(0.66 0.012 80);
+  --meta: oklch(0.58 0.012 80);
+  --meta-2: oklch(0.62 0.012 80);
+  --meta-3: oklch(0.70 0.012 80);
+  --meta-4: oklch(0.60 0.012 80);
+  --meta-5: oklch(0.64 0.012 80);
+  --faint: oklch(0.50 0.014 78);
+  --placeholder: oklch(0.58 0.012 80);
+  --rail-idle: oklch(0.72 0.012 82);
+  --notice: oklch(0.78 0.012 84);
+  --notice-bg: oklch(0.235 0.016 50);
+
+  --accent: oklch(0.82 0.15 140);
+  --accent-pressed: oklch(0.86 0.15 142);
+  --accent-text: oklch(0.86 0.15 142);
+  --on-accent: oklch(0.18 0.05 140);
+  --tint: oklch(0.30 0.06 140);
+  --tint-hover: oklch(0.42 0.09 140);
+  --seg-wash: oklch(0.26 0.045 140);
+  --waveform: oklch(0.40 0.06 140);
+
+  --speaker-1: oklch(0.78 0.09 252);
+  --speaker-1-avatar: oklch(0.30 0.05 252);
+  --speaker-2: oklch(0.78 0.08 155);
+  --speaker-2-avatar: oklch(0.29 0.05 155);
+  --speaker-3: oklch(0.80 0.08 60);
+  --speaker-3-avatar: oklch(0.30 0.05 60);
+}
+
+/* Same dark values, applied when the OS asks for dark and the user has not
+   forced light. The :not(.light) guard is what lets the toggle win. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --paper: oklch(0.185 0.014 48);
+    --raised: oklch(0.235 0.016 50);
+    --canvas: oklch(0.185 0.014 48);
+    --rail: oklch(0.155 0.013 46);
+    --pane: oklch(0.215 0.015 50);
+    --dock: oklch(0.165 0.013 48);
+
+    --rule: oklch(0.30 0.016 50);
+    --rule-2: oklch(0.32 0.016 50);
+    --rule-3: oklch(0.27 0.015 48);
+
+    --ink: oklch(0.93 0.010 88);
+    --ink-2: oklch(0.88 0.010 88);
+    --ink-3: oklch(0.88 0.010 88);
+    --ink-prose: oklch(0.90 0.010 88);
+    --ink-stat: oklch(0.92 0.010 88);
+
+    --muted: oklch(0.66 0.012 80);
+    --meta: oklch(0.58 0.012 80);
+    --meta-2: oklch(0.62 0.012 80);
+    --meta-3: oklch(0.70 0.012 80);
+    --meta-4: oklch(0.60 0.012 80);
+    --meta-5: oklch(0.64 0.012 80);
+    --faint: oklch(0.50 0.014 78);
+    --placeholder: oklch(0.58 0.012 80);
+    --rail-idle: oklch(0.72 0.012 82);
+    --notice: oklch(0.78 0.012 84);
+    --notice-bg: oklch(0.235 0.016 50);
+
+    --accent: oklch(0.82 0.15 140);
+    --accent-pressed: oklch(0.86 0.15 142);
+    --accent-text: oklch(0.86 0.15 142);
+    --on-accent: oklch(0.18 0.05 140);
+    --tint: oklch(0.30 0.06 140);
+    --tint-hover: oklch(0.42 0.09 140);
+    --seg-wash: oklch(0.26 0.045 140);
+    --waveform: oklch(0.40 0.06 140);
+
+    --speaker-1: oklch(0.78 0.09 252);
+    --speaker-1-avatar: oklch(0.30 0.05 252);
+    --speaker-2: oklch(0.78 0.08 155);
+    --speaker-2-avatar: oklch(0.29 0.05 155);
+    --speaker-3: oklch(0.80 0.08 60);
+    --speaker-3-avatar: oklch(0.30 0.05 60);
+  }
+}
