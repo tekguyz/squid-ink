@@ -26,13 +26,23 @@ holds ten surfaces (01 dashboard, 02 recorder, 02b record HUD, 03 personas,
 Zustand not invoked here — state is local to one component, no drawers/cross-route
 state in this build. Revisit if a second stateful surface needs to share state.
 
-This is a divergence from the locked DECISIONS.md choice of Zustand for ephemeral
-client UI state. `note-detail-shell.tsx` uses plain `useState` for the three pieces
-of state (active segment, selected persona, composer draft). Recorded, not silent.
+`note-detail-shell.tsx` uses plain `useState` for its three pieces of state:
+active segment, selected persona, composer draft.
 
-Note: no `DECISIONS.md` file was found on disk under `C:/Projects` at the time of
-writing, so this divergence is recorded from the stated decision rather than from
-a checked-in file.
+**Amended 2026-08-30, after reading DECISIONS.md directly.** This was first
+recorded as a divergence from a locked decision. It is not one. DECISIONS.md
+§ State management enumerates Zustand's scope as "drawers, recorder HUD/dock
+state, dashboard filters, split-screen/timeline toggles" — none of which exists
+on this screen. Local `useState` is inside the locked decision, not beside it.
+
+What *would* be a divergence, and is worth watching: if a future surface needs
+the selected persona (the recorder HUD plausibly will), that state stops being
+local and belongs in a Zustand store. Move it then; do not pre-build the store.
+
+Provenance: `DECISIONS.md` and `ROADMAP.md` are knowledge files in the owner's
+Claude.ai planning Project, not files in this repo. They are not on disk here and
+cannot be verified by `check-docs.mjs` — anything this repo asserts about them is
+a transcription and can go stale. Re-read them before relying on a quotation.
 
 ## Tokens not enumerated in 3c (recorded 2026-08-30)
 
@@ -97,6 +107,11 @@ This gap is closed. No token needs changing.
   a "labels unavailable" notice for recordings without diarisation. The notice is
   built and styled in `transcript-pane.tsx`, but nothing toggles it yet — it needs
   real transcription data, which is out of scope here.
+
+  Confirmed correct against DECISIONS.md § Speaker diarization (read 2026-08-30):
+  diarisation is "on by default, auto-disabled per-recording past ~28 minutes …
+  **no manual toggle**". So this prop must stay data-driven and must never gain a
+  UI control. The notice is the fallback state, not a user setting.
 - **TypeScript 7.0.2** was pinned and typechecked clean. No fallback to 6.x was
   needed.
 
@@ -124,3 +139,35 @@ and deliberately left:
   built here as a real focusable button, but has no handler — searching the
   transcript was not in scope. It should either be wired or removed before this
   screen ships to a user.
+
+## Gaps found by reading ROADMAP.md and DECISIONS.md (recorded 2026-08-30)
+
+Both are knowledge files in the owner's Claude.ai planning Project, not in this
+repo. Read directly on 2026-08-30 and reconciled against what shipped. Nothing
+built here contradicts them. Four things worth carrying forward:
+
+- **`Persona` has no depth field.** ROADMAP §5 defines a Persona as three
+  things: lens, **depth/goal (Brief / Dense / Exhaustive)**, and quick-actions.
+  `lib/mock/types.ts` models only lens + quick-actions, because the Note Detail
+  design surfaces only those. Depth is a real part of the type and will need
+  adding — it also carries routing behaviour (Exhaustive may route note
+  generation to Gemini Pro rather than Flash), so it is not purely cosmetic.
+  Not a defect in this build; a known incompleteness in the shape.
+
+- **Four personas exist, not five.** DECISIONS.md § "Already covered" says to
+  fold framework-template naming "into the 5 built-in Personas". Both design
+  files define exactly four — Neutral Analyst, Sales Coach, Investor,
+  Engineering Lead — in the Note Detail data block and in App Surfaces
+  surface 03. This build ships those four. **Owner's call:** either a fifth
+  persona is unnamed and still owed, or the doc's figure is stale.
+
+- **Quick actions match the spec exactly.** ROADMAP §5 names the built-in set to
+  design against: *Extract decisions only*, *Timeline of blockers*, *Unanswered
+  questions*, *Diff against last call*. Those are the four shipped under Neutral
+  Analyst. The per-lens draft-follow-up actions (client email, Slack message,
+  Jira ticket) are Core UX/UI and are not built.
+
+- **Cross-note chat is correctly absent.** ROADMAP §4 promotes an "ask all
+  notes" mode alongside the existing "Ask this note…" composer, in Core UX/UI.
+  The composer here reads "Ask this note…" and has no scope toggle, which is the
+  correct MVP state.
