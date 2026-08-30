@@ -154,12 +154,19 @@ built here contradicts them. Four things worth carrying forward:
   generation to Gemini Pro rather than Flash), so it is not purely cosmetic.
   Not a defect in this build; a known incompleteness in the shape.
 
-- **Four personas exist, not five.** DECISIONS.md § "Already covered" says to
+- **Four personas exist, not five.** DECISIONS.md § "Already covered" said to
   fold framework-template naming "into the 5 built-in Personas". Both design
   files define exactly four — Neutral Analyst, Sales Coach, Investor,
   Engineering Lead — in the Note Detail data block and in App Surfaces
-  surface 03. This build ships those four. **Owner's call:** either a fifth
-  persona is unnamed and still owed, or the doc's figure is stale.
+  surface 03. This build ships those four.
+
+  **RESOLVED 2026-08-30.** The doc's figure was stale, not a missing fifth
+  persona. DECISIONS.md was edited to say four and the owner reports the count
+  as confirmed and locked. Four is now the only figure in play, and it matches
+  both design files and `lib/notes/persona-presets.ts`. No fifth persona is
+  owed. DECISIONS.md is not in this repo — it lives in the owner's Claude.ai
+  planning Project — so this closure rests on the owner's report of that edit,
+  not on a file this audit can read.
 
 - **Quick actions match the spec exactly.** ROADMAP §5 names the built-in set to
   design against: *Extract decisions only*, *Timeline of blockers*, *Unanswered
