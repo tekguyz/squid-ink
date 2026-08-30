@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildNoteViewModel } from "./note-view-model";
+import { getPersonas } from "./get-personas";
 import type { Note } from "@/lib/notes/view-types";
 import type { ChunkRow, NoteRow } from "./types";
 
@@ -21,14 +22,18 @@ export async function getNote(id: string): Promise<Note | null> {
   const [
     { data: note, error: noteError },
     { data: chunks, error: chunkError },
+    personas,
   ] = await Promise.all([
     supabase.from("notes").select("*").eq("id", id).maybeSingle<NoteRow>(),
     supabase.from("note_chunks").select("*").eq("note_id", id).returns<ChunkRow[]>(),
+    // Personas are per-user, not per-note, so this rides along rather than
+    // waiting on the note. getPersonas throws on error; nothing to check here.
+    getPersonas(),
   ]);
 
   if (noteError) throw new Error(`Failed to load note: ${noteError.message}`);
   if (chunkError) throw new Error(`Failed to load note chunks: ${chunkError.message}`);
   if (!note) return null;
 
-  return buildNoteViewModel(note, chunks ?? []);
+  return buildNoteViewModel(note, chunks ?? [], personas);
 }

@@ -31,10 +31,15 @@ export interface SpeakerStat {
   fillers: string;
 }
 
+/** ROADMAP.md §5's Brief/Dense/Exhaustive. Carried on the type and the table;
+ *  nothing consumes it yet — there is no model routing and no UI control. */
+export type PersonaDepth = "brief" | "dense" | "exhaustive";
+
 export interface Persona {
   id: string;
   name: string;
   sub: string;
+  depth: PersonaDepth;
   takeaways: Takeaway[];
   actions: string[];
 }

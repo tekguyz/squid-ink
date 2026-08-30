@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildNoteViewModel } from "../note-view-model";
-import type { ChunkMetadata, ChunkRow, NoteRow } from "../types";
+import type { ChunkMetadata, ChunkRow, NoteRow, PersonaRow } from "../types";
+import { DEFAULT_PERSONA_ID } from "../default-persona";
 
 const NOTE_ID = "11111111-1111-4111-8111-111111111111";
 const USER_ID = "79db5c35-8d50-41c9-a265-49b786994455";
@@ -23,11 +24,13 @@ const chunk = (
   chunk_type: ChunkRow["chunk_type"],
   content: string,
   metadata: ChunkMetadata,
+  persona_id: string | null = null,
 ): ChunkRow => ({
   id: `chunk-${(seq += 1)}`,
   note_id: NOTE_ID,
   user_id: USER_ID,
   chunk_type,
+  persona_id,
   content,
   embedding: null,
   metadata,
@@ -61,8 +64,33 @@ const chunks: ChunkRow[] = [
   }),
 ];
 
+const personaRow = (slug: string, sortOrder: number): PersonaRow => ({
+  id: `id-${slug}`,
+  user_id: USER_ID,
+  slug,
+  name: slug,
+  sub: `${slug} sub`,
+  depth: "dense",
+  quick_actions: [`${slug} action`],
+  sort_order: sortOrder,
+  created_at: "2026-08-30T00:00:00Z",
+  updated_at: "2026-08-30T00:00:00Z",
+});
+
+const takeaway = (personaId: string | null, n: number): ChunkRow =>
+  chunk("takeaway", `takeaway ${n}`, { seq: n, n: String(n).padStart(2, "0"), ts_start: "00:58", segment_id: 3 }, personaId);
+
+/** The four seeded personas, as rows. Named by slug so the assertions below
+ *  read the same as the rail does. */
+const PERSONAS: PersonaRow[] = [
+  personaRow("neutral-analyst", 0),
+  personaRow("sales-coach", 1),
+  personaRow("investor", 2),
+  personaRow("engineering-lead", 3),
+];
+
 describe("buildNoteViewModel", () => {
-  const note = buildNoteViewModel(row, chunks);
+  const note = buildNoteViewModel(row, chunks, PERSONAS);
 
   it("carries the row's id and title through", () => {
     expect(note.id).toBe(NOTE_ID);
@@ -114,7 +142,7 @@ describe("buildNoteViewModel", () => {
     ]);
   });
 
-  it("appends the three preset personas after the default", () => {
+  it("renders one persona per row, in the order the rows arrive", () => {
     expect(note.personas).toHaveLength(4);
     expect(note.personas.map((p) => p.id)).toEqual([
       "neutral-analyst",
@@ -125,9 +153,10 @@ describe("buildNoteViewModel", () => {
   });
 
   it("counts every citation across summary, takeaways and action items", () => {
-    // 2 summary runs carry a cite, 2 default-persona takeaways, 9 preset
-    // takeaways, 1 action item.
-    expect(note.spansLinked).toBe(14);
+    // 2 summary runs carry a cite, 2 takeaways (both null-attributed, so
+    // both the default persona's), 1 action item. The other three personas
+    // have no takeaway chunks in this fixture.
+    expect(note.spansLinked).toBe(5);
   });
 
   it("computes speaker stats rather than reading a stored column", () => {
@@ -139,7 +168,7 @@ describe("buildNoteViewModel", () => {
   });
 
   it("survives a note with no chunks at all", () => {
-    const empty = buildNoteViewModel(row, []);
+    const empty = buildNoteViewModel(row, [], PERSONAS);
     expect(empty.segments).toEqual([]);
     expect(empty.turnCount).toBe(0);
     expect(empty.summary).toEqual([]);
@@ -147,8 +176,61 @@ describe("buildNoteViewModel", () => {
   });
 
   it("falls back cleanly when duration is null", () => {
-    const noDuration = buildNoteViewModel({ ...row, audio_duration_seconds: null }, chunks);
+    const noDuration = buildNoteViewModel(
+      { ...row, audio_duration_seconds: null },
+      chunks,
+      PERSONAS,
+    );
     expect(noDuration.duration).toBe("00:00");
     expect(noDuration.meta).toBe("Wed 26 Aug 2026");
+  });
+});
+
+describe("persona assembly", () => {
+  it("exposes the persona slug as the view id, in the order the rows arrive", () => {
+    // The query orders rows by sort_order; the view model must not reorder.
+    const note = buildNoteViewModel(row, [], [personaRow("neutral-analyst", 0), personaRow("investor", 1)]);
+    expect(note.personas.map((p) => p.id)).toEqual(["neutral-analyst", "investor"]);
+  });
+
+  it("maps quick_actions onto actions and carries depth through", () => {
+    const note = buildNoteViewModel(row, [], [personaRow("neutral-analyst", 0)]);
+    expect(note.personas[0].actions).toEqual(["neutral-analyst action"]);
+    expect(note.personas[0].depth).toBe("dense");
+  });
+
+  it("gives a null-attributed takeaway to the default persona", () => {
+    const note = buildNoteViewModel(row, [takeaway(null, 1)], [
+      personaRow(DEFAULT_PERSONA_ID, 0),
+      personaRow("investor", 1),
+    ]);
+    expect(note.personas[0].takeaways).toHaveLength(1);
+    expect(note.personas[1].takeaways).toEqual([]);
+  });
+
+  it("gives an attributed takeaway to its own persona only", () => {
+    const note = buildNoteViewModel(row, [takeaway("id-investor", 1)], [
+      personaRow(DEFAULT_PERSONA_ID, 0),
+      personaRow("investor", 1),
+    ]);
+    expect(note.personas[0].takeaways).toEqual([]);
+    expect(note.personas[1].takeaways).toHaveLength(1);
+  });
+
+  it("falls back to a single default persona when the user has no rows", () => {
+    // A new account before its personas are provisioned. The rail must still
+    // render, and the takeaways must still land somewhere.
+    const note = buildNoteViewModel(row, [takeaway(null, 1)], []);
+    expect(note.personas).toHaveLength(1);
+    expect(note.personas[0].id).toBe(DEFAULT_PERSONA_ID);
+    expect(note.personas[0].takeaways).toHaveLength(1);
+  });
+
+  it("counts every persona's takeaways in spansLinked", () => {
+    const note = buildNoteViewModel(row, [takeaway(null, 1), takeaway("id-investor", 1)], [
+      personaRow(DEFAULT_PERSONA_ID, 0),
+      personaRow("investor", 1),
+    ]);
+    expect(note.spansLinked).toBe(2);
   });
 });

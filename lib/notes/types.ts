@@ -1,7 +1,7 @@
 /** Database row shapes. These mirror supabase/schemas/*.sql — they are not
  *  the view types the components consume, which live in lib/notes/view-types.ts. */
 
-import type { SpeakerToken } from "@/lib/notes/view-types";
+import type { PersonaDepth, SpeakerToken } from "@/lib/notes/view-types";
 
 export type ChunkType =
   | "summary"
@@ -50,8 +50,25 @@ export interface ChunkRow {
   note_id: string;
   user_id: string;
   chunk_type: ChunkType;
+  /** Null means the chunk belongs to the default persona. */
+  persona_id: string | null;
   content: string;
   embedding: number[] | null;
   metadata: ChunkMetadata;
   created_at: string;
+}
+
+/** A personas row. `slug` is what the view model exposes as Persona.id —
+ *  the uuid is per-user and would not survive a reseed. */
+export interface PersonaRow {
+  id: string;
+  user_id: string;
+  slug: string;
+  name: string;
+  sub: string;
+  depth: PersonaDepth;
+  quick_actions: string[];
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }

@@ -1,20 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ChunkRow, NoteRow } from "../types";
+import type { ChunkRow, NoteRow, PersonaRow } from "../types";
 
 const NOTE_ID = "11111111-1111-4111-8111-111111111111";
 
 type Result<T> = { data: T; error: { message: string } | null };
 
-/** Stubs the two query chains getNote builds:
+/** Stubs the three query chains getNote builds:
  *    .from("notes").select(...).eq(...).maybeSingle()
  *    .from("note_chunks").select(...).eq(...).returns()
- *  Both chains are thenable at the end, so awaiting either resolves. */
-function stubClient(notes: Result<NoteRow | null>, chunks: Result<ChunkRow[] | null>) {
+ *    .from("personas").select(...).order(...).returns()   — via getPersonas
+ *  Every chain is thenable at the end, so awaiting any of them resolves. */
+const NO_PERSONAS: Result<PersonaRow[]> = { data: [], error: null };
+
+function stubClient(
+  notes: Result<NoteRow | null>,
+  chunks: Result<ChunkRow[] | null>,
+  personas: Result<PersonaRow[] | null> = NO_PERSONAS,
+) {
   const from = vi.fn((table: string) => {
-    const result = table === "notes" ? notes : chunks;
+    const result =
+      table === "notes" ? notes : table === "personas" ? personas : chunks;
     const chain: Record<string, unknown> = {
       select: () => chain,
       eq: () => chain,
+      order: () => chain,
       maybeSingle: () => Promise.resolve(result),
       returns: () => Promise.resolve(result),
       then: (resolve: (value: unknown) => unknown) => Promise.resolve(result).then(resolve),
@@ -50,6 +59,7 @@ const segment: ChunkRow = {
   note_id: NOTE_ID,
   user_id: noteRow.user_id,
   chunk_type: "transcript_segment",
+  persona_id: null,
   content: "First turn.",
   embedding: null,
   metadata: {
