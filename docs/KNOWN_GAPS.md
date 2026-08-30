@@ -84,3 +84,22 @@ built from 3c alone. If App Surfaces is ever supplied, reconcile against it.
 The other eight App Surfaces screens, Supabase/auth/any backend, real
 transcription or RAG data, PWA setup, brand assets, and routing beyond
 `/notes/[id]`. The composer accepts and clears input but sends nothing.
+
+## Code-review findings not acted on (recorded 2026-08-30)
+
+Reviewed against `web-design-guidelines` and `vercel-react-best-practices`.
+Six findings were fixed (native `color-scheme` per theme, action-item label hit
+target, `autocomplete`/`enterkeyhint` on the ask input, `text-pretty` on the
+title, memoised waveform, theme-toggle first-paint label). Two were considered
+and deliberately left:
+
+- **State is not deep-linked.** The web guidelines ask that stateful UI —
+  selected lens, expanded panels — live in the URL so it can be shared and
+  restored. Selected persona and active transcript segment are `useState` only.
+  Deferred because the plan pinned local state for this single screen; see the
+  Zustand entry above. Worth revisiting together with that decision, not
+  separately.
+- **The transcript SEARCH control is inert.** It is drawn in the design and
+  built here as a real focusable button, but has no handler — searching the
+  transcript was not in scope. It should either be wired or removed before this
+  screen ships to a user.

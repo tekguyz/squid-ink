@@ -61,6 +61,9 @@ export function ChatComposer({
       >
         <input
           type="text"
+          name="note-question"
+          autoComplete="off"
+          enterKeyHint="send"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           aria-label="Ask this note"

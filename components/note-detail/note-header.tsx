@@ -4,7 +4,7 @@ export function NoteHeader({ meta, title }: { meta: string; title: string }) {
       <p className="font-mono text-[9px] tracking-[0.14em] uppercase text-meta">
         {meta}
       </p>
-      <h1 className="mt-[7px] font-header text-[29px] font-medium leading-[1.14] tracking-[-0.012em]">
+      <h1 className="mt-[7px] font-header text-[29px] text-pretty font-medium leading-[1.14] tracking-[-0.012em]">
         {title}
       </h1>
     </header>

@@ -1,10 +1,12 @@
+import { memo } from "react";
+
 export interface WaveformProps {
   bars: number[];
   playhead: string;
   duration: string;
 }
 
-export function Waveform({ bars, playhead, duration }: WaveformProps) {
+function WaveformBars({ bars, playhead, duration }: WaveformProps) {
   return (
     <>
       <div aria-hidden className="mt-3 flex h-8 items-end gap-[1.5px]">
@@ -24,3 +26,7 @@ export function Waveform({ bars, playhead, duration }: WaveformProps) {
     </>
   );
 }
+
+/** 68 bars that never change while the note is open — memoised so a citation
+ *  click does not re-render all of them. */
+export const Waveform = memo(WaveformBars);
