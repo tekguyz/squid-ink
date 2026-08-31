@@ -14,3 +14,8 @@ design-reference/support.js
 
 # The .env* rule above would otherwise swallow the committed example file.
 !.env.local.example
+
+# Audio pulled out of Storage for manual QA (docs/qa/recorder-manual-test-protocol.md).
+*.bin
+*.webm
+*.m4a
