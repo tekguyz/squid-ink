@@ -88,7 +88,11 @@ The view types the components consume live in `lib/notes/view-types.ts`.
 `supabase/schemas/*.sql`. The old mock types module under `lib/mock/` is gone.
 
 All four personas are rows in `public.personas`; there is no hardcoded persona
-array. `note_chunks.persona_id` attributes a takeaway to a lens, and a null
+array. A new account gets its four rows from the database, not from app code:
+`supabase/schemas/persona_provisioning.sql` puts a `security definer` trigger on
+`auth.users` that inserts them. Accounts created before that trigger shipped
+(2026-08-31) are deliberately not backfilled, which is why the fallback below is
+still live code. `note_chunks.persona_id` attributes a takeaway to a lens, and a null
 `persona_id` means the default persona — which is why chunks written before the
 table existed still render under Neutral Analyst. `DEFAULT_PERSONA_ID` and the
 one fallback persona for a user with no rows live in
@@ -135,8 +139,9 @@ Exact pins, verified against the live npm registry on 2026-08-30.
 `supabase/schemas/*.sql` is the source of truth. `config.toml` lists them in
 dependency order — **not** a glob, which would sort `note_chunks.sql` before
 `notes.sql` and break the foreign key. The order is `notes.sql`,
-`personas.sql`, `note_chunks.sql`: personas needs `set_updated_at()` from
-notes, and note_chunks carries a foreign key to personas.
+`personas.sql`, `note_chunks.sql`, `persona_provisioning.sql`: personas needs
+`set_updated_at()` from notes, note_chunks carries a foreign key to personas,
+and persona_provisioning's trigger writes into personas.
 
 **Schema-file-first, no exceptions.** Never paste DDL into `db query` as an
 inline argument. Edit the `.sql` file, then apply that exact file. Every
@@ -215,6 +220,7 @@ that needs a request through `proxy.ts` with a real session. Run both.
     npm run typecheck  # tsc --noEmit
     npm test           # vitest run
     node scripts/verify-rls.mjs   # two-user RLS proof, needs .env.local
+    node scripts/verify-persona-provisioning.mjs   # signup-trigger proof, needs .env.local
 
 <!-- BEGIN:nextjs-agent-rules -->
 
