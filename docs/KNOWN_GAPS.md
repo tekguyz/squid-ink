@@ -402,9 +402,13 @@ scanner that pre-clicks links breaks magic-link sign-in for every user on that
 mail host, and no amount of app-side code fixes it. Worth confirming before
 magic-link is the only way in.
 
-**Cleanup owed.** The `admin+pathb@tekguyz.com` auth user still exists. It owns
-no rows. Delete it from the Supabase dashboard, or keep it as a standing
-zero-row fixture — but decide, rather than letting it accumulate.
+**Cleanup — decided 2026-08-30: delete, do not keep as a fixture.** The
+`admin+pathb@tekguyz.com` auth user (`7023f7cb-5a43-4580-88a0-4fe0c18072b6`)
+owns no rows, so nothing cascades. Removal is a dashboard action by the owner
+(Authentication → Users → delete), not a scripted one — this repo's secret key
+is confined to `scripts/verify-rls.mjs` and gains no account-deletion path.
+Re-running Path B creates a new user each time; delete each one after the run
+rather than accumulating them.
 
 ## Auth — verified 2026-08-30
 
