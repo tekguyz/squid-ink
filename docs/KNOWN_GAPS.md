@@ -568,6 +568,18 @@ produces, from an entirely different cause. Server logs confirm the raw
 deployment host was being browsed during the 2026-08-30 failures, so this may
 have produced some of them.
 
-**Open.** Either add `https://squid-*-tekguyz.vercel.app/**` to the Redirect URL
-allowlist, or treat `https://squid-ink.vercel.app` as the only origin anyone ever
-signs in on. Not decided. Until it is, never test auth on a deployment URL.
+**RESOLVED 2026-08-30.** `https://squid-*-tekguyz.vercel.app/**` was added to
+the Redirect URL allowlist by the owner. Re-probed: both deployment URLs above
+are now honoured, and a junk domain still falls back to the Site URL, so the
+pattern did not widen the allowlist past Vercel's own hosts. A real magic-link
+sign-in then succeeded on the un-instrumented build — `GET /auth/confirm`
+followed by `GET /`, not `/login`.
+
+One limit on that proof: the successful sign-in ran on
+`https://squid-ink.vercel.app`, which was already allowlisted before the change.
+So the deployment-URL path is verified by probe, not by a clicked link. Anyone
+relying on it should sign in through a deployment URL once and confirm.
+
+Note for future runs: the allowlist is written against the **package** name, and
+the deployment prefix is derived from it. Renaming the npm package, or the Vercel
+project, silently breaks this pattern again with no error message anywhere.
