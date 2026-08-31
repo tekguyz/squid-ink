@@ -113,7 +113,24 @@ create policy notes_delete_own on public.notes
 -- Those defaults hand anon and authenticated TRUNCATE, REFERENCES and
 -- TRIGGER on every new public table. TRUNCATE matters: it is not row-level,
 -- so RLS does not constrain it at all. Neither role needs any of the three.
-revoke all on public.notes from anon, authenticated;
+revoke all on public.notes from anon, authenticated, service_role;
 
 -- anon is deliberately granted nothing — this app has no public reads.
 grant select, insert, update, delete on public.notes to authenticated;
+
+-- service_role, for app/api/cron/transcribe. MEASURED 2026-08-31: before this
+-- line, role_table_grants showed service_role holding only REFERENCES, TRIGGER
+-- and TRUNCATE here, so every read from the cron route failed with
+-- "permission denied for table notes". The project was created with
+-- "Automatically expose new tables" off, so no role is granted anything it is
+-- not granted here.
+--
+-- This is a GRANT, not a policy. service_role already bypasses RLS; what it
+-- lacked was reachability. A cron invocation carries no user session and so
+-- has no RLS identity — it must read and write rows belonging to whichever
+-- user recorded them, which is the whole reason the secret key exists.
+--
+-- The revoke above now includes service_role, which also strips the TRUNCATE
+-- it held for no reason. TRUNCATE is not row-level and RLS does not constrain
+-- it; nothing in this project truncates.
+grant select, insert, update, delete on public.notes to service_role;

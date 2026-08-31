@@ -83,6 +83,39 @@ export function speakerFor(
   };
 }
 
+/** Default when nothing usable is on offer. WebM is what Chromium's
+ *  MediaRecorder produces here, and codec.ts keeps it ahead of MP4. */
+const FALLBACK_AUDIO_MIME = "audio/webm";
+
+/** Pick the first candidate that actually names an audio container.
+ *
+ *  MEASURED 2026-08-31: Supabase Storage's download() hands back a Blob typed
+ *  `application/octet-stream` regardless of what was uploaded, and Gemini
+ *  rejects that with `400 Unsupported MIME type`. The object's own list()
+ *  metadata carries the real type, so the fix is to prefer that and treat the
+ *  Blob's own type as a late fallback rather than as truth.
+ *
+ *  Parameters are stripped: MediaRecorder reports `audio/webm;codecs=opus`,
+ *  and the container is the only part the transcription API wants.
+ *
+ *  `video/` is accepted on purpose. A MediaRecorder WebM holding nothing but
+ *  audio is still labelled video/webm by some browsers, and refusing it would
+ *  reject a perfectly transcribable file. */
+export function resolveAudioMimeType(
+  candidates: readonly (string | null | undefined)[],
+): string {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    const container = candidate.split(";")[0].trim().toLowerCase();
+    if (container.startsWith("audio/") || container.startsWith("video/")) {
+      return container;
+    }
+  }
+
+  return FALLBACK_AUDIO_MIME;
+}
+
 /** A DISPLAY value. note-view-model.ts renders metadata.ts_start verbatim, so
  *  this must already be human-readable — which is exactly why the unrounded
  *  seconds are stored separately in ts_start_seconds. */

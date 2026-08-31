@@ -1,0 +1,44 @@
+
+> squid-ink@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.168:3000
+- Environments: .env.local
+✓ Ready in 2.6s
+✓ Running next.config.ts took 212ms
+
+○ Compiling /login ...
+ GET /api/cron/transcribe 401 in 4.8s (next.js: 4.6s, proxy.ts: 62ms, application-code: 123ms)
+ GET /api/cron/transcribe 401 in 60ms (next.js: 16ms, proxy.ts: 19ms, application-code: 25ms)
+ GET /login?next=%2F 200 in 13.0s (next.js: 10.7s, proxy.ts: 1331ms, application-code: 983ms)
+ GET /login?next=%2F 200 in 257ms (next.js: 30ms, proxy.ts: 36ms, application-code: 192ms)
+ GET /api/cron/transcribe 401 in 64ms (next.js: 16ms, proxy.ts: 18ms, application-code: 29ms)
+ GET /api/cron/transcribe 401 in 57ms (next.js: 15ms, proxy.ts: 17ms, application-code: 24ms)
+ GET /api/cron/transcribe 401 in 58ms (next.js: 15ms, proxy.ts: 18ms, application-code: 25ms)
+[transcribe] sweep aborted: listing 'analyzing' failed: permission denied for table notes
+ GET /api/cron/transcribe 500 in 607ms (next.js: 16ms, proxy.ts: 21ms, application-code: 570ms)
+[transcribe] sweep aborted: listing 'analyzing' failed: permission denied for table notes
+ GET /api/cron/transcribe 500 in 207ms (next.js: 15ms, proxy.ts: 17ms, application-code: 174ms)
+[transcribe] sweep aborted: listing 'analyzing' failed: permission denied for table notes
+ GET /api/cron/transcribe 500 in 204ms (next.js: 16ms, proxy.ts: 19ms, application-code: 169ms)
+ GET /api/cron/transcribe 401 in 100ms (next.js: 31ms, proxy.ts: 31ms, application-code: 38ms)
+ GET /api/cron/transcribe 401 in 96ms (next.js: 19ms, proxy.ts: 23ms, application-code: 54ms)
+ GET /api/cron/transcribe 401 in 85ms (next.js: 25ms, proxy.ts: 28ms, application-code: 33ms)
+[transcribe] note 9d800b52-a3d9-4698-bb37-ad5dcd61c5f9: transcription failed — 400 Unsupported MIME type: application/octet-stream
+[transcribe] note 9d800b52-a3d9-4698-bb37-ad5dcd61c5f9 failed: 400 Unsupported MIME type: application/octet-stream
+[transcribe] {"transcribed":0,"failed":1,"reconciled":0,"skipped":0}
+ GET /api/cron/transcribe 200 in 3.7s (next.js: 12ms, proxy.ts: 7ms, application-code: 3.7s)
+[transcribe] note 24634b25-3bde-4dd7-a263-c0daf56df488: no object at 79db5c35-8d50-41c9-a265-49b786994455/539240e2-1e51-429d-a21e-744995f443be after 120 min. The upload never landed. Marked 'failed'.
+[transcribe] {"transcribed":0,"failed":1,"reconciled":0,"skipped":0}
+ GET /api/cron/transcribe 200 in 733ms (next.js: 12ms, proxy.ts: 11ms, application-code: 710ms)
+[transcribe] note 9db85498-f1ac-4559-ab14-e3596f766d82: stuck in 'analyzing' past 3600000ms — the transcription function did not finish. Marked 'failed'.
+[transcribe] {"transcribed":0,"failed":0,"reconciled":1,"skipped":0}
+ GET /api/cron/transcribe 200 in 531ms (next.js: 11ms, proxy.ts: 10ms, application-code: 510ms)
+ GET /login?next=%2F 200 in 518ms (next.js: 43ms, proxy.ts: 33ms, application-code: 442ms)
+ GET /login?next=%2F 200 in 351ms (next.js: 44ms, proxy.ts: 27ms, application-code: 280ms)
+ GET /login?next=%2F 200 in 328ms (next.js: 26ms, proxy.ts: 23ms, application-code: 279ms)
+ GET /login?next=%2F 200 in 198ms (next.js: 31ms, proxy.ts: 25ms, application-code: 141ms)
+ GET /login?next=%2F 200 in 374ms (next.js: 33ms, proxy.ts: 24ms, application-code: 317ms)
+ GET /login?next=%2F 200 in 216ms (next.js: 36ms, proxy.ts: 24ms, application-code: 155ms)

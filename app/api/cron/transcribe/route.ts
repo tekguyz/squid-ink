@@ -10,6 +10,7 @@ import type {
   TranscriptionStore,
 } from "@/lib/transcription/persist-result";
 import { sweep, type SweepPorts, type UploadingRow } from "@/lib/transcription/sweep";
+import { resolveAudioMimeType } from "@/lib/transcription/transcript";
 
 /** The Vercel Cron entry point, and the ONE piece of application code that
  *  holds the Supabase secret key.
@@ -101,6 +102,19 @@ function storeFor(db: SupabaseClient): TranscriptionStore {
 function portsFor(db: SupabaseClient, geminiKey: string): SweepPorts {
   const bucket = db.storage.from(AUDIO_BUCKET);
 
+  /** One list() lookup serving both the existence check and the MIME type.
+   *  The path is always {user_id}/{note_id} — two segments, that order. */
+  async function objectRow(path: string) {
+    const slash = path.indexOf("/");
+    const prefix = path.slice(0, slash);
+    const name = path.slice(slash + 1);
+
+    const { data, error } = await bucket.list(prefix, { search: name });
+    if (error) throw new Error(`storage list failed: ${error.message}`);
+
+    return (data ?? []).find((object) => object.name === name) ?? null;
+  }
+
   return {
     now: () => Date.now(),
     log: (message) => console.log(`[transcribe] ${message}`),
@@ -150,23 +164,28 @@ function portsFor(db: SupabaseClient, geminiKey: string): SweepPorts {
       // list(), never download(). Storage serves object reads through a
       // caching CDN and a download() straight after an upsert returns the
       // PRE-overwrite body — observed on this project during Track 1.
-      const slash = path.indexOf("/");
-      const prefix = path.slice(0, slash);
-      const name = path.slice(slash + 1);
-
-      const { data, error } = await bucket.list(prefix, { search: name });
-      if (error) throw new Error(`existence check failed: ${error.message}`);
-      return (data ?? []).some((object) => object.name === name);
+      return (await objectRow(path)) !== null;
     },
 
     async downloadAudio(path) {
       // The one download() in this track, and it proves nothing — it only
       // moves bytes to Gemini. Existence was already settled by list().
+      const row = await objectRow(path);
+
       const { data, error } = await bucket.download(path);
       if (error || !data) {
         throw new Error(`audio download failed: ${error?.message ?? "no body"}`);
       }
-      return { blob: data, mimeType: data.type || "audio/webm" };
+
+      // The object's stored metadata FIRST, the Blob's own type second.
+      // MEASURED: download() reports application/octet-stream whatever was
+      // uploaded, and Gemini 400s on it.
+      const mimeType = resolveAudioMimeType([
+        row?.metadata?.mimetype as string | undefined,
+        data.type,
+      ]);
+
+      return { blob: data, mimeType };
     },
 
     transcribe: createGeminiTranscriber(geminiKey),

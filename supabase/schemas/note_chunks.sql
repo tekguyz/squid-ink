@@ -138,7 +138,16 @@ create policy note_chunks_delete_own on public.note_chunks
 -- privileges. The project defaults hand anon and authenticated TRUNCATE,
 -- REFERENCES and TRIGGER on every new public table; TRUNCATE is not
 -- row-level, so RLS does not constrain it.
-revoke all on public.note_chunks from anon, authenticated;
+revoke all on public.note_chunks from anon, authenticated, service_role;
 
 -- anon is deliberately granted nothing — this app has no public reads.
 grant select, insert, update, delete on public.note_chunks to authenticated;
+
+-- service_role, for app/api/cron/transcribe, which writes transcript_segment
+-- rows on behalf of whichever user recorded the note. Same reasoning as the
+-- matching grant in notes.sql, and measured the same way: before this line
+-- service_role held only REFERENCES, TRIGGER and TRUNCATE here.
+--
+-- A GRANT, not a policy. service_role already bypasses RLS; it simply could
+-- not reach the table. The revoke above now also strips its stray TRUNCATE.
+grant select, insert, update, delete on public.note_chunks to service_role;
