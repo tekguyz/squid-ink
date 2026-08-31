@@ -534,6 +534,13 @@ measured, not read from the dashboard: `GET /auth/v1/verify` with a junk token
 honours an allowlisted `redirect_to` and falls back to the Site URL otherwise, so
 sending three probes reveals both settings without a login.
 
+**RESOLVED 2026-08-30** by `docs/DEPLOYMENT.md`, which is now the source of
+truth for redirect and hosting config. It records the measured Site URL, the
+corrected redirect allowlist, the Vercel project and environment variables, and —
+the part that actually prevents a repeat — the `curl` recipes that re-measure all
+of it without a dashboard login. DECISIONS.md § Deployment is trimmed to a
+pointer at it.
+
 **Amended 2026-08-30, after reading DECISIONS.md directly.** The file exists —
 it lives in the owner's Claude.ai planning Project, not in the repo, which is why
 `CLAUDE.md` and earlier entries here can cite a file that `find` cannot see. Its

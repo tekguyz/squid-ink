@@ -183,6 +183,16 @@ one blanket `for all`.
   the nullable column — `on delete set null (persona_id)`, Postgres 15 and
   later — or it would try to null `user_id` too.
 
+### Deployment
+
+`main` auto-deploys to Vercel (`tekguyz/squid-ink`, `https://squid-ink.vercel.app`).
+The repo carries no `.vercel` or `vercel.json`, so this is invisible from the
+tree — **`docs/DEPLOYMENT.md` is the source of truth** for the Supabase Site URL,
+the redirect allowlist, the Vercel environment variables, and the `curl` recipes
+that re-measure them without a dashboard. Read it before changing anything about
+auth redirects, and never test sign-in on a raw deployment URL without checking
+that file first.
+
 ### Keys
 
 Publishable key only in app code, via `NEXT_PUBLIC_SUPABASE_*`. The secret key
