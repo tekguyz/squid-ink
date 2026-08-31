@@ -186,8 +186,8 @@ one blanket `for all`.
 ### Deployment
 
 `main` auto-deploys to Vercel (`tekguyz/squid-ink`, `https://squid-ink.vercel.app`).
-The repo carries no `.vercel` or `vercel.json`, so this is invisible from the
-tree — **`docs/DEPLOYMENT.md` is the source of truth** for the Supabase Site URL,
+Vercel's own link and config files are absent from the tree, so this is
+invisible from the repo — **`docs/DEPLOYMENT.md` is the source of truth** for the Supabase Site URL,
 the redirect allowlist, the Vercel environment variables, and the `curl` recipes
 that re-measure them without a dashboard. Read it before changing anything about
 auth redirects, and never test sign-in on a raw deployment URL without checking
