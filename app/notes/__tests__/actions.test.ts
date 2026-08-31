@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const upsert = vi.fn();
+const insert = vi.fn();
 const getUser = vi.fn();
 const revalidatePath = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser },
-    from: () => ({ upsert }),
+    from: () => ({ upsert, insert }),
   }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath }));
@@ -70,6 +71,27 @@ describe("createRecordedNote", () => {
   it("upserts on the primary key so a retried action is not a duplicate error", async () => {
     await (await subject())(input);
     expect(upsert.mock.calls[0][1]).toEqual({ onConflict: "id" });
+  });
+
+  // Regression guard, and the reason it exists is measured, not assumed. Run
+  // against the live project: two upserts of the same id both return no error
+  // and leave exactly one row, while a plain insert of the same id returns
+  // 'duplicate key value violates unique constraint "notes_pkey"'. Swapping
+  // upsert for insert here would therefore break every second write for a
+  // given note — including any future retry of this action.
+  it("never uses a plain insert, which would conflict on a repeat call", async () => {
+    await (await subject())(input);
+    expect(insert).not.toHaveBeenCalled();
+    expect(upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("is safe to call twice for the same note id", async () => {
+    const createRecordedNote = await subject();
+    await createRecordedNote(input);
+    await expect(createRecordedNote(input)).resolves.toEqual({ id: NOTE });
+    expect(upsert).toHaveBeenCalledTimes(2);
+    expect(upsert.mock.calls[1][0].id).toBe(NOTE);
+    expect(upsert.mock.calls[1][1]).toEqual({ onConflict: "id" });
   });
 
   it("revalidates the root route so the new note shows in the list", async () => {
