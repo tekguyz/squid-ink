@@ -534,6 +534,40 @@ measured, not read from the dashboard: `GET /auth/v1/verify` with a junk token
 honours an allowlisted `redirect_to` and falls back to the Site URL otherwise, so
 sending three probes reveals both settings without a login.
 
-`docs/DECISIONS.md` is referenced by `CLAUDE.md` and by earlier entries in this
-file, but no such file exists in the repo. Its § Deployment cannot be consulted
-because it is not here.
+**Amended 2026-08-30, after reading DECISIONS.md directly.** The file exists —
+it lives in the owner's Claude.ai planning Project, not in the repo, which is why
+`CLAUDE.md` and earlier entries here can cite a file that `find` cannot see. Its
+§ Deployment is accurate and already records the Vercel URL, the two environment
+variables, the Supabase Site URL and the redirect allowlist, and it flags its own
+untracked state as an open item. So the config is written down; it is just
+written down somewhere a session working in this repo cannot reach. That is the
+gap. It still needs an in-repo home — DECISIONS.md itself names `docs/DEPLOYMENT.md`
+as one option and has not decided.
+
+### The redirect allowlist does not cover Vercel's own deployment URLs
+
+The allowlist is `https://squid-ink.vercel.app/**`,
+`https://squid-ink-*.vercel.app/**`, `http://localhost:3000/**`. Vercel names
+this project's per-deployment URLs from the **package** name, so they read
+`https://squid-<hash>-tekguyz.vercel.app` — `squid-`, not `squid-ink-`. They do
+not match the pattern. Measured:
+
+| Origin | Supabase honours it? |
+|---|---|
+| `squid-ink.vercel.app` | yes (Site URL) |
+| `squid-ink-tekguyz.vercel.app` | yes |
+| `squid-ink-git-main-tekguyz.vercel.app` | yes |
+| `squid-h1qvo55b6-tekguyz.vercel.app` | **no — falls back to the Site URL** |
+
+That fallback is silent. Signing in on a raw deployment URL sends
+`emailRedirectTo` for that origin, Supabase quietly substitutes
+`https://squid-ink.vercel.app`, and the returning link therefore lands on a
+different origin from the one that holds the PKCE verifier cookie. The result is
+`400 pkce_code_verifier_not_found` — the same error a two-browser sign-in
+produces, from an entirely different cause. Server logs confirm the raw
+deployment host was being browsed during the 2026-08-30 failures, so this may
+have produced some of them.
+
+**Open.** Either add `https://squid-*-tekguyz.vercel.app/**` to the Redirect URL
+allowlist, or treat `https://squid-ink.vercel.app` as the only origin anyone ever
+signs in on. Not decided. Until it is, never test auth on a deployment URL.
