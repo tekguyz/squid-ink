@@ -3820,6 +3820,46 @@ distinguishes measured from assumed. It must cover, each as its own bullet:
   * **Not built from surface 02b:** the expanded jot pane (no schema home for
     "rough notes"), drag/snap-to-corner (caption rendered, behaviour not built),
     `OPEN FULL PANE` (surface 02), `CHANGE PERSONA` at capture time.
+
+  * **THREE HUD STATES ARE INVENTED, NOT FROM THE DESIGN.** Verified by reading
+    the file, not from memory: surface 02b defines exactly four state labels —
+    `Idle · docked bottom-right, above every app`, `Recording · collapsed`,
+    `Paused · capture held, nothing discarded`, and `Expanded · jot without
+    leaving what you're doing`. A search of the **entire** design file for
+    `error`, `retry`, `try again`, `upload failed` and `dismiss` returns one
+    hit, and it is the word "dismissible" in surface 09's label (the live
+    assistant overlay) — a different surface. So the design has no error state,
+    no permission-pending state and no upload state anywhere.
+
+    The three built here — `requesting` ("Waiting for permission"),
+    `stopping`/`uploading` ("Finishing" / "Uploading"), and `error` (message +
+    "The recording is kept on this device." + Dismiss) — were **invented to fill
+    a gap the locked design does not cover.** They reuse only 02b's existing
+    pill geometry and tokens. They are necessary (the brief requires a failed
+    upload be visible rather than silent, and a permission prompt takes real
+    seconds), but they have **not been through a design pass and should be
+    treated as placeholder** when the Core UX/UI phase reaches the recorder.
+
+  * **A failed upload leaves TWO orphans with NO reconciliation path.** This is
+    the largest thing this track leaves open, and it is a direct consequence of
+    writing the row before the bytes:
+      1. a `notes` row at `processing_status = 'uploading'` whose
+         `audio_storage_path` points at an object that does not exist, and
+      2. an IndexedDB `recorder-backup` entry holding the only copy of the audio.
+
+    Nothing reconciles them. There is no retry (deliberately — out of scope), no
+    sweeper, no expiry, and no UI that lists orphans. The row stays at
+    `'uploading'` forever and the blob is never discarded, because discard is
+    gated on `'completed'` which nothing reaches. On the next visit the user sees
+    an untitled note that will never process, with no way to act on it.
+
+    **Whoever picks this up must decide two things:**
+      - Track 3 must check the object actually exists before dispatching a
+        transcription. An `'uploading'` row is not a promise of audio.
+      - Something must own reconciliation — a resume-upload path that reads the
+        IndexedDB blob for an `'uploading'` row, or an expiry that fails the row
+        and frees the blob. Until then IndexedDB grows without bound for any
+        user who records offline.
   * **Not built at all:** the full encrypted 48-hour backup buffer (Core UX/UI
     phase), transcription (Track 3), playback, note deletion, resume-upload
     after a failure (the retry re-records).
