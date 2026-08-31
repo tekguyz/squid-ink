@@ -208,6 +208,71 @@ started**, or is a known incompleteness in what shipped.
   you do: Storage upsert needs INSERT + SELECT + UPDATE policies together —
   granting INSERT alone makes file replacement fail silently.
 
+  **RESOLVED 2026-08-31, for storage only.** `supabase/schemas/storage_audio.sql`
+  creates the private `audio-recordings` bucket (`public = false`) and three
+  per-operation policies on `storage.objects` — `audio_recordings_select_own`,
+  `audio_recordings_insert_own`, `audio_recordings_update_own` — each
+  `to authenticated`, each scoped to `bucket_id = 'audio-recordings'`, each
+  checking `(storage.foldername(name))[1] = (select auth.uid())::text`.
+  Ownership lives in the object path (`{user_id}/{note_id}`), not in `owner_id`:
+  a client chooses its own destination path, so the policy checks the same thing
+  it enforces. Same reasoning as the composite foreign key on
+  `note_chunks.persona_id`. Shipped as migration `20260831054118_storage_audio`,
+  byte-identical to the schema file
+  (`eae888edabb0d63fe67a1e67060d14aa4a99025d`). The note above was followed
+  exactly: INSERT + SELECT + UPDATE together, no DELETE.
+
+  **The `revoke all` discipline does NOT transfer to the storage schema, and
+  this was measured rather than assumed.** `storage.objects` and
+  `storage.buckets` are owned by `supabase_storage_admin`, and `anon`,
+  `authenticated` and `service_role` each already hold `DELETE, INSERT,
+  REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE` on both — every one of them
+  granted by `supabase_storage_admin`. Postgres only lets a role revoke grants
+  that role itself made, so `revoke all on storage.objects from anon` run as
+  `postgres` raises **no error and changes nothing**; a probe confirmed the
+  privilege was still present afterwards. The workaround does not exist either:
+  `postgres` is not a member of `supabase_storage_admin`, and `set role` to
+  `supabase_storage_admin`, `supabase_privileged_role` and `supabase_admin` all
+  fail with `42501`. The dashboard SQL editor connects as this same `postgres`
+  role, so there is no path from this project to those grants at all. The schema
+  file therefore does not pretend to own them, and says so at length.
+
+  What keeps `anon` out is **RLS, not grants**: `storage.objects` has
+  `relrowsecurity = true`, and the three policies above are the only policies on
+  it, all `to authenticated`. A role with no policy matches no rows.
+  `verify-storage-rls.mjs` confirms `anon` is refused select, insert and list.
+  The same holds for DELETE: `authenticated` has the privilege and it cannot be
+  revoked from here, but with no DELETE policy it matches no rows, so no
+  authenticated user can delete an object.
+
+  **Still open — `anon` holds TRUNCATE on `storage.objects` and
+  `storage.buckets`, and RLS does not constrain TRUNCATE.** It is not reachable
+  today: `supabase/config.toml` exposes only `public` and `graphql_public` to the
+  Data API, so PostgREST cannot address `storage.*` under any role, and the
+  Storage API never issues TRUNCATE. It is recorded here rather than silently
+  accepted, because the mitigation is a config setting somebody could widen
+  later, not a permission. Revisit if `storage` is ever added to
+  `[api] schemas`.
+
+  `node scripts/verify-storage-rls.mjs` proves the rest with the two existing
+  fixture accounts: the owner inserts, reads back and overwrites at their own
+  path; both cross-tenant directions are refused for insert, update and select;
+  `list()` returns genuinely empty for the wrong user against a prefix the admin
+  client confirms holds an object, which is what separates a denial from a plain
+  miss. Every probe object is removed in a `finally`. One wrinkle worth keeping:
+  the overwrite is confirmed through the `storage.objects` row, not through
+  `download()` — Storage serves reads via a caching CDN and a `download()` issued
+  immediately after an upsert returns the *pre-overwrite* body. It did exactly
+  that while the script was being written, and a content-based re-read would have
+  been a false failure.
+
+  **Still open: no upload code, no playback UI.** Nothing writes
+  `notes.audio_storage_path` yet — that is Track 2 (Recorder HUD), which uploads
+  directly client-to-Storage under these policies. Playback is later still. No
+  DELETE policy was added, deliberately: object deletion is tied to a
+  note-deletion feature that does not exist, and cleanup in the verification
+  script runs through the secret key for exactly that reason.
+
 - **Google connection table.** Same reason as above. Deferred until a consumer
   exists rather than built speculatively.
 
@@ -294,6 +359,30 @@ started**, or is a known incompleteness in what shipped.
   still the crash floor, not dead code. Backfilling is a separate decision, as
   is persona deletion (see the `on delete set null` gap above) and the Personas
   UI itself (App Surface 03, ROADMAP §5).
+
+- **The root route is a throwaway scaffold, not the Dashboard.** As of
+  2026-08-31 `app/page.tsx` lists the signed-in user's notes newest-first as
+  bare links, so Track 2 (Recorder HUD) and Track 3 (transcription) have
+  somewhere to see that a note was created and open it. It had no design pass
+  and is not App Surface 01 — that is Core UX/UI phase work which replaces this
+  file wholesale. The file says so in a header comment; do not mistake it for a
+  finished screen or iterate on it as one.
+
+- **`lib/notes/get-latest-note-id.ts` is no longer called by application code.**
+  The root route redirected to the newest note until 2026-08-31; listing them
+  replaced that. The module and its three tests still pass and were left in
+  place rather than deleted outside that change's stated file scope. Delete it,
+  or give it a caller, when the real dashboard lands.
+
+- **The colour-literal guard does not cover `app/`.**
+  `components/note-detail/__tests__/project-conventions.test.ts` walks
+  `components/` and `lib/` only (`const SCANNED = ["components", "lib"]`), so
+  `app/page.tsx`, `app/login/`, `app/notes/[id]/` and `app/layout.tsx` are
+  outside it. `app/globals.css` is *meant* to be outside — it is the one file
+  that names colours — but the route files are unguarded by accident, not by
+  design, and the guard passing says nothing about them. Widening `SCANNED` to
+  include `app/` while excluding `globals.css` is a small change nobody has made
+  yet.
 
 - **`waveform`, `playhead` and `sampleExchange` are constants, not data.** No
   column backs any of them. The timeline bar is Advanced-phase, playhead is
