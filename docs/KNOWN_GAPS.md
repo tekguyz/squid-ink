@@ -60,10 +60,11 @@ twice yields the same state. In the browser, the store was driven into its
 survived the navigation, which is state persisting rather than a component
 remounting.
 
-The persona question is still open and still not built. The recorder does **not**
-select a persona at capture time — notes are created persona-less and inherit the
-default, same as every other write path. Whoever adds persona-at-capture should
-put it in this store rather than lifting `note-detail-shell.tsx`'s local state.
+The recorder does **not** select a persona at capture time — notes are created
+persona-less and inherit the default, same as every other write path. That is a
+build state, not an open question: see the addendum below, "Persona timing is
+decided". Whoever adds persona-at-capture should put it in this store rather
+than lifting `note-detail-shell.tsx`'s local state.
 
 Provenance: `DECISIONS.md` and `ROADMAP.md` are knowledge files in the owner's
 Claude.ai planning Project, not files in this repo. They are not on disk here and
@@ -1104,6 +1105,31 @@ surprise someone:
 Nothing in the UI distinguishes a plain transcript from a diarized one. The
 `notes.diarization_enabled` column records what actually happened (not what was
 requested), so the information exists — it is simply not surfaced.
+
+### Persona timing is decided — do not reopen it (addendum 2026-08-31)
+
+**RESOLVED 2026-08-30** in `DECISIONS.md` § Personas, per the owner: a persona is
+attributed **after the fact** through `note_chunks.persona_id`, and regeneration
+was **considered and rejected**. Persona edits apply to new notes only; changing
+a persona never re-runs Gemini over audio that has already been transcribed.
+
+This matches what shipped. Nothing needs to change.
+
+Recorded here because the decision lived only in `DECISIONS.md`, which is a
+Claude.ai Project file and not in this tree, while this repo still carried
+"the persona question is still open" (§ State management) and a handoff listed
+persona timing under "needs the user". A decision written in one place and
+contradicted in another gets relitigated by whichever session reads the other
+one. It is not open.
+
+Still genuinely unbuilt, and separate from the above: persona **selection at
+capture time** in the recorder, and the persona/depth routing for `summary`,
+`takeaway` and `action_item` chunks. Neither is a question about attribution
+timing.
+
+Provenance caveat, per this file's own rule: `DECISIONS.md` is not on disk here
+and `check-docs.mjs` cannot verify it. The quotation above is the owner's,
+relayed 2026-08-31.
 
 ### No structured note generation and no embeddings
 
