@@ -126,6 +126,7 @@ Chromium starts producing MP4.
 | C5 | Record 15 seconds of speech, then **Stop**. | Upload completes, the HUD returns to idle. |
 | C6 | Go to `/`. | The new note is listed. |
 | C7 | Check the container — see "Checking a recording". | The file is MP4/AAC audio, not WebM, and `notes.audio_storage_path`'s object has `mimetype` starting `audio/mp4`. |
+| C8 | Press **⌘⇧R** with the HUD idle. | A recording starts. **The page must not reload.** ⌘⇧R / Ctrl+Shift+R is also the browser's hard-reload shortcut; the HUD calls `preventDefault()` to claim it. Verified working on Chrome 148 / Windows with a real keypress (`isTrusted: true`, no reload) — **unverified on macOS, Safari and Firefox.** If the page reloads instead, the browser reserved the combo and the `⌘⇧R` label in the idle pill is lying; report it rather than removing the handler, since the shortcut is the design's choice. |
 
 C2 snippet:
 
