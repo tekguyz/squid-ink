@@ -509,7 +509,7 @@ it is already spent.
 
 ## The repo has no record that it is deployed (recorded 2026-08-30)
 
-**Open.**
+**RESOLVED 2026-08-30** by `docs/DEPLOYMENT.md` — see the resolution below.
 
 There is a live Vercel project, `tekguyz/squid-ink`, serving
 `https://squid-ink.vercel.app` from `main` through a GitHub integration. It has
@@ -546,10 +546,9 @@ it lives in the owner's Claude.ai planning Project, not in the repo, which is wh
 `CLAUDE.md` and earlier entries here can cite a file that `find` cannot see. Its
 § Deployment is accurate and already records the Vercel URL, the two environment
 variables, the Supabase Site URL and the redirect allowlist, and it flags its own
-untracked state as an open item. So the config is written down; it is just
-written down somewhere a session working in this repo cannot reach. That is the
-gap. It still needs an in-repo home — DECISIONS.md itself names `docs/DEPLOYMENT.md`
-as one option and has not decided.
+untracked state as an open item. So the config was written down; it was just
+written down somewhere a session working in this repo cannot reach. That was the
+gap, and `docs/DEPLOYMENT.md` is the in-repo home it needed.
 
 ### The redirect allowlist does not cover Vercel's own deployment URLs
 
