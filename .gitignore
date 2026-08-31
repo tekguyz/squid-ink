@@ -8,6 +8,9 @@ next-env.d.ts
 .env*
 .DS_Store
 .worktrees/
+# Harness-created worktrees. Each holds a full second copy of the repo, so an
+# accidental `git add .` would commit the whole tree into itself.
+.claude/worktrees/
 
 # Claude Design canvas runtime — read-only tooling, not part of this app
 design-reference/support.js
