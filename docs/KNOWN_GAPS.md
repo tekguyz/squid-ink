@@ -345,3 +345,23 @@ started**, or is a known incompleteness in what shipped.
   route files (`app/login/*`, `app/auth/confirm/route.ts`, `proxy.ts`) were
   likewise added — with RLS on, a session-less page renders nothing, so
   "auth wired in" is not true without them.
+
+## Magic-link callback shape (recorded 2026-08-30)
+
+`app/auth/confirm/route.ts` first shipped reading only `token_hash` + `type`,
+which is what a custom `{{ .TokenHash }}` email template sends. Supabase's
+**default** template sends the user to `/auth/v1/verify` on the Supabase host,
+which verifies the token and redirects back with `?code=`. Every real magic
+link therefore landed on `/login?error=missing_token`. Nothing caught it because
+no real link had ever been clicked — earlier sessions already held a session
+cookie.
+
+**RESOLVED 2026-08-30** by `ddaef6b`. The route now exchanges `code` for a
+session, keeps the `token_hash` path for a custom template, and stops reporting
+Supabase's own error query string as a missing token.
+
+Still open, and unchanged by that fix: **Path B of the RLS proof is still
+unrun.** `node scripts/verify-rls.mjs` proves the database. A real browser
+request through `proxy.ts` with a freshly clicked magic link proves the cookie
+plumbing. The callback shape is now correct in code; it has not been measured
+end to end in this repo.

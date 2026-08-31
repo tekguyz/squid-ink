@@ -85,7 +85,7 @@ path, and it is called from server components.
 
 The view types the components consume live in `lib/notes/view-types.ts`.
 `lib/notes/types.ts` holds the database row shapes that mirror
-`supabase/schemas/*.sql`. `lib/mock/types.ts` is gone.
+`supabase/schemas/*.sql`. The old mock types module under `lib/mock/` is gone.
 
 All four personas are rows in `public.personas`; there is no hardcoded persona
 array. `note_chunks.persona_id` attributes a takeaway to a lens, and a null
