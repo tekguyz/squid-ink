@@ -147,9 +147,17 @@ Codec strings are feature-detected through `lib/recorder/codec.ts`. Never
 hardcode one, and keep WebM ahead of MP4 — Chromium accepts both, so the order
 decides what Chromium produces.
 
-Deleting a test recording needs two clients: the **row** as the owner
-(`service_role` has no grant on `public.notes`), the **object** as the admin (no
-DELETE policy exists). `scripts/verify-recorder-upload.mjs` does both correctly.
+Deleting a test recording needs two clients: the **row** as the owner, the
+**object** as the admin (storage ships no DELETE policy, and `service_role`
+bypasses RLS). `scripts/verify-recorder-upload.mjs` does both correctly.
+
+The reason for the row half changed on 2026-08-31 and the practice did not.
+`service_role` used to hold **no grant at all** on `public.notes`, so an admin
+delete failed outright; it now holds `select, insert, update, delete` for the
+transcription cron. Deleting as the owner is still right, because it exercises
+the RLS path a real user takes — but it is now a deliberate choice rather than
+the only option, and a script that deletes as the admin will silently succeed
+while proving nothing about RLS.
 
     node scripts/verify-recorder-upload.mjs   # live upload + note row proof
     node scripts/print-signin-link.mjs        # local sign-in link, magic-link only

@@ -57,11 +57,22 @@ export interface SweepPorts {
   store: TranscriptionStore;
 }
 
+/** The only observability this pipeline has — there is no error column, and
+ *  the Vercel function log is where a run is read. So the counters have to
+ *  distinguish causes, not just tally rows: a backlog the cap pushed aside and
+ *  a handful of uploads still in flight are very different situations, and a
+ *  single `skipped` number made them look identical. */
 export interface SweepReport {
   transcribed: number;
   failed: number;
   reconciled: number;
-  skipped: number;
+  /** Pushed to the next tick by the per-run cap or the wall-clock budget. */
+  deferred: number;
+  /** Object has not appeared yet, still inside the staleness threshold.
+   *  The healthy, boring case — not a backlog. */
+  waiting: number;
+  /** An overlapping invocation claimed the row first. Not an error. */
+  contended: number;
 }
 
 export async function sweep(ports: SweepPorts): Promise<SweepReport> {
@@ -70,8 +81,21 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
     transcribed: 0,
     failed: 0,
     reconciled: 0,
-    skipped: 0,
+    deferred: 0,
+    waiting: 0,
+    contended: 0,
   };
+
+  /** Transcription ATTEMPTS, which is what the cap must bound.
+   *
+   *  Counting successes instead left the cap inoperative in exactly the case
+   *  it was sized for: a failing Gemini call is the expensive one — a timeout
+   *  burns the most wall-clock — and a run of them would keep issuing calls
+   *  until the budget stopped it, well past MAX_TRANSCRIPTIONS_PER_RUN.
+   *
+   *  Cheap failures do not count. Marking a stale orphan 'failed' costs one
+   *  list() and one UPDATE, so a backlog of orphans must not starve real work. */
+  let attempts = 0;
 
   const cutoffIso = new Date(startedAt - STALE_AFTER_MS).toISOString();
 
@@ -97,13 +121,13 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
   const candidates = await ports.listUploading(MAX_TRANSCRIPTIONS_PER_RUN * 4);
 
   for (const row of candidates) {
-    if (report.transcribed >= MAX_TRANSCRIPTIONS_PER_RUN) {
-      report.skipped += 1;
+    if (attempts >= MAX_TRANSCRIPTIONS_PER_RUN) {
+      report.deferred += 1;
       continue;
     }
 
     if (ports.now() - startedAt > RUN_BUDGET_MS) {
-      report.skipped += 1;
+      report.deferred += 1;
       continue;
     }
 
@@ -117,7 +141,7 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
     if (!exists) {
       if (!stale) {
         // A slow-but-real upload. Say nothing, do nothing, look again next tick.
-        report.skipped += 1;
+        report.waiting += 1;
         continue;
       }
 
@@ -128,27 +152,31 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
             `after ${Math.round(ageMs / 60000)} min. The upload never landed. ` +
             `Marked 'failed'.`,
         );
+      } else {
+        report.contended += 1;
       }
       continue;
     }
 
     if (!(await ports.claim(row.id, "uploading", "analyzing"))) {
       // Another tick got there first. Not an error.
-      report.skipped += 1;
+      report.contended += 1;
       continue;
     }
 
+    attempts += 1;
     const outcome = await transcribeOne(ports, row);
     if (outcome === "transcribed") report.transcribed += 1;
     else report.failed += 1;
   }
 
-  const deferred = candidates.length - report.transcribed - report.failed;
-  if (deferred > 0) {
-    // Never let a cap read as completeness.
+  // Never let a cap read as completeness — but only say "deferred" when work
+  // was actually pushed aside. Rows still waiting on their upload are not a
+  // backlog, and reporting them as one would cry wolf on every healthy tick.
+  if (report.deferred > 0) {
     ports.log(
-      `${deferred} row(s) deferred to the next tick — per-run cap ` +
-        `${MAX_TRANSCRIPTIONS_PER_RUN}, budget ${RUN_BUDGET_MS}ms.`,
+      `${report.deferred} row(s) deferred to the next tick — per-run cap ` +
+        `${MAX_TRANSCRIPTIONS_PER_RUN} attempt(s), budget ${RUN_BUDGET_MS}ms.`,
     );
   }
 

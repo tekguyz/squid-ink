@@ -3,7 +3,12 @@ import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
-const SCANNED = ["components", "lib"];
+/** `app` joined the list on 2026-08-31, when the transcription cron route put
+ *  substantial logic there for the first time. Until then everything in `app/`
+ *  was a thin page or layout and the guard never reached it — which meant the
+ *  400-line ceiling and the colour-literal rule silently did not apply to the
+ *  largest new file in the repo. */
+const SCANNED = ["app", "components", "lib"];
 
 /** Every source file we ship, excluding the tests that police them. */
 function sourceFiles(): string[] {

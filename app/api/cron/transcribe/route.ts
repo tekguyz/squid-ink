@@ -4,13 +4,15 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 // place for it to drift. upload-audio.ts is pure types and functions with no
 // browser-only import, so it is safe on the server.
 import { AUDIO_BUCKET } from "@/lib/recorder/upload-audio";
-import { createGeminiTranscriber } from "@/lib/transcription/gemini-client";
+import {
+  createGeminiTranscriber,
+  resolveAudioMimeType,
+} from "@/lib/transcription/gemini-client";
 import type {
   NoteChunkInsert,
   TranscriptionStore,
 } from "@/lib/transcription/persist-result";
 import { sweep, type SweepPorts, type UploadingRow } from "@/lib/transcription/sweep";
-import { resolveAudioMimeType } from "@/lib/transcription/transcript";
 
 /** The Vercel Cron entry point, and the ONE piece of application code that
  *  holds the Supabase secret key.
@@ -83,17 +85,34 @@ function storeFor(db: SupabaseClient): TranscriptionStore {
     },
 
     async markFailed(noteId, reason) {
-      const { error } = await db
+      // Guarded on 'analyzing' exactly, matching completeNote above. The only
+      // caller is transcribeOne, which always runs AFTER a successful claim to
+      // 'analyzing', so no other expected value is reachable.
+      //
+      // A looser `.in(['uploading','analyzing'])` would be a live hazard the
+      // moment a retry affordance is added: createRecordedNote upserts a row
+      // back to 'uploading', and this call would then flip that fresh retry to
+      // a terminal 'failed'. Narrow guard, no such window.
+      const { data, error } = await db
         .from("notes")
         .update({ processing_status: "failed" })
         .eq("id", noteId)
-        .in("processing_status", ["uploading", "analyzing"]);
+        .eq("processing_status", "analyzing")
+        .select("id");
+
       if (error) {
         console.error(
           `[transcribe] could not mark ${noteId} failed`,
           error.message,
         );
+      } else if ((data?.length ?? 0) === 0) {
+        // Someone else moved the row. Say so rather than silently doing
+        // nothing — this is the only place it would ever be visible.
+        console.error(
+          `[transcribe] note ${noteId} was no longer 'analyzing'; not marked failed`,
+        );
       }
+
       console.error(`[transcribe] note ${noteId} failed: ${reason}`);
     },
   };
@@ -106,6 +125,17 @@ function portsFor(db: SupabaseClient, geminiKey: string): SweepPorts {
    *  The path is always {user_id}/{note_id} — two segments, that order. */
   async function objectRow(path: string) {
     const slash = path.indexOf("/");
+
+    // Throw rather than mis-parse. With indexOf returning -1, slice(0, -1)
+    // would silently drop the last character and the lookup would miss —
+    // reporting "the upload never landed" for a path that was merely
+    // malformed, which is a wrong answer dressed as a legitimate outcome.
+    if (slash <= 0 || slash === path.length - 1) {
+      throw new Error(
+        `audio_storage_path must be {user_id}/{note_id}, got "${path}"`,
+      );
+    }
+
     const prefix = path.slice(0, slash);
     const name = path.slice(slash + 1);
 

@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   segmentsFromInteraction,
   parseOffsetSeconds,
+  resolveAudioMimeType,
 } from "@/lib/transcription/gemini-client";
 
 /** Shaped exactly like the documented response:
@@ -29,6 +30,36 @@ function interaction(
     ],
   };
 }
+
+describe("resolveAudioMimeType", () => {
+  it("skips application/octet-stream in favour of a real audio type", () => {
+    // MEASURED 2026-08-31: Storage's download() returned a Blob typed
+    // application/octet-stream, and Gemini answered
+    // "400 Unsupported MIME type: application/octet-stream". The object's own
+    // list() metadata had the real type all along.
+    expect(resolveAudioMimeType(["application/octet-stream", "audio/wav"])).toBe(
+      "audio/wav",
+    );
+  });
+
+  it("strips codec parameters, which the API rejects", () => {
+    expect(resolveAudioMimeType(["audio/webm;codecs=opus"])).toBe("audio/webm");
+  });
+
+  it("accepts video/webm — MediaRecorder labels container audio that way", () => {
+    expect(resolveAudioMimeType(["video/webm"])).toBe("video/webm");
+  });
+
+  it("falls back to audio/webm when every candidate is useless", () => {
+    expect(resolveAudioMimeType([null, undefined, "", "application/octet-stream"])).toBe(
+      "audio/webm",
+    );
+  });
+
+  it("lowercases and trims", () => {
+    expect(resolveAudioMimeType(["  AUDIO/WAV  "])).toBe("audio/wav");
+  });
+});
 
 describe("parseOffsetSeconds", () => {
   it("strips the trailing s", () => {

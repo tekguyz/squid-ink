@@ -12,10 +12,14 @@ const NOW = 1_800_000_000_000;
 const USER = "22222222-2222-2222-2222-222222222222";
 
 function row(overrides: Partial<UploadingRow> = {}): UploadingRow {
+  const id = overrides.id ?? "note-1";
   return {
-    id: "note-1",
+    id,
     user_id: USER,
-    audio_storage_path: `${USER}/note-1`,
+    // Derived from the id, so a test that gives two rows different ids also
+    // gives them different Storage paths — which is what lets objectExists be
+    // stubbed per row.
+    audio_storage_path: `${USER}/${id}`,
     audio_duration_seconds: 60,
     updated_at: new Date(NOW - 1000).toISOString(),
     ...overrides,
@@ -93,7 +97,7 @@ describe("sweep — the atomic claim", () => {
 
     expect(p.transcribe).not.toHaveBeenCalled();
     expect(report.transcribed).toBe(0);
-    expect(report.skipped).toBe(1);
+    expect(report.contended).toBe(1);
   });
 
   it("lets exactly one of two concurrent sweeps claim the same row", async () => {
@@ -132,7 +136,11 @@ describe("sweep — a missing Storage object", () => {
 
     expect(p.claim).not.toHaveBeenCalled();
     expect(report.failed).toBe(0);
-    expect(report.skipped).toBe(1);
+    // 'waiting', not 'deferred' — nothing was pushed aside by a cap. The
+    // upload simply has not landed yet, and the report must not read like a
+    // backlog when the system is idle and healthy.
+    expect(report.waiting).toBe(1);
+    expect(report.deferred).toBe(0);
   });
 
   it("fails a row past the hour when the object is absent", async () => {
@@ -205,6 +213,22 @@ describe("sweep — a stale 'analyzing' row", () => {
 
     expect((await sweep(p)).reconciled).toBe(0);
   });
+
+  it("records a lost claim on the stale-orphan path rather than dropping it", async () => {
+    // Every other branch increments something. A silent fall-through here
+    // would make a contended run indistinguishable from an empty one.
+    const p = ports({
+      listUploading: vi.fn(async () => [
+        row({ updated_at: new Date(NOW - (STALE_AFTER_MS + 1)).toISOString() }),
+      ]),
+      objectExists: vi.fn(async () => false),
+      claim: vi.fn(async () => false),
+    });
+    const report = await sweep(p);
+
+    expect(report.failed).toBe(0);
+    expect(report.contended).toBe(1);
+  });
 });
 
 describe("sweep — recordings past Gemini's cap", () => {
@@ -253,12 +277,69 @@ describe("sweep — caps", () => {
     expect(p.transcribe).toHaveBeenCalledTimes(MAX_TRANSCRIPTIONS_PER_RUN);
   });
 
+  it("caps ATTEMPTS, not successes — a failing run must not call Gemini forever", async () => {
+    // The cap is sized against the 300 s Hobby ceiling, and a failing call is
+    // the EXPENSIVE case (a timeout burns the most wall-clock). Counting only
+    // successes left the cap inoperative in exactly the scenario it exists for.
+    const many = Array.from({ length: 10 }, (_, i) => row({ id: `note-${i}` }));
+    const p = ports({
+      listUploading: vi.fn(async () => many),
+      transcribe: vi.fn(async () => {
+        throw new Error("gemini timeout");
+      }),
+    });
+    const report = await sweep(p);
+
+    expect(p.transcribe).toHaveBeenCalledTimes(MAX_TRANSCRIPTIONS_PER_RUN);
+    expect(report.failed).toBe(MAX_TRANSCRIPTIONS_PER_RUN);
+    expect(report.transcribed).toBe(0);
+  });
+
+  it("counts a cheap stale-orphan failure against the cap not at all", async () => {
+    // Marking a stale orphan 'failed' costs one list() and one UPDATE. It must
+    // not consume a transcription slot, or a backlog of orphans would starve
+    // real work.
+    const stale = new Date(NOW - (STALE_AFTER_MS + 1)).toISOString();
+    const p = ports({
+      listUploading: vi.fn(async () => [
+        row({ id: "orphan-1", updated_at: stale }),
+        row({ id: "orphan-2", updated_at: stale }),
+        row({ id: "orphan-3", updated_at: stale }),
+        row({ id: "real" }),
+      ]),
+      objectExists: vi.fn(async (path: string) => path.endsWith("real")),
+    });
+    const report = await sweep(p);
+
+    expect(report.failed).toBe(3);
+    expect(report.transcribed).toBe(1);
+  });
+
   it("logs what it dropped rather than reporting silent completeness", async () => {
     const many = Array.from({ length: 10 }, (_, i) => row({ id: `note-${i}` }));
     const log = vi.fn();
     await sweep(ports({ listUploading: vi.fn(async () => many), log }));
 
-    expect(log).toHaveBeenCalledWith(expect.stringMatching(/deferred|remaining/i));
+    expect(log).toHaveBeenCalledWith(expect.stringMatching(/deferred/i));
+  });
+
+  it("says nothing about a backlog when every row is simply still uploading", async () => {
+    // The report is the ONLY observability surface — there is no error column.
+    // Twelve in-flight uploads must not produce a log line blaming a cap that
+    // was never reached.
+    const young = Array.from({ length: 5 }, (_, i) => row({ id: `note-${i}` }));
+    const log = vi.fn();
+    const report = await sweep(
+      ports({
+        listUploading: vi.fn(async () => young),
+        objectExists: vi.fn(async () => false),
+        log,
+      }),
+    );
+
+    expect(report.waiting).toBe(5);
+    expect(report.deferred).toBe(0);
+    expect(log).not.toHaveBeenCalledWith(expect.stringMatching(/deferred/i));
   });
 
   it("stops claiming new work once the wall-clock budget is spent", async () => {

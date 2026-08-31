@@ -1091,3 +1091,32 @@ it did. It lives in exactly one shipped file (`app/api/cron/transcribe/route.ts`
 and in the gitignored `.env.local`. `node scripts/verify-rls.mjs` was re-run after
 the change and still passes: the intruder gets a genuine empty result, not
 `permission denied`.
+
+### A narrow window can leave transcript chunks under a `'failed'` note
+
+`lib/transcription/persist-result.ts` writes chunks, then flips the note to
+`'completed'`. If the chunk insert succeeds and the completing UPDATE then
+throws or loses its claim, `transcribeOne` catches and marks the note
+`'failed'` — with its transcript segments already in `note_chunks`.
+
+`'failed'` is terminal and there is no retry, so the delete-then-insert
+idempotency at the top of `persistTranscription` never gets a chance to clean
+up. The note would render a populated transcript pane with no `raw_transcript`.
+
+Left as-is deliberately. Fixing it means either a transaction or a compensating
+delete, and both are the "second mechanism for one failure" that the ordering
+was chosen to avoid. The window requires the completing UPDATE specifically to
+fail after a successful insert, which nothing observed has done.
+
+### The `MAX_TRANSCRIPTIONS_PER_RUN` cap bounds attempts, not wall-clock
+
+`sweep.ts` counts transcription **attempts** against the cap, so three failing
+Gemini calls end the run just as three successful ones do. What it cannot do is
+bound how long any single attempt takes: `RUN_BUDGET_MS` (240 s) is checked
+*before* claiming a row, not during a call, so an attempt starting at 239 s can
+still run past the 300 s function ceiling and be killed mid-flight.
+
+That is survivable — the row is left at `'analyzing'` and the staleness sweep
+marks it `'failed'` on a later tick — but on the Hobby daily schedule "a later
+tick" is up to 24 hours. A per-call timeout on the Gemini request would close
+it properly.

@@ -25,9 +25,14 @@
  * The object is NEVER verified with download(). Existence comes from list()
  * metadata -- Storage reads are CDN-cached (docs/KNOWN_GAPS.md).
  *
- * Cleanup needs two clients, for the reason CLAUDE.md gives: the ROW as the
- * owner (service_role has no grant on public.notes), the OBJECT as the admin
- * (storage_audio.sql ships no DELETE policy).
+ * Two clients throughout: rows as the OWNER, objects as the ADMIN.
+ *
+ * Objects need the admin because storage_audio.sql ships no DELETE policy.
+ *
+ * Rows are the owner by CHOICE, not by necessity -- service_role gained DML on
+ * public.notes in this same track, so an admin write would now succeed. It
+ * would also prove nothing: going through the owner exercises the RLS path a
+ * real user takes, which is the only version worth asserting on.
  *
  * Needs the dev server running:
  *     npm run dev
@@ -228,7 +233,17 @@ try {
   });
   if (insertError) throw new Error(`insert failed: ${insertError.message}`);
 
-  const run = await callRoute();
+  // The sweep takes at most MAX_TRANSCRIPTIONS_PER_RUN (3) rows per call,
+  // oldest first. If the linked project already holds a backlog of 'uploading'
+  // rows with objects behind them, one call would never reach ours and the
+  // proof would fail for a reason that has nothing to do with the code. Call
+  // until this note moves, bounded so a genuine failure still terminates.
+  let run = await callRoute();
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    if ((await statusOf(happyNoteId)) !== "uploading") break;
+    run = await callRoute();
+  }
+
   check("the authorised sweep returns 200", run.status === 200, `got=${run.status}`);
   check(
     "the sweep answers JSON, not the login page",
@@ -286,9 +301,9 @@ try {
   // -------------------------------------------------------------------------
   const stale = new Date(Date.now() - 2 * HOUR_MS).toISOString();
 
-  // Inserted as the OWNER, not the admin. service_role holds no grant on
-  // public.notes (CLAUDE.md), and an admin insert here fails with
-  // "permission denied for table notes" -- measured, not assumed.
+  // Inserted as the OWNER. An admin insert would also work now that
+  // service_role has DML, but writing through RLS is what makes this a proof
+  // rather than a setup step.
   //
   // Backdated on INSERT: notes_set_updated_at is BEFORE UPDATE, so it does not
   // fire here and the explicit value survives.
@@ -326,7 +341,7 @@ try {
   console.log("\nCleanup");
 
   for (const id of [happyNoteId, orphanNoteId, crashedNoteId]) {
-    // The ROW as the owner: service_role has no grant on public.notes.
+    // The ROW as the owner, deliberately — see the header.
     const { error } = await owner.from("notes").delete().eq("id", id);
     if (error) console.log(`  warn  could not delete note ${id}: ${error.message}`);
   }
