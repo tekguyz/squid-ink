@@ -100,14 +100,13 @@ export const useRecorderStore = create<RecorderState>((set) => ({
         : s,
     ),
 
-  // Reachable from `stopping` on the happy path, and from `error` on a retry —
-  // which is the whole reason noteId survives a failure.
+  // Reachable only from `stopping`. There is no retry: a failed upload is
+  // surfaced and left alone, because this track's requirement is that the
+  // failure be VISIBLE, not that it be recoverable in one click. `noteId` still
+  // survives a failure — that is how the error state knows which IndexedDB blob
+  // is the orphaned one — but nothing re-enters the upload from here.
   beginUpload: () =>
-    set((s) =>
-      s.phase === "stopping" || s.phase === "error"
-        ? { phase: "uploading", errorMessage: null }
-        : s,
-    ),
+    set((s) => (s.phase === "stopping" ? { phase: "uploading" } : s)),
 
   finish: () => set((s) => (s.phase === "uploading" ? { ...CLEAN } : s)),
 

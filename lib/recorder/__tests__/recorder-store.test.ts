@@ -81,15 +81,14 @@ describe("recorder store", () => {
     expect(state().errorMessage).toBe("network died");
   });
 
-  it("lets a failed upload be retried without a new note id", () => {
+  it("does not re-enter the upload from the error phase — there is no retry", () => {
     toRecording();
     state().beginStop();
     state().beginUpload();
     state().fail("network died");
     state().beginUpload();
-    expect(state().phase).toBe("uploading");
-    expect(state().noteId).toBe(NOTE);
-    expect(state().errorMessage).toBeNull();
+    expect(state().phase).toBe("error");
+    expect(state().errorMessage).toBe("network died");
   });
 
   it("discards everything from any phase", () => {
