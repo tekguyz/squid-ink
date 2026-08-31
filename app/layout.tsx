@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Bitter, Archivo, IBM_Plex_Mono } from "next/font/google";
+import { RecorderDock } from "@/components/recorder/recorder-dock";
 import "./globals.css";
 
 const bitter = Bitter({
@@ -42,7 +43,14 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
       </head>
-      <body className="bg-canvas text-ink font-body antialiased">{children}</body>
+      <body className="bg-canvas text-ink font-body antialiased">
+        {children}
+        {/* Mounted here, not per route: the HUD has to survive navigation, and
+            the recorder store lives at module scope so it never resets. This
+            layout stays a server component — the dock is an isolated client
+            island, not a reason to convert the shell. */}
+        <RecorderDock />
+      </body>
     </html>
   );
 }

@@ -12,7 +12,8 @@ drive both themes without any component branching on theme.
 ## Pinned versions
 
 Exact pins, no `^` or `~` ranges. Verified against the live npm registry
-`latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30.
+`latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30; `zustand` and
+`fake-indexeddb` on 2026-08-31.
 
 | Package | Version |
 |---|---|
@@ -31,6 +32,8 @@ Exact pins, no `^` or `~` ranges. Verified against the live npm registry
 | @testing-library/user-event | 14.6.6 |
 | @testing-library/jest-dom | 7.0.1 |
 | jsdom | 30.0.1 |
+| zustand | 5.0.15 |
+| fake-indexeddb | 6.2.5 |
 
 Built and verified on Node v24.18.0 / npm 11.16.0.
 
@@ -105,6 +108,55 @@ goes in the database.
 
 Nothing calls `Math.random()` or `Date.now()` in a render path — the waveform bar
 heights are precomputed constants.
+
+## Recorder
+
+The HUD is mounted once in `app/layout.tsx` and the Zustand store in
+`lib/recorder/recorder-store.ts` lives at **module scope**. Neither may move
+into a route or a provider — a store that resets on navigation defeats the
+whole "ambient, not calendar-gated" decision. There is a test asserting that
+importing the module twice yields the same state.
+
+`getDisplayMedia` is called with `video: true` even though nothing records
+video. Chromium does not offer tab or system audio for an audio-only display
+request — the audio checkbox is simply not shown. The video track is stopped on
+arrival.
+
+`MediaRecorder` records the Web Audio destination node's stream, never the mic
+stream. That indirection is what lets `replaceMic()` swap a microphone
+mid-recording without ending the recording.
+
+The mic constraint is exactly `{ echoCancellation: true }`. Do not add
+`noiseSuppression` or `autoGainControl` — ROADMAP §7 rejected extra masking.
+
+The Storage path is `{user_id}/{note_id}`: two segments, that order, no
+extension. It is not a naming convention — it is what the three policies in
+`storage_audio.sql` check. **Never confirm an upload with `download()`**;
+Storage reads are CDN-cached and return the pre-overwrite body. Use the upload
+response or `list()` metadata.
+
+The notes row is written when the upload **starts**, at
+`processing_status = 'uploading'`, because the path is deterministic. This track
+never writes `'analyzing'` or `'completed'` — those are Track 3's. A failed
+upload deliberately leaves a visible row with its audio still in IndexedDB;
+**nothing reconciles that pair yet**, so Track 3 must check the object exists
+before transcribing.
+
+Codec strings are feature-detected through `lib/recorder/codec.ts`. Never
+hardcode one, and keep WebM ahead of MP4 — Chromium accepts both, so the order
+decides what Chromium produces.
+
+Deleting a test recording needs two clients: the **row** as the owner
+(`service_role` has no grant on `public.notes`), the **object** as the admin (no
+DELETE policy exists). `scripts/verify-recorder-upload.mjs` does both correctly.
+
+    node scripts/verify-recorder-upload.mjs   # live upload + note row proof
+    node scripts/print-signin-link.mjs        # local sign-in link, magic-link only
+
+Device handoff, real-world echo and Safari cannot be tested here. They have a
+runnable checklist: `docs/qa/recorder-manual-test-protocol.md`. Check the
+**bitrate** of every manual recording — a muted mic yields ~2 kbit/s and
+otherwise looks like a complete success.
 
 ## Naming
 
