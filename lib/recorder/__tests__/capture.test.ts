@@ -44,8 +44,10 @@ function deps(overrides: Record<string, unknown> = {}) {
     sysVideo,
     ctx,
     value: {
-      getUserMedia: vi.fn(async () => fakeStream([micTrack])),
-      getDisplayMedia: vi.fn(async () => fakeStream([sysAudio, sysVideo])),
+      getUserMedia: vi.fn(async (_c: MediaStreamConstraints) => fakeStream([micTrack])),
+      getDisplayMedia: vi.fn(async (_c: DisplayMediaStreamOptions) =>
+        fakeStream([sysAudio, sysVideo]),
+      ),
       createAudioContext: () => ctx as unknown as AudioContext,
       ...overrides,
     },
@@ -64,9 +66,7 @@ describe("startCapture", () => {
   it("asks getDisplayMedia for video, because Chromium withholds tab audio otherwise", async () => {
     const d = deps();
     await startCapture(d.value as never);
-    const [constraints] = d.value.getDisplayMedia.mock.calls[0] as [
-      { audio: boolean; video: boolean },
-    ];
+    const [constraints] = d.value.getDisplayMedia.mock.calls[0];
     expect(constraints.audio).toBe(true);
     expect(constraints.video).toBe(true);
   });
