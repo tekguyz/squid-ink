@@ -47,6 +47,7 @@
   --color-tint-hover: var(--tint-hover);
   --color-seg-wash: var(--seg-wash);
   --color-waveform: var(--waveform);
+  --color-live: var(--live);
 
   --color-speaker-1: var(--speaker-1);
   --color-speaker-1-avatar: var(--speaker-1-avatar);
@@ -102,6 +103,16 @@
   --seg-wash: oklch(0.905 0.064 142);
   --waveform: oklch(0.800 0.052 142);
 
+  /* Live-recording indicator. DERIVED, not lifted from the design file: App
+     Surfaces 02b is a dark-only surface and the file contains no light-theme
+     red at all. Follows the accent pattern — the dark accent is light (0.82)
+     and the light accent is dark (0.452) — so 02b's dark 0.66 becomes 0.520
+     here. Recorded in docs/KNOWN_GAPS.md as derived. */
+  --live: oklch(0.520 0.170 25);
+  /* HUD drop shadow. 02b uses one value for every pill; light theme needs a
+     warmer, weaker shadow than the dark theme's near-black. */
+  --shadow-hud: oklch(0.60 0.02 60 / 0.22);
+
   --speaker-1: oklch(0.50 0.10 252);
   --speaker-1-avatar: oklch(0.90 0.04 252);
   --speaker-2: oklch(0.47 0.09 155);
@@ -152,6 +163,10 @@
   --tint-hover: oklch(0.42 0.09 140);
   --seg-wash: oklch(0.26 0.045 140);
   --waveform: oklch(0.40 0.06 140);
+
+  /* Both verbatim from App Surfaces 02b. */
+  --live: oklch(0.66 0.19 25);
+  --shadow-hud: oklch(0.10 0.01 46 / 0.6);
 
   --speaker-1: oklch(0.78 0.09 252);
   --speaker-1-avatar: oklch(0.30 0.05 252);
@@ -204,6 +219,10 @@
     --tint-hover: oklch(0.42 0.09 140);
     --seg-wash: oklch(0.26 0.045 140);
     --waveform: oklch(0.40 0.06 140);
+
+    /* Both verbatim from App Surfaces 02b. */
+    --live: oklch(0.66 0.19 25);
+    --shadow-hud: oklch(0.10 0.01 46 / 0.6);
 
     --speaker-1: oklch(0.78 0.09 252);
     --speaker-1-avatar: oklch(0.30 0.05 252);

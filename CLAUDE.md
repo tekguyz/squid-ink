@@ -12,7 +12,8 @@ drive both themes without any component branching on theme.
 ## Pinned versions
 
 Exact pins, no `^` or `~` ranges. Verified against the live npm registry
-`latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30.
+`latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30; `zustand` and
+`fake-indexeddb` on 2026-08-31.
 
 | Package | Version |
 |---|---|
@@ -31,6 +32,8 @@ Exact pins, no `^` or `~` ranges. Verified against the live npm registry
 | @testing-library/user-event | 14.6.6 |
 | @testing-library/jest-dom | 7.0.1 |
 | jsdom | 30.0.1 |
+| zustand | 5.0.15 |
+| fake-indexeddb | 6.2.5 |
 
 Built and verified on Node v24.18.0 / npm 11.16.0.
 
