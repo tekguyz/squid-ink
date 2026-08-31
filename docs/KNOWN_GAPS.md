@@ -209,9 +209,13 @@ things worth carrying forward:
   as confirmed and locked. Four is now the only figure in play, and it matches
   both design files and the four seeded `public.personas` rows. No fifth
   persona is
-  owed. DECISIONS.md is not in this repo — it lives in the owner's Claude.ai
-  planning Project — so this closure rests on the owner's report of that edit,
-  not on a file this audit can read.
+  owed.
+
+  **Confirmed against the file 2026-08-31**, once DECISIONS.md was in the tree.
+  It says four (`docs/DECISIONS.md:210`), and the trigger seeds exactly four —
+  Neutral Analyst, Sales Coach, Investor, Engineering Lead
+  (`supabase/schemas/persona_provisioning.sql:36-43`). This closure no longer
+  rests on a report of an edit; it rests on both files.
 
 - **Quick actions match the spec exactly.** ROADMAP §5 names the built-in set to
   design against: *Extract decisions only*, *Timeline of blockers*, *Unanswered

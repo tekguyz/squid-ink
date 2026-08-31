@@ -363,6 +363,106 @@ const pkg = JSON.parse(read("package.json"));
   }
 }
 
+/* 10 — the Project-attached doc set is all present ------------------------ */
+{
+  // The planning Project attaches these four as standing knowledge and
+  // DEPLOYMENT.md on demand. DECISIONS.md and ROADMAP.md moved into the tree
+  // on 2026-08-31; before that no check here could read them, which is how a
+  // decision and its contradiction lived in two files for a day.
+  const ATTACHED = [
+    "CLAUDE.md",
+    "docs/KNOWN_GAPS.md",
+    "docs/DECISIONS.md",
+    "docs/ROADMAP.md",
+    "docs/DEPLOYMENT.md",
+  ];
+  for (const doc of ATTACHED) {
+    if (!has(doc)) findings.push(`${doc} is missing — the planning Project attaches it`);
+  }
+  notes.push(`planning docs: ${ATTACHED.length}/${ATTACHED.length} present`);
+}
+
+/* 11 — no doc claims, in the present tense, that a doc that exists does not - */
+{
+  // The exact drift the 2026-08-31 move created: four passages in KNOWN_GAPS
+  // still said DECISIONS.md and ROADMAP.md were "not on disk here" and could
+  // not be verified. History written in the past tense is legitimate and must
+  // not trip this, so a past-tense marker on the line exempts it.
+  const ABSENCE = /(not on disk|not in the repo|not in this repo|not files in this repo|cannot be verified by|`find` cannot see|absent from this tree)/i;
+  const PAST = /\b(was|were|until|before|predat|superseded|at the time|no longer|used to|had been|that day)\b/i;
+  const NAMES = /(DECISIONS\.md|ROADMAP\.md|DEPLOYMENT\.md|KNOWN_GAPS\.md)/;
+  const DOCS = ["CLAUDE.md", "docs/KNOWN_GAPS.md", "docs/DECISIONS.md", "docs/ROADMAP.md", "docs/DEPLOYMENT.md"];
+  let scanned = 0;
+  for (const doc of DOCS) {
+    if (!has(doc)) continue;
+    const lines = read(doc).split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!ABSENCE.test(line)) continue;
+      // The filename often sits on the previous or next line in wrapped prose.
+      const window = [lines[i - 1] ?? "", line, lines[i + 1] ?? ""].join(" ");
+      if (!NAMES.test(window)) continue;
+      const named = window.match(NAMES)[1];
+      const onDisk = has(`docs/${named}`) || has(named);
+      if (onDisk && !PAST.test(window)) {
+        findings.push(`${doc}:${i + 1} says ${named} is absent, in the present tense; it is in the tree`);
+      }
+      scanned++;
+    }
+  }
+  notes.push(`provenance: ${scanned} absence claim(s) examined, none contradicts the tree`);
+}
+
+/* 12 — DEPLOYMENT.md's numbers against the code they describe -------------- */
+{
+  // DEPLOYMENT.md is the only record that this repo is deployed at all, and
+  // its three figures are the ones sized to the Vercel Hobby ceiling. A number
+  // raised in code and not here reads as a plan change that never happened.
+  if (has("docs/DEPLOYMENT.md")) {
+    const dep = read("docs/DEPLOYMENT.md");
+    const pairs = [
+      {
+        label: "cron schedule",
+        docRe: /`(\d[^`]*\*[^`]*)`/,
+        docValue: (dep.match(/schedules `\/api\/cron\/transcribe` at `([^`]+)`/) ?? [])[1],
+        srcFile: "vercel.json",
+        srcValue: () => (JSON.parse(read("vercel.json")).crons ?? [])[0]?.schedule,
+      },
+      {
+        label: "maxDuration",
+        docValue: (dep.match(/maxDuration = (\d+)/) ?? [])[1],
+        srcFile: "app/api/cron/transcribe/route.ts",
+        srcValue: () => (read("app/api/cron/transcribe/route.ts").match(/maxDuration\s*=\s*(\d+)/) ?? [])[1],
+      },
+      {
+        label: "MAX_TRANSCRIPTIONS_PER_RUN",
+        docValue: (dep.match(/MAX_TRANSCRIPTIONS_PER_RUN = (\d+)/) ?? [])[1],
+        srcFile: "lib/transcription/sweep.ts",
+        srcValue: () => (read("lib/transcription/sweep.ts").match(/MAX_TRANSCRIPTIONS_PER_RUN\s*=\s*(\d+)/) ?? [])[1],
+      },
+    ];
+    let compared = 0;
+    for (const pair of pairs) {
+      if (pair.docValue === undefined) {
+        findings.push(`docs/DEPLOYMENT.md no longer states the ${pair.label}; check 12 cannot compare it`);
+        continue;
+      }
+      if (!has(pair.srcFile)) {
+        findings.push(`${pair.srcFile} is missing; docs/DEPLOYMENT.md documents its ${pair.label}`);
+        continue;
+      }
+      const actual = pair.srcValue();
+      compared++;
+      if (String(actual) !== String(pair.docValue)) {
+        findings.push(
+          `${pair.label}: docs/DEPLOYMENT.md says ${pair.docValue}, ${pair.srcFile} says ${actual}`,
+        );
+      }
+    }
+    notes.push(`deployment numbers: ${compared} figure(s) match the code`);
+  }
+}
+
 /* ------------------------------------------------------------------------- */
 if (findings.length === 0) {
   for (const note of notes) console.log(`ok   ${note}`);
