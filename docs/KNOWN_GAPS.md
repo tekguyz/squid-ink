@@ -21,6 +21,13 @@ holds ten surfaces (01 dashboard, 02 recorder, 02b record HUD, 03 personas,
 10 newsprint light). None was in scope and none was built — correct.
 `support.js` is the canvas runtime and is gitignored, not shipped.
 
+**Amended 2026-08-31.** One of the ten is now built: **02b record HUD**, in
+scope and briefed. The remaining nine are still unbuilt and still out of scope.
+What shipped is not all of 02b either — the expanded jot pane and drag/snap were
+deliberately left out, and three HUD states are invented rather than drawn. Both
+are recorded under the recorder section below. Do not read "02b is built" as
+"02b is finished".
+
 ## State management — Zustand not used here (recorded 2026-08-30)
 
 Zustand not invoked here — state is local to one component, no drawers/cross-route
@@ -139,6 +146,14 @@ This gap is closed. No token needs changing.
 The other eight App Surfaces screens, Supabase/auth/any backend, real
 transcription or RAG data, PWA setup, brand assets, and routing beyond
 `/notes/[id]`. The composer accepts and clears input but sends nothing.
+
+**Amended 2026-08-31.** This paragraph describes the Note Detail build only, and
+three of its items have since closed: Supabase, auth and the `/login` +
+`/auth/confirm` routes shipped on 2026-08-30, and surface 02b shipped on
+2026-08-31. Still unbuilt: the remaining nine App Surfaces screens, transcription
+and RAG, PWA setup, brand assets, and the composer's send path. Read the dated
+sections below rather than this one — it is kept for the reasoning, not as a
+current inventory.
 
 ## Code-review findings not acted on (recorded 2026-08-30)
 
@@ -748,7 +763,9 @@ project, silently breaks this pattern again with no error message anywhere.
 holds `record-hud.tsx`, `hud-level-bars.tsx` and `recorder-dock.tsx`, which
 `app/layout.tsx` mounts once. `app/notes/actions.ts` writes the row.
 `scripts/verify-recorder-upload.mjs` and `scripts/print-signin-link.mjs` prove
-and support it. 100 new tests; the suite went from 64 to 164.
+and support it. The suite went from 64 tests to **165 across 20 files**
+(measured 2026-08-31 with `npm test`, after the post-merge refactor added one
+more than the 164 first recorded here).
 
 **No schema change was needed, and that was verified rather than assumed.** The
 live check constraint was read back from `pg_constraint` before any code

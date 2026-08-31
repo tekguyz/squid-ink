@@ -94,23 +94,45 @@ const pkg = JSON.parse(read("package.json"));
   notes.push(`paths: ${checked} named in CLAUDE.md, all exist`);
 }
 
-/* 4 — every colour in globals.css traces to the design file ---------------- */
+/* 4 — every colour in globals.css traces to a design file ----------------- */
 {
-  const designFile = "design-reference/Note Detail.dc.html";
-  if (!has(designFile)) {
-    findings.push(`${designFile} is missing — token provenance cannot be verified`);
+  // Both design files are sources now. Note Detail is the only built screen,
+  // but the recorder HUD implements App Surfaces 02b and lifts its values from
+  // there, so checking Note Detail alone reports every HUD token as drift.
+  const designFiles = [
+    "design-reference/Note Detail.dc.html",
+    "design-reference/App Surfaces.dc.html",
+  ];
+
+  // Values that are deliberately in NO design file, each with the reason and
+  // the docs/KNOWN_GAPS.md section that records it. Adding a line here is a
+  // decision, not a silencing: an undocumented derived value is still drift.
+  const DERIVED = new Map([
+    // "`--live` light-theme value is derived, not from the design" — 02b is
+    // dark-only, so the light red follows the accent pattern instead.
+    ["oklch(0.520 0.170 25)", "--live light, derived from 02b's dark 0.66"],
+  ]);
+
+  const missing = designFiles.filter((f) => !has(f));
+  if (missing.length) {
+    findings.push(`${missing.join(", ")} missing — token provenance cannot be verified`);
   } else {
-    const design = read(designFile);
     const OKLCH = /oklch\([0-9.]+ [0-9.]+ [0-9.]+\)/g;
-    const designValues = new Set(design.match(OKLCH) ?? []);
+    const designValues = new Set(designFiles.flatMap((f) => read(f).match(OKLCH) ?? []));
     const shipped = new Set(read("app/globals.css").match(OKLCH) ?? []);
 
+    const gaps = has("docs/KNOWN_GAPS.md") ? read("docs/KNOWN_GAPS.md") : "";
     for (const value of shipped) {
-      if (!designValues.has(value)) {
-        findings.push(`app/globals.css uses ${value}, which appears nowhere in ${designFile} — a token was hand-edited away from the locked design`);
+      if (designValues.has(value)) continue;
+      if (DERIVED.has(value)) {
+        if (!gaps.includes(value)) {
+          findings.push(`app/globals.css uses ${value} (${DERIVED.get(value)}), which no design file contains and docs/KNOWN_GAPS.md no longer records`);
+        }
+        continue;
       }
+      findings.push(`app/globals.css uses ${value}, which appears in neither design file — a token was hand-edited away from the locked design`);
     }
-    notes.push(`tokens: ${shipped.size} colours in globals.css, all traceable to the design file`);
+    notes.push(`tokens: ${shipped.size} colours in globals.css, ${DERIVED.size} documented as derived, rest traceable to a design file`);
   }
 }
 
@@ -238,13 +260,35 @@ const pkg = JSON.parse(read("package.json"));
         .join(" ")
         .replace(/\s+/g, " ");
 
+      // A file that creates neither a table nor a policy is not an RLS file.
+      // persona_provisioning.sql is a security definer function plus its
+      // trigger; holding it to the four-policy rule reports the absence of a
+      // table as drift.
+      const declaresTable = /create table/.test(sql);
+      const declaresPolicy = /create policy/.test(sql);
+      if (!declaresTable && !declaresPolicy) {
+        notes.push(`${rel}: no table and no policy, RLS shape not applicable`);
+        continue;
+      }
+
       if (/for all\b/.test(sql)) {
         findings.push(`${rel} has a blanket \`for all\` policy; the rule is four per-operation policies`);
       }
-      for (const op of ["select", "insert", "update", "delete"]) {
+      // Four operations for a table this file owns. Policies on a table it does
+      // not own are a different case: storage_audio.sql deliberately ships no
+      // DELETE policy, because note deletion is not a decided feature and a
+      // policy with no consumer is a hole. The next clause catches one being
+      // added back without that decision being re-made.
+      const requiredOps = declaresTable
+        ? ["select", "insert", "update", "delete"]
+        : ["select", "insert", "update"];
+      for (const op of requiredOps) {
         if (!sql.includes(`for ${op} to authenticated`)) {
           findings.push(`${rel} has no \`for ${op} to authenticated\` policy`);
         }
+      }
+      if (!declaresTable && sql.includes("for delete to authenticated")) {
+        findings.push(`${rel} adds a DELETE policy on a table it does not own; that omission was deliberate, so decide it again before allowing it`);
       }
       const updateBlock = sql.split("create policy").find((b) => b.includes("for update")) ?? "";
       if (updateBlock && !updateBlock.includes("with check")) {
@@ -255,7 +299,10 @@ const pkg = JSON.parse(read("package.json"));
       if (uidTotal !== uidWrapped) {
         findings.push(`${rel} uses ${uidTotal - uidWrapped} bare \`auth.uid()\`; each must be wrapped as \`(select auth.uid())\` or it re-evaluates per row`);
       }
-      if (!/revoke\s+all/.test(sql)) {
+      // Only a file that owns its table can revoke on it. storage.objects is
+      // owned by supabase_storage_admin, and a revoke from postgres there is a
+      // documented no-op.
+      if (declaresTable && !/revoke\s+all/.test(sql)) {
         findings.push(`${rel} does not \`revoke all\` before granting; project defaults hand anon and authenticated TRUNCATE`);
       }
     }
