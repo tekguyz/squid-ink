@@ -39,6 +39,25 @@ What *would* be a divergence, and is worth watching: if a future surface needs
 the selected persona (the recorder HUD plausibly will), that state stops being
 local and belongs in a Zustand store. Move it then; do not pre-build the store.
 
+**RESOLVED 2026-08-31 — that second surface arrived.** `lib/recorder/recorder-store.ts`
+is the first real Zustand store in this codebase, and it is exactly the case the
+note above anticipated. It lives at **module scope**, not inside a provider, and
+`components/recorder/recorder-dock.tsx` is mounted once in `app/layout.tsx`. That
+placement is the whole feature: a store re-created per route would reset on the
+first link click, which is precisely the "ambient, not calendar-gated" decision
+failing.
+
+Two tests defend it. `recorder-store.test.ts` asserts that importing the module
+twice yields the same state. In the browser, the store was driven into its
+`error` phase on `/`, then navigated to `/notes/[id]`: the error message itself
+survived the navigation, which is state persisting rather than a component
+remounting.
+
+The persona question is still open and still not built. The recorder does **not**
+select a persona at capture time — notes are created persona-less and inherit the
+default, same as every other write path. Whoever adds persona-at-capture should
+put it in this store rather than lifting `note-detail-shell.tsx`'s local state.
+
 Provenance: `DECISIONS.md` and `ROADMAP.md` are knowledge files in the owner's
 Claude.ai planning Project, not files in this repo. They are not on disk here and
 cannot be verified by `check-docs.mjs` — anything this repo asserts about them is
@@ -272,6 +291,24 @@ started**, or is a known incompleteness in what shipped.
   DELETE policy was added, deliberately: object deletion is tied to a
   note-deletion feature that does not exist, and cleanup in the verification
   script runs through the secret key for exactly that reason.
+
+  **Upload code RESOLVED 2026-08-31. Playback UI is still missing.**
+  `lib/recorder/upload-audio.ts` uploads directly client-to-Storage at
+  `{user_id}/{note_id}` with `upsert: true`, and `app/notes/actions.ts` writes
+  `audio_storage_path`. Proven end to end by four real browser recordings, not
+  only by script — see the Recorder HUD section below. There is still **no way to
+  play a recording back in the app**; `docs/qa/recorder-manual-test-protocol.md`
+  pulls objects with the secret key and `ffprobe` instead.
+
+  One asymmetry worth writing down, because it bit this track: **removing a test
+  recording needs two different clients.** The row is deleted as the OWNER —
+  `notes.sql` grants `public.notes` to `authenticated` only, so the secret key is
+  `service_role` and gets `permission denied for table notes`. The object is
+  deleted as the ADMIN — `storage_audio.sql` ships no DELETE policy, so no
+  authenticated user can touch it. The first draft of
+  `scripts/verify-recorder-upload.mjs` used the admin client for both, printed
+  success without checking the error, and leaked two rows into the live project
+  before anyone noticed. It now deletes as owner and asserts the row is gone.
 
 - **Google connection table.** Same reason as above. Deferred until a consumer
   exists rather than built speculatively.
@@ -699,3 +736,173 @@ relying on it should sign in through a deployment URL once and confirm.
 Note for future runs: the allowlist is written against the **package** name, and
 the deployment prefix is derived from it. Renaming the npm package, or the Vercel
 project, silently breaks this pattern again with no error message anywhere.
+
+## Recorder HUD — system+mic capture, direct-to-Storage upload (recorded 2026-08-31)
+
+### What shipped
+
+`lib/recorder/` holds the capture path, one purpose-named file each:
+`recorder-store.ts` (Zustand, module scope), `format-elapsed.ts`, `codec.ts`,
+`audio-backup.ts` (IndexedDB), `device-handoff.ts`, `capture.ts`,
+`upload-audio.ts`, `use-recorder.ts` (orchestration). `components/recorder/`
+holds `record-hud.tsx`, `hud-level-bars.tsx` and `recorder-dock.tsx`, which
+`app/layout.tsx` mounts once. `app/notes/actions.ts` writes the row.
+`scripts/verify-recorder-upload.mjs` and `scripts/print-signin-link.mjs` prove
+and support it. 100 new tests; the suite went from 64 to 164.
+
+**No schema change was needed, and that was verified rather than assumed.** The
+live check constraint was read back from `pg_constraint` before any code
+depended on it: `processing_status` already allows
+`('local','uploading','analyzing','completed')`, and `audio_storage_path text`
+and `audio_duration_seconds integer` already existed. No migration ships here.
+
+### `processing_status` is `'uploading'`, written before the bytes move
+
+The row is created as the upload **starts**, not after it succeeds. That is
+possible because the Storage path is deterministic: the note id is generated on
+the client before capture begins, so `{user_id}/{note_id}` is known up front.
+
+**This track never writes `'analyzing'` or `'completed'`.** Both belong to Track
+3, and writing `'analyzing'` as a handoff value would claim a model pass that
+nothing performs. `app/notes/__tests__/actions.test.ts` asserts it explicitly.
+Every note this track creates therefore sits at `'uploading'` forever, and its
+IndexedDB blob is correctly never discarded, because discard is gated on
+`'completed'`.
+
+Confirmed by four real browser recordings on 2026-08-31: in every one the notes
+row's `created_at` precedes the storage object's by 0.45–1.1 s.
+
+### A failed upload strands TWO things, with no reconciliation path
+
+The largest thing this track leaves open, and a direct consequence of the
+ordering above:
+
+1. a `notes` row at `'uploading'` whose `audio_storage_path` points at an object
+   that does not exist, and
+2. an IndexedDB `recorder-backup` entry holding the only copy of the audio.
+
+Nothing reconciles them. There is no retry (deliberately — the requirement was
+that a failure be *visible*, not one-click recoverable), no sweeper, no expiry,
+and no UI that lists orphans. The user sees an untitled note that will never
+process, with no way to act on it, and **IndexedDB grows without bound for
+anyone who records offline.**
+
+Two decisions are owed:
+
+- **Track 3 must check the object actually exists before dispatching a
+  transcription.** An `'uploading'` row is not a promise of audio.
+- Something must own reconciliation — a resume-upload path that reads the
+  IndexedDB blob for an `'uploading'` row, or an expiry that fails the row and
+  frees the blob.
+
+The alternative ordering (write the row only after a successful upload) was
+considered and rejected: it makes the failure invisible and loses the recording
+with no trace.
+
+### Three HUD states are INVENTED, not from the design
+
+Verified by reading `design-reference/App Surfaces.dc.html`, not from memory.
+Surface 02b defines exactly four state labels — `Idle · docked bottom-right,
+above every app`, `Recording · collapsed`, `Paused · capture held, nothing
+discarded`, `Expanded · jot without leaving what you're doing`. Searching the
+**entire** file for `error`, `retry`, `try again`, `upload failed` and `dismiss`
+returns one hit: the word "dismissible" in surface 09's label, a different
+surface.
+
+So the design has no error state, no permission-pending state and no upload
+state anywhere. Three pills were invented to fill that gap:
+
+| Pill | Copy | Source |
+|---|---|---|
+| idle / recording / paused | as designed | **02b, verbatim** |
+| `requesting` | "Waiting for permission" | **invented** |
+| `stopping` / `uploading` | "Finishing" / "Uploading" | **invented** |
+| `error` | message + "The recording is kept on this device." + Dismiss | **invented** |
+
+They reuse only 02b's pill geometry and tokens. They are necessary — a permission
+prompt takes real seconds, and a failed upload must be visible — but they have
+had **no design pass and should be treated as placeholder** when the Core UX/UI
+phase reaches the recorder.
+
+### `--live` light-theme value is derived, not from the design
+
+02b is a dark-only surface and the design file contains no light-theme red at
+all. `--live` dark is `oklch(0.66 0.19 25)`, lifted verbatim. `--live` light is
+`oklch(0.520 0.170 25)`, **derived** by following the existing accent pattern
+where the dark token is light and the light token is dark. Same status as the
+values in "Tokens not enumerated in 3c" above: it works, it has not been
+approved by a designer. `--shadow-hud` light is derived the same way.
+
+### The backup buffer stores bytes, not a Blob
+
+`audio-backup.ts` stores an `ArrayBuffer` plus a mime type and reconstructs the
+Blob on read. Two reasons, and the first is not merely a test concern:
+Blob-in-IndexedDB is the historically flaky path (Safari has shipped versions
+that hand back something unusable), and `fake-indexeddb` cannot structured-clone
+a jsdom Blob at all — it returns an empty object and the bytes vanish silently.
+Storing a Blob would leave this data-loss guard with no test that its contents
+survive. Measured, not assumed: an `ArrayBuffer` round-trips exactly.
+
+### Not built from surface 02b
+
+- **The expanded jot pane.** It renders "rough notes", and no column or table
+  exists for them — `notes.raw_transcript` is the transcript, not the user's
+  notes. Building the UI without a home for its data would be guessing at a
+  schema decision this track does not own.
+- **Drag and snap-to-corner.** The caption is rendered because it is the
+  design's copy; the dock is fixed bottom-right.
+- **`OPEN FULL PANE`** (surface 02) and **`CHANGE PERSONA`** at capture time.
+
+### Not built at all
+
+The full encrypted 48-hour backup buffer (Core UX/UI phase — only the light
+version ships here, unencrypted, no expiry). Transcription and every
+`processing_status` transition past `'uploading'` (Track 3). Playback. Note
+deletion. Resume-upload after a failure. A mic-only mode — system+mic is
+mandatory, not optional.
+
+### Verified in a real browser, and what that did not cover
+
+Chrome 148 / Windows 11, `MediaRecorder.isTypeSupported`:
+
+    audio/webm;codecs=opus      ->  true      <- selected
+    audio/webm                  ->  true
+    audio/mp4;codecs=mp4a.40.2  ->  true
+    audio/mp4                   ->  true
+    audio/ogg;codecs=opus       ->  false
+
+Chromium accepts the MP4 strings too, so the WebM-first order in
+`CODEC_CANDIDATES` is **load-bearing** — reorder it and Chromium starts
+producing MP4. **Safari's strings are implemented but unverified**; Section C of
+`docs/qa/recorder-manual-test-protocol.md` is the only thing that will settle
+them.
+
+Four real recordings, and the bitrate is the finding worth keeping:
+
+| Condition | Duration | Size | Bitrate |
+|---|---|---|---|
+| Mic muted, silent tab | 29 s | 7,441 B | 2.1 kbit/s |
+| Mic muted, silent tab | 29 s | 7,469 B | 2.1 kbit/s |
+| Mic live, speech | 26 s | 98,963 B | 30.5 kbit/s |
+| Mic live + tab audio | 43 s | 700,869 B | 130 kbit/s |
+
+**A muted mic produces a file that looks like a successful recording.** Opus
+compresses near-silence to ~2 kbit/s, the HUD goes green, the note appears, the
+object lands. Only the bitrate distinguishes it from a real capture. This is the
+easiest failure in the feature to miss, and every QA section now ends with that
+check.
+
+Not covered by any of the above: **device handoff, real-world echo, and Safari.**
+None is automatable here. They have a runnable checklist, and a skipped section
+is not a passed one.
+
+### `getDisplayMedia` asks for video on purpose
+
+`capture.ts` requests `{ audio: true, video: true }` and stops the video track
+the moment it arrives. Chromium does not offer tab or system audio for an
+audio-only display request — the audio checkbox simply is not shown. It is a
+permission-dialog tax, not something recorded. Do not "clean this up."
+
+Related: `MediaRecorder` is given the Web Audio destination node's stream, never
+the mic stream. That indirection is the only reason `replaceMic()` can swap a
+microphone mid-recording without ending the recording.
