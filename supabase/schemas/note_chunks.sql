@@ -67,6 +67,15 @@ alter table public.note_chunks
 -- Drop-then-add rather than add-if-not-exists: Postgres has no
 -- if-not-exists for constraints, and both statements are idempotent. This
 -- also replaces the earlier single-column form of the same constraint.
+--
+-- GUARD RAIL, read before building persona deletion. on delete set null does
+-- not orphan a takeaway: a null persona_id reads as the default persona, so
+-- deleting Sales Coach silently re-attributes its takeaways to Neutral
+-- Analyst, where they render as that lens's output. Nothing can delete a
+-- personas row today (no UI, no API route, no server action, no script).
+-- Whoever adds a delete button must choose explicitly, and say which in the
+-- delete confirmation: accept the re-attribution, or soft-delete the persona
+-- and orphan its chunks. Do not ship the button before that choice is made.
 alter table public.note_chunks
   drop constraint if exists note_chunks_persona_id_fkey;
 alter table public.note_chunks

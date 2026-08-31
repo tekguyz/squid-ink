@@ -91,6 +91,11 @@ create policy personas_update_own on public.personas
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
+-- This policy permits a delete; nothing in the app performs one yet. See the
+-- guard rail above note_chunks_persona_id_fkey in note_chunks.sql — deleting a
+-- persona re-attributes its takeaways to the default persona rather than
+-- orphaning them, and that behaviour must be chosen deliberately before any
+-- delete surface ships.
 drop policy if exists personas_delete_own on public.personas;
 create policy personas_delete_own on public.personas
   for delete to authenticated
