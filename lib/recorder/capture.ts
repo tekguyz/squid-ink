@@ -15,9 +15,18 @@
  *    node, and the recorder's stream object never changes, so a mic swapped
  *    mid-meeting does not end the recording.
  *
- * The mic constraint is exactly { echoCancellation: true }. No noiseSuppression
- * and no autoGainControl — ROADMAP §7 rejected extra masking, and adding
- * constraints "while we are here" is how a locked decision quietly rots.
+ * The mic constraint is exactly { echoCancellation: true } — the baseline
+ * ROADMAP §8b names for the no-headphones echo case.
+ *
+ * noiseSuppression is deliberately absent, NOT prohibited. ROADMAP §7 and
+ * DECISIONS.md § Rejected both reject custom edge-ML noise masking on cost
+ * grounds, and both name browser noiseSuppression: true as the free equivalent
+ * to reach for if audio QUALITY, not cost, becomes a measured problem. Adding
+ * it needs that measurement, not a hunch. autoGainControl has no decision
+ * behind it either way and stays off until one exists.
+ *
+ * Corrected 2026-08-31: this comment used to cite "ROADMAP §7 rejected extra
+ * masking" as forbidding both, which is the opposite of what §7 says.
  */
 export interface CaptureDeps {
   getDisplayMedia(constraints: DisplayMediaStreamOptions): Promise<MediaStream>;

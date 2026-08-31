@@ -127,8 +127,23 @@ arrival.
 stream. That indirection is what lets `replaceMic()` swap a microphone
 mid-recording without ending the recording.
 
-The mic constraint is exactly `{ echoCancellation: true }`. Do not add
-`noiseSuppression` or `autoGainControl` — ROADMAP §7 rejected extra masking.
+The mic constraint is exactly `{ echoCancellation: true }`. That is the
+baseline `docs/ROADMAP.md` §8b names for the no-headphones echo case, and it is
+the default.
+
+`noiseSuppression` is **not forbidden.** ROADMAP §7 and `docs/DECISIONS.md`
+§ Rejected both reject *custom edge-ML* noise masking, on cost grounds, and both
+name browser `noiseSuppression: true` as the free equivalent to reach for **if
+audio quality — not cost — ever becomes a measured problem.** Enable it for that
+reason, with the measurement that prompted it. Do not enable it speculatively.
+
+`autoGainControl` has no decision behind it in either direction. Leave it off
+until one exists.
+
+**Corrected 2026-08-31.** This paragraph read "Do not add `noiseSuppression` or
+`autoGainControl` — ROADMAP §7 rejected extra masking", citing §7 for the
+opposite of what §7 says. It survived because §7 was not in the tree and could
+not be opened.
 
 The Storage path is `{user_id}/{note_id}`: two segments, that order, no
 extension. It is not a naming convention — it is what the three policies in

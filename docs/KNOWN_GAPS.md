@@ -1164,12 +1164,17 @@ may well still be the right call — a minimal constraint set is defensible on i
 own merits. What is wrong is the authority claimed for it, in two places, one of
 which is a convention file that governs new code.
 
-Needs the owner, because it is a decision and not a defect:
+**RESOLVED 2026-08-31.** The owner's call: follow the roadmap. Both sites now
+say what ROADMAP §7 and DECISIONS.md § Rejected actually say — the constraint
+stays `{ echoCancellation: true }` by default, `noiseSuppression` is available
+if audio **quality**, not cost, becomes a *measured* problem, and enabling it
+needs that measurement rather than a hunch. `autoGainControl` is recorded as
+having no decision behind it in either direction, which is the honest state; it
+had been carried along in a sentence whose authority covered only noise masking.
 
-- Keep the rule and **re-justify it** — say why this build declines the fallback
-  its own ROADMAP offers.
-- Or relax it to match §7: `noiseSuppression` stays off by default, permitted if
-  audio quality becomes a measured problem.
+**No behaviour changed.** `MIC_CONSTRAINTS` in `lib/recorder/capture.ts` is
+byte-identical. This was a wrong justification, not a wrong default, and the
+default was right by accident of matching §8b.
 
 This is the first contradiction the 2026-08-31 docs move made findable, and it
 had survived two files and a code comment. It is the argument for `check-docs.mjs`
