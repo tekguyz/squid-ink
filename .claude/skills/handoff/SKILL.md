@@ -112,8 +112,11 @@ closed this way on 2026-08-30.
 say "uncommitted in the working tree" explicitly, never fold it into "shipped".
 `git remote -v`: there **is** a remote (`origin`, GitHub), so report ahead/behind
 from `git status -sb` rather than assuming nothing is pushed. Pushed is still not
-deployed — there is no hosting yet, so never describe anything as deployed until
-one exists and you have checked it.
+deployed: `main` auto-deploys to Vercel (`tekguyz/squid-ink`,
+`https://squid-ink.vercel.app`), but a push is not proof the build went green.
+Check it with `vercel ls squid-ink --scope tekguyz` and report what it says. The
+repo carries no `.vercel` or `vercel.json`, so this hosting is invisible from the
+tree — see docs/KNOWN_GAPS.md, "The repo has no record that it is deployed".
 
 ### Check 5 — the gates, if the handoff will call anything done
 
@@ -168,7 +171,7 @@ not re-derive them here.
 ```markdown
 ## squid-ink — handoff <YYYY-MM-DD>
 
-**Repo:** <clean / N uncommitted files> · <in sync with origin/main / N unpushed> · not deployed anywhere
+**Repo:** <clean / N uncommitted files> · <in sync with origin/main / N unpushed> · <prod deploy: Ready <age> / not checked>
 **Gates:** <build / tsc / test — real result, or "not run this session">
 
 ### Shipped since last handoff

@@ -447,6 +447,29 @@ Path B is manual and has no script. It will go stale silently unless
 deliberately re-run after any change to `proxy.ts`, `lib/supabase/session.ts`,
 or `app/auth/confirm/route.ts`.
 
+**Also proven on Vercel, 2026-08-30.** The run above was against
+`http://localhost:3000` — its own transcript records that `Location`. A separate
+run was then measured against `https://squid-ink.vercel.app`, and the exchange
+succeeded there too, with the server log reading `exchange OK`.
+
+That second run cost a session of debugging, because the failures preceding it
+looked like a regression and were not one. `app/auth/confirm/route.ts` was
+byte-identical to the version that passed. The cause was procedural: the sign-in
+was started in one browser and the emailed link opened in another. PKCE puts the
+code verifier in a cookie, so the verifier and the click must share a browser.
+Supabase returns `400 pkce_code_verifier_not_found`, whose own message names
+this — "the auth flow was initiated in a different browser or device".
+
+**Any future Path B run must use one browser start to finish.** Requesting the
+link in one profile and opening it in another reproduces a failure that has
+nothing to do with this repo.
+
+`@supabase/ssr` 0.12.5 does not write one verifier cookie. The successful run
+carried four, all under `sb-<ref>-auth-token`: two per-flow slots
+(`-flow-<id>-code-verifier`, 159 chars each — one per pending sign-in), the
+index (`-flows-code-verifier`, 102), and the fixed key (`-code-verifier`, 159).
+Code that probes for a single guessed cookie name will be wrong.
+
 ## Magic-link tokens are spent by a GET, before any human clicks (recorded 2026-08-30)
 
 **Open. Not built.**
@@ -476,3 +499,41 @@ proof, and the recipient may simply have opened it.
 
 Until this is fixed, magic-link is unreliable on any mail host that prefetches,
 which is a poor property for the only way into the app.
+
+**Still one observation, 2026-08-30.** A later run of failures looked like this
+gap and was not. Those were `pkce_code_verifier_not_found` — a missing verifier
+cookie, not a spent token — and a spent token returns a different error. So this
+entry gains no corroboration from them and remains a single unconfirmed sighting.
+The confirming test is unchanged: send a link, do not open it, then check whether
+it is already spent.
+
+## The repo has no record that it is deployed (recorded 2026-08-30)
+
+**Open.**
+
+There is a live Vercel project, `tekguyz/squid-ink`, serving
+`https://squid-ink.vercel.app` from `main` through a GitHub integration. It has
+production deployments and two environment variables,
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+
+None of that is written down anywhere in this repo. There is no `.vercel`
+directory, no `vercel.json`, and no deployment section in `CLAUDE.md` or
+`README.md`. Until 2026-08-30 the handoff skill asserted outright that nothing
+was deployed.
+
+This is how the magic-link debugging session started from a false premise. A
+passing localhost run and a failing production run were compared as if they were
+the same environment, because nothing in the repo said a second environment
+existed.
+
+Two facts worth recording before they are lost again. The Supabase Site URL is
+`https://squid-ink.vercel.app` exactly, and both
+`https://squid-ink.vercel.app/auth/confirm` and
+`http://localhost:3000/auth/confirm` are in the Redirect URL allowlist. This was
+measured, not read from the dashboard: `GET /auth/v1/verify` with a junk token
+honours an allowlisted `redirect_to` and falls back to the Site URL otherwise, so
+sending three probes reveals both settings without a login.
+
+`docs/DECISIONS.md` is referenced by `CLAUDE.md` and by earlier entries in this
+file, but no such file exists in the repo. Its § Deployment cannot be consulted
+because it is not here.
