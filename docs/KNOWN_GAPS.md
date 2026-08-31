@@ -405,3 +405,68 @@ magic-link is the only way in.
 **Cleanup owed.** The `admin+pathb@tekguyz.com` auth user still exists. It owns
 no rows. Delete it from the Supabase dashboard, or keep it as a standing
 zero-row fixture — but decide, rather than letting it accumulate.
+
+## Auth — verified 2026-08-30
+
+**Path B of the RLS proof is proven end to end.** Not a synthetic session: a
+real magic link, emailed to a fresh `admin+pathb@tekguyz.com` account (auth
+user `7023f7cb-5a43-4580-88a0-4fe0c18072b6`), loaded in a browser that started
+with zero cookies. Full request-by-request evidence is under "Magic-link
+callback shape" above; the two branches measured were:
+
+- **Success path.** `signInWithOtp` wrote the PKCE code-verifier cookie, the
+  default template's link returned `303` to
+  `/auth/confirm?code=<uuid>&next=%2F`, the route exchanged it for
+  `sb-<ref>-auth-token` (2931 chars), and a *second, separate* `GET /` came
+  back `200` through `proxy.ts` with no redirect. The decoded token carried
+  `email: admin+pathb@tekguyz.com`, `role: authenticated`, `aal1`. The page
+  rendered "No notes yet" — a genuine empty RLS result for a user who owns no
+  rows, **not** `permission denied`. That is the point of Path B: it proves the
+  app hands the database the right identity, which a password-grant JWT in
+  `scripts/verify-rls.mjs` cannot.
+
+- **`otp_expired` branch.** Measured against a real expired link, not a
+  hand-built query string. `/auth/confirm?error=access_denied&error_code=
+  otp_expired…` redirected to `/login?error=invalid_token` and rendered "That
+  link did not work. Request a new one." Not `missing_token`. Both halves of
+  `ddaef6b` are therefore verified.
+
+**Still unmeasured: `DEFAULT_PERSONA_FALLBACK`.** The fresh account owns no
+notes, so no note rendered, so the fallback never executed. "A fresh account
+falls back to one lens, not four" remains read from code rather than observed.
+Measuring it needs a user who owns a note but no personas — seed one, or
+render the fallback from a route that does not require a note.
+
+Path B is manual and has no script. It will go stale silently unless
+deliberately re-run after any change to `proxy.ts`, `lib/supabase/session.ts`,
+or `app/auth/confirm/route.ts`.
+
+## Magic-link tokens are spent by a GET, before any human clicks (recorded 2026-08-30)
+
+**Open. Not built.**
+
+Observed in this session: the first link emailed to `admin+pathb@tekguyz.com`
+came back `otp_expired` on its very first fetch, having never been opened by a
+person. That is consistent with a mail-path security scanner prefetching links
+in the message body — standard behaviour for several mail providers and
+gateways.
+
+The cause is structural, not a bug in this repo. `app/auth/confirm/route.ts`
+runs `exchangeCodeForSession` on a `GET`, and the one-time token is consumed by
+whoever issues that `GET` first. A scanner is indistinguishable from a user at
+that point. No amount of error handling fixes it: by the time the human clicks,
+the token is legitimately spent, and the app correctly reports an invalid link.
+
+The fix is architectural. The `GET` must not exchange anything — it should
+render an interstitial ("Continue signing in") whose button issues a `POST`
+that performs the exchange. A prefetching scanner does not submit forms, so the
+token survives to the human. Cost: one extra click on every sign-in, and a page
+that has no design yet — the Auth surface (App Surfaces 04) is unbuilt, so this
+should be decided together with that surface rather than bolted on now.
+
+Worth confirming the diagnosis before building: send a link, do not open it,
+and check whether it is already spent. One observation is a signal, not a
+proof, and the recipient may simply have opened it.
+
+Until this is fixed, magic-link is unreliable on any mail host that prefetches,
+which is a poor property for the only way into the app.
