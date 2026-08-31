@@ -263,14 +263,16 @@ try {
       `rows=${actorList.data?.length ?? 0} error=${JSON.stringify(actorList.error?.message ?? null)}`,
     );
 
-    // The overwrite above must not have changed the object either. A
-    // refused-looking error with a mutated body would be a false pass.
-    const stillThere = await admin.storage.from(BUCKET).download(foreignPath);
-    const stillText = stillThere.data ? await stillThere.data.text() : null;
+    // The refused overwrite above must not have changed the object either --
+    // an error alongside a mutated body would be a false pass. Compared by
+    // recorded size from the row already fetched, not by downloading: a
+    // download here would be CDN-cached and could report either body
+    // regardless of what is actually stored.
+    const expectedBody = foreignPath === ownerPath ? SECOND : FIRST;
     check(
       "the object's contents are untouched",
-      stillText === (foreignPath === ownerPath ? SECOND : FIRST),
-      `got=${JSON.stringify(stillText)}`,
+      adminList.data?.[0]?.metadata?.size === expectedBody.length,
+      `size=${adminList.data?.[0]?.metadata?.size} expected=${expectedBody.length} ("intrusion" would be ${"intrusion".length})`,
     );
     console.log("");
   }
