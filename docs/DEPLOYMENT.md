@@ -30,19 +30,70 @@ sign-in on 2026-08-30; see below.
 
 ### Environment variables
 
-Both are set for Preview and Production:
+Measured 2026-08-31 with:
 
-- `NEXT_PUBLIC_SUPABASE_URL` — `https://pbwvvakzbrimmdntqxxn.supabase.co`
-- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+    npx vercel env ls --project squid-ink --scope tekguyz
 
-`SUPABASE_SECRET_KEY` is **correctly absent** from Vercel. It bypasses RLS and
-belongs only in the gitignored `.env.local`, where `scripts/verify-rls.mjs`
-reads it. It must never carry a `NEXT_PUBLIC_` prefix — Next.js ships every such
-variable to the browser.
+| Variable | Type | Environments |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Config | Preview, Production |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Config | Preview, Production |
+| `SUPABASE_SECRET_KEY` | Secret | Production |
+| `GEMINI_API_KEY` | Secret | Production |
+| `CRON_SECRET` | Secret | Production |
 
-The repo holds no `.vercel` directory and no `vercel.json`. Vercel CLI commands
-therefore need `--project squid-ink --scope tekguyz` explicitly; without them the
-CLI reports the codebase as unlinked.
+`NEXT_PUBLIC_SUPABASE_URL` is `https://pbwvvakzbrimmdntqxxn.supabase.co`.
+
+**`SUPABASE_SECRET_KEY` used to be recorded here as "correctly absent" from
+Vercel. That is no longer true, and the change is deliberate.**
+`app/api/cron/transcribe` runs with no user session and therefore no RLS
+identity, so it needs the key that bypasses RLS in order to read and write rows
+belonging to whichever user recorded them. It is Production-only, never
+`NEXT_PUBLIC_`-prefixed, and the route refuses every request that does not carry
+`Authorization: Bearer $CRON_SECRET` before it touches the database or Gemini.
+
+`CRON_SECRET` is not obtained from anywhere — it is any random string of 32+
+characters, invented once and set in both `.env.local` and Vercel. Vercel sends
+its value as an `Authorization: Bearer <value>` header on every cron invocation.
+
+To add or rotate one:
+
+    npx vercel env add SUPABASE_SECRET_KEY production --project squid-ink --scope tekguyz
+
+### Cron
+
+`vercel.json` schedules `/api/cron/transcribe` at `0 7 * * *`.
+
+**Measured 2026-08-31.** `GET https://api.vercel.com/v2/teams` with the CLI
+token reports the TEKGUYZ team (`team_agYJ1s4InTpXXycvARJoGQ9g`) on
+`billing.plan: "hobby"`. Two ceilings follow, and both are load-bearing:
+
+| | Hobby (current) | Pro |
+|---|---|---|
+| Cron frequency | **once per day**; anything more frequent **fails deployment** | once per minute |
+| Cron timing | any moment within the specified hour | within the specified minute |
+| Function `maxDuration` | **300 s**, default *and* maximum | 800 s, 1800 s extended |
+
+`maxDuration = 300` in the route and `MAX_TRANSCRIPTIONS_PER_RUN = 3` in
+`lib/transcription/sweep.ts` are both sized against those numbers. Re-measure
+the plan before changing either.
+
+**The consequence to be honest about:** on Hobby a recording can sit at
+`'uploading'` for up to 24 hours before the sweep reaches it. The route is also
+reachable on demand with the same bearer token, which is the current workaround
+and is how `scripts/verify-transcription-pipeline.mjs` drives it:
+
+    curl -H "Authorization: Bearer $CRON_SECRET" https://squid-ink.vercel.app/api/cron/transcribe
+
+`/api/cron` is listed in `PUBLIC_PREFIXES` in `lib/supabase/session.ts`. Without
+that the session middleware redirects the cron request to `/login`, and **Vercel
+cron does not follow redirects** — the job would be recorded as complete while
+the sweep never ran. Do not remove it.
+
+The repo holds no `.vercel` directory. Vercel CLI commands therefore need
+`--project squid-ink --scope tekguyz` explicitly; without them the CLI reports
+the codebase as unlinked. (`vercel.json` now exists, but it carries no project
+link — only the cron schedule.)
 
 ## Supabase
 
