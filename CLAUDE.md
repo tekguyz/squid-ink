@@ -361,13 +361,13 @@ must read and write rows belonging to whichever user recorded them. The route
 refuses every request that does not carry `Authorization: Bearer $CRON_SECRET`
 before it touches the database or the Gemini API.
 
-Five **local-only** scripts also read it from the gitignored `.env.local` —
+Six **local-only** scripts also read it from the gitignored `.env.local` —
 `verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
-`verify-persona-provisioning.mjs` and `print-signin-link.mjs`. None ships. An
-earlier version of this section claimed "exactly one place,
-`scripts/verify-rls.mjs`", which was already wrong when written; the grep below
-is the check that settles it, and the two numbers to keep straight are **one**
-in `app/` + `lib/` + `components/`, and **five** in `scripts/`.
+`verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs` and
+`print-signin-link.mjs`. None ships. An earlier version of this section claimed
+"exactly one place, `scripts/verify-rls.mjs`", which was already wrong when
+written; the greps below are the check that settles it. Run them rather than
+trusting the counts here — a new script moves the second number.
 
     grep -rn "SUPABASE_SECRET_KEY" --include=*.ts --include=*.tsx app lib components
     grep -rln "SUPABASE_SECRET_KEY" scripts
