@@ -1037,6 +1037,55 @@ Moving to Pro makes the schedule a one-line change in `vercel.json` and lets
 before changing either — `docs/DEPLOYMENT.md` holds the numbers and the command
 that produced them.
 
+### The cron sweep is the ONLY transcription trigger — there is no on-demand path (recorded 2026-08-31)
+
+Nothing in the application calls `/api/cron/transcribe`. Verified by grep: the
+only non-test references to the path are in `lib/supabase/session.ts`, which
+exempts it from the session middleware. Stopping a recording uploads the audio,
+writes the note row at `'uploading'`, and stops there.
+
+**This inverts the design of the v1 app** (`docs/crisby-bacon-v1/`). There,
+`services/geminiService.ts` ran in the browser and transcription began when the
+recording ended; the Netlify functions handled only chat, calendar, Drive and
+Stripe. v1's cron-equivalent was `INTELLIGENCE.md`'s "Note Recovery — Health
+Check", a net for stuck notes. **This build shipped the net and not the main
+path**, so the net is currently doing the main job.
+
+The visible symptom is a throughput figure that was never meant to be a user
+quota: `MAX_TRANSCRIPTIONS_PER_RUN = 3` bounds one sweep so it fits inside the
+300 s function ceiling. With Hobby's once-a-day cron that reads as "three notes
+a day". Recording itself is unbounded, and no audio is lost — surplus rows stay
+at `'uploading'` and are claimed by the next sweep.
+
+Two ways out, neither chosen, and the choice is the owner's:
+
+- **A per-note route the recorder calls on stop.** One note per invocation, its
+  own 300 s, no per-run cap. `gemini-client.ts`, `persist-result.ts`,
+  `transcript.ts` and `diarization-policy.ts` are already independent of
+  `sweep.ts`, so this is wiring rather than a rewrite. It needs a decision on
+  what the UI shows while a note transcribes.
+- **A deliberate "Transcribe" action the user presses.** Same route, user-timed
+  rather than automatic. The owner has said immediate transcription is **not**
+  required, which keeps this live.
+
+Either way the cron returns to being the net, which is what it was written as.
+
+**Not a bug in what shipped.** Track 3's scope was the sweep, and the sweep
+works. This is a missing sibling, recorded here so it is not rediscovered as a
+defect.
+
+### Nothing renders a live transcript while recording (recorded 2026-08-31)
+
+There is no Web Speech API usage anywhere — `grep -rni "SpeechRecognition"`
+over `app/`, `components/` and `lib/` returns nothing. `record-hud.tsx` shows
+elapsed time, level bars and status copy only. v1 did have one
+(`components/features/studio/MainEditor.tsx`, "Live transcript/notes area"),
+which is a plausible source of the expectation that this build has it.
+
+Whether this build wants one is undecided, and it is a separate question from
+the trigger above: a browser live transcript is display only and would not feed
+the Gemini pass.
+
 ### Recordings past Gemini's caps fail outright, and 28–60 min degrades silently-ish
 
 Two distinct behaviours, both deliberate, and the second is the one likely to

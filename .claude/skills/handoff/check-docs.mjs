@@ -21,6 +21,25 @@ const notes = [];
 const read = (rel) => readFileSync(path.join(ROOT, rel), "utf8");
 const has = (rel) => existsSync(path.join(ROOT, rel));
 
+/** Every source basename in the tree, built once. CLAUDE.md refers to plenty of
+ *  files by name alone; a bare name is a real claim about a file existing, just
+ *  not a claim about where it sits. */
+const BASENAMES = (() => {
+  const seen = new Set();
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir)) {
+      if (entry === "node_modules" || entry === ".next" || entry === ".git") continue;
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) walk(full);
+      else seen.add(entry);
+    }
+  };
+  walk(ROOT);
+  return seen;
+})();
+const basenameExists = (name) => BASENAMES.has(name);
+
 function fatal(message) {
   console.error(`CANNOT RUN — ${message}`);
   process.exit(2);
@@ -85,11 +104,16 @@ const pkg = JSON.parse(read("package.json"));
   const paths = new Set(
     [...claude.matchAll(/`([a-zA-Z0-9_./[\]-]+\.(?:tsx?|css|mjs|json|md))`/g)].map((m) => m[1]),
   );
+  // CLAUDE.md names some files by basename alone (`diarization-policy.ts`,
+  // `verify-rls.mjs`). Those are real files, just not at the repo root, so a
+  // bare name is resolved by basename anywhere in the tree rather than being
+  // reported missing. A name carrying a slash is still an exact path claim.
   let checked = 0;
   for (const p of paths) {
     if (p.startsWith(".") && !p.startsWith("./")) continue; // dotfiles like .gitignore
     checked++;
-    if (!has(p)) findings.push(`CLAUDE.md names \`${p}\`, which does not exist`);
+    const found = p.includes("/") ? has(p) : basenameExists(p);
+    if (!found) findings.push(`CLAUDE.md names \`${p}\`, which does not exist`);
   }
   notes.push(`paths: ${checked} named in CLAUDE.md, all exist`);
 }
@@ -208,7 +232,30 @@ const pkg = JSON.parse(read("package.json"));
   };
   for (const dir of ["app", "components", "lib", "scripts"]) walk(path.join(ROOT, dir));
 
-  const ALLOWED_SECRET_FILE = "scripts/verify-rls.mjs";
+  // AMENDED 2026-08-31. The secret key bypasses RLS, so where it may be read
+  // is a policy, and the policy changed: the cron route has no user session
+  // and therefore no RLS identity, so it must read it from the Vercel
+  // environment. Six local-only scripts read it from .env.local; none ships.
+  // Keep this list identical to CLAUDE.md > Supabase > Keys.
+  const ALLOWED_SECRET_FILES = new Set([
+    "app/api/cron/transcribe/route.ts",
+    "scripts/verify-rls.mjs",
+    "scripts/verify-storage-rls.mjs",
+    "scripts/verify-recorder-upload.mjs",
+    "scripts/verify-persona-provisioning.mjs",
+    "scripts/verify-transcription-pipeline.mjs",
+    "scripts/print-signin-link.mjs",
+  ]);
+  // Tests for an allowed file exercise the same variable and are allowed too.
+  const isAllowedSecretFile = (rel) =>
+    ALLOWED_SECRET_FILES.has(rel) ||
+    [...ALLOWED_SECRET_FILES].some((f) =>
+      rel.startsWith(f.replace(/\/[^/]+$/, "/__tests__/")),
+    );
+  // Confinement is about the Supabase secret specifically. CRON_SECRET is a
+  // shared bearer token, not an RLS bypass — the NEXT_PUBLIC_ check above
+  // still covers it, which is the way it could actually leak.
+  const SUPABASE_SECRET = /^SUPABASE_(SECRET|SERVICE_ROLE)/;
   let scanned = 0;
   for (const file of sources) {
     scanned++;
@@ -221,8 +268,11 @@ const pkg = JSON.parse(read("package.json"));
       }
     }
     for (const m of src.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
-      if (SECRET_HINT.test(m[1]) && rel !== ALLOWED_SECRET_FILE) {
-        findings.push(`${rel} reads ${m[1]}; the secret key belongs only in ${ALLOWED_SECRET_FILE}`);
+      if (SUPABASE_SECRET.test(m[1]) && !isAllowedSecretFile(rel)) {
+        findings.push(
+          `${rel} reads ${m[1]}; the Supabase secret key is confined to the ` +
+            `${ALLOWED_SECRET_FILES.size} files named in CLAUDE.md > Supabase > Keys`,
+        );
       }
     }
     // A literal key pasted into source rather than read from the environment.
@@ -238,7 +288,10 @@ const pkg = JSON.parse(read("package.json"));
       findings.push(".gitignore does not ignore .env* — the secret key can be committed");
     }
   }
-  notes.push(`supabase keys: ${scanned} files scanned, secret confined to ${ALLOWED_SECRET_FILE}`);
+  notes.push(
+    `supabase keys: ${scanned} files scanned, secret confined to the ` +
+      `${ALLOWED_SECRET_FILES.size} files CLAUDE.md allows`,
+  );
 }
 
 /* 9 — four per-operation RLS policies per table, wrapped auth.uid() ------- */
