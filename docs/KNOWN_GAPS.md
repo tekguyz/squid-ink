@@ -789,6 +789,14 @@ IndexedDB blob is correctly never discarded, because discard is gated on
 Confirmed by four real browser recordings on 2026-08-31: in every one the notes
 row's `created_at` precedes the storage object's by 0.45–1.1 s.
 
+**Superseded in part, 2026-08-31.** Track 3 shipped, so `'analyzing'` and
+`'completed'` are now written — by `app/api/cron/transcribe`, not by the
+recorder. The recorder still writes only `'uploading'`, and the assertion in
+`app/notes/__tests__/actions.test.ts` still holds. A note no longer "sits at
+`'uploading'` forever": it advances on the next cron sweep, which on the Vercel
+Hobby plan is **once a day** (see `docs/DEPLOYMENT.md`). The IndexedDB blob is
+still discarded only on `'completed'`.
+
 ### A failed upload strands TWO things, with no reconciliation path
 
 The largest thing this track leaves open, and a direct consequence of the
@@ -848,6 +856,38 @@ Two things the design assumed were left unverified, and both were measured on
   line 15 reads `check (processing_status in ('local', 'uploading', 'analyzing',
   'completed'))`. Adding `'failed'` is a schema change. Bundle it into Track 3's
   migration, which already has to touch this constraint for `'analyzing'`.
+
+**BUILT 2026-08-31, Track 3 — tier 2 only.** `lib/transcription/sweep.ts` now
+does both halves of tier 2. An `'uploading'` row past one hour with **no object
+at its path** is marked `'failed'`. An `'analyzing'` row past one hour — a
+transcription function that died mid-flight — is marked `'failed'` by the
+identical query shape against a different status value, deliberately not a
+second mechanism.
+
+Age alone never fails a row. An old `'uploading'` row whose object **is** present
+is transcribed, because that is a lost client write-back rather than a lost
+upload. The one-hour threshold exists only to avoid false-failing a slow-but-real
+upload; object existence is the actual safety check, read from `list()` metadata
+and never from `download()`.
+
+`supabase/schemas/notes.sql` now allows `'failed'`, exactly as the note above
+required. Verified by reading `pg_constraint` back from the live catalog.
+
+**TIER 1 IS STILL NOT BUILT.** The in-session `'failed'` write on a caught upload
+error remains absent from the tree — re-measured on 2026-08-31, not assumed.
+Track 3's scope fence put `lib/recorder/` off limits, so that track shipped the
+constraint that unblocks it and nothing else. Until tier 1 lands, an in-session
+upload failure is indistinguishable from a lost session and waits the full hour
+for tier 2 to notice. The change is roughly three lines in the `catch` block of
+`lib/recorder/use-recorder.ts`, which already calls `store.getState().fail(...)`
+— client state, not a database write. **Owner: whoever next opens
+`lib/recorder/`.**
+
+**IndexedDB cleanup is still unbuilt.** The backup blob is discarded only on
+`'completed'`. Rows that now reach `'failed'` keep their blob indefinitely, which
+is the correct conservative choice — nothing can resume an upload from it, but
+deleting it would destroy the only copy of the audio. The unbounded-growth
+problem the original entry names is therefore **narrowed, not closed**.
 
 ### Three HUD states are INVENTED, not from the design
 
@@ -956,3 +996,127 @@ permission-dialog tax, not something recorded. Do not "clean this up."
 Related: `MediaRecorder` is given the Web Audio destination node's stream, never
 the mic stream. That indirection is the only reason `replaceMic()` can swap a
 microphone mid-recording without ending the recording.
+
+## Transcription pipeline (recorded 2026-08-31)
+
+What shipped: a `CRON_SECRET`-gated Vercel Cron sweep that claims `'uploading'`
+rows atomically, transcribes them with Gemini 3.5 Transcribe, writes
+`notes.raw_transcript` plus speaker-tagged `note_chunks`, and reconciles both
+stale-row classes to `'failed'`. Proven end to end against the linked project by
+`scripts/verify-transcription-pipeline.mjs`.
+
+Below is what it deliberately does **not** do.
+
+### No Realtime push — status changes appear on next page load only
+
+A note that finishes transcribing while the page is open keeps showing its old
+status until a navigation or a refresh. Supabase Realtime was explicitly out of
+scope for this track, and this is a deferral rather than an oversight.
+
+On the current cron schedule the wait dominates anyway (see below), so Realtime
+would be polishing the wrong end of the latency. Revisit it together with the
+schedule, not before.
+
+### Transcription latency is bounded by the Vercel plan, not by the code
+
+**Measured 2026-08-31:** the TEKGUYZ team is on Vercel's **Hobby** plan, where a
+cron job may fire **once per day** — an expression more frequent than that fails
+deployment outright — and a function is capped at **300 s**, which is both the
+default and the hard maximum with no extension available.
+
+So a recording can sit at `'uploading'` for up to 24 hours. `vercel.json` runs
+the sweep at `0 7 * * *`, and Hobby may fire it anywhere inside that hour.
+
+The workaround, and what the verification script uses, is that the route is
+callable on demand:
+
+    curl -H "Authorization: Bearer $CRON_SECRET" https://squid-ink.vercel.app/api/cron/transcribe
+
+Moving to Pro makes the schedule a one-line change in `vercel.json` and lets
+`maxDuration` and `MAX_TRANSCRIPTIONS_PER_RUN` rise together. Re-measure the plan
+before changing either — `docs/DEPLOYMENT.md` holds the numbers and the command
+that produced them.
+
+### Recordings past Gemini's caps fail outright, and 28–60 min degrades silently-ish
+
+Two distinct behaviours, both deliberate, and the second is the one likely to
+surprise someone:
+
+- **Over 60 minutes**: no Gemini call is made at all. The row goes straight to
+  `'failed'` with a log line naming the duration. There is no segmentation and no
+  stitching; ROADMAP defers both at single-owner scale.
+- **Between 28 and 60 minutes**: the recording still transcribes, but **plain —
+  no speaker labels and no timestamps.** Gemini drops its own cap from 60 to 30
+  minutes the moment either feature is requested, so a long recording can have a
+  transcript or it can have speakers, not both. The transcript pane renders one
+  untimed block for these.
+
+Nothing in the UI distinguishes a plain transcript from a diarized one. The
+`notes.diarization_enabled` column records what actually happened (not what was
+requested), so the information exists — it is simply not surfaced.
+
+### No structured note generation and no embeddings
+
+`summary`, `takeaway` and `action_item` chunks are a separate future track: they
+need their own persona/depth routing decision, which has not been made.
+`note_chunks.embedding` is written **`null` on purpose**; the hnsw index over that
+column exists and is empty. Nothing in this track populates either.
+
+The practical consequence: a freshly transcribed note renders its transcript pane
+and nothing else. Existing takeaways and summaries on the seeded note came from
+seed data, not from the pipeline.
+
+### The verification script cannot run unattended
+
+`scripts/verify-transcription-pipeline.mjs` needs `npm run dev` already running
+in another shell, and it synthesises its speech fixture with **Windows SAPI**
+(`System.Speech.Synthesis`). On a non-Windows machine, or where SAPI is
+unavailable, it exits with an instruction to set `TRANSCRIBE_TEST_AUDIO` to a
+`.wav` of someone speaking. It is not wired into `npm test` and should not be —
+it spends real Gemini quota on every run.
+
+### `service_role` gained table grants, and that is a real privilege change
+
+`service_role` now holds `select, insert, update, delete` on `public.notes` and
+`public.note_chunks`. Before 2026-08-31 it held only `REFERENCES, TRIGGER,
+TRUNCATE`, and every cron read failed with `permission denied for table notes`.
+
+This is a **grant**, not a policy: `service_role` already bypassed RLS, it simply
+could not reach the tables. The same change also revoked its stray `TRUNCATE`,
+which is not row-level and which RLS does not constrain.
+
+The exposure is unchanged in kind — anyone holding the secret key could already
+read everything — but it is now genuinely reachable, so the key matters more than
+it did. It lives in exactly one shipped file (`app/api/cron/transcribe/route.ts`)
+and in the gitignored `.env.local`. `node scripts/verify-rls.mjs` was re-run after
+the change and still passes: the intruder gets a genuine empty result, not
+`permission denied`.
+
+### A narrow window can leave transcript chunks under a `'failed'` note
+
+`lib/transcription/persist-result.ts` writes chunks, then flips the note to
+`'completed'`. If the chunk insert succeeds and the completing UPDATE then
+throws or loses its claim, `transcribeOne` catches and marks the note
+`'failed'` — with its transcript segments already in `note_chunks`.
+
+`'failed'` is terminal and there is no retry, so the delete-then-insert
+idempotency at the top of `persistTranscription` never gets a chance to clean
+up. The note would render a populated transcript pane with no `raw_transcript`.
+
+Left as-is deliberately. Fixing it means either a transaction or a compensating
+delete, and both are the "second mechanism for one failure" that the ordering
+was chosen to avoid. The window requires the completing UPDATE specifically to
+fail after a successful insert, which nothing observed has done.
+
+### The `MAX_TRANSCRIPTIONS_PER_RUN` cap bounds attempts, not wall-clock
+
+`sweep.ts` counts transcription **attempts** against the cap, so three failing
+Gemini calls end the run just as three successful ones do. What it cannot do is
+bound how long any single attempt takes: `RUN_BUDGET_MS` (240 s) is checked
+*before* claiming a row, not during a call, so an attempt starting at 239 s can
+still run past the 300 s function ceiling and be killed mid-flight.
+
+That is survivable — the row is left at `'analyzing'` and the staleness sweep
+marks it `'failed'` on a later tick — but on the Hobby daily schedule "a later
+tick" is up to 24 hours. A per-call timeout on the Gemini request would close
+it properly.

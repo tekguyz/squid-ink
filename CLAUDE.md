@@ -12,8 +12,8 @@ drive both themes without any component branching on theme.
 ## Pinned versions
 
 Exact pins, no `^` or `~` ranges. Verified against the live npm registry
-`latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30; `zustand` and
-`fake-indexeddb` on 2026-08-31.
+`latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30; `zustand`,
+`fake-indexeddb` and `@google/genai` on 2026-08-31.
 
 | Package | Version |
 |---|---|
@@ -34,6 +34,7 @@ Exact pins, no `^` or `~` ranges. Verified against the live npm registry
 | jsdom | 30.0.1 |
 | zustand | 5.0.15 |
 | fake-indexeddb | 6.2.5 |
+| @google/genai | 2.19.0 |
 
 Built and verified on Node v24.18.0 / npm 11.16.0.
 
@@ -146,9 +147,17 @@ Codec strings are feature-detected through `lib/recorder/codec.ts`. Never
 hardcode one, and keep WebM ahead of MP4 — Chromium accepts both, so the order
 decides what Chromium produces.
 
-Deleting a test recording needs two clients: the **row** as the owner
-(`service_role` has no grant on `public.notes`), the **object** as the admin (no
-DELETE policy exists). `scripts/verify-recorder-upload.mjs` does both correctly.
+Deleting a test recording needs two clients: the **row** as the owner, the
+**object** as the admin (storage ships no DELETE policy, and `service_role`
+bypasses RLS). `scripts/verify-recorder-upload.mjs` does both correctly.
+
+The reason for the row half changed on 2026-08-31 and the practice did not.
+`service_role` used to hold **no grant at all** on `public.notes`, so an admin
+delete failed outright; it now holds `select, insert, update, delete` for the
+transcription cron. Deleting as the owner is still right, because it exercises
+the RLS path a real user takes — but it is now a deliberate choice rather than
+the only option, and a script that deletes as the admin will silently succeed
+while proving nothing about RLS.
 
     node scripts/verify-recorder-upload.mjs   # live upload + note row proof
     node scripts/print-signin-link.mjs        # local sign-in link, magic-link only
@@ -157,6 +166,92 @@ Device handoff, real-world echo and Safari cannot be tested here. They have a
 runnable checklist: `docs/qa/recorder-manual-test-protocol.md`. Check the
 **bitrate** of every manual recording — a muted mic yields ~2 kbit/s and
 otherwise looks like a complete success.
+
+## Transcription
+
+**`processing_status` IS the queue.** There is no job table. A row's own status
+says whether it is waiting, in flight, done or dead, and the transitions are the
+only coordination there is. A queue table would be a second source of truth that
+can disagree with the first.
+
+The claim is **one statement**: `UPDATE notes SET processing_status = <next>
+WHERE id = <id> AND processing_status = <expected> RETURNING id`. Postgres
+row-locks the matched row, so a concurrent invocation re-evaluates that `WHERE`
+after the lock releases and matches nothing. No lock table, no read-then-write
+window. A claim that returns zero rows lost the race and **must not spend a
+Gemini call** — that is cost, not just correctness.
+
+**Age never fails a row on its own. Object existence is the safety check.** The
+one-hour threshold exists only to avoid false-failing a slow-but-real upload. An
+`'uploading'` row older than an hour whose object *is* present gets transcribed,
+because that is a lost client write-back, not a lost upload.
+
+Existence is proved with `list()`. `download()` appears exactly once, purely to
+move bytes to Gemini, and proves nothing — same CDN-staleness reason as the
+recorder. Both share one `objectRow()` lookup in the route.
+
+Staleness is measured on **`updated_at`, not `created_at`**. For `'uploading'`
+it equals `created_at` at insert; for `'analyzing'` it is when the row was
+claimed, which is exactly the crash window worth measuring. A retry upsert
+restarting the clock is correct, not a bug.
+
+Reconciliation is two-tier and **this track owns only tier 2**. Tier 1 — the
+in-session `'failed'` write on a caught upload error — is still unbuilt and
+belongs to the recorder. The check constraint that unblocks it shipped here.
+
+Diarization is a pure function of duration in `diarization-policy.ts`: **28
+minutes**, a deliberate two-minute margin under Gemini's 30-minute diarized cap,
+because our duration is the recorder's elapsed clock rather than the decoded
+length of the container Gemini receives. Past **60 minutes** we do not call at
+all — no segmentation, no stitching, a clear log line instead.
+
+Gemini specifics, all measured against the SDK's own `.d.ts` and the live API,
+never from the published samples:
+
+- **The two SDK surfaces disagree on casing.** `interactions.create` takes
+  snake_case (`generation_config`, `transcription_config`, `diarization_mode`,
+  `mime_type`); `files.upload` is the older Files API and takes camelCase
+  (`mimeType`). The web sample writes `mime_type` in both, where the upload one
+  is silently ignored. Do not "make these consistent".
+- **Never send `custom_vocabulary`.** Gemini answers HTTP 400 when it
+  accompanies diarization or timestamps.
+- The top-level `diarization_mode` / `timestamp_granularities` are
+  `@deprecated` in the SDK types; the live fields are nested inside `mode`.
+- **The speaker label is an opaque cluster id.** A single-voice recording came
+  back as `"spk:7"` — a colon, and a 7 that indexes nothing. Speakers are
+  numbered by **first appearance**, never by digits parsed out of the label.
+- **Storage `download()` types every Blob `application/octet-stream`**, which
+  Gemini rejects with a 400. `resolveAudioMimeType()` prefers the object's own
+  `list()` metadata and strips codec parameters.
+
+Chunk writes precede the `'completed'` flip. A partial insert leaves the row at
+`'analyzing'` and the staleness sweep fails it an hour later — **that existing
+net is the rollback.** Do not add a transaction or a compensating write; a
+second mechanism for one failure is a second thing to get wrong.
+
+There is **no error-message column** and none should be added at single-owner
+scale. Failures are read in the Vercel function log.
+
+**`/api/cron` is in `PUBLIC_PREFIXES` in `lib/supabase/session.ts`, and must
+stay there.** A cron invocation carries no cookies, so the session middleware
+would redirect it to `/login` — and **Vercel cron does not follow redirects**,
+so the sweep would silently never run while the job reported success. Public to
+the middleware is not unauthenticated: the route's `CRON_SECRET` bearer check is
+its authorization. An unset secret refuses everything rather than failing open.
+
+`maxDuration = 300` and `MAX_TRANSCRIPTIONS_PER_RUN = 3` are sized to the
+**Vercel Hobby** ceiling, where 300 s is both the default and the hard maximum
+and a cron may fire only once per day. Re-measure the plan before raising
+either — `docs/DEPLOYMENT.md` holds the numbers and how they were measured.
+
+    npm run dev                                       # in one shell, then:
+    node scripts/verify-transcription-pipeline.mjs    # live end-to-end proof
+
+That script drives the **real route over HTTP** rather than re-implementing the
+sweep, synthesises its own speech with Windows SAPI so the transcript assertion
+is against known words, and proves all four paths: the `CRON_SECRET` gate, a
+recording reaching `'completed'`, a stale `'uploading'` orphan reaching
+`'failed'`, and a stale `'analyzing'` row reaching `'failed'`.
 
 ## Naming
 
@@ -191,9 +286,11 @@ Exact pins, verified against the live npm registry on 2026-08-30.
 `supabase/schemas/*.sql` is the source of truth. `config.toml` lists them in
 dependency order — **not** a glob, which would sort `note_chunks.sql` before
 `notes.sql` and break the foreign key. The order is `notes.sql`,
-`personas.sql`, `note_chunks.sql`, `persona_provisioning.sql`: personas needs
-`set_updated_at()` from notes, note_chunks carries a foreign key to personas,
-and persona_provisioning's trigger writes into personas.
+`personas.sql`, `note_chunks.sql`, `persona_provisioning.sql`,
+`storage_audio.sql`: personas needs `set_updated_at()` from notes, note_chunks
+carries a foreign key to personas, and persona_provisioning's trigger writes
+into personas. `storage_audio.sql` depends on none of them and sits last.
+Read the list out of `config.toml` rather than from here.
 
 **Schema-file-first, no exceptions.** Never paste DDL into `db query` as an
 inline argument. Edit the `.sql` file, then apply that exact file. Every
@@ -252,10 +349,35 @@ that file first.
 
 ### Keys
 
-Publishable key only in app code, via `NEXT_PUBLIC_SUPABASE_*`. The secret key
-bypasses RLS and appears in exactly one place: `scripts/verify-rls.mjs`, read
-from the gitignored `.env.local`. Never give it a `NEXT_PUBLIC_` prefix —
-Next.js ships every such variable to the browser.
+Publishable key only in app code, via `NEXT_PUBLIC_SUPABASE_*`. Never give the
+secret key a `NEXT_PUBLIC_` prefix — Next.js ships every such variable to the
+browser.
+
+The secret key bypasses RLS. **Exactly one file in shipped application code
+reads it:** `app/api/cron/transcribe/route.ts`, from the Vercel environment.
+That is the amendment this project made on 2026-08-31, and it is deliberate: a
+cron invocation carries no user session and therefore no RLS identity, so it
+must read and write rows belonging to whichever user recorded them. The route
+refuses every request that does not carry `Authorization: Bearer $CRON_SECRET`
+before it touches the database or the Gemini API.
+
+Six **local-only** scripts also read it from the gitignored `.env.local` —
+`verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
+`verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs` and
+`print-signin-link.mjs`. None ships. An earlier version of this section claimed
+"exactly one place, `scripts/verify-rls.mjs`", which was already wrong when
+written; the greps below are the check that settles it. Run them rather than
+trusting the counts here — a new script moves the second number.
+
+    grep -rn "SUPABASE_SECRET_KEY" --include=*.ts --include=*.tsx app lib components
+    grep -rln "SUPABASE_SECRET_KEY" scripts
+
+`service_role` is granted `select, insert, update, delete` on `public.notes`
+and `public.note_chunks`, and nothing else — see the grant blocks in both
+schema files. Before 2026-08-31 it held only `REFERENCES, TRIGGER, TRUNCATE`,
+so every cron read failed with `permission denied for table notes`. A grant is
+not a policy: `service_role` already bypasses RLS, what it lacked was
+reachability.
 
 ### Proving RLS
 
@@ -273,6 +395,7 @@ that needs a request through `proxy.ts` with a real session. Run both.
     npm test           # vitest run
     node scripts/verify-rls.mjs   # two-user RLS proof, needs .env.local
     node scripts/verify-persona-provisioning.mjs   # signup-trigger proof, needs .env.local
+    node scripts/verify-transcription-pipeline.mjs # live transcription proof, needs `npm run dev`
 
 <!-- BEGIN:nextjs-agent-rules -->
 

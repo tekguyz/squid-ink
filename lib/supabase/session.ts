@@ -1,9 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-/** Routes that must stay reachable without a session, or sign-in becomes
- *  impossible. */
-const PUBLIC_PREFIXES = ["/login", "/auth"];
+/** Routes that must stay reachable without a session.
+ *
+ *  /login and /auth: without them sign-in is impossible.
+ *
+ *  /api/cron: a Vercel Cron invocation carries no cookies, so it has no
+ *  session and would be redirected to /login. Two reasons that is fatal rather
+ *  than merely wrong. Vercel cron jobs DO NOT FOLLOW REDIRECTS — the 3xx is
+ *  treated as the final response and the job is recorded as complete — so the
+ *  sweep would never run and nothing would say so. And the redirect answers
+ *  200 with the login page, which looks like success to any caller.
+ *
+ *  Reachable is not unauthenticated. app/api/cron/transcribe/route.ts refuses
+ *  every request that does not carry `Authorization: Bearer $CRON_SECRET`.
+ *  That bearer check is the route's authorization; a user session was never
+ *  the right gate for a machine caller. */
+const PUBLIC_PREFIXES = ["/login", "/auth", "/api/cron"];
 
 /**
  * Refreshes the auth session on every matched request and writes the rotated
