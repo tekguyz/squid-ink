@@ -1044,7 +1044,8 @@ only non-test references to the path are in `lib/supabase/session.ts`, which
 exempts it from the session middleware. Stopping a recording uploads the audio,
 writes the note row at `'uploading'`, and stops there.
 
-**This inverts the design of the v1 app** (`docs/crisby-bacon-v1/`). There,
+**This inverts the design of the v1 app** (Crispy Bacon; its KB docs were read
+on 2026-08-31 and are not kept in this tree). There,
 `services/geminiService.ts` ran in the browser and transcription began when the
 recording ended; the Netlify functions handled only chat, calendar, Drive and
 Stripe. v1's cron-equivalent was `INTELLIGENCE.md`'s "Note Recovery — Health
