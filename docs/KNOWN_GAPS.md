@@ -66,10 +66,12 @@ build state, not an open question: see the addendum below, "Persona timing is
 decided". Whoever adds persona-at-capture should put it in this store rather
 than lifting `note-detail-shell.tsx`'s local state.
 
-Provenance: `DECISIONS.md` and `ROADMAP.md` are knowledge files in the owner's
-Claude.ai planning Project, not files in this repo. They are not on disk here and
-cannot be verified by `check-docs.mjs` — anything this repo asserts about them is
-a transcription and can go stale. Re-read them before relying on a quotation.
+Provenance: **superseded 2026-08-31.** `DECISIONS.md` and `ROADMAP.md` were
+knowledge files in the owner's Claude.ai planning Project and were not on disk
+here, so anything this repo said about them was an unverifiable transcription.
+They now live at `docs/DECISIONS.md` and `docs/ROADMAP.md`, and `docs/` is the
+source of truth — the planning Project attaches them from here. Quote them
+directly; a claim about their contents is now checkable rather than relayed.
 
 ## Tokens not enumerated in 3c (recorded 2026-08-30)
 
@@ -177,9 +179,11 @@ and deliberately left:
 
 ## Gaps found by reading ROADMAP.md and DECISIONS.md (recorded 2026-08-30)
 
-Both are knowledge files in the owner's Claude.ai planning Project, not in this
-repo. Read directly on 2026-08-30 and reconciled against what shipped. Nothing
-built here contradicts them. Four things worth carrying forward:
+Both were knowledge files in the owner's Claude.ai planning Project when this
+entry was written; they moved into the tree on 2026-08-31 and are now
+`docs/ROADMAP.md` and `docs/DECISIONS.md`. Read directly on 2026-08-30 and
+reconciled against what shipped. Nothing built here contradicts them. Four
+things worth carrying forward:
 
 - **`Persona.depth` exists but nothing consumes it.** ROADMAP §5 defines a
   Persona as three things: lens, **depth/goal (Brief / Dense / Exhaustive)**,
@@ -705,8 +709,10 @@ of it without a dashboard login. DECISIONS.md § Deployment is trimmed to a
 pointer at it.
 
 **Amended 2026-08-30, after reading DECISIONS.md directly.** The file exists —
-it lives in the owner's Claude.ai planning Project, not in the repo, which is why
-`CLAUDE.md` and earlier entries here can cite a file that `find` cannot see. Its
+at the time it lived in the owner's Claude.ai planning Project and not in the
+repo, which is why `CLAUDE.md` and earlier entries here could cite a file that
+`find` could not see. **That is no longer true: it moved to `docs/DECISIONS.md`
+on 2026-08-31 and `find` sees it.** Its
 § Deployment is accurate and already records the Vercel URL, the two environment
 variables, the Supabase Site URL and the redirect allowlist, and it flags its own
 untracked state as an open item. So the config was written down; it was just
@@ -1127,9 +1133,9 @@ capture time** in the recorder, and the persona/depth routing for `summary`,
 `takeaway` and `action_item` chunks. Neither is a question about attribution
 timing.
 
-Provenance caveat, per this file's own rule: `DECISIONS.md` is not on disk here
-and `check-docs.mjs` cannot verify it. The quotation above is the owner's,
-relayed 2026-08-31.
+Provenance: the quotation above was relayed by the owner on 2026-08-31, before
+`DECISIONS.md` was in the tree. It is now at `docs/DECISIONS.md` § Personas and
+can be read directly rather than trusted as a transcription.
 
 ### No structured note generation and no embeddings
 
