@@ -15,7 +15,9 @@ mic source node can be swapped without the recorder's stream ever changing.
 The note id is generated client-side **before** upload so a retry lands on the
 same object path (an upsert), and the recorded blob lives in IndexedDB keyed by
 that id so it survives navigation and a failed upload. A single server action
-creates the `notes` row after the upload succeeds.
+creates the `notes` row at `processing_status = 'uploading'` the moment the
+upload starts — the path is deterministic, so it is known before the first byte
+moves, and `'analyzing'` is Track 3's to set, not this track's.
 
 **Tech Stack:** Next.js 16.3.3 App Router (React Server Components + Server
 Actions), React 19.2.8, TypeScript 7.0.2, Tailwind v4.3.3, Zustand 5.0.15,
@@ -1970,13 +1972,20 @@ git commit -m "feat: direct-to-Storage upload at the owner-scoped path"
 
 **Decisions locked into this task:**
 
-- **`processing_status` is set to `'analyzing'`.** The row is created *after*
-  the upload lands, so `'local'` and `'uploading'` would both be false. Of the
-  four values the live check constraint allows, `'analyzing'` is the only one
-  that means "audio is in Storage, the model has not run." **Nothing in this
-  track ever moves it off `'analyzing'`** — Track 3 owns that, and the
-  consequence (the IndexedDB blob is never discarded here) is the spec's stated
-  expectation, not a bug.
+- **`processing_status` is set to `'uploading'`, and the row is created when the
+  upload STARTS, not after it succeeds.** The scope fence puts
+  "`processing_status` ever reaching `analyzing`/`completed`" in Track 3, so this
+  track must not write `'analyzing'` at all — not even as a handoff value.
+  `'uploading'` is literally true at the moment the row is written, and it stays
+  true until Track 3 moves it.
+  This is possible because the Storage path is deterministic: the note id is
+  generated on the client before capture, so `{user_id}/{note_id}` is known
+  before the first byte moves and `audio_storage_path` can be written up front.
+  **The consequence is deliberate:** a failed upload leaves a row sitting at
+  `'uploading'` with its audio still in IndexedDB. That is a visible, recoverable
+  state — the note shows up in `/`, the blob is on disk, and a retry upserts both
+  the same row and the same object. An invisible failure would be worse.
+  **Nothing in this track ever moves the value off `'uploading'`.**
 - **`user_id` comes from `auth.getUser()`, and the action throws without a
   user.** Next 16's own docs warn Server Functions are reachable by direct POST.
   This supplies the insert value that `notes_insert_own`'s `with check` then
@@ -2044,9 +2053,16 @@ describe("createRecordedNote", () => {
     expect(upsert.mock.calls[0][0].audio_duration_seconds).toBe(754);
   });
 
-  it("lands on analyzing — upload is done, the model has not run", async () => {
+  it("lands on uploading — the row is written as the upload starts", async () => {
     await (await subject())(input);
-    expect(upsert.mock.calls[0][0].processing_status).toBe("analyzing");
+    expect(upsert.mock.calls[0][0].processing_status).toBe("uploading");
+  });
+
+  it("never writes analyzing or completed — those belong to Track 3", async () => {
+    await (await subject())(input);
+    expect(["analyzing", "completed"]).not.toContain(
+      upsert.mock.calls[0][0].processing_status,
+    );
   });
 
   it("upserts on the primary key so a retried action is not a duplicate error", async () => {
@@ -2087,21 +2103,23 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Creates the notes row for a recording whose audio is already in Storage.
+ * Creates the notes row for a recording, called as the upload STARTS.
  *
- * Called AFTER the upload succeeds, which is why the row never passes through
- * 'local' or 'uploading': by the time this runs, neither is true. Of the four
- * values notes.sql's check constraint allows, 'analyzing' is the only one that
- * means "the audio is in Storage and the model has not run yet".
+ * processing_status is 'uploading', and this track never writes anything else.
+ * 'analyzing' and 'completed' belong to Track 3's transcription pipeline and are
+ * explicitly outside this track's scope — writing 'analyzing' here would claim a
+ * pass that nothing performs.
  *
- * Nothing in this track moves it off 'analyzing'. Track 3 owns the transcription
- * pipeline and the transition to 'completed'; until it exists, every note
- * created here sits at 'analyzing' and its local backup blob is correctly never
- * discarded.
+ * Writing the row before the bytes land is possible because the Storage path is
+ * deterministic: the note id is generated on the client before capture begins,
+ * so {user_id}/{note_id} is known up front and audio_storage_path can be filled
+ * in immediately.
  *
- * The note id is generated on the client BEFORE the upload, because it names
- * the Storage object. That also makes this action safely retryable: the same id
- * upserts the same row instead of failing on a duplicate key.
+ * A failed upload therefore leaves a row at 'uploading' whose object is missing.
+ * That is the intended outcome, not a leak: the note is visible in the list, the
+ * audio is still in IndexedDB, and a retry upserts the same row and the same
+ * object. The same id also makes this action safely retryable — it upserts
+ * rather than failing on a duplicate key.
  *
  * Auth is checked here, not assumed. Next.js's own docs are explicit that
  * Server Functions are reachable by direct POST, not just through the UI. The
@@ -2129,7 +2147,7 @@ export async function createRecordedNote(input: {
       // The column is integer; a fractional duration would be silently
       // truncated by Postgres, so truncate deliberately and visibly.
       audio_duration_seconds: Math.floor(input.durationSeconds),
-      processing_status: "analyzing",
+      processing_status: "uploading",
     },
     { onConflict: "id" },
   );
@@ -2147,13 +2165,13 @@ export async function createRecordedNote(input: {
 npx vitest run app/notes/__tests__/actions.test.ts
 ```
 
-Expected: 9 passed.
+Expected: 10 passed.
 
 - [ ] **Step 5: Commit.**
 
 ```bash
 git add app/notes/actions.ts app/notes/__tests__/actions.test.ts
-git commit -m "feat: server action creating the notes row after upload"
+git commit -m "feat: server action creating the notes row at upload start"
 ```
 
 ---
@@ -2169,8 +2187,8 @@ them and owns the timers.
 
 **Interfaces:**
 - Consumes: `useRecorderStore`, `startCapture`, `pickMimeType`,
-  `watchAudioInputs`, `saveBackup`/`discardBackup`, `uploadRecording`,
-  `createRecordedNote`.
+  `watchAudioInputs`, `saveBackup`/`discardBackup`, `recordingPath`,
+  `uploadRecording`, `createRecordedNote`.
 - Produces: `RecorderDeps`, `RecorderControls`, `useRecorder(deps?)`.
 
 **Order of operations on stop — this order is the spec:**
@@ -2179,10 +2197,20 @@ them and owns the timers.
 3. **`saveBackup()` first** — before the network is touched, so a failed upload
    still leaves the audio recoverable.
 4. `store.beginUpload()`.
-5. `uploadRecording()`.
-6. `createRecordedNote()`.
-7. `store.finish()`. **The backup is NOT discarded** — that waits for
+5. `getUserId()`, then build the path with `recordingPath(userId, noteId)`. The
+   path is deterministic, which is what makes step 6 possible.
+6. **`createRecordedNote()` — the row is written BEFORE the bytes move**, at
+   `processing_status = 'uploading'`, which is true at that instant and stays
+   true until Track 3 moves it.
+7. `uploadRecording()`.
+8. `store.finish()`. **The backup is NOT discarded** — that waits for
    `processing_status === 'completed'`, which Track 3 owns.
+
+**What a failed upload leaves behind, deliberately:** a note row at
+`'uploading'` with no object, and the blob still in IndexedDB. The note is
+visible in `/`, the audio is recoverable, and a retry upserts the same row and
+the same object path. This is the reason the note id is generated before capture
+rather than after.
 
 - [ ] **Step 1: Write the failing test.**
 
@@ -2321,11 +2349,22 @@ describe("useRecorder", () => {
     expect(order).toEqual(["upload"]);
   });
 
-  it("uploads to {user_id}/{note_id} and then creates the note row", async () => {
+  it("creates the note row BEFORE it uploads, and uploads to {user_id}/{note_id}", async () => {
     const d = makeDeps();
+    const order: string[] = [];
+    d.createNote.mockImplementation(async () => {
+      order.push("createNote");
+      return { id: NOTE };
+    });
+    d.bucketApi.upload.mockImplementation(async () => {
+      order.push("upload");
+      return { data: { path: `${USER}/${NOTE}` }, error: null };
+    });
+
     const { result } = renderHook(() => useRecorder(d.deps as never));
     await recordAndStop(result, d);
-    await waitFor(() => expect(d.createNote).toHaveBeenCalled());
+    await waitFor(() => expect(order).toEqual(["createNote", "upload"]));
+
     expect(d.bucketApi.upload.mock.calls[0][0]).toBe(`${USER}/${NOTE}`);
     expect(d.createNote.mock.calls[0][0]).toMatchObject({
       noteId: NOTE,
@@ -2333,11 +2372,21 @@ describe("useRecorder", () => {
     });
   });
 
-  it("returns to idle after the note is created", async () => {
+  it("returns to idle once the upload lands", async () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
     await recordAndStop(result, d);
     await waitFor(() => expect(useRecorderStore.getState().phase).toBe("idle"));
+  });
+
+  it("writes the row at 'uploading' and never at 'analyzing'", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(d.createNote).toHaveBeenCalled());
+    // The status itself is the action's business (Task 8 asserts it); what this
+    // hook must not do is pass one in and quietly override the action.
+    expect(d.createNote.mock.calls[0][0]).not.toHaveProperty("processingStatus");
   });
 
   it("KEEPS the backup after a successful upload — only 'completed' discards it", async () => {
@@ -2356,7 +2405,20 @@ describe("useRecorder", () => {
     await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
     expect(useRecorderStore.getState().noteId).toBe(NOTE);
     expect((await listBackups()).map((b) => b.noteId)).toContain(NOTE);
-    expect(d.createNote).not.toHaveBeenCalled();
+    // The row WAS written — it is created as the upload starts, so a failed
+    // upload leaves a visible note at 'uploading' with its audio recoverable.
+    // That is the point of writing it first.
+    expect(d.createNote).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not upload at all when the note row cannot be written", async () => {
+    const d = makeDeps();
+    d.createNote.mockRejectedValue(new Error("row-level security"));
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
+    expect(d.bucketApi.upload).not.toHaveBeenCalled();
+    expect((await listBackups()).map((b) => b.noteId)).toContain(NOTE);
   });
 
   it("re-acquires the mic when the device watcher reports it lost", async () => {
@@ -2423,7 +2485,12 @@ import { discardBackup, saveBackup } from "@/lib/recorder/audio-backup";
 import { pickMimeType } from "@/lib/recorder/codec";
 import { startCapture, type CaptureHandles } from "@/lib/recorder/capture";
 import { watchAudioInputs } from "@/lib/recorder/device-handoff";
-import { AUDIO_BUCKET, uploadRecording, type StorageBucketLike } from "@/lib/recorder/upload-audio";
+import {
+  AUDIO_BUCKET,
+  recordingPath,
+  uploadRecording,
+  type StorageBucketLike,
+} from "@/lib/recorder/upload-audio";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
 
 /** How often the clock and the level meter refresh. 200 ms is fast enough to
@@ -2611,14 +2678,23 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
 
     try {
       const userId = await deps.getUserId();
-      const { path } = await uploadRecording({
+      // Deterministic, so the row can name the object before the object exists.
+      const path = recordingPath(userId, noteId);
+
+      // The row is written BEFORE the bytes move, at processing_status
+      // 'uploading' — true at this instant, and left for Track 3 to advance.
+      // A failed upload therefore leaves a visible note whose audio is still in
+      // IndexedDB, rather than a silent loss.
+      await deps.createNote({ noteId, audioStoragePath: path, durationSeconds });
+
+      await uploadRecording({
         bucket: deps.bucket(),
         userId,
         noteId,
         blob,
         contentType: mimeType,
       });
-      await deps.createNote({ noteId, audioStoragePath: path, durationSeconds });
+
       // The backup is deliberately NOT discarded here. It waits for
       // processing_status === 'completed', which Track 3 owns.
       store.getState().finish();
@@ -2646,7 +2722,7 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
 npx vitest run lib/recorder/__tests__/use-recorder.test.tsx
 ```
 
-Expected: 11 passed. If a test hangs on the `stop` promise, the fake recorder's
+Expected: 13 passed. If a test hangs on the `stop` promise, the fake recorder's
 `stop` event is being emitted before the listener attaches — move the
 `d.recorder.emit("stop", {})` inside a `queueMicrotask` in the helper.
 
@@ -3354,7 +3430,7 @@ try {
       user_id: userId,
       audio_storage_path: path,
       audio_duration_seconds: 12,
-      processing_status: "analyzing",
+      processing_status: "uploading",
     },
     { onConflict: "id" },
   );
@@ -3367,7 +3443,7 @@ try {
     .eq("id", noteId);
   check("row reads back", !readError && notes?.length === 1, `error=${JSON.stringify(readError?.message ?? null)}`);
   check("audio_storage_path points at the object", notes?.[0]?.audio_storage_path === path, `got=${notes?.[0]?.audio_storage_path}`);
-  check("processing_status is analyzing", notes?.[0]?.processing_status === "analyzing", `got=${notes?.[0]?.processing_status}`);
+  check("processing_status is uploading, not analyzing", notes?.[0]?.processing_status === "uploading", `got=${notes?.[0]?.processing_status}`);
   console.log("");
 
   console.log("--- the note appears in the same query the / list runs ---");
@@ -3637,10 +3713,17 @@ why `storage_audio.sql` ships an UPDATE policy.
 
 | # | Do this | Expect |
 |---|---|---|
-| E1 | Start a recording. In DevTools → Network, switch to **Offline**. | — |
-| E2 | Click **Stop**. | The HUD shows an error with a **Try again** button. |
+| E1 | Start a recording. Let it run 15 seconds. | — |
+| E2 | In DevTools → Network, switch to **Offline**. Click **Stop**. | The HUD shows an error with a **Try again** button. |
 | E3 | Check IndexedDB as in D3. | The blob is there. |
-| E4 | Switch Network back to **Online**. Click **Try again**. | It records again from scratch — this track retries by re-recording, not by resuming. Note the behaviour; resume-upload is not built. |
+| E4 | Switch Network back to **Online**. Go to `/`. | **A note IS in the list.** The row is written as the upload starts, so it exists even though the upload failed. This is intended. |
+| E5 | Confirm the row's status:<br>`node -e "..."` or the Supabase dashboard, `select processing_status, audio_storage_path from notes order by created_at desc limit 1;` | `uploading`, with an `audio_storage_path` that points at an object **that is not there**. |
+| E6 | Confirm the object really is absent, using `list()` and not `download()` (a download after a failed write can still be served from CDN cache). | Empty listing for that note id under your user prefix. |
+| E7 | Click **Try again**. | It records again from scratch — this track retries by re-recording, not by resuming an upload. Note the behaviour; resume-upload is not built. |
+
+**Do not file E4/E5 as a bug.** A row at `uploading` with a missing object is
+the designed failure state: the note stays visible and the audio stays
+recoverable. Track 3 must check the object exists before transcribing.
 
 ---
 
@@ -3719,12 +3802,19 @@ distinguishes measured from assumed. It must cover, each as its own bullet:
     file is dark-only for the recording red; the light value
     `oklch(0.520 0.170 25)` follows the accent pattern. Same treatment as the
     existing "Tokens not enumerated in 3c" section.
-  * **`processing_status` is set to `'analyzing'` and never moves.** State why
-    (`local`/`uploading` are both false once the upload has landed), and that
-    Track 3 owns the transition. Note the alternative that was rejected:
-    creating the row before upload so the states are honest throughout, which
-    was not taken because the spec places row creation after upload and because
-    it would leave orphan rows on a failed upload.
+  * **`processing_status` is set to `'uploading'` and never moves.** The row is
+    written as the upload STARTS, not after it succeeds — possible because the
+    note id, and therefore the object path, is generated before capture begins.
+    State that this track never writes `'analyzing'` or `'completed'` at all:
+    the scope fence assigns both to Track 3, so writing `'analyzing'` as a
+    handoff value would claim a model pass that nothing performs.
+  * **A failed upload deliberately leaves a row at `'uploading'` with no
+    object.** Record this as an intended state, not a leak: the note is visible
+    in `/`, the blob is still in IndexedDB, and a retry upserts both the same
+    row and the same object path. The alternative — writing the row only after a
+    successful upload — was rejected because it makes a failure invisible.
+    **Whoever builds Track 3 must not assume an `'uploading'` row has an object
+    behind it.** Check the object exists before dispatching a transcription.
   * **The IndexedDB blob is never discarded in this track**, by design, because
     nothing reaches `completed`.
   * **Not built from surface 02b:** the expanded jot pane (no schema home for
@@ -3820,7 +3910,8 @@ output pasted. **REQUIRED SUB-SKILL: superpowers:verification-before-completion.
 | `getDisplayMedia` + `getUserMedia` mixed via Web Audio into one `MediaRecorder` | 6, 9 |
 | Codec feature detection; real strings confirmed for Chromium; Safari implemented + documented | 3, 12 step 5b, 13 §C |
 | Direct upload to `audio-recordings` at `{user_id}/{note_id}` | 7, 12 |
-| Server action creating the `notes` row, schema read first | 0, 8 |
+| Server action creating the `notes` row at `'uploading'`, schema read first | 0, 8 |
+| `processing_status` never reaches `analyzing`/`completed` in this track | 8 (asserted), 9, 12 |
 | Local backup in IndexedDB, discarded only at `completed` | 4, 9, proven in 12 step 5d and 13 §D |
 | `devicechange` handling, restart cleanly, don't drop the recording | 5, 6, 9 |
 | `echoCancellation: true` only | 6, 13 §B |
