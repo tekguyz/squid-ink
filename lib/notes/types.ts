@@ -10,7 +10,14 @@ export type ChunkType =
   | "transcript_segment"
   | "imported_doc";
 
-export type ProcessingStatus = "local" | "uploading" | "analyzing" | "completed";
+/** Mirrors the check constraint in supabase/schemas/notes.sql. 'failed' is
+ *  terminal and is written only by lib/transcription/sweep.ts. */
+export type ProcessingStatus =
+  | "local"
+  | "uploading"
+  | "analyzing"
+  | "completed"
+  | "failed";
 
 export interface NoteRow {
   id: string;
@@ -32,6 +39,12 @@ export interface ChunkMetadata {
   seq?: number;
   ts_start?: string;
   ts_end?: string;
+  /** The same instants as ts_start / ts_end, unrounded, in seconds. The string
+   *  pair above is a DISPLAY value — note-view-model.ts renders it verbatim —
+   *  so it cannot also carry precision. Written by the transcription pipeline;
+   *  nothing reads these yet. */
+  ts_start_seconds?: number;
+  ts_end_seconds?: number;
   source_url?: string;
   segment_id?: number;
   /** Takeaway ordinal, rendered as "01", "02", "03". */
