@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
@@ -39,36 +38,9 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  // TEMPORARY DIAGNOSTIC (see docs/KNOWN_GAPS.md). The exchange 400s in
-  // production and no one has captured the response body — Supabase's edge log
-  // carries method/status/latency only. Names and lengths only; never a value.
-  const cookieStore = await cookies();
-  const authCookies = cookieStore
-    .getAll()
-    .filter((c) => c.name.startsWith("sb-"))
-    .map((c) => `${c.name}(${c.value.length})`);
-  console.error(
-    "[auth/confirm] params:",
-    JSON.stringify(Object.fromEntries(searchParams)),
-    "| sb- cookies:",
-    authCookies.length ? authCookies.join(", ") : "NONE",
-  );
-
   const { error } = code
     ? await supabase.auth.exchangeCodeForSession(code)
     : await supabase.auth.verifyOtp({ type: type ?? "magiclink", token_hash: tokenHash! });
-
-  if (error) {
-    console.error(
-      "[auth/confirm] exchange failed:",
-      "message=", error.message,
-      "status=", error.status,
-      "code=", error.code,
-      "name=", error.name,
-    );
-  } else {
-    console.error("[auth/confirm] exchange OK");
-  }
 
   redirect(error ? "/login?error=invalid_token" : safeNext);
 }
