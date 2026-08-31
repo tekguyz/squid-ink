@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import type { ActionItem } from "@/lib/mock/types";
+import type { ActionItem } from "@/lib/notes/view-types";
 import { CitationChip } from "./citation-chip";
 import { SectionRule } from "./section-rule";
 

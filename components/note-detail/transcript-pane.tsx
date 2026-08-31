@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import type { Note } from "@/lib/mock/types";
+import type { Note } from "@/lib/notes/view-types";
 import { TranscriptSegment } from "./transcript-segment";
 import { Waveform } from "./waveform";
 

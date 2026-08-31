@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeSpeakerStats } from "../speaker-stats";
-import type { Segment, Speaker } from "@/lib/mock/types";
+import type { Segment, Speaker } from "@/lib/notes/view-types";
 
 const A: Speaker = { name: "A", initials: "AA", token: "speaker-1" };
 const B: Speaker = { name: "B", initials: "BB", token: "speaker-2" };

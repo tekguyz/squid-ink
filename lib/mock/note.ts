@@ -1,6 +1,9 @@
-import type { Note, Speaker } from "./types";
+import type { Note, Speaker } from "@/lib/notes/view-types";
 
-export const DEFAULT_PERSONA_ID = "neutral-analyst";
+// Imported, not redeclared: the fixture must not drift from the app.
+import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
+
+export { DEFAULT_PERSONA_ID };
 
 const PRIYA: Speaker = { name: "Priya Raghavan", initials: "PR", token: "speaker-1" };
 const MARCUS: Speaker = { name: "Marcus Lund", initials: "ML", token: "speaker-2" };
@@ -102,6 +105,7 @@ export const mockNote: Note = {
       id: DEFAULT_PERSONA_ID,
       name: "Neutral Analyst",
       sub: "dense · no framing",
+      depth: "dense",
       takeaways: [
         { n: "01", segmentId: 3, time: "00:58", text: "Rollout dates hang off the customer's Sept 9 security review, not our readiness." },
         { n: "02", segmentId: 8, time: "03:31", text: "Per-clinic pricing is only non-dilutive above a 40-seat cap." },
@@ -113,6 +117,7 @@ export const mockNote: Note = {
       id: "sales-coach",
       name: "Sales Coach",
       sub: "coaching · direct",
+      depth: "dense",
       takeaways: [
         { n: "01", segmentId: 7, time: "03:04", text: "The per-seat objection was never tested — you moved to per-clinic in one turn." },
         { n: "02", segmentId: 8, time: "03:31", text: "Your side named the 40-seat cap first; the customer never had to price their own growth." },
@@ -124,6 +129,7 @@ export const mockNote: Note = {
       id: "investor",
       name: "Investor",
       sub: "economics · risk",
+      depth: "dense",
       takeaways: [
         { n: "01", segmentId: 8, time: "03:31", text: "Capped per-clinic pricing shifts expansion upside to the customer above 40 seats." },
         { n: "02", segmentId: 6, time: "02:26", text: "Onboarding cost falls sharply after the first EHR of a family — margin improves with clustering, not headcount." },
@@ -135,6 +141,7 @@ export const mockNote: Note = {
       id: "engineering-lead",
       name: "Engineering Lead",
       sub: "scope · sequencing",
+      depth: "dense",
       takeaways: [
         { n: "01", segmentId: 4, time: "01:35", text: "Hand-written field maps are the bottleneck — clinic count is not the scaling variable." },
         { n: "02", segmentId: 10, time: "04:48", text: "Clinics 5–6 in Q4 would land mapping work inside the migration freeze week." },

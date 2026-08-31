@@ -2,7 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PersonaRail } from "../persona-rail";
-import { mockNote, DEFAULT_PERSONA_ID } from "@/lib/mock/note";
+import { mockNote } from "@/lib/mock/note";
+import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 
 const base = {
   personas: mockNote.personas,

@@ -1,6 +1,6 @@
 "use client";
 
-import type { CiteRun } from "@/lib/mock/types";
+import type { CiteRun } from "@/lib/notes/view-types";
 import { CitationChip } from "./citation-chip";
 import { SectionRule } from "./section-rule";
 

@@ -1,4 +1,4 @@
-import type { Segment, SpeakerStat } from "@/lib/mock/types";
+import type { Segment, SpeakerStat } from "@/lib/notes/view-types";
 
 /**
  * Speaker stats are computed at read time, never stored. There is no column

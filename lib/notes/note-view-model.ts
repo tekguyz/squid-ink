@@ -5,18 +5,12 @@ import type {
   Persona,
   Segment,
   Takeaway,
-} from "@/lib/mock/types";
-import {
-  DEFAULT_PERSONA_ACTIONS,
-  DEFAULT_PERSONA_ID,
-  DEFAULT_PERSONA_NAME,
-  DEFAULT_PERSONA_SUB,
-  PRESET_PERSONAS,
-} from "./persona-presets";
+} from "@/lib/notes/view-types";
+import { DEFAULT_PERSONA_FALLBACK, DEFAULT_PERSONA_ID } from "./default-persona";
 import { SAMPLE_EXCHANGE } from "./sample-exchange";
 import { computeSpeakerStats } from "./speaker-stats";
 import { DEFAULT_PLAYHEAD, WAVEFORM } from "./waveform";
-import type { ChunkRow, ChunkType, NoteRow } from "./types";
+import type { ChunkRow, ChunkType, NoteRow, PersonaRow } from "./types";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -79,6 +73,48 @@ function toTakeaways(rows: ChunkRow[]): Takeaway[] {
   }));
 }
 
+/** Group takeaway chunks under the personas that produced them.
+ *
+ *  A chunk with a null persona_id predates attribution and belongs to the
+ *  default persona — that is what keeps a note written before this table
+ *  existed rendering exactly as it did. */
+function toPersonas(personaRows: PersonaRow[], takeaways: ChunkRow[]): Persona[] {
+  if (personaRows.length === 0) {
+    return [{ ...DEFAULT_PERSONA_FALLBACK, takeaways: toTakeaways(takeaways) }];
+  }
+
+  const byPersonaId = new Map<string, ChunkRow[]>();
+  const unattributed: ChunkRow[] = [];
+  for (const chunk of takeaways) {
+    if (chunk.persona_id === null) unattributed.push(chunk);
+    else {
+      const bucket = byPersonaId.get(chunk.persona_id);
+      if (bucket) bucket.push(chunk);
+      else byPersonaId.set(chunk.persona_id, [chunk]);
+    }
+  }
+
+  // Where the unattributed chunks land. Normally the neutral-analyst row,
+  // but a user whose personas were renamed or provisioned by another path
+  // may have no row with that slug — and losing their takeaways silently is
+  // worse than showing them under the first lens in rail order.
+  const named = personaRows.findIndex((row) => row.slug === DEFAULT_PERSONA_ID);
+  const defaultIndex = named === -1 ? 0 : named;
+
+  return personaRows.map((row, index) => {
+    const own = byPersonaId.get(row.id) ?? [];
+    const mine = index === defaultIndex ? [...own, ...unattributed] : own;
+    return {
+      id: row.slug,
+      name: row.name,
+      sub: row.sub,
+      depth: row.depth,
+      actions: row.quick_actions,
+      takeaways: toTakeaways(mine.sort(bySeq)),
+    };
+  });
+}
+
 function toActionItems(rows: ChunkRow[]): ActionItem[] {
   return rows.map((row) => ({
     text: row.content,
@@ -108,21 +144,18 @@ function countCitations(summary: CiteRun[], personas: Persona[], actionItems: Ac
  *
  *  Pure: no I/O, no clock, no randomness — so it is fully testable and safe
  *  to call in a render path. */
-export function buildNoteViewModel(row: NoteRow, chunks: ChunkRow[]): Note {
+export function buildNoteViewModel(
+  row: NoteRow,
+  chunks: ChunkRow[],
+  personaRows: PersonaRow[],
+): Note {
   const grouped = partition(chunks);
 
   const segments = toSegments(grouped.transcript_segment);
   const summary = toSummary(grouped.summary);
   const actionItems = toActionItems(grouped.action_item);
 
-  const defaultPersona: Persona = {
-    id: DEFAULT_PERSONA_ID,
-    name: DEFAULT_PERSONA_NAME,
-    sub: DEFAULT_PERSONA_SUB,
-    takeaways: toTakeaways(grouped.takeaway),
-    actions: DEFAULT_PERSONA_ACTIONS,
-  };
-  const personas = [defaultPersona, ...PRESET_PERSONAS];
+  const personas = toPersonas(personaRows, grouped.takeaway);
 
   return {
     id: row.id,

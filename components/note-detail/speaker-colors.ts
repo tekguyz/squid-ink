@@ -1,4 +1,4 @@
-import type { SpeakerToken } from "@/lib/mock/types";
+import type { SpeakerToken } from "@/lib/notes/view-types";
 
 /** Tailwind cannot build class names at runtime, so each speaker token maps to
  *  a static utility here. The colours themselves live in app/globals.css. */

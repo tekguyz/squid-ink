@@ -1,4 +1,4 @@
-import type { Note } from "@/lib/mock/types";
+import type { Note } from "@/lib/notes/view-types";
 
 /** The demo exchange shown in the note composer.
  *

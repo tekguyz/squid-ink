@@ -1,5 +1,6 @@
-/** Shapes for the Note Detail mock. No colours live here — speakers carry a
- *  token name, and the token resolves in `app/globals.css`. */
+/** View types the Note Detail components consume. Shaped by
+ *  lib/notes/note-view-model.ts from database rows. No colours live here —
+ *  speakers carry a token name, and the token resolves in `app/globals.css`. */
 
 export type SpeakerToken = "speaker-1" | "speaker-2" | "speaker-3";
 
@@ -30,10 +31,15 @@ export interface SpeakerStat {
   fillers: string;
 }
 
+/** ROADMAP.md §5's Brief/Dense/Exhaustive. Carried on the type and the table;
+ *  nothing consumes it yet — there is no model routing and no UI control. */
+export type PersonaDepth = "brief" | "dense" | "exhaustive";
+
 export interface Persona {
   id: string;
   name: string;
   sub: string;
+  depth: PersonaDepth;
   takeaways: Takeaway[];
   actions: string[];
 }

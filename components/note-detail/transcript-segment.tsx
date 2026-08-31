@@ -1,4 +1,4 @@
-import type { Segment } from "@/lib/mock/types";
+import type { Segment } from "@/lib/notes/view-types";
 import { SpeakerAvatar } from "./speaker-avatar";
 import { SPEAKER_TEXT } from "./speaker-colors";
 

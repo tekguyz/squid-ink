@@ -1,6 +1,6 @@
 "use client";
 
-import type { Persona } from "@/lib/mock/types";
+import type { Persona } from "@/lib/notes/view-types";
 
 export interface PersonaRailProps {
   personas: Persona[];

@@ -110,7 +110,59 @@ const QUERIES = [
     sql: `select id, chunk_type, user_id from note_chunks where note_id = '${SEEDED_NOTE_ID}'`,
     run: (c) => c.from("note_chunks").select("id, chunk_type, user_id").eq("note_id", SEEDED_NOTE_ID),
   },
+  {
+    // No id filter here: the point is that each user sees only their own
+    // rows of a table both users have rows in. A filter would weaken that.
+    table: "personas",
+    sql: "select id, slug, name, user_id from personas",
+    run: (c) => c.from("personas").select("id, slug, name, user_id"),
+    // The second user owns one persona of their own (created below), so a
+    // wide-open select policy would show them five rows, not zero. Without
+    // that row, "zero rows" would also be the answer for a table that is
+    // simply empty for them, and the two are not the same proof.
+    secondUserExpects: 1,
+  },
 ];
+
+/** Give the second user one persona of their own, through their OWN client.
+ *  That exercises the insert policy and turns the select proof from "the
+ *  table is empty for them" into "the table is filtered for them". */
+async function ensureIntruderPersona(user) {
+  const { error } = await user.client.from("personas").insert({
+    user_id: user.userId,
+    slug: "rls-probe",
+    name: "RLS Probe",
+    sub: "owned by the second user",
+    sort_order: 0,
+  });
+  // 23505 is the unique (user_id, slug) constraint: the row is already there
+  // from an earlier run, which is exactly the state we want.
+  if (error && error.code !== "23505") {
+    throw new Error(`second user could not insert their own persona: ${error.message}`);
+  }
+}
+
+/** The composite foreign key on note_chunks must refuse a chunk that points
+ *  at another user's persona. Foreign keys are validated as the referenced
+ *  table's owner and are NOT subject to RLS, so a single-column
+ *  references personas (id) would allow this. 23503 is the FK violation. */
+async function crossTenantAttributionIsRefused(user, foreignPersonaId) {
+  const noteId = "99999999-9999-4999-8999-999999999999";
+  await user.client
+    .from("notes")
+    .insert({ id: noteId, user_id: user.userId, title: "RLS probe note" });
+
+  const { error } = await user.client.from("note_chunks").insert({
+    note_id: noteId,
+    user_id: user.userId,
+    chunk_type: "takeaway",
+    persona_id: foreignPersonaId,
+    content: "attributed to a persona this user does not own",
+  });
+
+  await user.client.from("notes").delete().eq("id", noteId);
+  return { refused: Boolean(error), code: error?.code ?? null, message: error?.message ?? null };
+}
 
 const env = loadEnv(".env.local");
 const url = env.NEXT_PUBLIC_SUPABASE_URL;
@@ -132,6 +184,8 @@ const intruder = await signIn(
   env.RLS_TEST_INTRUDER_PASSWORD,
 );
 
+await ensureIntruderPersona(intruder);
+
 console.log("proof path : A - real password-grant JWT via Authorization header");
 console.log("             (NOT session cookies through the proxy - see path B)");
 console.log(`owner      : ${owner.email}  ${owner.userId}  role=${owner.role}`);
@@ -143,6 +197,8 @@ let failed = false;
 for (const query of QUERIES) {
   console.log(`--- ${query.table} ---`);
   console.log(`query: ${query.sql}`);
+
+  const secondUserRows = query.secondUserExpects ?? 0;
 
   for (const [label, user, expected] of [
     ["owner   ", owner, "some"],
@@ -164,13 +220,35 @@ for (const query of QUERIES) {
     } else if (expected === "some" && rows === 0) {
       failed = true;
       console.log("             FAIL: owner should see rows");
-    } else if (expected === "none" && rows !== 0) {
+    } else if (expected === "none" && rows !== secondUserRows) {
       failed = true;
-      console.log("             FAIL: second user must see zero rows");
+      console.log(`             FAIL: second user must see exactly ${secondUserRows} row(s)`);
+    } else if (expected === "none" && data?.some((r) => r.user_id !== user.userId)) {
+      failed = true;
+      console.log("             FAIL: second user saw a row they do not own");
     }
   }
   console.log("");
 }
+
+// A separate proof from RLS: this one is the database's foreign key, not a
+// policy. RLS decides what a user can READ; this decides what they can point at.
+console.log("--- note_chunks.persona_id cross-tenant write ---");
+const ownerPersonas = await owner.client.from("personas").select("id").limit(1);
+const foreignPersonaId = ownerPersonas.data?.[0]?.id;
+if (!foreignPersonaId) {
+  failed = true;
+  console.log("  FAIL: could not read an owner persona id to probe with");
+} else {
+  console.log(`attempt: second user inserts a note_chunk with persona_id = ${foreignPersonaId}`);
+  const probe = await crossTenantAttributionIsRefused(intruder, foreignPersonaId);
+  console.log(`  refused=${probe.refused}  code=${probe.code}  error=${JSON.stringify(probe.message)}`);
+  if (!probe.refused) {
+    failed = true;
+    console.log("             FAIL: a user attributed a chunk to another user's persona");
+  }
+}
+console.log("");
 
 console.log(failed ? "FAIL" : "PASS");
 process.exit(failed ? 1 : 0);
