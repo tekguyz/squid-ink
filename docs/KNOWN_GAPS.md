@@ -274,6 +274,27 @@ started**, or is a known incompleteness in what shipped.
   Engineering Lead. Only the seed owner has the four. Provisioning belongs with
   the Personas UI (ROADMAP §5).
 
+  **RESOLVED 2026-08-31 for new accounts.** `supabase/schemas/persona_provisioning.sql`
+  adds `public.provision_default_personas()`, a `security definer` function
+  owned by `postgres` with `search_path` pinned empty, and an `after insert`
+  trigger on `auth.users` that calls it. It writes the same four rows the seed
+  owner has, values copied verbatim out of `supabase/seed.sql`; `id` is left to
+  `gen_random_uuid()` because seed.sql's pinned uuids would collide at the
+  second signup. Shipped as migration `20260831043837_persona_provisioning`.
+  RLS on `public.personas` is unchanged — the function bypasses it by
+  ownership, not by a policy — and `node scripts/verify-persona-provisioning.mjs`
+  proves it end to end: it creates a real account through the admin API, reads
+  the four rows twice (as `postgres` for raw truth, and as the new account's own
+  `authenticated` session for what a signup actually sees), then deletes the
+  account and confirms the cascade left nothing.
+
+  **Still open: existing accounts are not backfilled.** The trigger fires on
+  INSERT only, by design. `4tekguyz@gmail.com` predates it and still owns zero
+  personas, so `DEFAULT_PERSONA_FALLBACK` remains live for that account and is
+  still the crash floor, not dead code. Backfilling is a separate decision, as
+  is persona deletion (see the `on delete set null` gap above) and the Personas
+  UI itself (App Surface 03, ROADMAP §5).
+
 - **`waveform`, `playhead` and `sampleExchange` are constants, not data.** No
   column backs any of them. The timeline bar is Advanced-phase, playhead is
   client state, and the sample exchange is placeholder chat content.
