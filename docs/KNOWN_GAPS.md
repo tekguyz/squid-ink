@@ -816,6 +816,39 @@ The alternative ordering (write the row only after a successful upload) was
 considered and rejected: it makes the failure invisible and loses the recording
 with no trace.
 
+**RESOLVED (design) 2026-08-31, planning session. Not yet built — Track 3 owns
+the implementation.** Reconciliation is **two-tier**, keyed on whether the
+session survived the failure:
+
+1. **In-session failure.** On a caught upload error, write
+   `processing_status = 'failed'` immediately. No threshold and no waiting: the
+   failure is already known to the client that caused it.
+2. **Lost-session orphan.** Track 3, on meeting an `'uploading'` row older than
+   **1 hour**, checks whether the object exists. Present → proceed, because the
+   upload actually succeeded and only the client's write-back was lost. Absent →
+   mark `'failed'`.
+
+Both branches terminate at `'failed'` or `'completed'`. **IndexedDB blob cleanup
+keys off that pair, never off `'uploading'` alone** — an `'uploading'` row is
+still not a promise of audio, and deleting the blob while one is outstanding
+would destroy the only copy.
+
+**Resume-upload was considered and rejected.** It is the same one-click
+recoverability already rejected for the in-session error state, so accepting it
+here would reverse that decision by the back door rather than on its merits.
+
+Two things the design assumed were left unverified, and both were measured on
+2026-08-31 rather than assumed:
+
+- **Tier 1 is NOT implemented.** `app/notes/actions.ts` writes
+  `processing_status: 'uploading'` and nothing in `lib/recorder/` writes any
+  other value — there is no `'failed'` write anywhere in the tree. Track 3 must
+  add it; it cannot assume either state.
+- **The check constraint does not allow `'failed'`.** `supabase/schemas/notes.sql`
+  line 15 reads `check (processing_status in ('local', 'uploading', 'analyzing',
+  'completed'))`. Adding `'failed'` is a schema change. Bundle it into Track 3's
+  migration, which already has to touch this constraint for `'analyzing'`.
+
 ### Three HUD states are INVENTED, not from the design
 
 Verified by reading `design-reference/App Surfaces.dc.html`, not from memory.
