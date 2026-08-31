@@ -1,34 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { createRecordedNote } from "@/app/notes/actions";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { browserDeps, readLevel, type RecorderDeps } from "@/lib/recorder/browser-deps";
 import { discardBackup, saveBackup } from "@/lib/recorder/audio-backup";
 import { pickMimeType } from "@/lib/recorder/codec";
-import { startCapture, type CaptureHandles } from "@/lib/recorder/capture";
+import { type CaptureHandles } from "@/lib/recorder/capture";
 import { watchAudioInputs } from "@/lib/recorder/device-handoff";
-import {
-  AUDIO_BUCKET,
-  recordingPath,
-  uploadRecording,
-  type StorageBucketLike,
-} from "@/lib/recorder/upload-audio";
+import { recordingPath, uploadRecording } from "@/lib/recorder/upload-audio";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
+
+export type { RecorderDeps };
 
 /** How often the clock and the level meter refresh. 200 ms is fast enough to
  *  read as live and slow enough not to re-render the HUD on every frame. */
 const TICK_MS = 200;
-
-export interface RecorderDeps {
-  capture: typeof startCapture;
-  createRecorder(stream: MediaStream, mimeType: string): MediaRecorder;
-  isTypeSupported(type: string): boolean;
-  newNoteId(): string;
-  now(): number;
-  getUserId(): Promise<string>;
-  bucket(): StorageBucketLike;
-  createNote: typeof createRecordedNote;
-}
 
 /**
  * There is deliberately no `retry`. The scope for this track is that a failed
@@ -42,33 +27,6 @@ export interface RecorderControls {
   resume(): void;
   stop(): Promise<void>;
   discard(): Promise<void>;
-}
-
-function browserDeps(): RecorderDeps {
-  return {
-    capture: startCapture,
-    createRecorder: (stream, mimeType) => new MediaRecorder(stream, { mimeType }),
-    isTypeSupported: (type) => MediaRecorder.isTypeSupported(type),
-    newNoteId: () => crypto.randomUUID(),
-    now: () => performance.now(),
-    getUserId: async () => {
-      const { data } = await createClient().auth.getUser();
-      if (!data.user) throw new Error("Cannot record: not signed in.");
-      return data.user.id;
-    },
-    bucket: () =>
-      createClient().storage.from(AUDIO_BUCKET) as unknown as StorageBucketLike,
-    createNote: createRecordedNote,
-  };
-}
-
-/** Peak amplitude of the current buffer, 0..1. */
-function readLevel(analyser: AnalyserNode): number {
-  const buffer = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteTimeDomainData(buffer);
-  let peak = 0;
-  for (const sample of buffer) peak = Math.max(peak, Math.abs(sample - 128) / 128);
-  return peak;
 }
 
 /**
@@ -245,5 +203,14 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
     store.getState().discard();
   }, [store, teardown]);
 
-  return { start, pause, resume, stop, discard };
+  // Memoised on purpose. Every callback above is already stable, but a fresh
+  // object literal here would give consumers a new `controls` identity on every
+  // render — and the HUD re-renders roughly five times a second while
+  // recording, because it subscribes to the clock and the level meter. Its
+  // keydown effect depends on this object, so an unstable identity tore the
+  // window listener down and re-added it on every tick.
+  return useMemo(
+    () => ({ start, pause, resume, stop, discard }),
+    [start, pause, resume, stop, discard],
+  );
 }

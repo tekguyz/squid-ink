@@ -238,6 +238,18 @@ describe("useRecorder", () => {
     expect(d.createNote).toHaveBeenCalledTimes(1);
   });
 
+  // The HUD re-renders ~5x/second while recording (clock + level meter) and its
+  // keydown effect depends on this object. An unstable identity tore the window
+  // listener down and re-added it on every tick.
+  it("returns a stable controls object across re-renders", () => {
+    const d = makeDeps();
+    const { result, rerender } = renderHook(() => useRecorder(d.deps as never));
+    const first = result.current;
+    rerender();
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
   it("has no retry control — a failed upload is surfaced, not silently re-driven", () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
