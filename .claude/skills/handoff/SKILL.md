@@ -1,24 +1,36 @@
 ---
 name: handoff
-description: Audit CLAUDE.md and docs/KNOWN_GAPS.md against the real repo state, repair whichever is stale, then print a paste-ready handoff block for the user's Claude.ai planning Project. Use when the user asks for a handoff, a status sync, "where are we", or says they are about to plan/spec/write a prompt in Claude.ai.
+description: Audit CLAUDE.md, docs/KNOWN_GAPS.md, docs/DECISIONS.md, docs/ROADMAP.md and docs/DEPLOYMENT.md against the real repo state and against each other, repair whichever is stale, then print a paste-ready handoff block for the user's Claude.ai planning Project. Use when the user asks for a handoff, a status sync, "where are we", or says they are about to plan/spec/write a prompt in Claude.ai.
 ---
 
 # Handoff to the Claude.ai planning Project
 
 The user runs a **separate Claude.ai Project** for planning, specs and
 prompt-writing. That Project cannot see this repo. It knows only what the user
-pastes into it.
+pastes into it, and it attaches its standing knowledge **from this tree**.
 
-This repo has **no `STATUS.md`**, and does not need one yet — it is one screen
-old. Two files carry everything:
+This repo has **no `STATUS.md`**, and does not need one yet. Five files carry
+everything, and all five are on disk:
 
 | What it holds | Lives in |
 |---|---|
 | Stack decision, pinned versions, the rules that govern new code | `CLAUDE.md` |
 | Every deviation, deferral, and deliberately-not-built thing | `docs/KNOWN_GAPS.md` |
+| Locked decisions, what was rejected and why, what is still open | `docs/DECISIONS.md` |
+| Scope, phases, cost picture, explicit out-of-scope | `docs/ROADMAP.md` |
+| Vercel and Supabase config, and how to re-measure it | `docs/DEPLOYMENT.md` |
+
+`DECISIONS.md` and `ROADMAP.md` **moved into the tree on 2026-08-31.** Before
+that they were Claude.ai Project knowledge files, invisible here, and that is
+not a footnote — it is the reason this skill exists in its current shape. A
+decision lived in `DECISIONS.md` and its contradiction lived in
+`docs/KNOWN_GAPS.md` for a full day, and no check in this repo could have
+found it, because the file it disagreed with could not be read. **`docs/` is now
+the source of truth for all five.** Edits made in a planning chat come back as
+commits; the Project does not hold a private copy.
 
 Do not add a `docs/STATUS.md` until there is genuinely dated narrative that fits
-in neither. Two files that are always accurate beat three that drift.
+in none of them. Five files that are always accurate beat six that drift.
 
 The **design files are the source of truth for anything visual** —
 `design-reference/Note Detail.dc.html` (turn 3: `#3a` light, `#3b` dark, `#3c`
@@ -46,7 +58,7 @@ claim in chat — as something to verify, not something to cite.
 node .claude/skills/handoff/check-docs.mjs
 ```
 
-Repo-only. No browser, no dev server, no network. It measures nine things:
+Repo-only. No browser, no dev server, no network. It measures twelve things:
 
 1. **The pinned-version table in `CLAUDE.md` against `package.json`** — both
    directions, so a package added to one and not the other is a finding, and any
@@ -79,12 +91,27 @@ Repo-only. No browser, no dev server, no network. It measures nine things:
    files explain the rules in prose and a rule quoted in a comment is not a
    policy. This is the shape, not the behaviour — `node scripts/verify-rls.mjs`
    is still the only thing that proves the live database.
+10. **The five planning docs all exist** — the four the Claude.ai Project
+    attaches as standing knowledge, plus `docs/DEPLOYMENT.md`.
+11. **No doc claims, in the present tense, that a doc that exists does not.**
+    Written directly against the 2026-08-31 failure: five passages in
+    `docs/KNOWN_GAPS.md` still said `DECISIONS.md` and `ROADMAP.md` were "not on
+    disk here" and could not be audited, and one of them rested a closed finding
+    on the owner's report rather than the file. Past-tense history is
+    legitimate and is exempted; the filename is matched across a three-line
+    window because the prose wraps.
+12. **`docs/DEPLOYMENT.md`'s figures against the code they describe** — the cron
+    schedule against `vercel.json`, `maxDuration` against the route,
+    `MAX_TRANSCRIPTIONS_PER_RUN` against `sweep.ts`. That file is the only
+    record this repo carries that it is deployed at all, so a number raised in
+    code and not there reads as a plan change that never happened.
 
 Exit `0` clean, `1` findings one per line, `2` means it could not read
 something and **is not a pass** — fix the script before continuing.
 
-All nine were verified to catch real drift when the script was written, by
-breaking each one and watching it fail. If you change a check, do that again;
+All twelve were verified to catch real drift, by breaking each one and watching
+it fail — the original nine when the script was written, checks 10–12 when the
+docs moved in on 2026-08-31. If you change a check, do that again;
 a check that has never failed is decoration.
 
 **What it cannot do, so do not claim it did:** it cannot check a *rule*. Most of
@@ -105,6 +132,29 @@ Grep it for anything the session touched. A gap that is genuinely closed does
 line saying what closed it. The file is a record of decisions, and a deletion
 destroys the reasoning along with the entry. The App Surfaces reference gap was
 closed this way on 2026-08-30.
+
+### Check 3b — contradictions between the five docs
+
+New on 2026-08-31, and the highest-yield check in this job, because it was
+impossible before that date. `docs/DECISIONS.md` and `docs/ROADMAP.md` are now
+readable, so **verify a claim against them instead of relaying it.**
+
+Check 11 catches the mechanical half. The rest is reading, and two shapes recur:
+
+- **The repo says open, the decision says closed.** Persona timing was settled
+  in `DECISIONS.md` § Personas on 2026-08-30 and `docs/KNOWN_GAPS.md` called it
+  open for a day. Work `DECISIONS.md` § "Explicitly still open" and
+  `ROADMAP.md` § 9 against what actually shipped.
+- **The repo cites an authority that says the opposite.** `CLAUDE.md:131` and
+  `lib/recorder/capture.ts:19` forbid `noiseSuppression` "— ROADMAP §7 rejected
+  extra masking", where §7 rejects *custom edge-ML* masking on cost grounds and
+  offers browser `noiseSuppression` as the free alternative. **Follow every
+  citation to the cited section.** A citation that has never been opened is the
+  same as no citation.
+
+A contradiction in a *rule* is reported, never silently rewritten — same
+standard as check 1. A contradiction in a *status* is repaired in place with a
+dated line naming what closed it.
 
 ### Check 4 — uncommitted and unpushed work
 
@@ -191,7 +241,8 @@ not re-derive them here.
 - <the locked token set, the three typefaces, the flat-components rule, the 400-line ceiling, the no-app-name rule, and the Supabase rules: publishable key only in app code, four per-operation RLS policies, never filter on user_id in application code>
 
 ### Attach to this Project
-CLAUDE.md · docs/KNOWN_GAPS.md
+CLAUDE.md · docs/KNOWN_GAPS.md · docs/DECISIONS.md · docs/ROADMAP.md
+(docs/DEPLOYMENT.md on demand, not as standing knowledge)
 ```
 
 Rules for the block:
@@ -207,6 +258,9 @@ Rules for the block:
   Detail is uncommitted" — never "Note Detail is essentially done".
 - **The attach-list is a budget, not an inventory.** Project knowledge loads
   into every conversation there, so a file parked in it is paid for on every
-  chat. Two files is the whole permanent set today. The `.dc.html` design files
-  are large and belong in the planning Project only when a chat is actually
-  briefing a new surface — name the turn and paste that region, never the file.
+  chat. Four files is the whole permanent set: `CLAUDE.md`,
+  `docs/KNOWN_GAPS.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md`.
+  `docs/DEPLOYMENT.md` is attached only by a chat that needs it. The `.dc.html`
+  design files are large and belong in the planning Project only when a chat is
+  actually briefing a new surface — name the turn and paste that region, never
+  the file.
