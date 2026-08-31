@@ -45,21 +45,41 @@ const SPEAKER_TOKENS: readonly SpeakerToken[] = [
   "speaker-3",
 ];
 
+/** Distinct speaker labels in first-appearance order, numbered from 1.
+ *
+ *  The provider's label is an OPAQUE CLUSTER ID and its digits mean nothing.
+ *  Measured against the live API on 2026-08-31: a recording with exactly one
+ *  voice came back labelled "spk:7" — a colon rather than the documented
+ *  underscore, and a 7 that indexes nothing. Parsing a number out of the label
+ *  would have rendered "Speaker 7" for a monologue.
+ *
+ *  Appearance order is the only honest numbering available: whoever speaks
+ *  first is Speaker 1. It is also stable, because the segments are already in
+ *  timeline order. */
+export function speakerOrdinals(
+  segments: readonly TranscriptSegment[],
+): Map<string, number> {
+  const ordinals = new Map<string, number>();
+
+  for (const segment of segments) {
+    const label = segment.speakerLabel;
+    if (!label) continue;
+    if (!ordinals.has(label)) ordinals.set(label, ordinals.size + 1);
+  }
+
+  return ordinals;
+}
+
 export function speakerFor(
-  label: string | null,
+  ordinal: number | null | undefined,
 ): { name: string; initials: string; token: SpeakerToken } | null {
-  if (!label) return null;
-
-  const digits = /(\d+)\s*$/.exec(label);
-  if (!digits) return null;
-
-  const n = Number(digits[1]);
-  if (!Number.isFinite(n) || n < 1) return null;
+  if (ordinal === null || ordinal === undefined) return null;
+  if (!Number.isFinite(ordinal) || ordinal < 1) return null;
 
   return {
-    name: `Speaker ${n}`,
-    initials: `S${n}`,
-    token: SPEAKER_TOKENS[(n - 1) % SPEAKER_TOKENS.length],
+    name: `Speaker ${ordinal}`,
+    initials: `S${ordinal}`,
+    token: SPEAKER_TOKENS[(ordinal - 1) % SPEAKER_TOKENS.length],
   };
 }
 

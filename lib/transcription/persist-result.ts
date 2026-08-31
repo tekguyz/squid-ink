@@ -2,6 +2,7 @@ import type { ChunkMetadata } from "@/lib/notes/types";
 import {
   formatTimestamp,
   speakerFor,
+  speakerOrdinals,
   type TranscriptionResult,
 } from "@/lib/transcription/transcript";
 
@@ -80,8 +81,14 @@ export function chunkRowsFor(args: {
     ];
   }
 
+  // Computed once across the whole transcript, not per segment: the ordinal is
+  // a property of the recording, not of one row.
+  const ordinals = speakerOrdinals(result.segments);
+
   return result.segments.map((segment, seq) => {
-    const speaker = speakerFor(segment.speakerLabel);
+    const speaker = speakerFor(
+      segment.speakerLabel ? ordinals.get(segment.speakerLabel) : null,
+    );
 
     const metadata: ChunkMetadata = {
       seq,

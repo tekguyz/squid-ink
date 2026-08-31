@@ -81,6 +81,28 @@ describe("chunkRowsFor", () => {
     expect(rows[1].metadata.speaker?.token).toBe("speaker-2");
   });
 
+  it("numbers opaque cluster labels by appearance, not by their digits", () => {
+    // MEASURED against the live API: a single-voice recording came back
+    // labelled "spk:7". Whoever speaks first is Speaker 1.
+    const rows = chunkRowsFor({
+      noteId: NOTE,
+      userId: USER,
+      result: {
+        rawTranscript: "a b",
+        diarized: true,
+        segments: [
+          { speakerLabel: "spk:7", startSeconds: 0, endSeconds: 1, text: "a" },
+          { speakerLabel: "spk:3", startSeconds: 1, endSeconds: 2, text: "b" },
+        ],
+      },
+    });
+
+    expect(rows[0].metadata.speaker?.name).toBe("Speaker 1");
+    expect(rows[0].metadata.speaker?.token).toBe("speaker-1");
+    expect(rows[1].metadata.speaker?.name).toBe("Speaker 2");
+    expect(rows[1].metadata.speaker?.token).toBe("speaker-2");
+  });
+
   it("omits speaker entirely when nothing was diarized", () => {
     const rows = chunkRowsFor({
       noteId: NOTE,
