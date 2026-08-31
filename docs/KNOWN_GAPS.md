@@ -402,7 +402,9 @@ scanner that pre-clicks links breaks magic-link sign-in for every user on that
 mail host, and no amount of app-side code fixes it. Worth confirming before
 magic-link is the only way in.
 
-**Cleanup — decided 2026-08-30: delete, do not keep as a fixture.** The
+**Cleanup — DONE 2026-08-30.** Deleted by the owner in the dashboard; this
+repo cannot verify it, so the closure rests on that report. Original decision
+below, kept because it governs every future Path B run. The
 `admin+pathb@tekguyz.com` auth user (`7023f7cb-5a43-4580-88a0-4fe0c18072b6`)
 owns no rows, so nothing cascades. Removal is a dashboard action by the owner
 (Authentication → Users → delete), not a scripted one — this repo's secret key
