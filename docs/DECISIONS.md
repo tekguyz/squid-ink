@@ -313,12 +313,35 @@ phase assignment for all of the above is in ROADMAP.md §8.
   building a second system.
 ## Explicitly still open
  
-Google OAuth/Calendar connect flow, audio Storage bucket (no bucket, no
-Storage policies, no upload code, no playback UI), persona provisioning on
-signup, persona-delete re-attribution behavior, and giving the deployment
-config above a tracked home. Everything else from the 2026-08-30
-feature-triage backlog is disposed — see ROADMAP.md §8 for what was
-promoted and where, and "Rejected" above for what wasn't.
+**Updated 2026-08-31**, the first time this file could be checked against the
+repo — it moved into the tree that day. Three of the five entries below had
+shipped. Kept in place with what closed them, rather than deleted.
+
+- **Google OAuth/Calendar connect flow** — still open. Nothing in `app/`,
+  `lib/` or `components/` references Google beyond `next/font/google` and the
+  `@google/genai` transcription client.
+- **Audio Storage** — **mostly RESOLVED 2026-08-31.** The bucket and its three
+  policies are `supabase/schemas/storage_audio.sql`; upload code shipped with
+  the recorder and is proven by `scripts/verify-recorder-upload.mjs`. **Playback
+  UI is the one clause still true** — no `<audio>` element and no object-URL
+  usage anywhere in `components/` or `app/`.
+- **Persona provisioning on signup** — **RESOLVED 2026-08-31.** A
+  `security definer` trigger on `auth.users` in
+  `supabase/schemas/persona_provisioning.sql`, proven by
+  `scripts/verify-persona-provisioning.mjs`. Accounts predating it are
+  deliberately not backfilled.
+- **Persona-delete re-attribution behaviour** — still open, and now has a guard
+  rail rather than just a question. `note_chunks.persona_id` is
+  `on delete set null`, so deleting a persona silently re-attributes its
+  takeaways to the default lens. Nothing can delete a personas row today. The
+  comment block at `supabase/schemas/note_chunks.sql:71` states the choice that
+  must be made before a delete button ships.
+- **A tracked home for the deployment config** — **RESOLVED 2026-08-31.**
+  `docs/DEPLOYMENT.md`.
+
+Everything else from the 2026-08-30 feature-triage backlog is disposed — see
+ROADMAP.md §8 for what was promoted and where, and "Rejected" above for what
+wasn't.
  
 ## Build context
  

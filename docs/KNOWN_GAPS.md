@@ -1137,6 +1137,40 @@ Provenance: the quotation above was relayed by the owner on 2026-08-31, before
 `DECISIONS.md` was in the tree. It is now at `docs/DECISIONS.md` § Personas and
 can be read directly rather than trusted as a transcription.
 
+### The mic-constraint rule cites a decision that does not say what it claims (recorded 2026-08-31)
+
+`CLAUDE.md:131` and `lib/recorder/capture.ts:19` both justify the mic constraint
+the same way: *"Do not add `noiseSuppression` or `autoGainControl` — ROADMAP §7
+rejected extra masking."*
+
+**ROADMAP §7 does not reject that.** Now that the file is in the tree it can be
+read: §7 rejects **"Custom edge-ML background-noise masking"**, on cost grounds
+($0.15/mo total audio spend, §8a), and in the same bullet names browser
+`noiseSuppression: true` as *"the free equivalent if audio quality, not cost,
+ever becomes the actual issue."* `DECISIONS.md` § Rejected says the same thing
+in the same words about "Sub-Hz Background Noise Masking".
+
+So the two source documents treat browser `noiseSuppression` as the **available
+fallback**, and the repo cites them as having **forbidden** it. That is the
+opposite reading.
+
+**Nothing has been changed.** The shipped constraint is
+`{ echoCancellation: true }`, which matches §8b's stated baseline, and the rule
+may well still be the right call — a minimal constraint set is defensible on its
+own merits. What is wrong is the authority claimed for it, in two places, one of
+which is a convention file that governs new code.
+
+Needs the owner, because it is a decision and not a defect:
+
+- Keep the rule and **re-justify it** — say why this build declines the fallback
+  its own ROADMAP offers.
+- Or relax it to match §7: `noiseSuppression` stays off by default, permitted if
+  audio quality becomes a measured problem.
+
+This is the first contradiction the 2026-08-31 docs move made findable, and it
+had survived two files and a code comment. It is the argument for `check-docs.mjs`
+learning to compare these documents mechanically.
+
 ### No structured note generation and no embeddings
 
 `summary`, `takeaway` and `action_item` chunks are a separate future track: they
