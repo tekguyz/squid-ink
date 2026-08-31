@@ -298,7 +298,10 @@ started**, or is a known incompleteness in what shipped.
   (`scripts/verify-rls.mjs`) proves the database enforces RLS against a real
   password-grant JWT. Path B (a browser or cookie-jar request through
   `proxy.ts`) proves the app hands the database the right identity. Neither
-  substitutes for the other.
+  substitutes for the other. Path B was run for the first time on 2026-08-30 —
+  see "Magic-link callback shape" for the evidence. It is manual and has no
+  script, so it will drift unless deliberately re-run after any change to
+  `proxy.ts`, `lib/supabase/session.ts`, or `app/auth/confirm/route.ts`.
 
 - **`anon` holds no privileges on either table, by design.** The schema files
   `revoke all` before granting, because Supabase's project defaults hand `anon`
@@ -360,8 +363,45 @@ cookie.
 session, keeps the `token_hash` path for a custom template, and stops reporting
 Supabase's own error query string as a missing token.
 
-Still open, and unchanged by that fix: **Path B of the RLS proof is still
-unrun.** `node scripts/verify-rls.mjs` proves the database. A real browser
-request through `proxy.ts` with a freshly clicked magic link proves the cookie
-plumbing. The callback shape is now correct in code; it has not been measured
-end to end in this repo.
+**Path B measured 2026-08-30.** Run against the dev server in a cookie-less
+browser, with a real magic link emailed to a fresh `admin+pathb@tekguyz.com`
+account (auth user `7023f7cb-5a43-4580-88a0-4fe0c18072b6`, created by this
+sign-in). Both branches of `ddaef6b` are now proven:
+
+- Session-less `GET /` redirected to `/login?next=%2F` with zero cookies.
+- `signInWithOtp` wrote three PKCE cookies, including
+  `sb-<ref>-auth-token-code-verifier` (159 chars) — so the client is in PKCE
+  mode and the returning link necessarily carries `?code=`.
+- The default template's link hit `/auth/v1/verify` on the Supabase host and
+  answered `303 See Other` with
+  `Location: http://localhost:3000/auth/confirm?code=<uuid>&next=%2F`. This is
+  the exact shape the pre-`ddaef6b` route could not read.
+- `GET /auth/confirm?code=…` returned `307`, wrote
+  `sb-<ref>-auth-token` (2931 chars), and landed on `/`. The decoded access
+  token carried `email: admin+pathb@tekguyz.com`, `role: authenticated`,
+  `aal1`, 60 minutes to expiry, with a refresh token present.
+- A second, separate `GET /` returned `200` through `proxy.ts` with no
+  redirect, so the cookie round-trips on a fresh request and `getUser()`
+  revalidates it.
+- The page rendered "No notes yet" — a genuine empty result for a user who
+  owns no rows, not `permission denied`. RLS is enforced against the identity
+  the app supplies, not just against `verify-rls.mjs`'s password-grant JWT.
+
+Two things this run did **not** establish. The persona fallback was not
+observed: with no note to render, `DEFAULT_PERSONA_FALLBACK` never executes,
+so "a fresh account falls back to one lens" is still inferred from code rather
+than measured. And the browser could not open the Supabase host directly, so
+the `/auth/v1/verify` hop was performed with `curl` and its `Location` header
+handed to the browser. Every cookie-bearing request was the browser's; the hop
+that was proxied carries no cookies and is identical either way.
+
+**New finding — links are being consumed before use.** The first link came
+back `otp_expired` on its first fetch, having never been opened. Either the
+recipient opened it or something in the mail path pre-fetched it. A security
+scanner that pre-clicks links breaks magic-link sign-in for every user on that
+mail host, and no amount of app-side code fixes it. Worth confirming before
+magic-link is the only way in.
+
+**Cleanup owed.** The `admin+pathb@tekguyz.com` auth user still exists. It owns
+no rows. Delete it from the Supabase dashboard, or keep it as a standing
+zero-row fixture — but decide, rather than letting it accumulate.
