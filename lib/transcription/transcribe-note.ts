@@ -4,7 +4,7 @@ import type { SweepPorts, UploadingRow } from "@/lib/transcription/sweep";
 
 /** ONE note, from 'uploading' to a terminal state. Both triggers call this:
  *  the daily cron sweep in sweep.ts, and the user-pressed Transcribe action in
- *  app/notes/actions.ts.
+ *  app/notes/actions/transcription.ts.
  *
  *  It lived inside the sweep's loop until 2026-09-01. It moved out for the
  *  reason the sweep's own comments give for not adding a queue table: two

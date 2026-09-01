@@ -84,10 +84,28 @@ Loaded via `next/font/google` in `app/layout.tsx`.
 
 ## File layout
 
-Flat and purpose-named. `components/note-detail/` holds one file per piece of the
-screen. No FSD or atomic layering, and no generic `parts/`, `utils/`, or `common/`
-dumping ground — a file that has no better name than "utils" is a file whose
+Purpose-named, and **grouped by feature, at most one folder deep**. No FSD or
+atomic layering, and no generic `parts/`, `utils/`, or `common/` dumping
+ground — a file that has no better name than "utils" is a file whose
 responsibility has not been decided yet.
+
+`components/note-detail/` holds one file per piece of the screen. When a single
+piece grows past about three files, it earns its own subfolder named after that
+piece — `note-detail/transcript/`, not `note-detail/components/`. One level,
+never two: the rule exists so a flat list stops growing without inventing a
+hierarchy nobody can navigate.
+
+Server Actions follow the same shape. `app/notes/actions/` holds one file per
+track — `recording.ts` (createRecordedNote, markUploadFailed) and
+`transcription.ts` (triggerTranscription). They were one `actions.ts` until
+2026-09-01. It was split because the two are genuinely different tracks that
+share nothing but the Supabase client, not because of the line count; the
+ceiling is what made the split due, and the seam was already there.
+
+Each file under `app/notes/actions/` needs its own `"use server"` — the
+directive is per module, and a folder of actions has no shared entry point to
+put it in. Type exports are fine alongside the async functions; they are erased
+before Next sees them.
 
 **Soft ceiling 250 lines, hard ceiling 400.** A file approaching the ceiling gets a
 purpose-named extraction, never a raised ceiling. The convention test enforces 400.

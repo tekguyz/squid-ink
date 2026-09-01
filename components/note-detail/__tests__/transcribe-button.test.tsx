@@ -10,7 +10,7 @@ const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
 const triggerTranscription = vi.fn();
-vi.mock("@/app/notes/actions", () => ({
+vi.mock("@/app/notes/actions/transcription", () => ({
   triggerTranscription: (...args: unknown[]) => triggerTranscription(...args),
 }));
 

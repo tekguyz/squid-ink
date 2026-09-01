@@ -79,7 +79,7 @@ const input = {
 };
 
 async function subject() {
-  return (await import("@/app/notes/actions")).createRecordedNote;
+  return (await import("@/app/notes/actions/recording")).createRecordedNote;
 }
 
 describe("createRecordedNote", () => {
@@ -184,7 +184,7 @@ function makeUpdateChain(
 }
 
 async function markSubject() {
-  return (await import("@/app/notes/actions")).markUploadFailed;
+  return (await import("@/app/notes/actions/recording")).markUploadFailed;
 }
 
 /** Tier 1 of the two-tier reconciliation in docs/KNOWN_GAPS.md. Tier 2 — the
@@ -262,7 +262,7 @@ describe("triggerTranscription", () => {
   };
 
   async function trigger() {
-    return (await import("@/app/notes/actions")).triggerTranscription;
+    return (await import("@/app/notes/actions/transcription")).triggerTranscription;
   }
 
   beforeEach(() => {
@@ -361,7 +361,7 @@ describe("triggerTranscription", () => {
     // READ rather than the mention; project-conventions.test.ts holds the
     // whole-tree guard.
     const source = await import("node:fs").then((fs) =>
-      fs.readFileSync("app/notes/actions.ts", "utf8"),
+      fs.readFileSync("app/notes/actions/transcription.ts", "utf8"),
     );
     expect(source).not.toContain("process.env.SUPABASE_SECRET_KEY");
   });

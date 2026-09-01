@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { createRecordedNote, markUploadFailed } from "@/app/notes/actions";
+import { createRecordedNote, markUploadFailed } from "@/app/notes/actions/recording";
 import { startCapture } from "@/lib/recorder/capture";
 import { AUDIO_BUCKET, type StorageBucketLike } from "@/lib/recorder/upload-audio";
 

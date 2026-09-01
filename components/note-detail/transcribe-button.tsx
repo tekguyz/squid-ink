@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   triggerTranscription,
   type TranscriptionTrigger,
-} from "@/app/notes/actions";
+} from "@/app/notes/actions/transcription";
 import { readProcessingStatus } from "@/lib/notes/transcription-status";
 import type { ProcessingStatus } from "@/lib/notes/view-types";
 

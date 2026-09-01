@@ -21,7 +21,7 @@ import { sweep } from "@/lib/transcription/sweep";
  *  before it touches anything.
  *
  *  The manual "Transcribe" Server Action added on 2026-09-01 did NOT widen
- *  this. triggerTranscription in app/notes/actions.ts runs as the signed-in
+ *  this. triggerTranscription in app/notes/actions/transcription.ts runs as the signed-in
  *  user through the cookie client, and RLS confines it to that user's own row.
  *  ------------------------------------------------------------------------
  *
