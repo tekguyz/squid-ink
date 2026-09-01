@@ -4,6 +4,7 @@ const upsert = vi.fn();
 const insert = vi.fn();
 const update = vi.fn();
 const getUser = vi.fn();
+const getSession = vi.fn();
 const revalidatePath = vi.fn();
 
 /** The note read that triggerTranscription does before claiming. */
@@ -15,7 +16,7 @@ const selectChain = {
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    auth: { getUser },
+    auth: { getUser, getSession },
     from: () => ({ upsert, insert, update, select: () => selectChain }),
   }),
 }));
@@ -30,11 +31,24 @@ vi.mock("next/server", () => ({
   },
 }));
 
+/** The client every createTranscriptionPorts call was handed, in order. What
+ *  the deferred half is built on is the whole point of the fix below, so the
+ *  test has to be able to see it. */
+const portsBuiltOn: unknown[] = [];
+
+/** Stands in for the token-only client. Identity is all that matters — a test
+ *  asserts the deferred ports were built on THIS and not on the cookie client,
+ *  because a cookie client that refreshes after the response is sent rotates
+ *  the user's refresh token into a write that is silently dropped. */
+const DEFERRED_CLIENT = { marker: "deferred-client" };
+const createDeferredClient = vi.fn(() => DEFERRED_CLIENT);
+vi.mock("@/lib/supabase/deferred-client", () => ({ createDeferredClient }));
+
 const claim = vi.fn();
 const objectExists = vi.fn();
 const transcribe = vi.fn();
 vi.mock("@/lib/transcription/supabase-ports", () => ({
-  createTranscriptionPorts: () => ({
+  createTranscriptionPorts: (db: unknown) => (portsBuiltOn.push(db), {
     now: () => 0,
     log: vi.fn(),
     listUploading: vi.fn(),
@@ -254,8 +268,14 @@ describe("triggerTranscription", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     scheduled.length = 0;
+    portsBuiltOn.length = 0;
+    createDeferredClient.mockReturnValue(DEFERRED_CLIENT);
     process.env.GEMINI_API_KEY = "not-a-real-key";
     getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    getSession.mockResolvedValue({
+      data: { session: { access_token: "jwt-for-this-user" } },
+      error: null,
+    });
     maybeSingle.mockResolvedValue({ data: noteRow, error: null });
     objectExists.mockResolvedValue(true);
     claim.mockResolvedValue(true);
@@ -265,6 +285,35 @@ describe("triggerTranscription", () => {
     getUser.mockResolvedValue({ data: { user: null }, error: null });
     await expect((await trigger())(NOTE)).rejects.toThrow(/not signed in/i);
     expect(claim).not.toHaveBeenCalled();
+  });
+
+  it("refuses BEFORE claiming when the session carries no access token", async () => {
+    // Failing here leaves the row untouched. Claiming first and only then
+    // discovering there is no token to defer with would strand the row at
+    // 'analyzing' until the sweep failed it an hour later.
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
+    await expect((await trigger())(NOTE)).rejects.toThrow(/access token/i);
+    expect(claim).not.toHaveBeenCalled();
+  });
+
+  it("runs the deferred half on the token client, never the cookie client", async () => {
+    // THE BUG THIS PINS. The cookie client refreshes an expired token on
+    // demand; a refresh rotates the refresh token, and the replacement cookies
+    // go to a setAll that cannot write once the response has been sent. The
+    // browser then holds a revoked token and the user is signed out mid-note.
+    await expect((await trigger())(NOTE)).resolves.toBe("started");
+
+    const beforeDeferring = portsBuiltOn.length;
+    await scheduled[0]();
+
+    expect(createDeferredClient).toHaveBeenCalledWith("jwt-for-this-user");
+    expect(portsBuiltOn.slice(beforeDeferring)).toEqual([DEFERRED_CLIENT]);
+  });
+
+  it("builds no token client when nothing is deferred", async () => {
+    claim.mockResolvedValue(false);
+    await expect((await trigger())(NOTE)).resolves.toBe("not-claimed");
+    expect(createDeferredClient).not.toHaveBeenCalled();
   });
 
   it("reports 'not-found' for a note RLS does not show this user", async () => {

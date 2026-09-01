@@ -1,5 +1,15 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
+// Imported at module scope, not inside the test body. vi.mock is hoisted above
+// these, so a static import still gets the mocked @supabase/ssr, and this file
+// never calls vi.resetModules() — so there is nothing a lazy import buys here.
+// What it cost: next/server is a large graph, and evaluating it INSIDE the
+// first test charged that one-off transform to that test's 5 s timeout.
+// Measured on this machine: 151 ms alone, 368-448 ms under the full parallel
+// suite. That is the only test in the suite paying a cold heavy import from
+// inside its own clock, which is what made it the one that flakes.
+import { NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/session";
 
 /** No session. Every request in this file is an unauthenticated one, because
  *  that is the case the redirect rule governs. */
@@ -15,8 +25,6 @@ beforeEach(() => {
 });
 
 async function visit(pathname: string) {
-  const { NextRequest } = await import("next/server");
-  const { updateSession } = await import("@/lib/supabase/session");
   return updateSession(new NextRequest(`https://example.test${pathname}`));
 }
 

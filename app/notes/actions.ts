@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+import { createDeferredClient } from "@/lib/supabase/deferred-client";
 import { createClient } from "@/lib/supabase/server";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
 import {
@@ -153,8 +154,18 @@ export type TranscriptionTrigger =
  * the callback once the response is finished (stable since Next 15.1; on
  * Vercel it is backed by waitUntil), so the browser is told whether it won the
  * race in milliseconds rather than holding a request open for the whole Gemini
- * pass. The callback inherits this route's maxDuration, which on Hobby is
- * 300 s — the same ceiling the cron sweep is sized against.
+ * pass. That callback gets the Hobby DEFAULT function duration of 300 s, which
+ * on that plan is also the hard maximum (docs/DEPLOYMENT.md § Plan limits) —
+ * the same ceiling the cron sweep is sized against. It is NOT inherited from
+ * the cron route's `maxDuration` export, which governs only that route.
+ *
+ * TWO CLIENTS, ONE IDENTITY. The claim runs on the cookie client, while the
+ * request is open and a rotated session can still be written back to the
+ * browser. The deferred half runs on a client built from the access token
+ * alone (lib/supabase/deferred-client.ts), because a cookie client that
+ * refreshes after the response has been sent rotates the user's refresh token
+ * into a cookie write that is silently dropped, and signs them out. Same user,
+ * same RLS, same publishable key — only the session plumbing differs.
  */
 export async function triggerTranscription(
   noteId: string,
@@ -165,6 +176,20 @@ export async function triggerTranscription(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error("Cannot transcribe a note: not signed in.");
+
+  // getSession() AFTER getUser(), which is the only ordering that makes this
+  // safe: getUser revalidates the token against the auth server and refreshes
+  // it if needed, so what getSession reads here is a token that has just been
+  // proved good — not the unverified cookie the "never getSession" rule in
+  // lib/supabase/session.ts is about. Read before the claim, so a session we
+  // cannot carry into after() fails the request instead of stranding a row at
+  // 'analyzing'.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error("Cannot transcribe a note: no access token for the session.");
+  }
 
   const geminiKey = process.env.GEMINI_API_KEY;
   if (!geminiKey) {
@@ -205,7 +230,15 @@ export async function triggerTranscription(
     // in the log saying why. There is no error column at this scale — the
     // Vercel function log is where a failure is read, so it has to reach it.
     try {
-      await transcribeClaimedNote(ports, row);
+      // Fresh ports on the token client. Building them INSIDE the callback is
+      // deliberate: the cookie client above must not be reachable from here.
+      await transcribeClaimedNote(
+        createTranscriptionPorts(
+          createDeferredClient(session.access_token),
+          geminiKey,
+        ),
+        row,
+      );
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       console.error(

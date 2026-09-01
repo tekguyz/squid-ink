@@ -1,18 +1,24 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const ORIGINAL = { ...process.env };
-
+/** Set and unset key by key, NEVER `process.env = {...}`.
+ *
+ *  MEASURED: assigning to `process.env` swaps Node's native env object for a
+ *  plain one. It stops coercing values to strings (`process.env.N = 5` then
+ *  reads back as a number), and the swap is process-wide and permanent. Vitest
+ *  reuses a worker process across test files, so one such assignment leaves
+ *  every later file in that worker reading a detached copy of the environment.
+ *  vi.stubEnv/unstubAllEnvs restores in place and has neither problem. */
 beforeEach(() => {
   vi.resetModules();
-  process.env.SUPABASE_SECRET_KEY = "sb_secret_test";
-  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
-  process.env.GEMINI_API_KEY = "test-gemini-key";
-  process.env.CRON_SECRET = "the-real-secret";
+  vi.stubEnv("SUPABASE_SECRET_KEY", "sb_secret_test");
+  vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+  vi.stubEnv("GEMINI_API_KEY", "test-gemini-key");
+  vi.stubEnv("CRON_SECRET", "the-real-secret");
 });
 
 afterEach(() => {
-  process.env = { ...ORIGINAL };
+  vi.unstubAllEnvs();
 });
 
 async function get(headers: Record<string, string> = {}) {
