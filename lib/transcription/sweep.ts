@@ -1,8 +1,8 @@
-import { planFor } from "@/lib/transcription/diarization-policy";
+import type { TranscriptionStore } from "@/lib/transcription/persist-result";
 import {
-  persistTranscription,
-  type TranscriptionStore,
-} from "@/lib/transcription/persist-result";
+  claimNoteForTranscription,
+  transcribeClaimedNote,
+} from "@/lib/transcription/transcribe-note";
 import type { Transcriber } from "@/lib/transcription/transcript";
 
 /** All the branching, and none of the I/O.
@@ -132,41 +132,40 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
     }
 
     const ageMs = startedAt - Date.parse(row.updated_at);
-    const stale = ageMs > STALE_AFTER_MS;
 
-    const exists = row.audio_storage_path
-      ? await ports.objectExists(row.audio_storage_path)
-      : false;
+    // Staleness enters the shared unit ONLY as this flag. It is the sweep's
+    // whole contribution to the per-row decision: unattended reconciliation
+    // must not false-fail an upload still in flight, whereas a user pressing
+    // Transcribe has already decided the note is ready.
+    //
+    // The claim and the transcription are taken in two steps rather than
+    // through claimAndTranscribe, because the cap counts rows that reached
+    // Gemini. A cheap orphan failure costs one list() and one UPDATE and must
+    // not hold a slot, so it has to be distinguishable here.
+    const outcome = await claimNoteForTranscription(ports, row, {
+      failOnMissingObject: ageMs > STALE_AFTER_MS,
+      ageMs,
+    });
 
-    if (!exists) {
-      if (!stale) {
-        // A slow-but-real upload. Say nothing, do nothing, look again next tick.
-        report.waiting += 1;
-        continue;
-      }
-
-      if (await ports.claim(row.id, "uploading", "failed")) {
-        report.failed += 1;
-        ports.log(
-          `note ${row.id}: no object at ${row.audio_storage_path ?? "(no path)"} ` +
-            `after ${Math.round(ageMs / 60000)} min. The upload never landed. ` +
-            `Marked 'failed'.`,
-        );
-      } else {
-        report.contended += 1;
-      }
+    if (outcome === "waiting") {
+      report.waiting += 1;
       continue;
     }
 
-    if (!(await ports.claim(row.id, "uploading", "analyzing"))) {
+    if (outcome === "contended") {
       // Another tick got there first. Not an error.
       report.contended += 1;
       continue;
     }
 
+    if (outcome === "no-object") {
+      report.failed += 1;
+      continue;
+    }
+
     attempts += 1;
-    const outcome = await transcribeOne(ports, row);
-    if (outcome === "transcribed") report.transcribed += 1;
+    const result = await transcribeClaimedNote(ports, row);
+    if (result === "transcribed") report.transcribed += 1;
     else report.failed += 1;
   }
 
@@ -181,54 +180,4 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
   }
 
   return report;
-}
-
-async function transcribeOne(
-  ports: SweepPorts,
-  row: UploadingRow,
-): Promise<"transcribed" | "failed"> {
-  const plan = planFor(row.audio_duration_seconds);
-
-  if (plan.kind === "too-long") {
-    ports.log(`note ${row.id}: ${plan.reason}. Marked 'failed'.`);
-    await ports.store.markFailed(row.id, plan.reason);
-    return "failed";
-  }
-
-  if (plan.kind === "plain") ports.log(`note ${row.id}: ${plan.reason}`);
-
-  try {
-    // download() ONLY here, and only to move bytes to Gemini. Existence was
-    // already proved with list() above — a CDN-cached read must never be the
-    // thing that decides whether an object is there.
-    const { blob, mimeType } = await ports.downloadAudio(
-      row.audio_storage_path!,
-    );
-
-    const result = await ports.transcribe({
-      audio: blob,
-      mimeType,
-      diarize: plan.kind === "diarized",
-    });
-
-    await persistTranscription({
-      store: ports.store,
-      noteId: row.id,
-      userId: row.user_id,
-      result,
-    });
-
-    ports.log(
-      `note ${row.id}: transcribed, ${result.segments.length} segment(s), ` +
-        `diarized=${result.diarized}.`,
-    );
-    return "transcribed";
-  } catch (error) {
-    // No error-message column at single-owner scale. The Vercel function log is
-    // where a failure is read.
-    const reason = error instanceof Error ? error.message : String(error);
-    ports.log(`note ${row.id}: transcription failed — ${reason}`);
-    await ports.store.markFailed(row.id, reason);
-    return "failed";
-  }
 }

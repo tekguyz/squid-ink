@@ -59,6 +59,19 @@ a token *name* (`speaker-1`), never a colour value.
 The guard in `components/note-detail/__tests__/project-conventions.test.ts` fails
 the build if a colour literal appears in `components/` or `lib/`.
 
+**`canvas` is not a button fill.** In dark theme `--canvas` and `--paper`
+resolve to the same value, so a control filled with `bg-canvas` on a `bg-paper`
+sheet has no fill at all — measured 2026-09-01, and the reason `audio-player.tsx`
+and `transcribe-button.tsx` both moved to `bg-raised`, which is what
+DESIGN.md § Components → Buttons specifies anyway. Two tokens looking distinct
+in light theme is not evidence they differ in dark; check both.
+
+**Do not "fix" `border-rule-2` on one component.** Every framed surface in the
+app draws its edge with it, at ~1.4:1 against the sheet. That number is
+recorded, argued and left open in `docs/KNOWN_GAPS.md` § "Framed controls sit
+at ~1.4:1" — raising it is an app-wide token decision, and a single button with
+a heavier edge than everything around it is the worse outcome.
+
 ## Type
 
 Three faces, no others:
@@ -268,8 +281,32 @@ its authorization. An unset secret refuses everything rather than failing open.
 and a cron may fire only once per day. Re-measure the plan before raising
 either — `docs/DEPLOYMENT.md` holds the numbers and how they were measured.
 
+**Two triggers, one claim — added 2026-09-01.** The daily cron is no longer the
+only way a note transcribes. `triggerTranscription(noteId)` in
+`app/notes/actions.ts` is a Server Action the user reaches through the
+Transcribe button on Note Detail. It and the sweep both call
+`claimNoteForTranscription` in `lib/transcription/transcribe-note.ts`, which is
+the only place the guarded `UPDATE ... where processing_status = 'uploading'`
+is written; `lib/transcription/supabase-ports.ts` holds the one Supabase
+implementation of it, moved out of the cron route for exactly this reason. A
+zero-row claim returns before any download and any Gemini call.
+
+The manual path has **no age check** — staleness is a sweep-only concern and
+reaches the shared unit only as `failOnMissingObject`, which the action always
+passes `true`. Object existence still gates the call, still through `list()`.
+
+**Secret-key usage did not change.** The action runs on the authenticated
+cookie client and RLS supplies the owner; `app/api/cron/transcribe/route.ts` is
+still the only shipped file that reads `SUPABASE_SECRET_KEY`, and
+`project-conventions.test.ts` now fails the build if a second one appears.
+There is **no retry for `'failed'`** — the button is absent from the DOM for
+`'failed'` and `'completed'`, not disabled.
+
     npm run dev                                       # in one shell, then:
     node scripts/verify-transcription-pipeline.mjs    # live end-to-end proof
+    node scripts/verify-manual-transcribe.mjs         # no dev server needed:
+                                                      # double-spend proof,
+                                                      # Gemini calls counted
 
 That script drives the **real route over HTTP** rather than re-implementing the
 sweep, synthesises its own speech with Windows SAPI so the transcript assertion

@@ -6,13 +6,54 @@ const update = vi.fn();
 const getUser = vi.fn();
 const revalidatePath = vi.fn();
 
+/** The note read that triggerTranscription does before claiming. */
+const maybeSingle = vi.fn();
+const selectChain = {
+  eq: () => selectChain,
+  maybeSingle,
+};
+
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser },
-    from: () => ({ upsert, insert, update }),
+    from: () => ({ upsert, insert, update, select: () => selectChain }),
   }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath }));
+
+/** next/server's after(). Captured rather than executed, so a test can assert
+ *  that NOTHING was scheduled on a lost claim — the cost guarantee. */
+const scheduled: (() => unknown)[] = [];
+vi.mock("next/server", () => ({
+  after: (fn: () => unknown) => {
+    scheduled.push(fn);
+  },
+}));
+
+const claim = vi.fn();
+const objectExists = vi.fn();
+const transcribe = vi.fn();
+vi.mock("@/lib/transcription/supabase-ports", () => ({
+  createTranscriptionPorts: () => ({
+    now: () => 0,
+    log: vi.fn(),
+    listUploading: vi.fn(),
+    listStaleAnalyzing: vi.fn(),
+    claim,
+    objectExists,
+    downloadAudio: vi.fn(async () => ({
+      blob: new Blob(["x"]),
+      mimeType: "audio/webm",
+    })),
+    transcribe,
+    store: {
+      deleteTranscriptChunks: vi.fn(async () => {}),
+      insertChunks: vi.fn(async () => {}),
+      completeNote: vi.fn(async () => true),
+      markFailed: vi.fn(async () => {}),
+    },
+  }),
+}));
 
 const USER = "8f1c2a3b-0000-4444-8888-aaaaaaaaaaaa";
 const NOTE = "11111111-2222-3333-4444-555555555555";
@@ -194,5 +235,85 @@ describe("markUploadFailed", () => {
   it("revalidates the root route so the list stops showing it as uploading", async () => {
     await (await markSubject())(NOTE);
     expect(revalidatePath).toHaveBeenCalledWith("/");
+  });
+});
+
+describe("triggerTranscription", () => {
+  const noteRow = {
+    id: NOTE,
+    user_id: USER,
+    audio_storage_path: `${USER}/${NOTE}`,
+    audio_duration_seconds: 60,
+    updated_at: "2026-09-01T00:00:00Z",
+  };
+
+  async function trigger() {
+    return (await import("@/app/notes/actions")).triggerTranscription;
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    scheduled.length = 0;
+    process.env.GEMINI_API_KEY = "not-a-real-key";
+    getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    maybeSingle.mockResolvedValue({ data: noteRow, error: null });
+    objectExists.mockResolvedValue(true);
+    claim.mockResolvedValue(true);
+  });
+
+  it("refuses when there is no session", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect((await trigger())(NOTE)).rejects.toThrow(/not signed in/i);
+    expect(claim).not.toHaveBeenCalled();
+  });
+
+  it("reports 'not-found' for a note RLS does not show this user", async () => {
+    // RLS turns somebody else's note into an empty result, not an error. It
+    // must read the same as a note that does not exist.
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+    await expect((await trigger())(NOTE)).resolves.toBe("not-found");
+    expect(claim).not.toHaveBeenCalled();
+  });
+
+  it("claims 'uploading' -> 'analyzing' and schedules the transcription", async () => {
+    await expect((await trigger())(NOTE)).resolves.toBe("started");
+    expect(claim).toHaveBeenCalledWith(NOTE, "uploading", "analyzing");
+    expect(scheduled).toHaveLength(1);
+  });
+
+  it("does NOT gate on age — a row hours old still claims", async () => {
+    maybeSingle.mockResolvedValue({
+      data: { ...noteRow, updated_at: "2020-01-01T00:00:00Z" },
+      error: null,
+    });
+    await expect((await trigger())(NOTE)).resolves.toBe("started");
+    expect(claim).toHaveBeenCalledWith(NOTE, "uploading", "analyzing");
+  });
+
+  it("schedules NOTHING when the claim matched zero rows", async () => {
+    // The cost guarantee: a lost race must not reach Gemini.
+    claim.mockResolvedValue(false);
+    await expect((await trigger())(NOTE)).resolves.toBe("not-claimed");
+    expect(scheduled).toHaveLength(0);
+    expect(transcribe).not.toHaveBeenCalled();
+  });
+
+  it("fails the row with no Gemini call when the object never landed", async () => {
+    objectExists.mockResolvedValue(false);
+    await expect((await trigger())(NOTE)).resolves.toBe("no-audio");
+    expect(claim).toHaveBeenCalledWith(NOTE, "uploading", "failed");
+    expect(scheduled).toHaveLength(0);
+    expect(transcribe).not.toHaveBeenCalled();
+  });
+
+  it("never reads the secret key", async () => {
+    // The authenticated cookie client, full stop. RLS supplies the owner.
+    // The prose above the action names the variable, so this looks for the
+    // READ rather than the mention; project-conventions.test.ts holds the
+    // whole-tree guard.
+    const source = await import("node:fs").then((fs) =>
+      fs.readFileSync("app/notes/actions.ts", "utf8"),
+    );
+    expect(source).not.toContain("process.env.SUPABASE_SECRET_KEY");
   });
 });

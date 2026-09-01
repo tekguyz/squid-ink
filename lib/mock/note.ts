@@ -22,6 +22,9 @@ export const mockNote: Note = {
   id: "pilot-pricing-rollout",
   title: "Pilot pricing & rollout",
   meta: "Wed 26 Aug 2026 · 41 min · Northwind Health",
+  // A finished note: the fixture renders a full transcript, so the Transcribe
+  // button is deliberately absent from every component test that uses it.
+  processingStatus: "completed",
   // No object behind this fixture — it is a test fixture, not a recording. The
   // player renders nothing for a null path, which is what component tests want.
   audioStoragePath: null,

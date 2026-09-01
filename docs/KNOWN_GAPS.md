@@ -1116,43 +1116,116 @@ Moving to Pro makes the schedule a one-line change in `vercel.json` and lets
 before changing either — `docs/DEPLOYMENT.md` holds the numbers and the command
 that produced them.
 
-### The cron sweep is the ONLY transcription trigger — there is no on-demand path (recorded 2026-08-31)
+### Framed controls sit at ~1.4:1 against the sheet (recorded 2026-09-01)
 
-Nothing in the application calls `/api/cron/transcribe`. Verified by grep: the
-only non-test references to the path are in `lib/supabase/session.ts`, which
-exempts it from the session middleware. Stopping a recording uploads the audio,
-writes the note row at `'uploading'`, and stops there.
+**Open. Deliberately not fixed, because the fix is an app-wide token change and
+the owner has not been asked.**
 
-**This inverts the design of the v1 app** (Crispy Bacon; its KB docs were read
-on 2026-08-31 and are not kept in this tree). There,
-`services/geminiService.ts` ran in the browser and transcription began when the
-recording ended; the Netlify functions handled only chat, calendar, Drive and
-Stripe. v1's cron-equivalent was `INTELLIGENCE.md`'s "Note Recovery — Health
-Check", a net for stuck notes. **This build shipped the net and not the main
-path**, so the net is currently doing the main job.
+Every framed surface in this app draws its 1px edge with `rule-2`. Measured
+in-page on 2026-09-01, both themes, against the sheet behind it:
 
-The visible symptom is a throughput figure that was never meant to be a user
-quota: `MAX_TRANSCRIPTIONS_PER_RUN = 3` bounds one sweep so it fits inside the
-300 s function ceiling. With Hobby's once-a-day cron that reads as "three notes
-a day". Recording itself is unbounded, and no audio is lost — surplus rows stay
-at `'uploading'` and are claimed by the next sweep.
+| | light | dark |
+|---|---|---|
+| `border-rule-2` vs `paper` | **1.40:1** | **1.47:1** |
+| `border-rule` vs `paper` | ~1.45:1 | ~1.35:1 |
 
-Two ways out, neither chosen, and the choice is the owner's:
+WCAG 1.4.11 asks 3:1 for "visual information **required** to identify user
+interface components". Nothing here reaches it, and nothing in the existing
+neutral palette does either short of `faint` (~2.4 / ~2.9) or `muted`
+(~5.5 / ~5.9) — the latter being a visibly heavier line than the design draws
+anywhere today.
 
-- **A per-note route the recorder calls on stop.** One note per invocation, its
-  own 300 s, no per-run cap. `gemini-client.ts`, `persist-result.ts`,
-  `transcript.ts` and `diarization-policy.ts` are already independent of
-  `sweep.ts`, so this is wiring rather than a rewrite. It needs a decision on
-  what the UI shows while a note transcribes.
-- **A deliberate "Transcribe" action the user presses.** Same route, user-timed
-  rather than automatic. The owner has said immediate transcription is **not**
-  required, which keeps this live.
+**Why this is recorded rather than failed.** The word in 1.4.11 is *required*.
+Each of these controls carries a text label well clear of 4.5:1 — the Transcribe
+button's is 5.4:1, the audio player's the same, the pill labels 5.5–9.3:1 — so
+the label, not the edge, is what identifies the control. On that reading the
+success criterion is met and the 1.4:1 edge is a **discoverability** concern,
+which is exactly how `/impeccable critique` raised it on 2026-09-01: in dark
+theme the Transcribe button's fill was *identical* to the sheet, leaving the
+hairline as the only evidence a control was there at all. That half was fixed
+— `bg-canvas` → `bg-raised` in both `transcribe-button.tsx` and
+`audio-player.tsx` — and the edge was left alone.
 
-Either way the cron returns to being the net, which is what it was written as.
+**Three ways out, none chosen, and the choice is the owner's:**
 
-**Not a bug in what shipped.** Track 3's scope was the sweep, and the sweep
-works. This is a missing sibling, recorded here so it is not rediscovered as a
-defect.
+- **Raise `--rule-2` itself** in `app/globals.css`. One edit, reaches every
+  framed surface at once, and changes the look of the whole application — the
+  insight cards, the persona rail, the transcript pane. A DESIGN.md-level
+  decision, not a component fix.
+- **Give interactive controls their own boundary token**, leaving decorative
+  frames on `rule-2`. Defensible — a control and a container are not the same
+  object — but it is a new token plus a sweep of every button in the tree
+  (`transcribe-button`, `audio-player`, `persona-rail`, `theme-toggle`,
+  `record-hud`), and half-applying it is worse than not starting.
+- **Leave it.** The labels carry identification, the fills now carry presence,
+  and the hairline stays the quiet line the design was drawn with.
+
+Do **not** fix this for one component in isolation. A single button with a
+heavier edge than everything around it is a worse outcome than the measurement
+that prompted it.
+
+### RESOLVED 2026-09-01 — the cron sweep is no longer the only transcription trigger
+
+**Shipped: the second of the two options below — a deliberate "Transcribe"
+action the user presses.** The first option, a route the recorder calls on
+stop, was *not* built: the owner has said immediate transcription is not
+required, and no automatic trigger was added anywhere. There is also
+deliberately **no retry for a `'failed'` note** — `'failed'` stays terminal,
+and `components/note-detail/transcribe-button.tsx` returns `null` rather than a
+disabled control so there is no element to re-enable.
+
+What shipped, and where:
+
+- `triggerTranscription(noteId)` in `app/notes/actions.ts` — a Server Action,
+  not a route. It runs as the signed-in user through the cookie client; RLS
+  confines it to that user's own note, so a request for somebody else's row
+  returns zero claimed rows exactly as a status mismatch does.
+  `app/api/cron/transcribe/route.ts` is still the only shipped file that reads
+  `SUPABASE_SECRET_KEY`, and a convention test now asserts that.
+- `claimNoteForTranscription` in `lib/transcription/transcribe-note.ts` — the
+  per-row unit extracted out of the sweep's loop. **One claim implementation,
+  two callers.** A zero-row claim short-circuits before any download and before
+  any Gemini call, which was verified by counting the calls rather than by
+  reading the code.
+- `lib/transcription/supabase-ports.ts` — the Supabase `SweepPorts` factory,
+  moved out of the cron route so both callers build the claim from the same
+  code. The route's `CRON_SECRET` gate, `maxDuration` and `GET` body are
+  unchanged; it still runs daily and is still the net.
+- `components/dashboard/status-pill.tsx` on `app/page.tsx` — the list showed a
+  title and a date, so an `'uploading'` or `'failed'` note looked exactly like
+  a finished one.
+
+Two things deliberately NOT built: Supabase Realtime, and any age check on the
+manual path. The button polls one row for at most ten minutes after the user's
+own click (or on finding the note already `'analyzing'`, since the cron or
+another tab may have claimed it) and then stops with a neutral message. The
+sweep's one-hour staleness threshold exists so unattended reconciliation does
+not false-fail an upload still in flight; a user pressing a button has already
+decided the note is ready, so the manual path claims by id with no age gate —
+object existence is still what actually guards the Gemini call.
+
+`MAX_TRANSCRIPTIONS_PER_RUN = 3` is unchanged and no longer reads as a quota:
+it bounds one unattended sweep inside the 300 s function ceiling, and a user
+who wants a note now presses the button.
+
+Proof: `node scripts/verify-manual-transcribe.mjs` (imports the shipped claim
+through a Node resolve hook and counts Gemini calls across a repeat press, two
+concurrent claims and a losing caller's retry). End to end in a browser on
+2026-09-01: note `e6bb9163-4d68-42a3-b85b-9cf5f88f444b`, recorded through the
+recorder, `'uploading'` -> `'completed'`, transcript rendered after
+`router.refresh()`.
+
+**The original entry, kept for the record (recorded 2026-08-31).** Nothing in
+the application called `/api/cron/transcribe`; stopping a recording uploaded
+the audio, wrote the note row at `'uploading'`, and stopped there. That
+inverted the design of the v1 app (Crispy Bacon), where `geminiService.ts` ran
+in the browser and transcription began when the recording ended, and v1's
+cron-equivalent was only a health check for stuck notes. **This build shipped
+the net and not the main path**, so the net was doing the main job. Two ways
+out were recorded, and the owner chose the second:
+
+- A per-note route the recorder calls on stop. **Not built.**
+- A deliberate "Transcribe" action the user presses. **Built, 2026-09-01.**
 
 ### Nothing renders a live transcript while recording (recorded 2026-08-31)
 
