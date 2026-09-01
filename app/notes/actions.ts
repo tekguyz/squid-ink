@@ -197,7 +197,21 @@ export async function triggerTranscription(
   if (outcome !== "claimed") return "not-claimed";
 
   after(async () => {
-    await transcribeClaimedNote(ports, row);
+    // transcribeClaimedNote handles its own failures and writes 'failed'
+    // itself, so this catch should never fire. It exists because the response
+    // has already been sent: a rejection here is an UNHANDLED one, invisible
+    // to the caller and to the browser, and it would leave the row at
+    // 'analyzing' for the staleness sweep to fail an hour later with nothing
+    // in the log saying why. There is no error column at this scale — the
+    // Vercel function log is where a failure is read, so it has to reach it.
+    try {
+      await transcribeClaimedNote(ports, row);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error(
+        `[transcribe] note ${noteId}: deferred transcription threw — ${reason}`,
+      );
+    }
   });
 
   return "started";
