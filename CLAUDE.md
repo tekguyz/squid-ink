@@ -268,8 +268,32 @@ its authorization. An unset secret refuses everything rather than failing open.
 and a cron may fire only once per day. Re-measure the plan before raising
 either — `docs/DEPLOYMENT.md` holds the numbers and how they were measured.
 
+**Two triggers, one claim — added 2026-09-01.** The daily cron is no longer the
+only way a note transcribes. `triggerTranscription(noteId)` in
+`app/notes/actions.ts` is a Server Action the user reaches through the
+Transcribe button on Note Detail. It and the sweep both call
+`claimNoteForTranscription` in `lib/transcription/transcribe-note.ts`, which is
+the only place the guarded `UPDATE ... where processing_status = 'uploading'`
+is written; `lib/transcription/supabase-ports.ts` holds the one Supabase
+implementation of it, moved out of the cron route for exactly this reason. A
+zero-row claim returns before any download and any Gemini call.
+
+The manual path has **no age check** — staleness is a sweep-only concern and
+reaches the shared unit only as `failOnMissingObject`, which the action always
+passes `true`. Object existence still gates the call, still through `list()`.
+
+**Secret-key usage did not change.** The action runs on the authenticated
+cookie client and RLS supplies the owner; `app/api/cron/transcribe/route.ts` is
+still the only shipped file that reads `SUPABASE_SECRET_KEY`, and
+`project-conventions.test.ts` now fails the build if a second one appears.
+There is **no retry for `'failed'`** — the button is absent from the DOM for
+`'failed'` and `'completed'`, not disabled.
+
     npm run dev                                       # in one shell, then:
     node scripts/verify-transcription-pipeline.mjs    # live end-to-end proof
+    node scripts/verify-manual-transcribe.mjs         # no dev server needed:
+                                                      # double-spend proof,
+                                                      # Gemini calls counted
 
 That script drives the **real route over HTTP** rather than re-implementing the
 sweep, synthesises its own speech with Windows SAPI so the transcript assertion

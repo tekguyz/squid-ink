@@ -1116,43 +1116,68 @@ Moving to Pro makes the schedule a one-line change in `vercel.json` and lets
 before changing either — `docs/DEPLOYMENT.md` holds the numbers and the command
 that produced them.
 
-### The cron sweep is the ONLY transcription trigger — there is no on-demand path (recorded 2026-08-31)
+### RESOLVED 2026-09-01 — the cron sweep is no longer the only transcription trigger
 
-Nothing in the application calls `/api/cron/transcribe`. Verified by grep: the
-only non-test references to the path are in `lib/supabase/session.ts`, which
-exempts it from the session middleware. Stopping a recording uploads the audio,
-writes the note row at `'uploading'`, and stops there.
+**Shipped: the second of the two options below — a deliberate "Transcribe"
+action the user presses.** The first option, a route the recorder calls on
+stop, was *not* built: the owner has said immediate transcription is not
+required, and no automatic trigger was added anywhere. There is also
+deliberately **no retry for a `'failed'` note** — `'failed'` stays terminal,
+and `components/note-detail/transcribe-button.tsx` returns `null` rather than a
+disabled control so there is no element to re-enable.
 
-**This inverts the design of the v1 app** (Crispy Bacon; its KB docs were read
-on 2026-08-31 and are not kept in this tree). There,
-`services/geminiService.ts` ran in the browser and transcription began when the
-recording ended; the Netlify functions handled only chat, calendar, Drive and
-Stripe. v1's cron-equivalent was `INTELLIGENCE.md`'s "Note Recovery — Health
-Check", a net for stuck notes. **This build shipped the net and not the main
-path**, so the net is currently doing the main job.
+What shipped, and where:
 
-The visible symptom is a throughput figure that was never meant to be a user
-quota: `MAX_TRANSCRIPTIONS_PER_RUN = 3` bounds one sweep so it fits inside the
-300 s function ceiling. With Hobby's once-a-day cron that reads as "three notes
-a day". Recording itself is unbounded, and no audio is lost — surplus rows stay
-at `'uploading'` and are claimed by the next sweep.
+- `triggerTranscription(noteId)` in `app/notes/actions.ts` — a Server Action,
+  not a route. It runs as the signed-in user through the cookie client; RLS
+  confines it to that user's own note, so a request for somebody else's row
+  returns zero claimed rows exactly as a status mismatch does.
+  `app/api/cron/transcribe/route.ts` is still the only shipped file that reads
+  `SUPABASE_SECRET_KEY`, and a convention test now asserts that.
+- `claimNoteForTranscription` in `lib/transcription/transcribe-note.ts` — the
+  per-row unit extracted out of the sweep's loop. **One claim implementation,
+  two callers.** A zero-row claim short-circuits before any download and before
+  any Gemini call, which was verified by counting the calls rather than by
+  reading the code.
+- `lib/transcription/supabase-ports.ts` — the Supabase `SweepPorts` factory,
+  moved out of the cron route so both callers build the claim from the same
+  code. The route's `CRON_SECRET` gate, `maxDuration` and `GET` body are
+  unchanged; it still runs daily and is still the net.
+- `components/dashboard/status-pill.tsx` on `app/page.tsx` — the list showed a
+  title and a date, so an `'uploading'` or `'failed'` note looked exactly like
+  a finished one.
 
-Two ways out, neither chosen, and the choice is the owner's:
+Two things deliberately NOT built: Supabase Realtime, and any age check on the
+manual path. The button polls one row for at most ten minutes after the user's
+own click (or on finding the note already `'analyzing'`, since the cron or
+another tab may have claimed it) and then stops with a neutral message. The
+sweep's one-hour staleness threshold exists so unattended reconciliation does
+not false-fail an upload still in flight; a user pressing a button has already
+decided the note is ready, so the manual path claims by id with no age gate —
+object existence is still what actually guards the Gemini call.
 
-- **A per-note route the recorder calls on stop.** One note per invocation, its
-  own 300 s, no per-run cap. `gemini-client.ts`, `persist-result.ts`,
-  `transcript.ts` and `diarization-policy.ts` are already independent of
-  `sweep.ts`, so this is wiring rather than a rewrite. It needs a decision on
-  what the UI shows while a note transcribes.
-- **A deliberate "Transcribe" action the user presses.** Same route, user-timed
-  rather than automatic. The owner has said immediate transcription is **not**
-  required, which keeps this live.
+`MAX_TRANSCRIPTIONS_PER_RUN = 3` is unchanged and no longer reads as a quota:
+it bounds one unattended sweep inside the 300 s function ceiling, and a user
+who wants a note now presses the button.
 
-Either way the cron returns to being the net, which is what it was written as.
+Proof: `node scripts/verify-manual-transcribe.mjs` (imports the shipped claim
+through a Node resolve hook and counts Gemini calls across a repeat press, two
+concurrent claims and a losing caller's retry). End to end in a browser on
+2026-09-01: note `e6bb9163-4d68-42a3-b85b-9cf5f88f444b`, recorded through the
+recorder, `'uploading'` -> `'completed'`, transcript rendered after
+`router.refresh()`.
 
-**Not a bug in what shipped.** Track 3's scope was the sweep, and the sweep
-works. This is a missing sibling, recorded here so it is not rediscovered as a
-defect.
+**The original entry, kept for the record (recorded 2026-08-31).** Nothing in
+the application called `/api/cron/transcribe`; stopping a recording uploaded
+the audio, wrote the note row at `'uploading'`, and stopped there. That
+inverted the design of the v1 app (Crispy Bacon), where `geminiService.ts` ran
+in the browser and transcription began when the recording ended, and v1's
+cron-equivalent was only a health check for stuck notes. **This build shipped
+the net and not the main path**, so the net was doing the main job. Two ways
+out were recorded, and the owner chose the second:
+
+- A per-note route the recorder calls on stop. **Not built.**
+- A deliberate "Transcribe" action the user presses. **Built, 2026-09-01.**
 
 ### Nothing renders a live transcript while recording (recorded 2026-08-31)
 
