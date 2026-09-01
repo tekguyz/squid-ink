@@ -33,6 +33,23 @@ describe("project conventions", () => {
     expect(sourceFiles().length).toBeGreaterThan(0);
   });
 
+  it("actually reaches the files added on 2026-09-01", () => {
+    // "The guard covers it" is otherwise an assertion about a walk nobody
+    // watched. These two are the manual-transcription trigger's new
+    // components; if the walk ever stops reaching them, this fails rather
+    // than the colour rule silently going quiet.
+    const scanned = sourceFiles();
+    for (const file of [
+      path.join("components", "note-detail", "transcribe-button.tsx"),
+      path.join("components", "dashboard", "status-pill.tsx"),
+      path.join("lib", "transcription", "transcribe-note.ts"),
+      path.join("lib", "transcription", "supabase-ports.ts"),
+      path.join("lib", "notes", "transcription-status.ts"),
+    ]) {
+      expect(scanned).toContain(file);
+    }
+  });
+
   it("contains no inline colour literals — every colour is a token", () => {
     const offenders = sourceFiles().filter((f) =>
       /oklch\(|#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/.test(read(f)),

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { listNotes } from "@/lib/notes/list-notes";
+import { StatusPill } from "@/components/dashboard/status-pill";
 
 /**
  * THROWAWAY SCAFFOLD — not a finished screen, and not the Dashboard.
@@ -36,7 +37,10 @@ export default async function Home() {
             <Link href={`/notes/${note.id}`} className="font-body text-ink block underline">
               {note.title ?? "Untitled"}
             </Link>
-            <span className="font-mono text-ink-2 block text-xs">{note.createdAt}</span>
+            <span className="mt-[3px] flex items-center gap-[7px]">
+              <span className="font-mono text-ink-2 text-xs">{note.createdAt}</span>
+              <StatusPill status={note.processingStatus} />
+            </span>
           </li>
         ))}
       </ul>
