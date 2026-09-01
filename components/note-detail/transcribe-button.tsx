@@ -14,14 +14,20 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  * as "a deliberate Transcribe action the user presses", and the one the owner
  * chose over transcribing automatically when a recording stops.
  *
- * ELIGIBILITY IS A RENDER CONDITION, NOT A DISABLED STATE. For a 'completed' or
- * 'failed' note this component returns null: there is no element, nothing to
- * focus, nothing for a screen reader to read out and nothing to enable from the
- * console. That matters most for 'failed', which is TERMINAL by design — a
- * retry affordance is exactly the thing this build decided not to have, and an
- * element that merely looks unavailable is one CSS change away from being one.
+ * ELIGIBILITY IS A RENDER CONDITION, NOT A DISABLED STATE. Outside 'uploading'
+ * and 'analyzing' there is no button in the DOM at all: nothing to focus,
+ * nothing for a screen reader to reach, nothing to re-enable from the console.
+ * That matters most for 'failed', which is TERMINAL by design — a retry
+ * affordance is exactly what this build decided not to have, and an element
+ * that merely looks unavailable is one CSS change away from being one.
  * 'local' is excluded too: no upload has started, so there is no object and the
  * claim would only ever match zero rows.
+ *
+ * 'failed' still SAYS so, in prose with no control attached. "No retry" was the
+ * decision; "no status" was not, and a control silently ceasing to exist is not
+ * how the outcome of a press gets reported. 'completed' and 'local' render
+ * nothing — the transcript itself is the report for one, and the other is a
+ * state no shipped write path produces.
  *
  * 'analyzing' polls on MOUNT, with no click. The cron sweep or another tab may
  * have claimed the row, and the reader should see that rather than a button
@@ -32,11 +38,17 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  *  that the reader does not wonder whether it hung. */
 export const POLL_INTERVAL_MS = 5_000;
 
-/** 120 ticks — ten minutes, comfortably past the 300 s function ceiling both
- *  paths run under. Past it the poll stops and says so. This is a client-side
- *  courtesy: the sweep's own staleness handling is what actually reconciles a
- *  transcription that died, an hour later. */
-export const POLL_TICK_LIMIT = 120;
+/** Ten minutes, comfortably past the 300 s function ceiling both paths run
+ *  under. Past it the poll stops and says so. This is a client-side courtesy:
+ *  the sweep's own staleness handling is what actually reconciles a
+ *  transcription that died, an hour later.
+ *
+ *  MEASURED AGAINST THE CLOCK, not by counting ticks. Chrome throttles
+ *  setInterval in a backgrounded tab to roughly once a minute, so 120 ticks is
+ *  ten minutes only in a foreground tab and could stretch past an hour in a
+ *  background one — the cap would have quietly meant something different
+ *  depending on whether the reader was looking at it. */
+export const POLL_LIMIT_MS = 10 * 60 * 1000;
 
 /** The recorder HUD's action-button voice, matching audio-player.tsx on the
  *  same meta line: 9px mono, uppercase, square border, zero radius.
@@ -82,8 +94,6 @@ const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]
 const NOTICE =
   "bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice";
 
-const STANDALONE_NOTICE = `${ROW} block`;
-
 /** Every outcome the action can report other than "started". Each is a fact
  *  about someone else's action, never an invitation to press again. Full
  *  sentences, full stops — they are read, not scanned. */
@@ -110,18 +120,20 @@ export function TranscribeButton({
   const working = eligible && (status === "analyzing" || requested);
   const polling = working && !gaveUp;
 
-  // The interval's whole lifetime is this effect. It is cleared on unmount, on
-  // reaching a terminal state, and at the tick cap — navigating away from the
-  // note leaves nothing running.
+  // The interval's whole lifetime is this effect. It is cleared on unmount and
+  // at the time cap — navigating away from the note leaves nothing running.
+  //
+  // Date.now() is read here, in an effect, never in a render path: CLAUDE.md
+  // bans the latter because it makes a render non-deterministic, and neither
+  // reason applies to a side effect measuring its own elapsed time.
   useEffect(() => {
     if (!polling) return;
 
     let cancelled = false;
-    let ticks = 0;
+    const startedAt = Date.now();
 
     const timer = setInterval(() => {
-      ticks += 1;
-      if (ticks > POLL_TICK_LIMIT) {
+      if (Date.now() - startedAt > POLL_LIMIT_MS) {
         clearInterval(timer);
         if (!cancelled) setGaveUp(true);
         return;
@@ -145,7 +157,7 @@ export function TranscribeButton({
           // refresh carrying the terminal status causes: `eligible` goes
           // false, the component returns null, and the cleanup below runs.
           // Until that happens, asking again is the correct behaviour, and
-          // POLL_TICK_LIMIT still bounds it.
+          // POLL_LIMIT_MS still bounds it.
           router.refresh();
         })
         .catch((error: unknown) => {
@@ -200,11 +212,11 @@ export function TranscribeButton({
   // with no control attached. The button stays absent.
   if (status === "failed") {
     return (
-      <p className={STANDALONE_NOTICE}>
-        <span className={NOTICE}>
+      <div className={ROW}>
+        <p className={NOTICE}>
           This recording could not be transcribed. Record again to try.
-        </span>
-      </p>
+        </p>
+      </div>
     );
   }
 

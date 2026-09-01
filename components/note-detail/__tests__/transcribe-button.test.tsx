@@ -3,7 +3,7 @@ import { render, screen, act, cleanup, fireEvent } from "@testing-library/react"
 import {
   TranscribeButton,
   POLL_INTERVAL_MS,
-  POLL_TICK_LIMIT,
+  POLL_LIMIT_MS,
 } from "@/components/note-detail/transcribe-button";
 
 const refresh = vi.fn();
@@ -222,7 +222,9 @@ describe("TranscribeButton — an 'analyzing' note", () => {
   it("gives up with a neutral message rather than polling forever", async () => {
     render(<TranscribeButton noteId={NOTE} status="analyzing" />);
 
-    await tick(POLL_TICK_LIMIT + 1);
+    // One tick past the wall-clock cap. vi's fake timers move Date.now()
+    // with the scheduler, so this is the real elapsed bound, not a tick count.
+    await tick(POLL_LIMIT_MS / POLL_INTERVAL_MS + 1);
 
     expect(screen.getByText(/refresh to check/i)).toBeInTheDocument();
     // The message shares the button's live region rather than replacing the
