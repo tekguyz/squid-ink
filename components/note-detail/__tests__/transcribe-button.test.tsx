@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, act, cleanup, fireEvent } from "@testing-library/react";
+import { TranscribeButton } from "@/components/note-detail/transcribe-button";
 import {
-  TranscribeButton,
   POLL_INTERVAL_MS,
   POLL_LIMIT_MS,
-} from "@/components/note-detail/transcribe-button";
+} from "@/components/note-detail/use-transcription-poll";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));

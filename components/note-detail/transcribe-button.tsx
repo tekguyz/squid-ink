@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   triggerTranscription,
   type TranscriptionTrigger,
 } from "@/app/notes/actions/transcription";
-import { readProcessingStatus } from "@/lib/notes/transcription-status";
+import { useTranscriptionPoll } from "@/components/note-detail/use-transcription-poll";
 import type { ProcessingStatus } from "@/lib/notes/view-types";
 
 /**
@@ -33,22 +33,6 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  * have claimed the row, and the reader should see that rather than a button
  * that would lose the race.
  */
-
-/** Five seconds is slower than a transcription ever finishes in and fast enough
- *  that the reader does not wonder whether it hung. */
-export const POLL_INTERVAL_MS = 5_000;
-
-/** Ten minutes, comfortably past the 300 s function ceiling both paths run
- *  under. Past it the poll stops and says so. This is a client-side courtesy:
- *  the sweep's own staleness handling is what actually reconciles a
- *  transcription that died, an hour later.
- *
- *  MEASURED AGAINST THE CLOCK, not by counting ticks. Chrome throttles
- *  setInterval in a backgrounded tab to roughly once a minute, so 120 ticks is
- *  ten minutes only in a foreground tab and could stretch past an hour in a
- *  background one — the cap would have quietly meant something different
- *  depending on whether the reader was looking at it. */
-export const POLL_LIMIT_MS = 10 * 60 * 1000;
 
 /** The recorder HUD's action-button voice, matching audio-player.tsx on the
  *  same meta line: 9px mono, uppercase, square border, zero radius.
@@ -112,66 +96,22 @@ export function TranscribeButton({
 }) {
   const router = useRouter();
   const [requested, setRequested] = useState(false);
-  const [gaveUp, setGaveUp] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const eligible = status === "uploading" || status === "analyzing";
   const working = eligible && (status === "analyzing" || requested);
-  const polling = working && !gaveUp;
 
-  // The interval's whole lifetime is this effect. It is cleared on unmount and
-  // at the time cap — navigating away from the note leaves nothing running.
+  // `working`, not `working && !gaveUp`. The hook stops itself at its own time
+  // cap, so subtracting gaveUp here would only restate that — and it cannot be
+  // read before the hook that produces it anyway.
   //
-  // Date.now() is read here, in an effect, never in a render path: CLAUDE.md
-  // bans the latter because it makes a render non-deterministic, and neither
-  // reason applies to a side effect measuring its own elapsed time.
-  useEffect(() => {
-    if (!polling) return;
-
-    let cancelled = false;
-    const startedAt = Date.now();
-
-    const timer = setInterval(() => {
-      if (Date.now() - startedAt > POLL_LIMIT_MS) {
-        clearInterval(timer);
-        if (!cancelled) setGaveUp(true);
-        return;
-      }
-
-      void readProcessingStatus(noteId)
-        .then((next) => {
-          if (cancelled || next === null) return;
-          if (next !== "completed" && next !== "failed") return;
-
-          // The transcript pane is a Server Component reading through
-          // lib/notes/get-note.ts. Refresh it rather than building a second,
-          // client-side path to the same rows.
-          //
-          // DELIBERATELY NOT clearInterval HERE. Clearing on the first
-          // terminal reading left a dead poll whenever the refresh came back
-          // still saying 'uploading' — the effect's dependencies had not
-          // changed, so nothing restarted it, and the button sat on
-          // "Transcribing…" for the rest of the session. The poll's real stop
-          // condition is this component unmounting, which is exactly what a
-          // refresh carrying the terminal status causes: `eligible` goes
-          // false, the component returns null, and the cleanup below runs.
-          // Until that happens, asking again is the correct behaviour, and
-          // POLL_LIMIT_MS still bounds it.
-          router.refresh();
-        })
-        .catch((error: unknown) => {
-          // A broken poll must not read as "still working". Log it and let the
-          // tick cap end the wait with its neutral message.
-          console.error("Could not read the transcription status:", error);
-        });
-    }, POLL_INTERVAL_MS);
-
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [polling, noteId, router]);
+  // The transcript pane is a Server Component reading through
+  // lib/notes/get-note.ts. Refresh it rather than building a second,
+  // client-side path to the same rows.
+  const { gaveUp } = useTranscriptionPoll(noteId, working, () =>
+    router.refresh(),
+  );
 
   const start = useCallback(() => {
     // aria-disabled does not stop a click the way the native attribute does,
