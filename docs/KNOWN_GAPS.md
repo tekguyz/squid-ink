@@ -700,6 +700,19 @@ entry gains no corroboration from them and remains a single unconfirmed sighting
 The confirming test is unchanged: send a link, do not open it, then check whether
 it is already spent.
 
+**RESOLVED 2026-09-01.** Owner-attributed to test procedure, not mail prefetch.
+Repeated owner testing traced the `otp_expired`-before-open pattern to
+multi-browser test handling — requesting a sign-in link in one browser session
+and opening or re-sharing it in another, plus other test-procedure artifacts.
+This is a distinct failure mode from mail-path prefetching, and is the same
+class of error already documented in "Auth — verified 2026-08-30" (PKCE
+code-verifier mismatch across browsers, though that entry's specific error was
+`pkce_code_verifier_not_found`, not `otp_expired`). No corroborating sighting
+of genuine mail-path prefetching exists. This gap is closed; magic-link is not
+considered unreliable on this basis. Any future report of a link expiring
+before being opened should first rule out cross-browser/cross-session link
+handling before this theory is reopened.
+
 ## The repo has no record that it is deployed (recorded 2026-08-30)
 
 **RESOLVED 2026-08-30** by `docs/DEPLOYMENT.md` — see the resolution below.
