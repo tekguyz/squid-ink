@@ -12,6 +12,7 @@ import { PersonaRail } from "./persona-rail";
 import { SpeakerInsights } from "./speaker-insights";
 import { SummarySection } from "./summary-section";
 import { TakeawaysSection } from "./takeaways-section";
+import { TranscribeButton } from "./transcribe-button";
 import { TranscriptPane } from "./transcript-pane";
 
 /** Segment 8 is the design's default selection. */
@@ -61,6 +62,10 @@ export function NoteDetailShell({ note }: { note: Note }) {
             reader looks for facts about the recording itself. Renders nothing
             when the note has no object. */}
         <AudioPlayer storagePath={note.audioStoragePath} />
+        {/* Directly under the transport, because both are facts about the
+            recording rather than about its content. Renders nothing once the
+            note is 'completed' or 'failed' — see transcribe-button.tsx. */}
+        <TranscribeButton noteId={note.id} status={note.processingStatus} />
 
         <div className="min-h-0 flex-1 overflow-auto px-[26px]">
           <SummarySection

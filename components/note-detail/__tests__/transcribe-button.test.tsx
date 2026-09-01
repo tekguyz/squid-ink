@@ -1,0 +1,200 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, act, cleanup, fireEvent } from "@testing-library/react";
+import {
+  TranscribeButton,
+  POLL_INTERVAL_MS,
+  POLL_TICK_LIMIT,
+} from "@/components/note-detail/transcribe-button";
+
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+const triggerTranscription = vi.fn();
+vi.mock("@/app/notes/actions", () => ({
+  triggerTranscription: (...args: unknown[]) => triggerTranscription(...args),
+}));
+
+const readProcessingStatus = vi.fn();
+vi.mock("@/lib/notes/transcription-status", () => ({
+  readProcessingStatus: (...args: unknown[]) => readProcessingStatus(...args),
+}));
+
+const NOTE = "11111111-2222-3333-4444-555555555555";
+
+/** Advance the poll by whole ticks, flushing the promise each readProcessingStatus
+ *  returns. advanceTimersByTimeAsync alone is not enough — the .then() chain
+ *  inside the interval callback settles on a later microtask turn. */
+/** fireEvent, not userEvent: user-event schedules its own timers and
+ *  deadlocks against vi.useFakeTimers here. The click is the whole
+ *  interaction — there is no pointer path worth simulating. */
+async function press() {
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button"));
+  });
+}
+
+/** Let the transition's async body settle. findByText cannot be used here —
+ *  it polls on a real interval and deadlocks against the fake timers. */
+async function settle() {
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+async function tick(times = 1) {
+  for (let i = 0; i < times; i += 1) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    });
+  }
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.useFakeTimers();
+  triggerTranscription.mockResolvedValue("started");
+  readProcessingStatus.mockResolvedValue("uploading");
+});
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
+
+describe("TranscribeButton — when it exists at all", () => {
+  it("is ABSENT from the DOM for a completed note", () => {
+    const { container } = render(
+      <TranscribeButton noteId={NOTE} status="completed" />,
+    );
+    // Absent, not disabled and not hidden: there is nothing to press.
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("is ABSENT from the DOM for a failed note — 'failed' is terminal", () => {
+    // No retry affordance. This is the explicit design decision, not an
+    // oversight, and this test is what stops one being added by accident.
+    const { container } = render(
+      <TranscribeButton noteId={NOTE} status="failed" />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("is ABSENT for a note that never started uploading", () => {
+    const { container } = render(
+      <TranscribeButton noteId={NOTE} status="local" />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("offers a pressable Transcribe for an 'uploading' note", () => {
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    expect(screen.getByRole("button", { name: /transcribe/i })).toBeEnabled();
+  });
+});
+
+describe("TranscribeButton — pressing it", () => {
+  it("calls the Server Action with the note id", async () => {
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+
+    await press();
+
+    expect(triggerTranscription).toHaveBeenCalledWith(NOTE);
+  });
+
+  it("shows a working state and starts polling", async () => {
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+
+    await press();
+    expect(screen.getByRole("button")).toBeDisabled();
+
+    await tick();
+    expect(readProcessingStatus).toHaveBeenCalledWith(NOTE);
+  });
+
+  it("refreshes the server-rendered page when the note completes", async () => {
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+
+    await press();
+
+    readProcessingStatus.mockResolvedValue("completed");
+    await tick();
+
+    // router.refresh(), never a client-side fetch of the transcript: the
+    // transcript pane is a Server Component and must stay the only reader.
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("stops polling once the note reaches a terminal state", async () => {
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+
+    await press();
+    readProcessingStatus.mockResolvedValue("failed");
+    await tick();
+
+    const reads = readProcessingStatus.mock.calls.length;
+    await tick(3);
+    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+  });
+
+  it("says so, and stops working, when another caller already claimed the row", async () => {
+    triggerTranscription.mockResolvedValue("not-claimed");
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+
+    await press();
+
+    await settle();
+    expect(screen.getByText(/already/i)).toBeInTheDocument();
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("says the recording never landed when the object is missing", async () => {
+    triggerTranscription.mockResolvedValue("no-audio");
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+
+    await press();
+
+    await settle();
+    expect(screen.getByText(/never finished uploading/i)).toBeInTheDocument();
+  });
+});
+
+describe("TranscribeButton — an 'analyzing' note", () => {
+  it("polls on mount without a click, and offers nothing to press", async () => {
+    // The cron, or another tab, may have claimed it. The UI should reflect
+    // that without the user having been the one who triggered it.
+    render(<TranscribeButton noteId={NOTE} status="analyzing" />);
+
+    expect(screen.getByRole("button")).toBeDisabled();
+    expect(triggerTranscription).not.toHaveBeenCalled();
+
+    await tick();
+    expect(readProcessingStatus).toHaveBeenCalledWith(NOTE);
+  });
+
+  it("clears its interval on unmount", async () => {
+    const { unmount } = render(
+      <TranscribeButton noteId={NOTE} status="analyzing" />,
+    );
+
+    await tick();
+    const reads = readProcessingStatus.mock.calls.length;
+    expect(reads).toBeGreaterThan(0);
+
+    unmount();
+    await tick(3);
+    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+  });
+
+  it("gives up with a neutral message rather than polling forever", async () => {
+    render(<TranscribeButton noteId={NOTE} status="analyzing" />);
+
+    await tick(POLL_TICK_LIMIT + 1);
+
+    expect(screen.getByText(/refresh to check/i)).toBeInTheDocument();
+
+    const reads = readProcessingStatus.mock.calls.length;
+    await tick(3);
+    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+  });
+});
