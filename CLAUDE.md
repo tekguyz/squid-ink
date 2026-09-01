@@ -249,7 +249,8 @@ restarting the clock is correct, not a bug.
 Reconciliation is two-tier and **this track owns only tier 2**. Tier 1 — the
 in-session `'failed'` write on a caught upload error — belongs to the recorder
 and **shipped there on 2026-09-01** as `markUploadFailed()` in
-`app/notes/actions.ts`. The check constraint that unblocks it shipped here.
+`app/notes/actions/recording.ts`. The check constraint that unblocks it
+shipped here.
 
 Diarization is a pure function of duration in `diarization-policy.ts`: **28
 minutes**, a deliberate two-minute margin under Gemini's 30-minute diarized cap,
@@ -301,7 +302,8 @@ either — `docs/DEPLOYMENT.md` holds the numbers and how they were measured.
 
 **Two triggers, one claim — added 2026-09-01.** The daily cron is no longer the
 only way a note transcribes. `triggerTranscription(noteId)` in
-`app/notes/actions.ts` is a Server Action the user reaches through the
+`app/notes/actions/transcription.ts` is a Server Action the user reaches
+through the
 Transcribe button on Note Detail. It and the sweep both call
 `claimNoteForTranscription` in `lib/transcription/transcribe-note.ts`, which is
 the only place the guarded `UPDATE ... where processing_status = 'uploading'`
