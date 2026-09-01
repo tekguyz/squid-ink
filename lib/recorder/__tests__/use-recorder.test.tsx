@@ -56,6 +56,7 @@ function makeDeps() {
     stop: vi.fn(),
   };
   const createNote = vi.fn(async (_i: unknown) => ({ id: NOTE }));
+  const markUploadFailed = vi.fn(async (_noteId: string) => {});
 
   // Typed against the real StorageBucketLike result shapes, so `data: null`
   // with an error is assignable in the failure tests.
@@ -91,6 +92,7 @@ function makeDeps() {
     recorder,
     captureHandles,
     createNote,
+    markUploadFailed,
     bucketApi,
     deps: {
       capture: vi.fn(async () => captureHandles),
@@ -101,6 +103,7 @@ function makeDeps() {
       getUserId: async () => USER,
       bucket: () => bucketApi,
       createNote,
+      markUploadFailed,
     },
   };
 }
@@ -302,6 +305,99 @@ describe("useRecorder", () => {
     await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
     expect(d.bucketApi.upload).not.toHaveBeenCalled();
     expect((await listBackups()).map((b) => b.noteId)).toContain(NOTE);
+  });
+
+  // TIER 1 of the two-tier reconciliation. Tier 2 is the cron sweep, which on
+  // the Vercel Hobby daily schedule can take 24 h to notice. The client already
+  // knows, so it writes 'failed' itself.
+  it("marks the note failed immediately when the upload throws", async () => {
+    const d = makeDeps();
+    d.bucketApi.upload.mockResolvedValue({
+      data: null,
+      error: { message: "offline" },
+    });
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(d.markUploadFailed).toHaveBeenCalledTimes(1));
+    expect(d.markUploadFailed).toHaveBeenCalledWith(NOTE);
+  });
+
+  it("still fires the store's fail() so the HUD error pill is unchanged", async () => {
+    const d = makeDeps();
+    d.bucketApi.upload.mockResolvedValue({
+      data: null,
+      error: { message: "offline" },
+    });
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
+    expect(useRecorderStore.getState().errorMessage).toMatch(/offline/);
+  });
+
+  it("keeps the IndexedDB blob when it marks the note failed", async () => {
+    const d = makeDeps();
+    d.bucketApi.upload.mockResolvedValue({
+      data: null,
+      error: { message: "offline" },
+    });
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(d.markUploadFailed).toHaveBeenCalled());
+    expect((await listBackups()).map((b) => b.noteId)).toContain(NOTE);
+  });
+
+  it("does not mark a note failed on a successful upload", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("idle"));
+    expect(d.markUploadFailed).not.toHaveBeenCalled();
+  });
+
+  // The discriminator. Tier 1 fires on "the client caught an error", with no
+  // object-existence check behind it, so it must only cover the Storage
+  // transfer. If the row was never written there is nothing to fail, and
+  // failing on an unrelated throw would strand a note that uploaded fine —
+  // 'failed' is terminal and there is no retry path.
+  it("does not mark a note failed when the row was never written", async () => {
+    const d = makeDeps();
+    d.createNote.mockRejectedValue(new Error("row-level security"));
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
+    expect(d.markUploadFailed).not.toHaveBeenCalled();
+  });
+
+  it("does not mark a note failed when the session lookup throws", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() =>
+      useRecorder({
+        ...d.deps,
+        getUserId: async () => {
+          throw new Error("not signed in");
+        },
+      } as never),
+    );
+    await recordAndStop(result, d);
+    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
+    expect(d.markUploadFailed).not.toHaveBeenCalled();
+  });
+
+  // One write per failed attempt. If the write itself cannot land — an offline
+  // client is the obvious case — tier 2 is the net. Building a retry here would
+  // be a second reconciliation path for one failure.
+  it("writes once and does not retry when the failure write itself throws", async () => {
+    const d = makeDeps();
+    d.bucketApi.upload.mockResolvedValue({
+      data: null,
+      error: { message: "offline" },
+    });
+    d.markUploadFailed.mockRejectedValue(new Error("also offline"));
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
+    expect(d.markUploadFailed).toHaveBeenCalledTimes(1);
+    expect(useRecorderStore.getState().errorMessage).toMatch(/offline/);
   });
 
   it("re-acquires the mic when the device watcher reports it lost", async () => {

@@ -247,3 +247,20 @@ describe("persona assembly", () => {
     expect(note.spansLinked).toBe(2);
   });
 });
+
+/** The playback surface needs the raw path, not a formatted string — it is the
+ *  Storage key the audio is fetched with. */
+describe("audioStoragePath", () => {
+  it("carries the row's storage path through to the view model", () => {
+    const note = buildNoteViewModel(
+      { ...row, audio_storage_path: "user-1/note-1" },
+      [],
+      [],
+    );
+    expect(note.audioStoragePath).toBe("user-1/note-1");
+  });
+
+  it("stays null when the note has no object — the player renders nothing", () => {
+    expect(buildNoteViewModel(row, [], []).audioStoragePath).toBeNull();
+  });
+});

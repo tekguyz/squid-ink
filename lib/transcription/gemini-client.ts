@@ -63,42 +63,11 @@ export interface GeminiInteraction {
   steps?: GeminiStep[];
 }
 
-/** Default when nothing usable is on offer. WebM is what Chromium's
- *  MediaRecorder produces here, and codec.ts keeps it ahead of MP4. */
-const FALLBACK_AUDIO_MIME = "audio/webm";
-
-/** Pick the first candidate that actually names an audio container.
- *
- *  This lives here rather than in transcript.ts because the constraint is
- *  Gemini's: it answers `400 Unsupported MIME type` for anything that is not a
- *  media container. transcript.ts is the provider-neutral vocabulary and must
- *  not carry a provider's validation rule.
- *
- *  MEASURED 2026-08-31: Supabase Storage's download() hands back a Blob typed
- *  `application/octet-stream` regardless of what was uploaded, so the caller
- *  must prefer the object's own list() metadata and treat the Blob's type as a
- *  late fallback rather than as truth.
- *
- *  Parameters are stripped: MediaRecorder reports `audio/webm;codecs=opus`,
- *  and the container is the only part the transcription API wants.
- *
- *  `video/` is accepted on purpose. A MediaRecorder WebM holding nothing but
- *  audio is still labelled video/webm by some browsers, and refusing it would
- *  reject a perfectly transcribable file. */
-export function resolveAudioMimeType(
-  candidates: readonly (string | null | undefined)[],
-): string {
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-
-    const container = candidate.split(";")[0].trim().toLowerCase();
-    if (container.startsWith("audio/") || container.startsWith("video/")) {
-      return container;
-    }
-  }
-
-  return FALLBACK_AUDIO_MIME;
-}
+/** Moved to lib/audio/mime-type.ts on 2026-08-31 so the browser playback
+ *  helper can share it. Re-exported here because app/api/cron/transcribe
+ *  imports it from this module and that file is not this change's to touch —
+ *  and because this is still where a reader looks for Gemini's MIME rule. */
+export { resolveAudioMimeType } from "@/lib/audio/mime-type";
 
 /** Offsets arrive as protobuf duration strings — "0.450s". A bare number is
  *  accepted too, because the shape is documented loosely enough that it is

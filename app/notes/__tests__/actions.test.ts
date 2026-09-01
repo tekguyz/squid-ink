@@ -2,13 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const upsert = vi.fn();
 const insert = vi.fn();
+const update = vi.fn();
 const getUser = vi.fn();
 const revalidatePath = vi.fn();
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { getUser },
-    from: () => ({ upsert, insert }),
+    from: () => ({ upsert, insert, update }),
   }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath }));
@@ -108,5 +109,90 @@ describe("createRecordedNote", () => {
       error: { message: "violates row-level security policy" },
     });
     await expect((await subject())(input)).rejects.toThrow(/row-level security/);
+  });
+});
+
+/** The PostgREST builder is a thenable chain: .update().eq().eq().select().
+ *  Every .eq() returns the same object so the guard clauses can be read back
+ *  off one mock, and .select() is what actually resolves. */
+function makeUpdateChain(
+  result: { data: { id: string }[] | null; error: { message: string } | null } = {
+    data: [{ id: NOTE }],
+    error: null,
+  },
+) {
+  const chain = {
+    eq: vi.fn((_column: string, _value: unknown) => chain),
+    select: vi.fn(async () => result),
+  };
+  return chain;
+}
+
+async function markSubject() {
+  return (await import("@/app/notes/actions")).markUploadFailed;
+}
+
+/** Tier 1 of the two-tier reconciliation in docs/KNOWN_GAPS.md. Tier 2 — the
+ *  cron sweep — only reaches a row after an hour, and on the Vercel Hobby daily
+ *  cron that can be 24 h. This is the write the client already knows is true. */
+describe("markUploadFailed", () => {
+  let chain: ReturnType<typeof makeUpdateChain>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    chain = makeUpdateChain();
+    update.mockReturnValue(chain);
+  });
+
+  it("refuses to write anything when there is no session", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect((await markSubject())(NOTE)).rejects.toThrow(/not signed in/i);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("writes processing_status = 'failed'", async () => {
+    await (await markSubject())(NOTE);
+    expect(update.mock.calls[0][0]).toEqual({ processing_status: "failed" });
+  });
+
+  it("touches no other column — not audio_storage_path, not the transcript", async () => {
+    await (await markSubject())(NOTE);
+    expect(Object.keys(update.mock.calls[0][0])).toEqual(["processing_status"]);
+  });
+
+  it("targets exactly one note id", async () => {
+    await (await markSubject())(NOTE);
+    expect(chain.eq.mock.calls).toContainEqual(["id", NOTE]);
+  });
+
+  // The same atomic-claim shape sweep.ts uses. Without it a duplicate call, or
+  // a race with the cron, could flip a row that already reached 'analyzing' or
+  // 'completed' back to a terminal 'failed'.
+  it("guards on processing_status = 'uploading' so it cannot overwrite later work", async () => {
+    await (await markSubject())(NOTE);
+    expect(chain.eq.mock.calls).toContainEqual(["processing_status", "uploading"]);
+  });
+
+  it("never filters on user_id — RLS supplies the owner", async () => {
+    await (await markSubject())(NOTE);
+    expect(chain.eq.mock.calls.map(([column]) => column)).not.toContain("user_id");
+  });
+
+  it("is quiet when the row was already claimed and zero rows matched", async () => {
+    chain = makeUpdateChain({ data: [], error: null });
+    update.mockReturnValue(chain);
+    await expect((await markSubject())(NOTE)).resolves.toBeUndefined();
+  });
+
+  it("surfaces a database error rather than reporting success", async () => {
+    chain = makeUpdateChain({ data: null, error: { message: "offline" } });
+    update.mockReturnValue(chain);
+    await expect((await markSubject())(NOTE)).rejects.toThrow(/offline/);
+  });
+
+  it("revalidates the root route so the list stops showing it as uploading", async () => {
+    await (await markSubject())(NOTE);
+    expect(revalidatePath).toHaveBeenCalledWith("/");
   });
 });

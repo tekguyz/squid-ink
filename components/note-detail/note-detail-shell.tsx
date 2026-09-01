@@ -5,6 +5,7 @@ import type { Note } from "@/lib/notes/view-types";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ActionItemsTable } from "./action-items-table";
+import { AudioPlayer } from "./audio-player";
 import { ChatComposer } from "./chat-composer";
 import { NoteHeader } from "./note-header";
 import { PersonaRail } from "./persona-rail";
@@ -56,6 +57,10 @@ export function NoteDetailShell({ note }: { note: Note }) {
 
       <main className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule bg-paper">
         <NoteHeader meta={note.meta} title={note.title} />
+        {/* Sits with the date/duration meta line, because that is where a
+            reader looks for facts about the recording itself. Renders nothing
+            when the note has no object. */}
+        <AudioPlayer storagePath={note.audioStoragePath} />
 
         <div className="min-h-0 flex-1 overflow-auto px-[26px]">
           <SummarySection

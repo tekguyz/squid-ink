@@ -163,20 +163,30 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
 
     store.getState().beginUpload();
 
+    // THE DISCRIMINATOR for tier-1 reconciliation. markUploadFailed writes a
+    // TERMINAL 'failed' on nothing more than "the client caught an error" —
+    // unlike tier 2, which confirms the object is absent first. So it may only
+    // fire for a throw from the Storage transfer, once a row actually exists to
+    // fail. A throw from the session lookup or from createNote means there is
+    // no row (or no session), and failing on those would strand notes for
+    // reasons that have nothing to do with the audio.
+    let rowWritten = false;
+
     try {
       const userId = await deps.getUserId();
       // Deterministic, so the row can name the object before the object exists.
       const path = recordingPath(userId, noteId);
 
       // The row is written BEFORE the bytes move, at processing_status
-      // 'uploading' — true at this instant, and left for Track 3 to advance.
-      // A failed upload therefore leaves a visible note whose audio is still in
-      // IndexedDB, rather than a silent loss.
+      // 'uploading' — true at this instant. A failed upload therefore leaves a
+      // visible note whose audio is still in IndexedDB, rather than a silent
+      // loss; the write below is what stops it sitting there until the cron.
       //
       // This runs exactly once per recording. stop() is only reachable from a
       // live recording, and there is no retry control, so the action is never
       // called twice for one note id from here.
       await deps.createNote({ noteId, audioStoragePath: path, durationSeconds });
+      rowWritten = true;
 
       await uploadRecording({
         bucket: deps.bucket(),
@@ -185,13 +195,38 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
         blob,
         contentType: mimeType,
       });
-
-      // The backup is deliberately NOT discarded here. It waits for
-      // processing_status === 'completed', which Track 3 owns.
-      store.getState().finish();
     } catch (error) {
+      // HUD first: fail() is synchronous, so the error pill does not wait on a
+      // round trip.
       store.getState().fail(error instanceof Error ? error.message : String(error));
+
+      // TIER 1 (docs/KNOWN_GAPS.md § Recorder HUD). Tier 2's staleness sweep
+      // reaches this row only after an hour, and the Vercel Hobby cron fires
+      // once a day. The failure is already certain here, so it is written here.
+      //
+      // ONE write, no retry. If this throws — an offline client is the obvious
+      // case — tier 2 is still the net, and a retry loop here would be a second
+      // reconciliation path for a single failure. The original error stays on
+      // the HUD; this one is logged and dropped.
+      //
+      // The IndexedDB backup is untouched: it is discarded only on 'completed',
+      // and a 'failed' row keeps the only copy of its audio indefinitely.
+      if (rowWritten) {
+        try {
+          await deps.markUploadFailed(noteId);
+        } catch (writeError) {
+          console.error("Could not mark the note failed:", writeError);
+        }
+      }
+      return;
     }
+
+    // Outside the try on purpose. A throw from here is not an upload failure,
+    // and must not reach the catch above and fail a note that uploaded fine.
+    //
+    // The backup is deliberately NOT discarded — it waits for
+    // processing_status === 'completed', which the transcription pipeline owns.
+    store.getState().finish();
   }, [store, teardown]);
 
   const discard = useCallback(async () => {

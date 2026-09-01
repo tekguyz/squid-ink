@@ -63,6 +63,10 @@ export interface Note {
   id: string;
   title: string;
   meta: string;
+  /** The Storage key for the recording, `{user_id}/{note_id}`, or null when the
+   *  note has no audio. Carried raw rather than formatted — it is the key the
+   *  playback helper fetches with, not something to display. */
+  audioStoragePath: string | null;
   turnCount: number;
   duration: string;
   playhead: string;

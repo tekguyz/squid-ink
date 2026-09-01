@@ -59,3 +59,51 @@ export async function createRecordedNote(input: {
   revalidatePath("/");
   return { id: input.noteId };
 }
+
+/**
+ * Tier 1 of the two-tier reconciliation for a failed upload
+ * (docs/KNOWN_GAPS.md § Recorder HUD). Called from the recorder's catch block
+ * the instant a Storage transfer throws.
+ *
+ * Tier 2 — the staleness sweep in lib/transcription/sweep.ts — reaches the same
+ * row only after an hour, and on the Vercel Hobby daily cron that can be a full
+ * day. Nothing about that wait is informative: the client that caused the
+ * failure already knows. So this writes 'failed' with no threshold and no
+ * retry-then-fail.
+ *
+ * Tier 2 confirms the object is absent before failing a row; tier 1 has no such
+ * evidence — it fires purely on "the client caught an error". That is only safe
+ * because the caller's try block is scoped to the Storage transfer itself, and
+ * because of the guard below.
+ *
+ * THE GUARD. `.eq('processing_status', 'uploading')` is the same one-statement
+ * atomic claim sweep.ts uses. Postgres row-locks the matched row, so a
+ * duplicate call, or a race with a cron invocation that already advanced the
+ * row to 'analyzing' or 'completed', matches nothing instead of dragging
+ * finished work back to a terminal state. Zero rows matched is not an error
+ * here — it means somebody else got there first, which is the correct outcome.
+ *
+ * The authenticated server client, never the secret key: RLS supplies the owner
+ * and the secret key stays confined to app/api/cron/transcribe/route.ts. There
+ * is deliberately no `.eq('user_id', ...)` — an application filter would mask
+ * an RLS failure instead of exposing it.
+ */
+export async function markUploadFailed(noteId: string): Promise<void> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Cannot fail a note: not signed in.");
+
+  const { error } = await supabase
+    .from("notes")
+    .update({ processing_status: "failed" })
+    .eq("id", noteId)
+    .eq("processing_status", "uploading")
+    .select("id");
+
+  if (error) throw new Error(`Failed to mark note as failed: ${error.message}`);
+
+  revalidatePath("/");
+}

@@ -316,13 +316,35 @@ started**, or is a known incompleteness in what shipped.
   note-deletion feature that does not exist, and cleanup in the verification
   script runs through the secret key for exactly that reason.
 
-  **Upload code RESOLVED 2026-08-31. Playback UI is still missing.**
+  **Upload code RESOLVED 2026-08-31. Playback UI RESOLVED 2026-08-31.**
   `lib/recorder/upload-audio.ts` uploads directly client-to-Storage at
   `{user_id}/{note_id}` with `upsert: true`, and `app/notes/actions.ts` writes
   `audio_storage_path`. Proven end to end by four real browser recordings, not
-  only by script — see the Recorder HUD section below. There is still **no way to
-  play a recording back in the app**; `docs/qa/recorder-manual-test-protocol.md`
-  pulls objects with the secret key and `ffprobe` instead.
+  only by script — see the Recorder HUD section below.
+
+  A recording can now be **played back in the app**. `lib/notes/audio-playback.ts`
+  reads the object with the BROWSER Supabase client, so the same three policies
+  authorise the read; existence is proved with `list()`, and the Blob is re-typed
+  from the object's own metadata before an object URL is made, because
+  `download()` labels every Blob `application/octet-stream`. That MIME rule was
+  **moved, not copied**, into `lib/audio/mime-type.ts`; `gemini-client.ts`
+  re-exports it so `app/api/cron/transcribe` was untouched, and the bucket name
+  is still the one `AUDIO_BUCKET` constant. `components/note-detail/audio-player.tsx`
+  renders play/pause, an mm:ss clock and a seek bar, all on system tokens with
+  zero border radius — a native `<audio controls>` would have shipped
+  untokenised browser chrome into both themes. Object URLs are revoked on
+  unmount and on note change.
+
+  Verified in a real browser on 2026-08-31 against note
+  `c0ffee00-1111-4111-8111-0000000000aa`, seeded with a real 452 KB WAV and
+  removed afterwards: `readyState` 4, `currentTime` advancing, `aria-pressed`
+  flipping. **Nobody listened to it** — that a waveform decodes is machine-
+  checkable, that it sounds right is not, and
+  `docs/qa/recorder-manual-test-protocol.md` still owns that. Three states were
+  exercised in the running app: audio present and playing, path present but
+  object missing ("Audio unavailable", no throw), and a null path (no player at
+  all). Still no DELETE policy, no export, and no waveform scrubber — ROADMAP §8
+  keeps the scrubber behind speaker tags.
 
   One asymmetry worth writing down, because it bit this track: **removing a test
   recording needs two different clients.** The row is deleted as the OWNER —
@@ -884,15 +906,48 @@ and never from `download()`.
 `supabase/schemas/notes.sql` now allows `'failed'`, exactly as the note above
 required. Verified by reading `pg_constraint` back from the live catalog.
 
-**TIER 1 IS STILL NOT BUILT.** The in-session `'failed'` write on a caught upload
-error remains absent from the tree — re-measured on 2026-08-31, not assumed.
-Track 3's scope fence put `lib/recorder/` off limits, so that track shipped the
-constraint that unblocks it and nothing else. Until tier 1 lands, an in-session
-upload failure is indistinguishable from a lost session and waits the full hour
-for tier 2 to notice. The change is roughly three lines in the `catch` block of
-`lib/recorder/use-recorder.ts`, which already calls `store.getState().fail(...)`
-— client state, not a database write. **Owner: whoever next opens
-`lib/recorder/`.**
+**TIER 1 BUILT 2026-08-31.** `markUploadFailed(noteId)` in `app/notes/actions.ts`
+writes `processing_status = 'failed'` through the **authenticated** server
+client — never the secret key, which stays confined to
+`app/api/cron/transcribe/route.ts`. It is called from the `catch` in
+`stop()` in `lib/recorder/use-recorder.ts`, on the client's first knowledge of
+the error. An in-session upload failure is now terminal within milliseconds
+instead of waiting up to 24 h for the daily Hobby cron.
+
+The write carries the **same atomic-claim guard as tier 2**:
+`.eq('processing_status', 'uploading')`. Postgres row-locks the matched row, so
+a duplicate call, or a race with a cron invocation that already advanced the row
+to `'analyzing'` or `'completed'`, matches zero rows instead of dragging
+finished work back to a terminal state. Zero rows matched is not an error. No
+`user_id` filter — RLS supplies the owner, and an application filter would mask
+an RLS failure rather than expose it. `'failed'` was confirmed present in
+`notes_processing_status_check` by reading `pg_constraint` back from the live
+catalog before the code was written; no schema change was needed.
+
+**The catch was narrowed, because tier 1 has no evidence behind it.** Tier 2
+fails a row only after confirming the object is absent; tier 1 fires purely on
+"the client caught an error", and `'failed'` is terminal with no retry path.
+Going in, the `try` in `stop()` spanned `getUserId()`, `createNote()`,
+`uploadRecording()` **and** `store.getState().finish()` — four things, only one
+of them the Storage transfer. Two changes fenced it:
+
+1. `finish()` moved **out** of the `try`. A throw from a store update must never
+   mark a note that uploaded fine as failed.
+2. A `rowWritten` discriminator is set immediately after `createNote()`
+   resolves. A throw from the session lookup or from the row write means there
+   is no row to fail, and tier 1 does not fire.
+
+One write per failed attempt, and no retry of the write itself. If it throws —
+an offline client is the obvious case — it is logged and dropped, and tier 2
+remains the net. A retry loop there would be a second reconciliation path for a
+single failure. `store.getState().fail(...)` still runs first and unchanged, so
+the HUD error pill behaves exactly as before.
+
+**IndexedDB cleanup behaviour is unchanged by this.** Nothing on this path
+touches `lib/recorder/audio-backup.ts`. The backup blob is still discarded only
+on `'completed'`, so a row that now reaches `'failed'` in seconds rather than in
+a day keeps its audio indefinitely — deliberately, since nothing can resume an
+upload from it and deleting it would destroy the only copy.
 
 **IndexedDB cleanup is still unbuilt.** The backup blob is discarded only on
 `'completed'`. Rows that now reach `'failed'` keep their blob indefinitely, which

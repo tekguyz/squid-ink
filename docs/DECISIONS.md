@@ -322,9 +322,14 @@ shipped. Kept in place with what closed them, rather than deleted.
   `@google/genai` transcription client.
 - **Audio Storage** — **mostly RESOLVED 2026-08-31.** The bucket and its three
   policies are `supabase/schemas/storage_audio.sql`; upload code shipped with
-  the recorder and is proven by `scripts/verify-recorder-upload.mjs`. **Playback
-  UI is the one clause still true** — no `<audio>` element and no object-URL
-  usage anywhere in `components/` or `app/`.
+  the recorder and is proven by `scripts/verify-recorder-upload.mjs`.
+  **Playback UI closed 2026-08-31 — this entry is now fully resolved.**
+  `components/note-detail/audio-player.tsx` sits on the Note Detail meta line
+  and plays the object that `lib/notes/audio-playback.ts` fetches with the
+  browser client; play/pause, an mm:ss clock and a seek bar, every colour a
+  token and every corner square. Confirmed in a running browser against a real
+  seeded recording, not only in tests. The waveform scrubber is deliberately not
+  part of it — ROADMAP §8 keeps that behind speaker tags.
 - **Persona provisioning on signup** — **RESOLVED 2026-08-31.** A
   `security definer` trigger on `auth.users` in
   `supabase/schemas/persona_provisioning.sql`, proven by

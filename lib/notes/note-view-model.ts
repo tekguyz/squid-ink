@@ -161,6 +161,7 @@ export function buildNoteViewModel(
     id: row.id,
     title: row.title ?? "Untitled note",
     meta: formatMeta(row),
+    audioStoragePath: row.audio_storage_path,
     turnCount: segments.length,
     duration: formatDuration(row.audio_duration_seconds),
     playhead: DEFAULT_PLAYHEAD,

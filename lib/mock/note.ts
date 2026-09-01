@@ -22,6 +22,9 @@ export const mockNote: Note = {
   id: "pilot-pricing-rollout",
   title: "Pilot pricing & rollout",
   meta: "Wed 26 Aug 2026 · 41 min · Northwind Health",
+  // No object behind this fixture — it is a test fixture, not a recording. The
+  // player renders nothing for a null path, which is what component tests want.
+  audioStoragePath: null,
   turnCount: 12,
   duration: "41:07",
   playhead: "03:31",

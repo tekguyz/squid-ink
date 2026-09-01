@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { createRecordedNote } from "@/app/notes/actions";
+import { createRecordedNote, markUploadFailed } from "@/app/notes/actions";
 import { startCapture } from "@/lib/recorder/capture";
 import { AUDIO_BUCKET, type StorageBucketLike } from "@/lib/recorder/upload-audio";
 
@@ -22,6 +22,10 @@ export interface RecorderDeps {
   getUserId(): Promise<string>;
   bucket(): StorageBucketLike;
   createNote: typeof createRecordedNote;
+  /** Tier 1 of the failed-upload reconciliation: the immediate 'failed' write
+   *  on a caught Storage error, guarded server-side by the 'uploading'
+   *  precondition. Injectable for the same reason as everything else here. */
+  markUploadFailed: typeof markUploadFailed;
 }
 
 export function browserDeps(): RecorderDeps {
@@ -39,6 +43,7 @@ export function browserDeps(): RecorderDeps {
     bucket: () =>
       createClient().storage.from(AUDIO_BUCKET) as unknown as StorageBucketLike,
     createNote: createRecordedNote,
+    markUploadFailed,
   };
 }
 
