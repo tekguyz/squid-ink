@@ -1116,6 +1116,54 @@ Moving to Pro makes the schedule a one-line change in `vercel.json` and lets
 before changing either — `docs/DEPLOYMENT.md` holds the numbers and the command
 that produced them.
 
+### Framed controls sit at ~1.4:1 against the sheet (recorded 2026-09-01)
+
+**Open. Deliberately not fixed, because the fix is an app-wide token change and
+the owner has not been asked.**
+
+Every framed surface in this app draws its 1px edge with `rule-2`. Measured
+in-page on 2026-09-01, both themes, against the sheet behind it:
+
+| | light | dark |
+|---|---|---|
+| `border-rule-2` vs `paper` | **1.40:1** | **1.47:1** |
+| `border-rule` vs `paper` | ~1.45:1 | ~1.35:1 |
+
+WCAG 1.4.11 asks 3:1 for "visual information **required** to identify user
+interface components". Nothing here reaches it, and nothing in the existing
+neutral palette does either short of `faint` (~2.4 / ~2.9) or `muted`
+(~5.5 / ~5.9) — the latter being a visibly heavier line than the design draws
+anywhere today.
+
+**Why this is recorded rather than failed.** The word in 1.4.11 is *required*.
+Each of these controls carries a text label well clear of 4.5:1 — the Transcribe
+button's is 5.4:1, the audio player's the same, the pill labels 5.5–9.3:1 — so
+the label, not the edge, is what identifies the control. On that reading the
+success criterion is met and the 1.4:1 edge is a **discoverability** concern,
+which is exactly how `/impeccable critique` raised it on 2026-09-01: in dark
+theme the Transcribe button's fill was *identical* to the sheet, leaving the
+hairline as the only evidence a control was there at all. That half was fixed
+— `bg-canvas` → `bg-raised` in both `transcribe-button.tsx` and
+`audio-player.tsx` — and the edge was left alone.
+
+**Three ways out, none chosen, and the choice is the owner's:**
+
+- **Raise `--rule-2` itself** in `app/globals.css`. One edit, reaches every
+  framed surface at once, and changes the look of the whole application — the
+  insight cards, the persona rail, the transcript pane. A DESIGN.md-level
+  decision, not a component fix.
+- **Give interactive controls their own boundary token**, leaving decorative
+  frames on `rule-2`. Defensible — a control and a container are not the same
+  object — but it is a new token plus a sweep of every button in the tree
+  (`transcribe-button`, `audio-player`, `persona-rail`, `theme-toggle`,
+  `record-hud`), and half-applying it is worse than not starting.
+- **Leave it.** The labels carry identification, the fills now carry presence,
+  and the hairline stays the quiet line the design was drawn with.
+
+Do **not** fix this for one component in isolation. A single button with a
+heavier edge than everything around it is a worse outcome than the measurement
+that prompted it.
+
 ### RESOLVED 2026-09-01 — the cron sweep is no longer the only transcription trigger
 
 **Shipped: the second of the two options below — a deliberate "Transcribe"

@@ -59,6 +59,19 @@ a token *name* (`speaker-1`), never a colour value.
 The guard in `components/note-detail/__tests__/project-conventions.test.ts` fails
 the build if a colour literal appears in `components/` or `lib/`.
 
+**`canvas` is not a button fill.** In dark theme `--canvas` and `--paper`
+resolve to the same value, so a control filled with `bg-canvas` on a `bg-paper`
+sheet has no fill at all — measured 2026-09-01, and the reason `audio-player.tsx`
+and `transcribe-button.tsx` both moved to `bg-raised`, which is what
+DESIGN.md § Components → Buttons specifies anyway. Two tokens looking distinct
+in light theme is not evidence they differ in dark; check both.
+
+**Do not "fix" `border-rule-2` on one component.** Every framed surface in the
+app draws its edge with it, at ~1.4:1 against the sheet. That number is
+recorded, argued and left open in `docs/KNOWN_GAPS.md` § "Framed controls sit
+at ~1.4:1" — raising it is an app-wide token decision, and a single button with
+a heavier edge than everything around it is the worse outcome.
+
 ## Type
 
 Three faces, no others:

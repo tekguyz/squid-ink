@@ -47,8 +47,13 @@ export const POLL_TICK_LIMIT = 120;
  *  `border-rule-2` at 1.47:1 — under WCAG 1.4.11's 3:1 for the boundary of a
  *  control. `raised` is also what DESIGN.md § Components → Buttons already
  *  gives the quick-action button, so this is returning to the documented token
- *  rather than inventing one. audio-player.tsx still carries the old
- *  `bg-canvas`; it is outside this change's scope and is flagged, not edited.
+ *  rather than inventing one. audio-player.tsx sits on the same meta line and
+ *  moved to `bg-raised` in the same pass — the two constants are identical by
+ *  intent and must stay so.
+ *
+ *  The BORDER is knowingly left at `border-rule-2`, measuring 1.40:1 light /
+ *  1.47:1 dark against the sheet. See docs/KNOWN_GAPS.md § "Framed controls
+ *  sit at ~1.4:1" — an app-wide token decision, not a defect in this button.
  *
  *  No `disabled:` variants. The element is never natively disabled — see
  *  aria-disabled below — so the unavailable state is styled through
