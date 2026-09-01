@@ -1141,6 +1141,55 @@ Either way the cron returns to being the net, which is what it was written as.
 works. This is a missing sibling, recorded here so it is not rediscovered as a
 defect.
 
+**RESOLVED 2026-08-31. The second option was chosen: a deliberate "Transcribe"
+action the user presses.** `transcribeNote()` in `app/notes/actions.ts`, with
+`components/note-detail/transcribe-button.tsx` mounted in the transcript pane's
+empty state. The cron is back to being the net.
+
+The first option — a per-note route the recorder calls on stop — was rejected on
+the owner's own stated requirement. **The owner has said immediate transcription
+is not required**, and firing a Gemini call at every stop spends money on that
+non-requirement whether or not anyone wanted the transcript. A pressed button
+spends it only when somebody asked. It also needs no decision about what the UI
+shows while a note transcribes, because the person watching is the person who
+pressed it.
+
+**It is a server action, not a second route.** `/api/cron/transcribe` still
+exists and is unchanged in behaviour; what changed is that its port
+implementations moved out of the route file into
+`lib/transcription/supabase-ports.ts`, and `transcribeOne` is now exported from
+`sweep.ts` against a narrower `TranscribeOnePorts`. Neither knows which Supabase
+client it holds. **The cron passes service_role because it has no session; the
+action passes the authenticated client so RLS supplies the owner.** The secret
+key is still read in exactly one file of shipped application code.
+
+**The claim is the same one statement, with two source states instead of one:**
+
+    UPDATE notes SET processing_status = 'analyzing'
+     WHERE id = :noteId AND processing_status IN ('uploading', 'failed')
+    RETURNING id, user_id, audio_storage_path, audio_duration_seconds
+
+`'failed'` is there so a note can be retried; `'completed'` and `'analyzing'`
+are deliberately absent. Zero rows matched is not an error — it means the cron
+got there first, and the UI says so instead of throwing. Proved against the live
+database in both orders on 2026-08-31: cron-then-button matches 1 then 0,
+button-then-cron matches 1 then 0, and a `'completed'` row matches 0.
+
+**A missing object on the retry path is handled by `transcribeOne`'s own catch,
+not by a second existence check** — and this was measured, not assumed. There is
+no `list()` inside `transcribeOne`; the sweep does one before claiming, for its
+own reason. A `'failed'` row whose object was deleted was pressed in the browser
+and produced `audio download failed: Object not found`, the row returned to
+`'failed'`, and the button re-enabled with a notice.
+
+**Still true, and deliberately unchanged:** the daily Hobby schedule,
+`MAX_TRANSCRIPTIONS_PER_RUN = 3`, and `maxDuration = 300`. The three-a-day
+ceiling now bounds only the unattended net. A pressed note gets its own function
+invocation and its own 300 s, so the practical limit on a long recording is the
+Vercel ceiling, not the per-run cap. **There is no Realtime push and no
+polling** — the action's response is the completion signal and `revalidatePath`
+re-renders the pane, which means the tab must stay open for the duration.
+
 ### Nothing renders a live transcript while recording (recorded 2026-08-31)
 
 There is no Web Speech API usage anywhere — `grep -rni "SpeechRecognition"`

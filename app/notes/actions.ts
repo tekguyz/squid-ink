@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { transcribePortsFor } from "@/lib/transcription/supabase-ports";
+import { transcribeOne, type TranscribableRow } from "@/lib/transcription/sweep";
 
 /**
  * Creates the notes row for a recording, called as the upload STARTS.
@@ -106,4 +108,93 @@ export async function markUploadFailed(noteId: string): Promise<void> {
   if (error) throw new Error(`Failed to mark note as failed: ${error.message}`);
 
   revalidatePath("/");
+}
+
+/**
+ * Transcribe ONE note now, because the user pressed a button.
+ *
+ * Resolves docs/KNOWN_GAPS.md § "The cron sweep is the ONLY transcription
+ * trigger". Until this existed the only way a recording reached Gemini was the
+ * daily Vercel Hobby cron, whose MAX_TRANSCRIPTIONS_PER_RUN = 3 — a figure
+ * sized for the 300 s function ceiling, not for a user — read as "three notes a
+ * day". The cron is now back to being the net it was written as.
+ *
+ * THE CLAIM, and it is the same one statement sweep.ts uses:
+ *
+ *     UPDATE notes SET processing_status = 'analyzing'
+ *      WHERE id = :noteId AND processing_status IN ('uploading', 'failed')
+ *  RETURNING id, user_id, audio_storage_path, audio_duration_seconds
+ *
+ * Postgres row-locks the matched row, so a cron invocation racing this one
+ * re-evaluates that predicate after the lock releases, sees 'analyzing', and
+ * matches nothing. No lock table, no read-then-write window, and no second
+ * mechanism — this action and the sweep are kept apart by the same guard that
+ * keeps two sweep invocations apart.
+ *
+ * TWO source states, where the sweep claims from one. 'uploading' is a note
+ * that never got picked up; 'failed' is a retry of a note the sweep or a
+ * previous press gave up on. 'completed' and 'analyzing' are deliberately
+ * absent: re-transcribing finished work is out of scope, and a row already
+ * 'analyzing' has a live transcription behind it.
+ *
+ * ZERO ROWS IS NOT AN ERROR. It means somebody else got there first, or the
+ * note is already done — the same precedent markUploadFailed and sweep.ts set.
+ * The caller renders it; nothing throws, and no Gemini call is spent.
+ *
+ * The AUTHENTICATED client, never the secret key. lib/transcription/supabase-ports.ts
+ * takes the client as an argument for exactly this reason, so RLS supplies the
+ * owner here while the cron route bypasses it with service_role. There is
+ * deliberately no `.eq('user_id', ...)`: an application filter would mask an
+ * RLS failure instead of exposing it.
+ *
+ * A MISSING OBJECT on the 'failed' retry path needs no check here. A 'failed'
+ * row has no guarantee its audio survived, and transcribeOne's own catch is
+ * what handles that — downloadAudio throws, the row is logged and written back
+ * to 'failed'. Adding a second existence check would be a second mechanism for
+ * one failure.
+ */
+export type TranscribeNoteResult =
+  | { status: "transcribed" }
+  | { status: "failed" }
+  /** Claimed by the cron first, already running, or already completed. */
+  | { status: "not-eligible" };
+
+export async function transcribeNote(
+  noteId: string,
+): Promise<TranscribeNoteResult> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Cannot transcribe a note: not signed in.");
+
+  // Checked BEFORE the claim. Claiming first would move the row to 'analyzing'
+  // and then bail, leaving it stuck until the staleness sweep fails it an hour
+  // later — a misconfigured deployment turned into a lost note.
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) throw new Error("Cannot transcribe a note: GEMINI_API_KEY is unset.");
+
+  const { data, error } = await supabase
+    .from("notes")
+    .update({ processing_status: "analyzing" })
+    .eq("id", noteId)
+    .in("processing_status", ["uploading", "failed"])
+    .select("id, user_id, audio_storage_path, audio_duration_seconds");
+
+  if (error) throw new Error(`Failed to claim note for transcription: ${error.message}`);
+
+  const row = data?.[0] as TranscribableRow | undefined;
+  if (!row) return { status: "not-eligible" };
+
+  const outcome = await transcribeOne(
+    transcribePortsFor(supabase, geminiKey),
+    row,
+  );
+
+  // The action's own response is the completion signal — there is no polling
+  // and no client-side timer. This is what re-renders the transcript pane.
+  revalidatePath(`/notes/${noteId}`);
+
+  return outcome === "transcribed" ? { status: "transcribed" } : { status: "failed" };
 }

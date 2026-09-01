@@ -33,17 +33,41 @@ export const MAX_RECONCILIATIONS_PER_RUN = 25;
  *  to finish and return rather than being killed mid-write. */
 export const RUN_BUDGET_MS = 240_000;
 
-export interface UploadingRow {
+/** Everything transcribeOne needs off a row, and nothing about how it was
+ *  found. The sweep discovers rows by polling `processing_status = 'uploading'`;
+ *  the on-demand action in app/notes/actions.ts is handed one id by a user.
+ *  Neither difference reaches this far down. */
+export interface TranscribableRow {
   id: string;
   user_id: string;
   audio_storage_path: string | null;
   audio_duration_seconds: number | null;
+}
+
+export interface UploadingRow extends TranscribableRow {
   updated_at: string;
 }
 
-export interface SweepPorts {
-  now(): number;
+/** The ports transcribeOne alone needs — no clock, no listing, no claim.
+ *
+ *  Split out so a caller that has already claimed its own row can reuse the
+ *  Gemini call, the diarization decision and the chunk write without also
+ *  supplying the sweep's discovery machinery. There is deliberately no second
+ *  copy of any of that.
+ *
+ *  Note what is NOT here: a Supabase client. Every port is a plain function, so
+ *  which client executes the I/O is entirely the caller's choice — the cron
+ *  route passes a service-role client, the server action passes the
+ *  authenticated one, and this file cannot tell them apart. */
+export interface TranscribeOnePorts {
   log(message: string): void;
+  downloadAudio(path: string): Promise<{ blob: Blob; mimeType: string }>;
+  transcribe: Transcriber;
+  store: TranscriptionStore;
+}
+
+export interface SweepPorts extends TranscribeOnePorts {
+  now(): number;
   listUploading(limit: number): Promise<UploadingRow[]>;
   /** Rows still 'analyzing' whose updated_at is older than `cutoffIso`. */
   listStaleAnalyzing(cutoffIso: string, limit: number): Promise<string[]>;
@@ -52,9 +76,6 @@ export interface SweepPorts {
   claim(noteId: string, expected: string, next: string): Promise<boolean>;
   /** list()/metadata, NEVER download(). Storage reads are CDN-cached. */
   objectExists(path: string): Promise<boolean>;
-  downloadAudio(path: string): Promise<{ blob: Blob; mimeType: string }>;
-  transcribe: Transcriber;
-  store: TranscriptionStore;
 }
 
 /** The only observability this pipeline has — there is no error column, and
@@ -183,9 +204,23 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
   return report;
 }
 
-async function transcribeOne(
-  ports: SweepPorts,
-  row: UploadingRow,
+/** Transcribe ONE row that the caller has ALREADY claimed to 'analyzing'.
+ *
+ *  Exported because the sweep is no longer the only caller: the on-demand
+ *  action claims a single note the user pressed a button for and then lands
+ *  here. Claiming is the caller's job precisely because the two differ — the
+ *  sweep claims from 'uploading', the action from 'uploading' OR 'failed' —
+ *  while everything below is identical and must stay that way.
+ *
+ *  A MISSING OBJECT IS HANDLED HERE, and this matters for the retry path: a
+ *  row that is already 'failed' has no guarantee its audio survived. There is
+ *  no list() check in this function — the sweep does one before claiming, for
+ *  its own reason (deciding whether a row is a lost upload or merely slow). If
+ *  the object is gone, ports.downloadAudio throws, the catch below logs it and
+ *  writes 'failed'. Graceful, and one mechanism rather than two. */
+export async function transcribeOne(
+  ports: TranscribeOnePorts,
+  row: TranscribableRow,
 ): Promise<"transcribed" | "failed"> {
   const plan = planFor(row.audio_duration_seconds);
 

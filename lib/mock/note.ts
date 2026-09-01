@@ -24,6 +24,10 @@ export const mockNote: Note = {
   meta: "Wed 26 Aug 2026 · 41 min · Northwind Health",
   // No object behind this fixture — it is a test fixture, not a recording. The
   // player renders nothing for a null path, which is what component tests want.
+  // A fixture for component tests only; nothing renders this. 'completed'
+  // keeps it matching what the tests that use it already assume: a note with
+  // a full transcript and no action left to offer.
+  processingStatus: "completed",
   audioStoragePath: null,
   turnCount: 12,
   duration: "41:07",

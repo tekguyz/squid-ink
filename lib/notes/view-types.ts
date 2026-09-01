@@ -1,3 +1,5 @@
+import type { ProcessingStatus } from "@/lib/notes/types";
+
 /** View types the Note Detail components consume. Shaped by
  *  lib/notes/note-view-model.ts from database rows. No colours live here —
  *  speakers carry a token name, and the token resolves in `app/globals.css`. */
@@ -63,6 +65,11 @@ export interface Note {
   id: string;
   title: string;
   meta: string;
+  /** Carried raw, not formatted. The transcript pane reads it to decide
+   *  whether to offer the on-demand transcribe action — a note that never got
+   *  picked up by the daily cron, or one that failed, is the whole reason that
+   *  action exists. */
+  processingStatus: ProcessingStatus;
   /** The Storage key for the recording, `{user_id}/{note_id}`, or null when the
    *  note has no audio. Carried raw rather than formatted — it is the key the
    *  playback helper fetches with, not something to display. */

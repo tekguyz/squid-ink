@@ -175,6 +175,17 @@ describe("buildNoteViewModel", () => {
     expect(empty.stats).toEqual([]);
   });
 
+  // The transcript pane decides whether to offer the on-demand transcribe
+  // action from this field. Dropping it here is what would silently hide the
+  // button on exactly the notes that need it.
+  it("carries processing_status through so the pane can offer transcription", () => {
+    expect(buildNoteViewModel(row, [], PERSONAS).processingStatus).toBe("completed");
+    expect(
+      buildNoteViewModel({ ...row, processing_status: "failed" }, [], PERSONAS)
+        .processingStatus,
+    ).toBe("failed");
+  });
+
   it("falls back cleanly when duration is null", () => {
     const noDuration = buildNoteViewModel(
       { ...row, audio_duration_seconds: null },

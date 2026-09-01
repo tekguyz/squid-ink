@@ -6,13 +6,27 @@ const update = vi.fn();
 const getUser = vi.fn();
 const revalidatePath = vi.fn();
 
+/** One stable object identity, so a test can assert that the ports handed to
+ *  the transcription pipeline were built from THIS client — the authenticated
+ *  one — and not from a service-role client built inside the action. */
+const authenticatedClient = {
+  auth: { getUser },
+  from: () => ({ upsert, insert, update }),
+};
+
+const transcribeOne = vi.fn();
+const portsFor = vi.fn((_db: unknown, _key: string) => ({ marker: "ports" }));
+const createServiceClient = vi.fn();
+
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
-    auth: { getUser },
-    from: () => ({ upsert, insert, update }),
-  }),
+  createClient: async () => authenticatedClient,
 }));
 vi.mock("next/cache", () => ({ revalidatePath }));
+vi.mock("@supabase/supabase-js", () => ({ createClient: createServiceClient }));
+vi.mock("@/lib/transcription/sweep", () => ({ transcribeOne }));
+vi.mock("@/lib/transcription/supabase-ports", () => ({
+  transcribePortsFor: portsFor,
+}));
 
 const USER = "8f1c2a3b-0000-4444-8888-aaaaaaaaaaaa";
 const NOTE = "11111111-2222-3333-4444-555555555555";
@@ -194,5 +208,154 @@ describe("markUploadFailed", () => {
   it("revalidates the root route so the list stops showing it as uploading", async () => {
     await (await markSubject())(NOTE);
     expect(revalidatePath).toHaveBeenCalledWith("/");
+  });
+});
+
+/** The on-demand transcription trigger — docs/KNOWN_GAPS.md § "The cron sweep
+ *  is the ONLY transcription trigger". The cron stays the net; this is the main
+ *  path a user can press.
+ *
+ *  The chain here is .update().eq().in().select(), which is the SAME atomic
+ *  claim shape sweep.ts uses, only with two acceptable source states instead of
+ *  one. Everything after a successful claim is sweep.ts's own transcribeOne —
+ *  mocked here so this file tests the claim, not Gemini. */
+function makeClaimChain(
+  result: { data: unknown[] | null; error: { message: string } | null } = {
+    data: [
+      {
+        id: NOTE,
+        user_id: USER,
+        audio_storage_path: `${USER}/${NOTE}`,
+        audio_duration_seconds: 754,
+      },
+    ],
+    error: null,
+  },
+) {
+  const chain = {
+    eq: vi.fn((_column: string, _value: unknown) => chain),
+    in: vi.fn((_column: string, _values: unknown[]) => chain),
+    select: vi.fn(async () => result),
+  };
+  return chain;
+}
+
+describe("transcribeNote", () => {
+  let chain: ReturnType<typeof makeClaimChain>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    chain = makeClaimChain();
+    update.mockReturnValue(chain);
+    transcribeOne.mockResolvedValue("transcribed");
+    process.env.GEMINI_API_KEY = "test-key";
+  });
+
+  async function subject() {
+    return (await import("@/app/notes/actions")).transcribeNote;
+  }
+
+  it("refuses to write anything when there is no session", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect((await subject())(NOTE)).rejects.toThrow(/not signed in/i);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("claims the row by writing processing_status = 'analyzing'", async () => {
+    await (await subject())(NOTE);
+    expect(update.mock.calls[0][0]).toEqual({ processing_status: "analyzing" });
+  });
+
+  it("touches no other column while claiming", async () => {
+    await (await subject())(NOTE);
+    expect(Object.keys(update.mock.calls[0][0])).toEqual(["processing_status"]);
+  });
+
+  it("targets exactly one note id", async () => {
+    await (await subject())(NOTE);
+    expect(chain.eq.mock.calls).toContainEqual(["id", NOTE]);
+  });
+
+  // THE load-bearing guard. It is what stops this action and a concurrent cron
+  // sweep both claiming the same row: Postgres row-locks the matched row, so
+  // whichever statement runs second re-evaluates this predicate against the
+  // already-updated value and matches nothing.
+  it("only claims a row that is still 'uploading' or 'failed'", async () => {
+    await (await subject())(NOTE);
+    expect(chain.in.mock.calls).toEqual([
+      ["processing_status", ["uploading", "failed"]],
+    ]);
+  });
+
+  it("never claims a 'completed' or 'analyzing' row", async () => {
+    await (await subject())(NOTE);
+    const [, values] = chain.in.mock.calls[0] as [string, string[]];
+    expect(values).not.toContain("completed");
+    expect(values).not.toContain("analyzing");
+  });
+
+  it("never filters on user_id — RLS supplies the owner", async () => {
+    await (await subject())(NOTE);
+    expect(chain.eq.mock.calls.map(([column]) => column)).not.toContain("user_id");
+  });
+
+  it("uses the authenticated server client, never the secret key", async () => {
+    await (await subject())(NOTE);
+    expect(createServiceClient).not.toHaveBeenCalled();
+    expect(portsFor.mock.calls[0][0]).toBe(authenticatedClient);
+  });
+
+  it("reports 'not-eligible' rather than throwing when zero rows matched", async () => {
+    chain = makeClaimChain({ data: [], error: null });
+    update.mockReturnValue(chain);
+    await expect((await subject())(NOTE)).resolves.toEqual({
+      status: "not-eligible",
+    });
+  });
+
+  it("spends no Gemini call when the claim matched nothing", async () => {
+    chain = makeClaimChain({ data: [], error: null });
+    update.mockReturnValue(chain);
+    await (await subject())(NOTE);
+    expect(transcribeOne).not.toHaveBeenCalled();
+  });
+
+  it("hands the claimed row straight to sweep.ts's transcribeOne", async () => {
+    await (await subject())(NOTE);
+    expect(transcribeOne.mock.calls[0][1]).toMatchObject({
+      id: NOTE,
+      user_id: USER,
+      audio_storage_path: `${USER}/${NOTE}`,
+      audio_duration_seconds: 754,
+    });
+  });
+
+  it("reports success when the transcription completed", async () => {
+    await expect((await subject())(NOTE)).resolves.toEqual({
+      status: "transcribed",
+    });
+  });
+
+  it("reports failure without throwing when the transcription failed", async () => {
+    transcribeOne.mockResolvedValue("failed");
+    await expect((await subject())(NOTE)).resolves.toEqual({ status: "failed" });
+  });
+
+  it("revalidates the note's own route so the transcript renders", async () => {
+    await (await subject())(NOTE);
+    expect(revalidatePath).toHaveBeenCalledWith(`/notes/${NOTE}`);
+  });
+
+  it("surfaces a database error rather than reporting success", async () => {
+    chain = makeClaimChain({ data: null, error: { message: "offline" } });
+    update.mockReturnValue(chain);
+    await expect((await subject())(NOTE)).rejects.toThrow(/offline/);
+  });
+
+  it("refuses before claiming when GEMINI_API_KEY is unset", async () => {
+    delete process.env.GEMINI_API_KEY;
+    await expect((await subject())(NOTE)).rejects.toThrow(/GEMINI_API_KEY/);
+    expect(update).not.toHaveBeenCalled();
   });
 });
