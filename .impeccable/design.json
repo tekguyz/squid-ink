@@ -1,0 +1,350 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-31T00:00:00.000Z",
+  "title": "Design System: Unconfirmed (working name \"Squid Ink\")",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Press Green",
+        "canonical": "oklch(0.452 0.148 146)",
+        "tonalRamp": [
+          "oklch(0.20 0.070 146)",
+          "oklch(0.31 0.105 146)",
+          "oklch(0.402 0.138 146)",
+          "oklch(0.452 0.148 146)",
+          "oklch(0.58 0.140 146)",
+          "oklch(0.70 0.120 144)",
+          "oklch(0.82 0.150 140)",
+          "oklch(0.95 0.045 140)"
+        ]
+      },
+      "tint": {
+        "role": "secondary",
+        "displayName": "Ink Wash",
+        "canonical": "oklch(0.905 0.064 142)",
+        "tonalRamp": [
+          "oklch(0.26 0.045 140)",
+          "oklch(0.30 0.060 140)",
+          "oklch(0.42 0.090 140)",
+          "oklch(0.55 0.085 142)",
+          "oklch(0.70 0.075 142)",
+          "oklch(0.800 0.052 142)",
+          "oklch(0.858 0.098 142)",
+          "oklch(0.905 0.064 142)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Newsprint",
+        "canonical": "oklch(0.979 0.011 84)",
+        "tonalRamp": [
+          "oklch(0.155 0.013 46)",
+          "oklch(0.185 0.014 48)",
+          "oklch(0.235 0.016 50)",
+          "oklch(0.32 0.016 50)",
+          "oklch(0.50 0.018 64)",
+          "oklch(0.856 0.023 80)",
+          "oklch(0.948 0.016 82)",
+          "oklch(0.979 0.011 84)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Roast Ink",
+        "canonical": "oklch(0.226 0.022 62)",
+        "tonalRamp": [
+          "oklch(0.185 0.014 48)",
+          "oklch(0.226 0.022 62)",
+          "oklch(0.300 0.021 62)",
+          "oklch(0.455 0.018 62)",
+          "oklch(0.530 0.017 64)",
+          "oklch(0.660 0.015 68)",
+          "oklch(0.870 0.021 82)",
+          "oklch(0.93 0.010 88)"
+        ]
+      },
+      "live": {
+        "role": "tertiary",
+        "displayName": "Live Red",
+        "canonical": "oklch(0.520 0.170 25)",
+        "tonalRamp": [
+          "oklch(0.22 0.080 25)",
+          "oklch(0.34 0.130 25)",
+          "oklch(0.44 0.160 25)",
+          "oklch(0.520 0.170 25)",
+          "oklch(0.66 0.190 25)",
+          "oklch(0.76 0.150 25)",
+          "oklch(0.86 0.090 25)",
+          "oklch(0.95 0.035 25)"
+        ]
+      },
+      "speaker-1": {
+        "role": "tertiary",
+        "displayName": "Speaker Blue",
+        "canonical": "oklch(0.50 0.10 252)",
+        "tonalRamp": [
+          "oklch(0.22 0.055 252)",
+          "oklch(0.30 0.050 252)",
+          "oklch(0.40 0.090 252)",
+          "oklch(0.50 0.100 252)",
+          "oklch(0.62 0.100 252)",
+          "oklch(0.78 0.090 252)",
+          "oklch(0.90 0.040 252)",
+          "oklch(0.96 0.018 252)"
+        ]
+      },
+      "speaker-2": {
+        "role": "tertiary",
+        "displayName": "Speaker Green",
+        "canonical": "oklch(0.47 0.09 155)",
+        "tonalRamp": [
+          "oklch(0.21 0.045 155)",
+          "oklch(0.29 0.050 155)",
+          "oklch(0.38 0.080 155)",
+          "oklch(0.47 0.090 155)",
+          "oklch(0.60 0.090 155)",
+          "oklch(0.78 0.080 155)",
+          "oklch(0.90 0.040 155)",
+          "oklch(0.96 0.018 155)"
+        ]
+      },
+      "speaker-3": {
+        "role": "tertiary",
+        "displayName": "Speaker Amber",
+        "canonical": "oklch(0.48 0.09 55)",
+        "tonalRamp": [
+          "oklch(0.21 0.045 55)",
+          "oklch(0.30 0.050 60)",
+          "oklch(0.39 0.080 55)",
+          "oklch(0.48 0.090 55)",
+          "oklch(0.62 0.090 58)",
+          "oklch(0.80 0.080 60)",
+          "oklch(0.90 0.040 60)",
+          "oklch(0.96 0.018 60)"
+        ]
+      },
+      "notice": {
+        "role": "neutral",
+        "displayName": "Notice Ink",
+        "canonical": "oklch(0.415 0.019 62)",
+        "tonalRamp": [
+          "oklch(0.185 0.014 48)",
+          "oklch(0.235 0.016 50)",
+          "oklch(0.32 0.016 50)",
+          "oklch(0.415 0.019 62)",
+          "oklch(0.58 0.012 80)",
+          "oklch(0.78 0.012 84)",
+          "oklch(0.898 0.019 82)",
+          "oklch(0.96 0.014 82)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The note title. Once per screen, never anywhere else."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Pane headers such as \"Transcript\"."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Lens tabs, speaker names in stat cards, the record pill word."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Summary prose. The one paragraph read straight through, so the most generous line-height in the system."
+      },
+      "body-dense": {
+        "displayName": "Body Dense",
+        "purpose": "Transcript utterances, chat exchange, action-item rows, quick actions."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Section rules and rail group headings. Mono, uppercase, wide letterspacing."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Timestamps, turn counts, owner/due columns, citation chips, the grounding footer."
+      },
+      "numeral": {
+        "displayName": "Numeral",
+        "purpose": "The recorder's elapsed clock. The only large monospace in the product."
+      }
+    },
+    "shadows": [
+      {
+        "name": "hud-lift",
+        "value": "0 8px 24px var(--shadow-hud)",
+        "purpose": "The recorder HUD pill only. The single shadow in the system; not available to dialogs, cards, popovers or dropdowns. --shadow-hud is oklch(0.60 0.02 60 / 0.22) light, oklch(0.10 0.01 46 / 0.6) dark."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-colors",
+        "value": "color, background-color, border-color 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "The only transition in the system, on citation chips. Everything else changes state instantly."
+      },
+      {
+        "name": "scroll-smooth",
+        "value": "scrollTo({ behavior: 'smooth' })",
+        "purpose": "Citation click scrolls the transcript pane to the target segment, offset 56px below the pane header."
+      }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Record Pill",
+      "kind": "button",
+      "refersTo": "button-record",
+      "description": "The idle state of the recorder HUD. The product's front door.",
+      "html": "<button class=\"ds-record\"><span class=\"ds-record-dot\"></span><span class=\"ds-record-word\">Record</span><span class=\"ds-record-key\">⌘⇧R</span></button>",
+      "css": ".ds-record { display: inline-flex; align-items: center; gap: 11px; padding: 9px 13px; background: var(--pane); border: 1px solid var(--rule); border-radius: 0; box-shadow: 0 8px 24px var(--shadow-hud); cursor: pointer; } .ds-record-dot { width: 9px; height: 9px; background: var(--accent); } .ds-record-word { font-family: var(--font-bitter), Georgia, serif; font-size: 13.5px; font-weight: 600; color: var(--ink); } .ds-record-key { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9.5px; color: var(--meta-4); padding-left: 2px; } .ds-record:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Accent-filled mono action. The recorder's Stop, and the login submit.",
+      "html": "<button class=\"ds-btn-primary\">Stop</button>",
+      "css": ".ds-btn-primary { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 9px; background: var(--accent); color: var(--on-accent); border: none; border-radius: 0; cursor: pointer; } .ds-btn-primary:hover { background: var(--accent-pressed); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-btn-primary:disabled { color: var(--faint); cursor: not-allowed; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Bordered mono action. Pause and Resume in the HUD.",
+      "html": "<button class=\"ds-btn-outline\">Pause</button>",
+      "css": ".ds-btn-outline { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; padding: 5px 8px; background: transparent; color: var(--notice); border: 1px solid var(--rule-2); border-radius: 0; cursor: pointer; } .ds-btn-outline:hover { color: var(--ink); } .ds-btn-outline:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
+    },
+    {
+      "name": "Citation Chip",
+      "kind": "chip",
+      "refersTo": "chip-citation",
+      "description": "Inline timestamp anchoring a sentence to a transcript segment. The system's signature affordance.",
+      "html": "<button class=\"ds-chip-cite\" aria-pressed=\"false\">04:12</button>",
+      "css": ".ds-chip-cite { display: inline-block; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; padding: 1px 5px; margin: 0 2px; vertical-align: 1px; background: var(--tint); color: var(--accent-text); border: none; border-radius: 0; cursor: pointer; transition: color 150ms, background-color 150ms; } .ds-chip-cite:hover, .ds-chip-cite[data-active=\"true\"] { background: var(--tint-hover); } .ds-chip-cite:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
+    },
+    {
+      "name": "Ask Composer",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "The ask-your-notes field. The border lives on the wrapper, so focus is expressed on the container rather than the input.",
+      "html": "<form class=\"ds-composer\"><input class=\"ds-composer-input\" type=\"text\" placeholder=\"Ask this note…\" aria-label=\"Ask this note\" /><span class=\"ds-composer-lens\">Neutral Analyst</span><button class=\"ds-composer-ask\" type=\"submit\">Ask</button></form>",
+      "css": ".ds-composer { display: flex; align-items: center; gap: 9px; padding: 8px 10px; background: var(--paper); border: 1px solid var(--rule); border-radius: 0; } .ds-composer:focus-within { border-color: var(--accent); } .ds-composer-input { flex: 1; background: transparent; border: none; outline: none; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13px; color: var(--ink); } .ds-composer-input::placeholder { color: var(--placeholder); } .ds-composer-lens, .ds-composer-ask { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; } .ds-composer-lens { color: var(--accent); } .ds-composer-ask { background: none; border: none; color: var(--accent-pressed); cursor: pointer; } .ds-composer-ask:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
+    },
+    {
+      "name": "Lens Tab",
+      "kind": "nav",
+      "refersTo": "tab-lens",
+      "description": "A persona lens in the left rail. Selection is a 2px left border plus a surface change, never an outline.",
+      "html": "<div class=\"ds-rail\" role=\"tablist\"><div class=\"ds-rail-head\">Lens</div><button class=\"ds-tab ds-tab-on\" role=\"tab\" aria-selected=\"true\">Neutral Analyst</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Skeptic</button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Coach</button></div>",
+      "css": ".ds-rail { display: flex; flex-direction: column; width: 136px; padding-top: 14px; background: var(--rail); border-right: 1px solid var(--rule); } .ds-rail-head { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--meta); padding: 0 12px 10px; } .ds-tab { font-family: var(--font-bitter), Georgia, serif; font-size: 14px; font-weight: 600; line-height: 1.25; text-align: left; padding: 8px 11px 9px; border: none; border-left: 2px solid transparent; background: transparent; color: var(--rail-idle); cursor: pointer; } .ds-tab:hover { background: var(--raised); } .ds-tab-on { border-left-color: var(--accent); background: var(--paper); color: var(--ink); } .ds-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }"
+    },
+    {
+      "name": "Transcript Segment",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "One utterance. Active state is a 2px accent left border plus a green wash — the clearest expression of the whole system.",
+      "html": "<li class=\"ds-seg ds-seg-on\" aria-current=\"true\"><span class=\"ds-avatar\">AM</span><div class=\"ds-seg-body\"><div class=\"ds-seg-head\"><span class=\"ds-seg-name\">Ana M.</span><span class=\"ds-seg-time\">04:12</span></div><p class=\"ds-seg-text\">We should ship the recorder before the chat surface — it is the part nobody can work around.</p></div></li>",
+      "css": ".ds-seg { display: grid; grid-template-columns: 26px 1fr; gap: 10px; padding: 9px 18px 10px 14px; border-left: 2px solid transparent; list-style: none; } .ds-seg-on { border-left-color: var(--accent); background: var(--seg-wash); } .ds-avatar { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 9999px; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9.5px; background: var(--speaker-1-avatar); color: var(--speaker-1); } .ds-seg-head { display: flex; align-items: baseline; gap: 8px; } .ds-seg-name { font-family: var(--font-archivo), system-ui, sans-serif; font-size: 12px; color: var(--speaker-1); } .ds-seg-time { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9.5px; color: var(--meta-4); } .ds-seg-text { margin-top: 3px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13px; line-height: 1.56; color: var(--ink-2); }"
+    },
+    {
+      "name": "Section Rule",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Uppercase mono slug followed by a hairline filling the row. The system's only heading device inside the note column.",
+      "html": "<div class=\"ds-section\"><h2 class=\"ds-section-label\">Action items</h2><span class=\"ds-section-line\" aria-hidden=\"true\"></span></div>",
+      "css": ".ds-section { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; } .ds-section-label { margin: 0; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 8.5px; font-weight: 400; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); } .ds-section-line { flex: 1; height: 1px; background: var(--rule-2); }"
+    },
+    {
+      "name": "Speaker Stat Card",
+      "kind": "card",
+      "refersTo": "card-stat",
+      "description": "Per-speaker figures. Square, hairline-bordered, no shadow — the house card.",
+      "html": "<div class=\"ds-stat\"><div class=\"ds-stat-name\">Ana M.</div><div class=\"ds-stat-row\"><div>talk<br /><span class=\"ds-stat-v\">41%</span></div><div>asked<br /><span class=\"ds-stat-v\">7</span></div><div>fillers<br /><span class=\"ds-stat-v\">12</span></div></div></div>",
+      "css": ".ds-stat { padding: 10px 11px; background: var(--canvas); border: 1px solid var(--rule-2); border-radius: 0; } .ds-stat-name { font-family: var(--font-bitter), Georgia, serif; font-size: 14px; font-weight: 600; color: var(--speaker-1); } .ds-stat-row { display: flex; gap: 13px; margin-top: 7px; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9px; color: var(--meta-5); } .ds-stat-v { font-family: var(--font-archivo), system-ui, sans-serif; font-size: 14px; color: var(--ink-stat); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Action Item Row",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "A five-column task row with a bespoke 11px square checkbox and a bare citation timestamp.",
+      "html": "<li class=\"ds-item\"><input class=\"ds-check\" id=\"ai1\" type=\"checkbox\" /><label class=\"ds-item-text\" for=\"ai1\">Confirm the storage path before Track 3 starts</label><span class=\"ds-item-meta\">Ana M.</span><span class=\"ds-item-meta\">Fri</span><button class=\"ds-cite-bare\">18:04</button></li>",
+      "css": ".ds-item { display: grid; grid-template-columns: 18px 1fr 92px 70px 50px; align-items: center; gap: 11px; padding: 6px 0; border-bottom: 1px solid var(--rule-3); font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13.5px; color: var(--ink); list-style: none; } .ds-check { width: 11px; height: 11px; appearance: none; border: 1px solid var(--faint); border-radius: 0; cursor: pointer; } .ds-check:checked { background: var(--accent); border-color: var(--accent); } .ds-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-item-text { cursor: pointer; } .ds-item-meta { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; font-variant-numeric: tabular-nums; color: var(--meta-3); } .ds-cite-bare { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; background: none; border: none; color: var(--accent-pressed); cursor: pointer; } .ds-cite-bare:hover { text-decoration: underline; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Press Sheet",
+    "overview": "This is a print desk rendered in a browser. The light theme is warm newsprint — an off-white cream at oklch(0.979 0.011 84) that never reaches paper-white — and the dark theme is the same sheet under a desk lamp, an espresso brown-black at oklch(0.185 0.014 48) that never reaches pure black. Both themes carry a low-chroma warm hue through every neutral, so the greys are never neutral greys; they are aged paper and roasted ink. One colour is allowed to be loud: a deep forest-green accent that reads as press ink on the light sheet and as fresh ink under the lamp.\n\nNothing is rounded, nothing floats, and nothing is decorated. Structure is carried entirely by hairline rules and by the flat tonal difference between six named surfaces. The type does the hierarchy work: a serif for anything with a name or a number in it, a grotesque for prose, and a monospace shrunk to 8.5px and letterspaced into small-caps slugs for every label, timestamp and count. Density is the point — this is a reading and scanning surface for someone who already sat through the meeting, not a landing page trying to explain itself.\n\nThe one place the system permits softness is the human: speaker avatars are the only circles in the product, and per-speaker hues (blue, green, amber) are the only colours outside the accent family. People get rounded corners. Nothing else does.",
+    "keyCharacteristics": [
+      "Warm-neutral duotone: newsprint cream (light) / espresso (dark), never white, never black",
+      "Zero border radius on every surface, control and container — circles only for people",
+      "Hairline rules and flat tonal layering instead of shadows",
+      "One accent hue (forest green), used sparingly and always meaning \"grounded in the source\"",
+      "Micro-typography: 8.5–10px letterspaced uppercase mono for all metadata",
+      "Odd-number spacing rhythm (5 / 7 / 9 / 11 / 13 / 18 / 26px), tuned by eye rather than to a 4px grid"
+    ],
+    "rules": [
+      {
+        "name": "The One Ink Rule",
+        "body": "There is exactly one accent hue. A new colour is added only when a state genuinely cannot be expressed in green, warm neutral, or a speaker hue — which has happened once, for `live`. Do not introduce a blue for links, a red for destructive actions, or an amber for warnings; `notice` on `notice-bg` is the warning treatment.",
+        "section": "colors"
+      },
+      {
+        "name": "The No-Literal Rule",
+        "body": "app/globals.css is the only file in the repository permitted to name a colour. Zero oklch(), hex, rgb() or hsl() may appear in components/ or lib/; a convention test fails the build if one does. Runtime-varying colours (per-speaker) map through the static lookup in components/note-detail/speaker-colors.ts, because Tailwind cannot build class names at runtime.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-White Rule",
+        "body": "No surface is #fff and no ink is #000. Light tops out at 0.979 lightness with 0.011 chroma; dark bottoms out at 0.185 with 0.014 chroma. The warm hue (62–88°) is carried through every neutral.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Voice Rule",
+        "body": "Bitter names things; Archivo says things; Plex Mono files things. A serif in a paragraph or a grotesque in a label is a mistake, not a variation. No fourth face is added.",
+        "section": "typography"
+      },
+      {
+        "name": "The Slug Rule",
+        "body": "Every label under 11px is monospace, uppercase and letterspaced at 0.06em or wider. Below 11px, letterspacing is what keeps the glyphs apart; a tight 9px label is unreadable regardless of contrast.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Any column of numbers — owner, due, talk time, filler counts — carries tabular-nums. Ragged numerals in a scannable column defeat the column.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Sheet Rule",
+        "body": "Surfaces are flat. If two regions need separating, change the surface token or draw a hairline rule — never add a shadow. The HUD is the single exception because it is the only element genuinely outside the document plane.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do resolve every colour through a var() into app/globals.css and use the generated Tailwind utilities (bg-paper, text-ink-2, border-rule).",
+      "Do define every new token twice — once on :root, once on .dark and inside the @media (prefers-color-scheme: dark) { :root:not(.light) } block. Skipping the media block breaks system-preference users; skipping .dark breaks the toggle.",
+      "Do keep radius at 0 for every surface and control.",
+      "Do use mono, uppercase and ≥0.06em letterspacing for every label under 11px.",
+      "Do express selection as a 2px left border plus a wash fill.",
+      "Do express focus as outline-2 outline-offset-1 outline-accent on focus-visible.",
+      "Do carry tabular-nums on any column of figures.",
+      "Do map runtime-varying colours through a static lookup table, because Tailwind cannot build class names at runtime.",
+      "Do use text-pretty on the title, the summary, takeaways and transcript prose."
+    ],
+    "donts": [
+      "Don't write oklch(), hex, rgb() or hsl() anywhere in components/ or lib/. A convention test fails the build if you do.",
+      "Don't add a shadow. The HUD's --shadow-hud is the only one, and it is not available to other components.",
+      "Don't add a border radius to anything that is not a person's avatar or the live-recording dot.",
+      "Don't add a fourth typeface, or use Bitter for prose or Archivo for a label.",
+      "Don't introduce a second accent hue, a link blue, a destructive red, or a warning amber. Use accent, a speaker hue, or notice on notice-bg.",
+      "Don't use pure white or pure black for any surface or ink.",
+      "Don't call Math.random() or Date.now() in a render path.",
+      "Don't put a product name — working or otherwise — in user-facing copy or application code. The name is an open decision; see Overview → Naming."
+    ]
+  }
+}
