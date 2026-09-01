@@ -37,8 +37,13 @@ export default async function Home() {
             <Link href={`/notes/${note.id}`} className="font-body text-ink block underline">
               {note.title ?? "Untitled"}
             </Link>
-            <span className="mt-[3px] flex items-center gap-[7px]">
-              <span className="font-mono text-ink-2 text-xs">{note.createdAt}</span>
+            {/* Wraps rather than squeezing: the timestamp is one unbreakable
+                token and the column is narrow, so the pill drops to its own
+                line instead of splitting the date across two. */}
+            <span className="mt-[3px] flex flex-wrap items-center gap-x-[7px] gap-y-[3px]">
+              <span className="font-mono text-ink-2 text-xs whitespace-nowrap">
+                {note.createdAt}
+              </span>
               <StatusPill status={note.processingStatus} />
             </span>
           </li>
