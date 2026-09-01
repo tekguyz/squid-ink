@@ -39,29 +39,53 @@ export const POLL_INTERVAL_MS = 5_000;
 export const POLL_TICK_LIMIT = 120;
 
 /** The recorder HUD's action-button voice, matching audio-player.tsx on the
- *  same meta line: 9px mono, uppercase, square border, zero radius. */
+ *  same meta line: 9px mono, uppercase, square border, zero radius.
+ *
+ *  `bg-raised`, NOT `bg-canvas`. MEASURED 2026-09-01: in dark theme
+ *  `--canvas` and `--paper` resolve to the same oklch, so the button's computed
+ *  background was identical to the sheet behind it and its only boundary was
+ *  `border-rule-2` at 1.47:1 — under WCAG 1.4.11's 3:1 for the boundary of a
+ *  control. `raised` is also what DESIGN.md § Components → Buttons already
+ *  gives the quick-action button, so this is returning to the documented token
+ *  rather than inventing one. audio-player.tsx still carries the old
+ *  `bg-canvas`; it is outside this change's scope and is flagged, not edited.
+ *
+ *  No `disabled:` variants. The element is never natively disabled — see
+ *  aria-disabled below — so the unavailable state is styled through
+ *  `aria-disabled:`. `text-muted` rather than `text-meta`: meta measured
+ *  4.37:1 on dark paper, under the 4.5:1 the 9px type needs. */
 const BUTTON =
-  "font-mono text-[9px] tracking-[0.06em] uppercase cursor-pointer " +
-  "flex items-center gap-[7px] border border-rule-2 bg-canvas text-notice " +
-  "px-[9px] py-[5px] transition-colors " +
+  "font-mono text-[9px] tracking-[0.06em] uppercase " +
+  "flex items-center gap-[7px] border border-rule-2 bg-raised text-notice " +
+  "px-[9px] py-[5px] transition-colors cursor-pointer " +
   "hover:border-tint-hover hover:bg-tint hover:text-accent-text " +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent " +
-  "disabled:cursor-default disabled:text-meta disabled:hover:border-rule-2 " +
-  "disabled:hover:bg-canvas disabled:hover:text-meta";
+  "aria-disabled:cursor-default aria-disabled:text-muted " +
+  "aria-disabled:hover:border-rule-2 aria-disabled:hover:bg-raised " +
+  "aria-disabled:hover:text-muted";
 
-const ROW = "flex items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
+const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
 
+/** PROSE, not a slug. DESIGN.md's Slug Rule governs labels; these are
+ *  sentences, and 9px uppercase at 0.14em is the least readable setting in the
+ *  system to have been carrying the only text that explains a failure. This is
+ *  the notice-block treatment DESIGN.md § Components → Cards already specifies:
+ *  "`notice-bg` fill, `notice` text at 11.5px, 9px × 7px" — copied to the
+ *  character from transcript-pane.tsx:38, which is the existing instance.
+ *  (detect.mjs flags 11.5px as off the type ramp; DESIGN.md line 471 is the
+ *  ramp entry it does not know about, so that advisory is a false positive.) */
 const NOTICE =
-  "font-mono text-[9px] tracking-[0.14em] uppercase text-meta";
+  "bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice";
 
-const STANDALONE_NOTICE = `${ROW} ${NOTICE}`;
+const STANDALONE_NOTICE = `${ROW} block`;
 
 /** Every outcome the action can report other than "started". Each is a fact
- *  about someone else's action, never an invitation to press again. */
+ *  about someone else's action, never an invitation to press again. Full
+ *  sentences, full stops — they are read, not scanned. */
 const OUTCOME_NOTICE: Record<Exclude<TranscriptionTrigger, "started">, string> = {
-  "not-claimed": "Already being transcribed",
-  "no-audio": "The recording never finished uploading",
-  "not-found": "This note is no longer available",
+  "not-claimed": "Already being transcribed.",
+  "no-audio": "The recording never finished uploading.",
+  "not-found": "This note is no longer available.",
 };
 
 export function TranscribeButton({
@@ -133,6 +157,12 @@ export function TranscribeButton({
   }, [polling, noteId, router]);
 
   const start = useCallback(() => {
+    // aria-disabled does not stop a click the way the native attribute does,
+    // so the guard has to live here. Harmless either way — the server's claim
+    // is atomic and a stray press returns "not-claimed" — but a second
+    // in-flight request would still be a wasted round trip.
+    if (working || pending) return;
+
     setNotice(null);
     setRequested(true);
 
@@ -155,20 +185,42 @@ export function TranscribeButton({
       // Whatever happened, the server's idea of this note has moved.
       router.refresh();
     });
-  }, [noteId, router]);
+  }, [noteId, router, working, pending]);
+
+  // A terminal 'failed' note used to render NOTHING here, so the outcome of a
+  // user-pressed action was communicated by a control quietly ceasing to
+  // exist — on a page otherwise identical to the one before the press. The
+  // decision this component enforces is "no RETRY affordance"; it never
+  // authorised "no status either". So: a statement and a next step, in prose,
+  // with no control attached. The button stays absent.
+  if (status === "failed") {
+    return (
+      <p className={STANDALONE_NOTICE}>
+        <span className={NOTICE}>
+          This recording could not be transcribed. Record again to try.
+        </span>
+      </p>
+    );
+  }
 
   if (!eligible) return null;
 
-  if (gaveUp) {
-    return <p className={STANDALONE_NOTICE}>Still working — refresh to check</p>;
-  }
+  const message = gaveUp
+    ? "Still working. Refresh to check."
+    : notice;
 
   return (
     <div className={ROW}>
       <button
         type="button"
         className={BUTTON}
-        disabled={working || pending}
+        // aria-disabled, NOT the native attribute. `disabled` removes the
+        // element from the accessibility tree AND from the tab order, so the
+        // label flipping to "Transcribing…" — the only feedback a press
+        // produces — was announced to nobody, and a keyboard user lost focus
+        // mid-interaction. This keeps it focusable and announceable; `start`
+        // guards the press instead.
+        aria-disabled={working || pending}
         onClick={start}
       >
         {/* The same 9px filled square the recorder HUD and the audio player
@@ -180,7 +232,15 @@ export function TranscribeButton({
         {working ? "Transcribing…" : "Transcribe"}
       </button>
 
-      {notice ? <span className={NOTICE}>{notice}</span> : null}
+      {/* Rendered unconditionally and filled later. A role="status" element
+          that appears at the same instant as its text is not reliably
+          announced — the region has to already be in the accessibility tree
+          for the change to register as one. Empty, it is invisible and takes
+          no space; the gave-up message shares it rather than replacing the
+          button, so focus is never dropped. */}
+      <span role="status" className={message ? NOTICE : "sr-only"}>
+        {message}
+      </span>
     </div>
   );
 }

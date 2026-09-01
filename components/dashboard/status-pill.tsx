@@ -35,16 +35,22 @@ interface Look {
   marker: string;
 }
 
+/** MEASURED 2026-09-01, in-page, both themes. At 9px every label is small
+ *  text, so the bar is WCAG 1.4.3 AA's 4.5:1 — not the 3:1 large-text bar.
+ *  `faint` came in at 2.93:1 light / 3.10:1 dark and `meta` at 4.37:1 dark;
+ *  both failed and both are replaced below. `muted` and `meta-3` clear it in
+ *  both themes, and the states stay told apart by word and marker rather than
+ *  by lightness — which is the restraint this component was after anyway. */
 const LOOKS: Record<ProcessingStatus, Look> = {
   local: {
     label: "Local",
-    chrome: "border-rule-2 text-faint",
-    marker: "bg-faint",
+    chrome: "border-rule-2 text-muted",
+    marker: "bg-muted",
   },
   uploading: {
     label: "Uploading",
-    chrome: "border-rule-2 text-meta",
-    marker: "bg-meta",
+    chrome: "border-rule-2 text-meta-3",
+    marker: "bg-meta-3",
   },
   analyzing: {
     label: "Transcribing",

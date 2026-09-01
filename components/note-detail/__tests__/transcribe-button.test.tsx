@@ -71,13 +71,18 @@ describe("TranscribeButton — when it exists at all", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("is ABSENT from the DOM for a failed note — 'failed' is terminal", () => {
+  it("offers NO control for a failed note — 'failed' is terminal", () => {
     // No retry affordance. This is the explicit design decision, not an
     // oversight, and this test is what stops one being added by accident.
-    const { container } = render(
-      <TranscribeButton noteId={NOTE} status="failed" />,
-    );
-    expect(container).toBeEmptyDOMElement();
+    render(<TranscribeButton noteId={NOTE} status="failed" />);
+    expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("still SAYS what happened to a failed note", () => {
+    // The decision was "no retry", not "no status". A control silently
+    // ceasing to exist is not how the outcome of a press gets reported.
+    render(<TranscribeButton noteId={NOTE} status="failed" />);
+    expect(screen.getByText(/could not be transcribed/i)).toBeInTheDocument();
   });
 
   it("is ABSENT for a note that never started uploading", () => {
@@ -89,7 +94,8 @@ describe("TranscribeButton — when it exists at all", () => {
 
   it("offers a pressable Transcribe for an 'uploading' note", () => {
     render(<TranscribeButton noteId={NOTE} status="uploading" />);
-    expect(screen.getByRole("button", { name: /transcribe/i })).toBeEnabled();
+    const button = screen.getByRole("button", { name: /transcribe/i });
+    expect(button).not.toHaveAttribute("aria-disabled", "true");
   });
 });
 
@@ -106,7 +112,7 @@ describe("TranscribeButton — pressing it", () => {
     render(<TranscribeButton noteId={NOTE} status="uploading" />);
 
     await press();
-    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
 
     await tick();
     expect(readProcessingStatus).toHaveBeenCalledWith(NOTE);
@@ -151,7 +157,7 @@ describe("TranscribeButton — pressing it", () => {
     await press();
 
     await settle();
-    expect(screen.getByText(/already/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/already being transcribed\./i);
     expect(refresh).toHaveBeenCalled();
   });
 
@@ -162,7 +168,23 @@ describe("TranscribeButton — pressing it", () => {
     await press();
 
     await settle();
-    expect(screen.getByText(/never finished uploading/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/never finished uploading\./i);
+  });
+});
+
+describe("TranscribeButton — accessibility", () => {
+  it("keeps a live region mounted before it has anything to say", async () => {
+    // A role="status" that appears at the same instant as its text is not
+    // reliably announced. The region must already be in the tree.
+    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("ignores a press while it is already working", async () => {
+    // aria-disabled does not block the click the native attribute would.
+    render(<TranscribeButton noteId={NOTE} status="analyzing" />);
+    await press();
+    expect(triggerTranscription).not.toHaveBeenCalled();
   });
 });
 
@@ -172,7 +194,11 @@ describe("TranscribeButton — an 'analyzing' note", () => {
     // that without the user having been the one who triggered it.
     render(<TranscribeButton noteId={NOTE} status="analyzing" />);
 
-    expect(screen.getByRole("button")).toBeDisabled();
+    // aria-disabled, not the native attribute: the element must stay in the
+    // tab order and the accessibility tree so the label change is announced.
+    const button = screen.getByRole("button");
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).not.toBeDisabled();
     expect(triggerTranscription).not.toHaveBeenCalled();
 
     await tick();
@@ -199,6 +225,10 @@ describe("TranscribeButton — an 'analyzing' note", () => {
     await tick(POLL_TICK_LIMIT + 1);
 
     expect(screen.getByText(/refresh to check/i)).toBeInTheDocument();
+    // The message shares the button's live region rather than replacing the
+    // subtree, so a keyboard user does not lose focus at the cap.
+    expect(screen.getByRole("button")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(/refresh to check/i);
 
     const reads = readProcessingStatus.mock.calls.length;
     await tick(3);
