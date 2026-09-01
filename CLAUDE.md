@@ -154,9 +154,14 @@ response or `list()` metadata.
 The notes row is written when the upload **starts**, at
 `processing_status = 'uploading'`, because the path is deterministic. This track
 never writes `'analyzing'` or `'completed'` — those are Track 3's. A failed
-upload deliberately leaves a visible row with its audio still in IndexedDB;
-**nothing reconciles that pair yet**, so Track 3 must check the object exists
-before transcribing.
+upload writes `'failed'` in-session through `markUploadFailed()` — tier 1,
+shipped 2026-09-01 — and still leaves its audio in IndexedDB; **nothing
+reconciles that pair**, so Track 3 must check the object exists before
+transcribing.
+
+**Corrected 2026-09-01.** This paragraph read "leaves a visible row … nothing
+reconciles that pair yet", written when tier 1 did not exist. The row half is
+now reconciled in milliseconds; the blob half is not.
 
 Codec strings are feature-detected through `lib/recorder/codec.ts`. Never
 hardcode one, and keep WebM ahead of MP4 — Chromium accepts both, so the order
@@ -211,8 +216,9 @@ claimed, which is exactly the crash window worth measuring. A retry upsert
 restarting the clock is correct, not a bug.
 
 Reconciliation is two-tier and **this track owns only tier 2**. Tier 1 — the
-in-session `'failed'` write on a caught upload error — is still unbuilt and
-belongs to the recorder. The check constraint that unblocks it shipped here.
+in-session `'failed'` write on a caught upload error — belongs to the recorder
+and **shipped there on 2026-09-01** as `markUploadFailed()` in
+`app/notes/actions.ts`. The check constraint that unblocks it shipped here.
 
 Diarization is a pure function of duration in `diarization-policy.ts`: **28
 minutes**, a deliberate two-minute margin under Gemini's 30-minute diarized cap,
@@ -237,7 +243,10 @@ never from the published samples:
   numbered by **first appearance**, never by digits parsed out of the label.
 - **Storage `download()` types every Blob `application/octet-stream`**, which
   Gemini rejects with a 400. `resolveAudioMimeType()` prefers the object's own
-  `list()` metadata and strips codec parameters.
+  `list()` metadata and strips codec parameters. It **moved to
+  `lib/audio/mime-type.ts` on 2026-09-01** when playback needed the same rule;
+  `gemini-client.ts` re-exports it. Import it, never re-derive it — the browser
+  playback path hits the identical 400.
 
 Chunk writes precede the `'completed'` flip. A partial insert leaves the row at
 `'analyzing'` and the staleness sweep fails it an hour later — **that existing
