@@ -428,6 +428,24 @@ gates, in that order.
   review, used alongside `requesting-code-review`. Confirm both are
   actually installed in the active Claude Code session before a prompt
   names them — an uninstalled skill is silently ignored.
+- **Design review tooling**: `impeccable` adopted 2026-08-31 for frontend
+  design work — critique, polish, audit and redesign of UI surfaces. It is
+  invoked as `/impeccable critique <file>` for a scored UX design review,
+  and `/impeccable polish` for a final quality pass before shipping. It was
+  used on the audio-player and transcribe-button critiques before it was
+  written down here. `critique` spawns **two isolated sub-agents** (its
+  Assessment A and Assessment B) that must not see each other's output
+  before synthesis. That is the skill's own internal mechanism, not task
+  delegation — it runs at full capability even when a prompt's budget says
+  "no delegation", and running it inline instead produces a self-declared
+  degraded report. Same caveat as above: confirm it is installed in the
+  active session before a prompt names it. Its install also generated
+  `DESIGN.md` at the repo root (via `/impeccable document` in scan mode, read
+  out of `app/globals.css` and `components/` rather than authored) and
+  `.impeccable/`, whose `config.json` sets `hook.enabled: false` to disable
+  the Edit/Write hook the installer added unasked. `DESIGN.md` describes the
+  incumbent system; it does not outrank `app/globals.css` or the
+  `design-reference/*.dc.html` files, which remain the source of truth.
 ## Related documents in this project
  
 - `ROADMAP.md` — PRD + technical roadmap
