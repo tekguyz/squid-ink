@@ -1,7 +1,12 @@
 /** Database row shapes. These mirror supabase/schemas/*.sql — they are not
  *  the view types the components consume, which live in lib/notes/view-types.ts. */
 
-import type { PersonaDepth, SpeakerToken } from "@/lib/notes/view-types";
+import type { PersonaDepth, ProcessingStatus, SpeakerToken } from "@/lib/notes/view-types";
+
+/** Declared in view-types.ts so client components can import it without
+ *  pulling in the row shapes. Re-exported here because this is where the rest
+ *  of the notes table's shape lives. */
+export type { ProcessingStatus } from "@/lib/notes/view-types";
 
 export type ChunkType =
   | "summary"
@@ -9,15 +14,6 @@ export type ChunkType =
   | "action_item"
   | "transcript_segment"
   | "imported_doc";
-
-/** Mirrors the check constraint in supabase/schemas/notes.sql. 'failed' is
- *  terminal and is written only by lib/transcription/sweep.ts. */
-export type ProcessingStatus =
-  | "local"
-  | "uploading"
-  | "analyzing"
-  | "completed"
-  | "failed";
 
 export interface NoteRow {
   id: string;

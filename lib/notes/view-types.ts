@@ -4,6 +4,20 @@
 
 export type SpeakerToken = "speaker-1" | "speaker-2" | "speaker-3";
 
+/** Mirrors notes_processing_status_check in supabase/schemas/notes.sql, read
+ *  back from the live catalog on 2026-09-01.
+ *
+ *  It lives here rather than in lib/notes/types.ts because client components
+ *  need it — the Transcribe button branches on it — and types.ts already
+ *  imports from this module. Declaring it there and importing it here would
+ *  turn a one-way type dependency into a cycle. types.ts re-exports it. */
+export type ProcessingStatus =
+  | "local"
+  | "uploading"
+  | "analyzing"
+  | "completed"
+  | "failed";
+
 export interface Speaker {
   name: string;
   initials: string;
@@ -63,6 +77,9 @@ export interface Note {
   id: string;
   title: string;
   meta: string;
+  /** Where this note sits in the transcription pipeline. Read by the
+   *  Transcribe button, which renders nothing at all once it is terminal. */
+  processingStatus: ProcessingStatus;
   /** The Storage key for the recording, `{user_id}/{note_id}`, or null when the
    *  note has no audio. Carried raw rather than formatted — it is the key the
    *  playback helper fetches with, not something to display. */

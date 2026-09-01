@@ -92,6 +92,17 @@ const PERSONAS: PersonaRow[] = [
 describe("buildNoteViewModel", () => {
   const note = buildNoteViewModel(row, chunks, PERSONAS);
 
+  it("carries processing_status through as processingStatus", () => {
+    // The Transcribe button branches on this, and renders nothing at all once
+    // the note is terminal. A dropped field would silently show the button on
+    // a completed note.
+    expect(note.processingStatus).toBe("completed");
+    expect(
+      buildNoteViewModel({ ...row, processing_status: "uploading" }, [], [])
+        .processingStatus,
+    ).toBe("uploading");
+  });
+
   it("carries the row's id and title through", () => {
     expect(note.id).toBe(NOTE_ID);
     expect(note.title).toBe("Pilot pricing & rollout");
