@@ -665,7 +665,7 @@ Code that probes for a single guessed cookie name will be wrong.
 
 ## Magic-link tokens are spent by a GET, before any human clicks (recorded 2026-08-30)
 
-**Open. Not built.**
+**RESOLVED 2026-09-01.** See the closing note below.
 
 Observed in this session: the first link emailed to `admin+pathb@tekguyz.com`
 came back `otp_expired` on its very first fetch, having never been opened by a
