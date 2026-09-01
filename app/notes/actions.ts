@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
+import {
+  claimNoteForTranscription,
+  transcribeClaimedNote,
+} from "@/lib/transcription/transcribe-note";
+import type { UploadingRow } from "@/lib/transcription/sweep";
 
 /**
  * Creates the notes row for a recording, called as the upload STARTS.
@@ -106,4 +113,92 @@ export async function markUploadFailed(noteId: string): Promise<void> {
   if (error) throw new Error(`Failed to mark note as failed: ${error.message}`);
 
   revalidatePath("/");
+}
+
+/** What the browser learns the moment the claim settles. Deliberately not a
+ *  boolean: "we did not start it" has three causes and the button says
+ *  something different for each. */
+export type TranscriptionTrigger =
+  | "started"
+  | "not-claimed"
+  | "no-audio"
+  | "not-found";
+
+/**
+ * The user-pressed transcription trigger — the second of the two options
+ * docs/KNOWN_GAPS.md § "The cron sweep is the ONLY transcription trigger"
+ * left open, and the one the owner chose. There is no automatic call on
+ * recording stop, and there is no retry for a 'failed' note.
+ *
+ * THE SAME CLAIM AS THE CRON. claimNoteForTranscription is the one
+ * implementation of `update ... eq(id) ... eq(processing_status,'uploading')`,
+ * and the sweep in lib/transcription/sweep.ts calls it too. A zero-row result
+ * short-circuits here exactly as it does there, before any download and before
+ * any Gemini call — that is a cost guarantee, not a tidiness one.
+ *
+ * NO AGE CHECK. The sweep's one-hour threshold exists so an unattended
+ * reconciliation does not false-fail an upload still in flight. A user pressing
+ * a button has already decided the note is ready, so this passes
+ * failOnMissingObject: true unconditionally: if the object is not there, the
+ * upload is lost and the row goes terminal without spending a call.
+ *
+ * THE AUTHENTICATED CLIENT, never the secret key. RLS confines the read, the
+ * claim and every write to the caller's own rows, so a request for somebody
+ * else's note returns zero claimed rows the same way a status mismatch does —
+ * no application-level user_id filter, which would mask an RLS failure instead
+ * of exposing it. app/api/cron/transcribe/route.ts remains the only shipped
+ * file that reads SUPABASE_SECRET_KEY.
+ *
+ * The claim is awaited; the transcription is not. next/server's `after` runs
+ * the callback once the response is finished (stable since Next 15.1; on
+ * Vercel it is backed by waitUntil), so the browser is told whether it won the
+ * race in milliseconds rather than holding a request open for the whole Gemini
+ * pass. The callback inherits this route's maxDuration, which on Hobby is
+ * 300 s — the same ceiling the cron sweep is sized against.
+ */
+export async function triggerTranscription(
+  noteId: string,
+): Promise<TranscriptionTrigger> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Cannot transcribe a note: not signed in.");
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    throw new Error("Cannot transcribe a note: GEMINI_API_KEY is not set.");
+  }
+
+  // No .eq("user_id", ...). RLS supplies it; a note owned by somebody else
+  // must read as "not found", which is what an RLS-filtered empty result is.
+  const { data: row, error } = await supabase
+    .from("notes")
+    .select("id, user_id, audio_storage_path, audio_duration_seconds, updated_at")
+    .eq("id", noteId)
+    .maybeSingle<UploadingRow>();
+
+  if (error) throw new Error(`Failed to read the note: ${error.message}`);
+  if (!row) return "not-found";
+
+  const ports = createTranscriptionPorts(supabase, geminiKey);
+
+  const outcome = await claimNoteForTranscription(ports, row, {
+    failOnMissingObject: true,
+  });
+
+  // Both the dashboard pill and the note's own server-rendered status move on
+  // a claim, so both caches are stale the moment it lands.
+  revalidatePath("/");
+  revalidatePath(`/notes/${noteId}`);
+
+  if (outcome === "no-object") return "no-audio";
+  if (outcome !== "claimed") return "not-claimed";
+
+  after(async () => {
+    await transcribeClaimedNote(ports, row);
+  });
+
+  return "started";
 }

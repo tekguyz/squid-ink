@@ -40,6 +40,19 @@ describe("project conventions", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("reads SUPABASE_SECRET_KEY from exactly one shipped file", () => {
+    // The key bypasses RLS. The cron route needs it because a cron invocation
+    // carries no session and therefore no RLS identity; nothing else does. The
+    // manual Transcribe action added on 2026-09-01 runs as the signed-in user,
+    // and this guard is what keeps it that way.
+    const readers = sourceFiles().filter((f) =>
+      read(f).includes("process.env.SUPABASE_SECRET_KEY"),
+    );
+    expect(readers).toEqual([
+      path.join("app", "api", "cron", "transcribe", "route.ts"),
+    ]);
+  });
+
   it("keeps every file under the 400-line hard ceiling", () => {
     const offenders = sourceFiles()
       .map((f) => [f, read(f).split("\n").length] as const)
