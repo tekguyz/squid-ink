@@ -85,10 +85,28 @@ export function createTranscriptionStore(db: SupabaseClient): TranscriptionStore
           error.message,
         );
       } else if ((data?.length ?? 0) === 0) {
-        // Someone else moved the row. Say so rather than silently doing
-        // nothing — this is the only place it would ever be visible.
+        // Zero rows has TWO causes and they need different answers, so read the
+        // row back rather than assert one of them. On the cron's secret-key
+        // client the only possible cause is a lost race. On the Server Action's
+        // client it can equally be RLS declining the write — and RLS returns an
+        // empty result, not an error, so it is indistinguishable here without
+        // looking. Claiming "somebody else moved it" in that case sends whoever
+        // reads this log after a race that never happened, and the Vercel log
+        // is the only diagnosis this pipeline has.
+        //
+        // A second query on a failure path only, never on the happy one.
+        const { data: current } = await db
+          .from("notes")
+          .select("processing_status")
+          .eq("id", noteId)
+          .maybeSingle();
+
         console.error(
-          `[transcribe] note ${noteId} was no longer 'analyzing'; not marked failed`,
+          current
+            ? `[transcribe] note ${noteId} not marked failed: it is now ` +
+                `'${current.processing_status}', not 'analyzing'`
+            : `[transcribe] note ${noteId} not marked failed: the row is not ` +
+                `visible to this client (deleted, or RLS declined the write)`,
         );
       }
 

@@ -44,6 +44,18 @@ describe("readProcessingStatus", () => {
     );
   });
 
+  it("throws on a status the app has no case for", async () => {
+    // A value added to notes_processing_status_check in SQL but not to
+    // ProcessingStatus would otherwise flow through as a valid one and reach
+    // the polling component's fallthrough, reading as "still analyzing"
+    // forever. Same rule as the transport failure above: quietly broken must
+    // not look like quietly working.
+    const stub = reader({ data: { processing_status: "summarising" }, error: null });
+    await expect(readProcessingStatus(NOTE, stub.reader)).rejects.toThrow(
+      /unknown processing_status "summarising"/i,
+    );
+  });
+
   it("never filters on user_id — RLS supplies ownership", async () => {
     const stub = reader({ data: { processing_status: "uploading" }, error: null });
     await readProcessingStatus(NOTE, stub.reader);

@@ -115,3 +115,55 @@ describe("createTranscriptionPorts — objectExists", () => {
     expect(stub.list).not.toHaveBeenCalled();
   });
 });
+
+/** A db whose guarded UPDATE matches nothing, and whose SELECT read-back
+ *  reports whatever the row actually looks like now. */
+function dbWithFailedUpdate(current: { processing_status: string } | null) {
+  const updateChain = {
+    eq: () => updateChain,
+    select: async () => ({ data: [] as unknown[], error: null }),
+  };
+  const selectChain = {
+    eq: () => selectChain,
+    maybeSingle: async () => ({ data: current, error: null }),
+  };
+
+  return {
+    from: () => ({
+      update: () => updateChain,
+      select: () => selectChain,
+    }),
+    storage: { from: () => ({}) },
+  } as unknown as SupabaseClient;
+}
+
+describe("createTranscriptionStore — markFailed on zero rows", () => {
+  it("reports the status it actually found, not an assumed race", async () => {
+    // Zero rows has two causes. On the Server Action's cookie client RLS can
+    // decline the write and return an empty result rather than an error, which
+    // is indistinguishable from a lost race without looking. The Vercel log is
+    // this pipeline's only diagnosis, so it must not name the wrong one.
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const ports = createTranscriptionPorts(
+      dbWithFailedUpdate({ processing_status: "completed" }),
+      KEY,
+    );
+
+    await ports.store.markFailed("note-1", "gemini timed out");
+
+    const lines = error.mock.calls.map((c) => c.join(" "));
+    expect(lines.some((l) => l.includes("it is now 'completed'"))).toBe(true);
+    error.mockRestore();
+  });
+
+  it("says so when the row is not visible to this client at all", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const ports = createTranscriptionPorts(dbWithFailedUpdate(null), KEY);
+
+    await ports.store.markFailed("note-1", "gemini timed out");
+
+    const lines = error.mock.calls.map((c) => c.join(" "));
+    expect(lines.some((l) => l.includes("not visible to this client"))).toBe(true);
+    error.mockRestore();
+  });
+});
