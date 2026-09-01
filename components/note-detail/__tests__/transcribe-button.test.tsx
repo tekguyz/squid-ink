@@ -125,16 +125,23 @@ describe("TranscribeButton — pressing it", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
-  it("stops polling once the note reaches a terminal state", async () => {
+  it("keeps asking while the server view is still behind, rather than stalling", async () => {
+    // REGRESSION. Clearing the interval on the first terminal reading left a
+    // dead poll whenever router.refresh() came back with the OLD status: the
+    // effect's dependencies had not changed, so nothing restarted it and the
+    // button sat on "Transcribing…" for the rest of the session. Unmounting is
+    // the stop condition — see the test below — not the first terminal read.
     render(<TranscribeButton noteId={NOTE} status="uploading" />);
 
     await press();
     readProcessingStatus.mockResolvedValue("failed");
-    await tick();
 
-    const reads = readProcessingStatus.mock.calls.length;
+    await tick();
+    const afterFirst = readProcessingStatus.mock.calls.length;
+    expect(refresh).toHaveBeenCalled();
+
     await tick(3);
-    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+    expect(readProcessingStatus.mock.calls.length).toBeGreaterThan(afterFirst);
   });
 
   it("says so, and stops working, when another caller already claimed the row", async () => {

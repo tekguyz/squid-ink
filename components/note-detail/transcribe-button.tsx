@@ -103,10 +103,20 @@ export function TranscribeButton({
           if (cancelled || next === null) return;
           if (next !== "completed" && next !== "failed") return;
 
-          clearInterval(timer);
           // The transcript pane is a Server Component reading through
           // lib/notes/get-note.ts. Refresh it rather than building a second,
           // client-side path to the same rows.
+          //
+          // DELIBERATELY NOT clearInterval HERE. Clearing on the first
+          // terminal reading left a dead poll whenever the refresh came back
+          // still saying 'uploading' — the effect's dependencies had not
+          // changed, so nothing restarted it, and the button sat on
+          // "Transcribing…" for the rest of the session. The poll's real stop
+          // condition is this component unmounting, which is exactly what a
+          // refresh carrying the terminal status causes: `eligible` goes
+          // false, the component returns null, and the cleanup below runs.
+          // Until that happens, asking again is the correct behaviour, and
+          // POLL_TICK_LIMIT still bounds it.
           router.refresh();
         })
         .catch((error: unknown) => {
