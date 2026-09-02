@@ -1281,29 +1281,22 @@ out were recorded, and the owner chose the second:
 - A per-note route the recorder calls on stop. **Not built.**
 - A deliberate "Transcribe" action the user presses. **Built, 2026-09-01.**
 
-### The transcript pane is blank while a note is still processing (recorded 2026-09-01)
+### CLOSED 2026-09-01 — the transcript pane explained itself
 
-`components/note-detail/transcript-pane.tsx` renders `note.segments` and
-nothing else. A note at `'uploading'` or `'analyzing'` has no segments, so the
-pane is empty — no heading, no line of prose, nothing that says the transcript
-is coming rather than missing. The Transcribe button is on the shell's meta
-line (`note-detail-shell.tsx`), which is where the prompt pack asked for it, so
-the pane itself says nothing at all.
+`components/note-detail/transcript-pane.tsx` renders a `TranscriptEmptyState`
+whenever `note.segments` is empty, whatever the status. One line of prose keyed
+off `processingStatus` says which of the five situations this is: not uploaded,
+waiting, being transcribed now, transcribed but silent, or a last attempt that
+did not finish. `WHY` is typed `Record<ProcessingStatus, string>`, so a new
+status is a compile error rather than a blank pane.
 
-This is known rather than unnoticed because a parallel implementation of the
-same feature solved it and was not the one that shipped. That branch put the
-button inside the pane, wrapped in a `TranscriptEmptyState` that rendered a
-short prose line keyed off `processingStatus` — "why there is no transcript
-yet". Merging it now would double-mount the button, so the branch was deleted
-and its commit preserved as the tag `archive/on-demand-transcription`
-(`1bac5a4`, pushed to origin). Read that file for the copy and the shape:
-
-    git show archive/on-demand-transcription:components/note-detail/transcript-pane.tsx
-
-Not built here because it is a design decision, not a defect fix: the empty
-state needs its own copy for four statuses, and the wording is the owner's
-call. Whoever picks it up should take the idea from the tag and re-site it in
-the pane WITHOUT the button, which already has a home.
+The copy and the shape came from the deleted branch preserved as the tag
+`archive/on-demand-transcription` (`1bac5a4`). The re-site dropped that
+branch's Transcribe button on purpose — the button stays on the shell's meta
+line in `note-detail-shell.tsx`, and duplicating it was the reason the branch
+was not merged. `components/note-detail/__tests__/transcript-pane-empty-state.test.tsx`
+asserts all five strings plus the `'completed'`-with-segments case, which must
+still render the transcript.
 
 ### Nothing renders a live transcript while recording (recorded 2026-08-31)
 
