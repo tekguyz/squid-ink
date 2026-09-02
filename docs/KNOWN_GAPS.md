@@ -1146,6 +1146,36 @@ Two ways out were identified, neither built and neither chosen:
 briefs it rather than rediscovering it. `capture.ts` is written against an
 injectable `CaptureDeps`, so either shape is testable without a browser.
 
+**DECIDED 2026-09-01, by the owner: the mode is chosen before recording starts,
+never by a failed prompt.** A cancelled picker must never silently become a
+different kind of recording. Everything below follows from that.
+
+**DECIDED 2026-09-01: Android selects local automatically, and shows no
+choice.** Chrome on Android does not implement `getDisplayMedia` at all, so
+there is nothing to offer. The rule is a **capability check, not a device
+check** — `typeof navigator.mediaDevices?.getDisplayMedia === "function"` — so
+no user-agent string is parsed and the branch flips on its own if Android ever
+ships support. When it is false there is one mode, no picker, and the HUD says
+so.
+
+**NOT VERIFIED on a real device.** The absence above matches Chrome's
+documented support and nothing here can test it — this machine has no Android
+handset and jsdom has neither API. It belongs in
+`docs/qa/recorder-manual-test-protocol.md` as a real-device check before it is
+trusted, in the same class as device handoff, echo and Safari.
+
+**Still open: how desktop displays the two modes.** The choice itself is
+settled; only its presentation is not. Two shapes were named, neither chosen:
+
+- **Two start controls** — "Record meeting" and "Record locally" — so the
+  intent is picked by which control is pressed.
+- **One record control plus a mode switch beside it**, remembering the last
+  choice.
+
+This is a design question, not an implementation one, and it is deliberately
+left to a design pass rather than settled in this file. Surface 02b has copy
+for neither, so whichever wins needs new copy as well as new controls.
+
 ## Transcription pipeline (recorded 2026-08-31)
 
 What shipped: a `CRON_SECRET`-gated Vercel Cron sweep that claims `'uploading'`
