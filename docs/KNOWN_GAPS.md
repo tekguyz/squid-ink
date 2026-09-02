@@ -153,8 +153,10 @@ transcription or RAG data, PWA setup, brand assets, and routing beyond
 **Amended 2026-08-31.** This paragraph describes the Note Detail build only, and
 three of its items have since closed: Supabase, auth and the `/login` +
 `/auth/confirm` routes shipped on 2026-08-30, and surface 02b shipped on
-2026-08-31. Still unbuilt: the remaining nine App Surfaces screens, transcription
-and RAG, PWA setup, brand assets, and the composer's send path. Read the dated
+2026-08-31. Still unbuilt: the remaining nine App Surfaces screens, RAG,
+PWA setup, brand assets, and the composer's send path. **Transcription closed
+too, in two steps:** the cron sweep on 2026-08-31 and the user-pressed
+Transcribe action on 2026-09-01 — see the dated sections below. Read the dated
 sections below rather than this one — it is kept for the reasoning, not as a
 current inventory.
 
@@ -318,8 +320,9 @@ started**, or is a known incompleteness in what shipped.
 
   **Upload code RESOLVED 2026-08-31. Playback UI RESOLVED 2026-08-31.**
   `lib/recorder/upload-audio.ts` uploads directly client-to-Storage at
-  `{user_id}/{note_id}` with `upsert: true`, and `app/notes/actions.ts` writes
-  `audio_storage_path`. Proven end to end by four real browser recordings, not
+  `{user_id}/{note_id}` with `upsert: true`, and `app/notes/actions/recording.ts`
+  writes `audio_storage_path` (that file was `app/notes/actions.ts` until the
+  2026-09-01 split by track). Proven end to end by four real browser recordings, not
   only by script — see the Recorder HUD section below.
 
   A recording can now be **played back in the app**. `lib/notes/audio-playback.ts`
@@ -807,7 +810,8 @@ project, silently breaks this pattern again with no error message anywhere.
 `audio-backup.ts` (IndexedDB), `device-handoff.ts`, `capture.ts`,
 `upload-audio.ts`, `use-recorder.ts` (orchestration). `components/recorder/`
 holds `record-hud.tsx`, `hud-level-bars.tsx` and `recorder-dock.tsx`, which
-`app/layout.tsx` mounts once. `app/notes/actions.ts` writes the row.
+`app/layout.tsx` mounts once. `app/notes/actions/recording.ts` writes the row
+(`app/notes/actions.ts` until the 2026-09-01 split by track).
 `scripts/verify-recorder-upload.mjs` and `scripts/print-signin-link.mjs` prove
 and support it. The suite went from 64 tests to **165 across 20 files**
 (measured 2026-08-31 with `npm test`, after the post-merge refactor added one
@@ -919,7 +923,8 @@ and never from `download()`.
 `supabase/schemas/notes.sql` now allows `'failed'`, exactly as the note above
 required. Verified by reading `pg_constraint` back from the live catalog.
 
-**TIER 1 BUILT 2026-08-31.** `markUploadFailed(noteId)` in `app/notes/actions.ts`
+**TIER 1 BUILT 2026-08-31.** `markUploadFailed(noteId)` — in `app/notes/actions.ts`
+when it shipped, in `app/notes/actions/recording.ts` since the 2026-09-01 split —
 writes `processing_status = 'failed'` through the **authenticated** server
 client — never the secret key, which stays confined to
 `app/api/cron/transcribe/route.ts`. It is called from the `catch` in
