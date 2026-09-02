@@ -267,7 +267,18 @@ const pkg = JSON.parse(read("package.json"));
         findings.push(`${rel} reads ${m[0]} — a NEXT_PUBLIC_ prefix ships the value to the browser, and this one names a secret`);
       }
     }
-    for (const m of src.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
+    // Quoted strings are stripped before this scan, the same way the RLS check
+    // strips comments and for the same reason: a name QUOTED is not a name
+    // READ. The two guards that enforce this very rule —
+    // project-conventions.test.ts and actions.test.ts — both carry
+    // "process.env.SUPABASE_SECRET_KEY" as a search string, and matching them
+    // reported the enforcement as the breach.
+    //
+    // Single- and double-quoted only. Template literals are left intact
+    // because `${process.env.SUPABASE_SECRET_KEY}` IS a read.
+    const scannable = src.replace(/'[^'\n]*'|"[^"\n]*"/g, '""');
+
+    for (const m of scannable.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
       if (SUPABASE_SECRET.test(m[1]) && !isAllowedSecretFile(rel)) {
         findings.push(
           `${rel} reads ${m[1]}; the Supabase secret key is confined to the ` +
