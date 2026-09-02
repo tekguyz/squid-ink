@@ -467,6 +467,18 @@ Generated chunks always write `persona_id: null` and `embedding: null`.
 Chunk writes precede the `'completed'` flip, and the staleness sweep is the
 rollback — no transaction, no compensating write.
 
+**The delete scope must match the insert scope, and `persona_id IS NULL` is
+what makes that true.** `deleteGeneratedChunks` filters on three things:
+`note_id`, `chunk_type` in the three generated types, and `persona_id IS
+NULL`. The third was missing until 2026-09-02 and the omission was a data-loss
+bug, not a tidiness one: this pipeline only ever *writes* default-lens rows, so
+a delete without that clause is wider than the insert and takes out every
+lens-attributed takeaway on the note. Those rows cannot be rewritten — nothing
+sets a persona at capture — so the Sales Coach, Investor and Engineering Lead
+rails would have rendered empty. The seeded note carries nine of them, three
+per lens. Two tests in `notegen-ports.test.ts` pin the clause, and both were
+confirmed to fail without it.
+
 **First run replaces the seed note's hand-written takeaways.** The claim guard
 matches every already-`'completed'` note, and the delete-then-insert is
 idempotency rather than cleanup. This is designed behaviour: those seed rows

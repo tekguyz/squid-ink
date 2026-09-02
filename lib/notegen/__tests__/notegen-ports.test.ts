@@ -5,6 +5,7 @@ import {
   createNotegenStore,
   resolvePersonaFor,
 } from "@/lib/notegen/notegen-ports";
+import { generatedChunkRowsFor } from "@/lib/notegen/persist-result";
 import {
   DEFAULT_PERSONA_FALLBACK,
   DEFAULT_PERSONA_ID,
@@ -160,6 +161,38 @@ describe("createNotegenStore", () => {
       ["summary", "takeaway", "action_item"],
     ]);
     expect(chain).toContainEqual(["eq", "note_id", "n1"]);
+  });
+
+  it("deletes ONLY default-lens rows, never another lens's takeaways", async () => {
+    // THE DELETE SCOPE MUST MATCH THE INSERT SCOPE. generatedChunkRowsFor
+    // always writes persona_id null, so this pipeline may only destroy
+    // persona_id null rows.
+    //
+    // Without this clause the delete is wider than the insert and takes out
+    // every lens-attributed takeaway on the note — rows this pipeline did not
+    // write and cannot rewrite, because nothing sets a persona at capture. The
+    // seeded note carries nine of them, three each for Sales Coach, Investor
+    // and Engineering Lead, and losing them renders those three rails empty.
+    const { db, chain } = fakeDb({ data: null, error: null });
+    await createNotegenStore(db).deleteGeneratedChunks("n1");
+
+    expect(chain).toContainEqual(["is", "persona_id", null]);
+  });
+
+  it("keeps the insert scope and the delete scope in step", async () => {
+    // A guard against the two drifting apart in future edits: every row this
+    // module's sibling builds carries persona_id null, and the delete filters
+    // on exactly that.
+    const rows = generatedChunkRowsFor({
+      noteId: "n1",
+      userId: "u1",
+      note: { summary: "S", takeaways: ["t"], actionItems: ["a"] },
+    });
+    expect(rows.every((r) => r.persona_id === null)).toBe(true);
+
+    const { db, chain } = fakeDb({ data: null, error: null });
+    await createNotegenStore(db).deleteGeneratedChunks("n1");
+    expect(chain).toContainEqual(["is", "persona_id", null]);
   });
 
   it("guards completeNotegen on 'generating' exactly", async () => {

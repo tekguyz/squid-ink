@@ -32,12 +32,25 @@ const GENERATED_TYPES = ["summary", "takeaway", "action_item"] as const;
 export function createNotegenStore(db: SupabaseClient): NotegenStore {
   return {
     async deleteGeneratedChunks(noteId) {
-      // Scoped to this track's types. Deleting a transcript_segment here would
-      // silently empty the transcript pane for a note that transcribed fine.
+      // Scoped THREE ways, and every one of them is load-bearing.
+      //
+      // chunk_type: deleting a transcript_segment here would silently empty
+      // the transcript pane for a note that transcribed fine.
+      //
+      // persona_id IS NULL: THE DELETE SCOPE MUST MATCH THE INSERT SCOPE.
+      // generatedChunkRowsFor always writes persona_id null, so this pipeline
+      // only ever creates default-lens rows and must only ever destroy them.
+      // Without this clause the delete is WIDER than the insert: it would take
+      // out every lens-attributed takeaway on the note — rows this pipeline
+      // did not write and cannot rewrite, since nothing sets a persona at
+      // capture — and the Sales Coach, Investor and Engineering Lead rails
+      // would render empty. Measured 2026-09-02 against the seeded note, which
+      // carries nine such takeaways, three per lens.
       const { error } = await db
         .from("note_chunks")
         .delete()
         .eq("note_id", noteId)
+        .is("persona_id", null)
         .in("chunk_type", [...GENERATED_TYPES]);
       if (error) {
         throw new Error(`clearing old generated chunks failed: ${error.message}`);

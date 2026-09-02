@@ -225,13 +225,28 @@ things worth carrying forward:
   `lib/notegen/lens-prompts.ts` are shipped and unit-tested but unexercised
   end to end. Both belong to ROADMAP §5 / Core UX/UI.
 
-  **Also still unmeasured: the zero-persona-row branch.** `resolvePersonaFor`
-  falls back to `DEFAULT_PERSONA_FALLBACK` for an account predating the
-  2026-08-31 provisioning trigger, and there is a unit test for it. The live
-  script signs in as the seeded owner, whose rows exist, so it reported
-  `source=row` and the fallback path did not execute against the real
-  database. Same shape as the gap recorded further down this file for the
-  shell's own use of that constant.
+  **ACCEPTED, NOT PROVED: the `DEFAULT_PERSONA_FALLBACK` branch is
+  unit-tested only.** Recorded 2026-09-02, deliberately, so that it does not
+  quietly become "proved" in anybody's memory later.
+
+  `resolvePersonaFor` returns `DEFAULT_PERSONA_FALLBACK` when a user owns no
+  `neutral-analyst` row — an account created before the 2026-08-31
+  provisioning trigger and deliberately not backfilled. There is a unit test
+  for the resolution itself and another proving generation *completes* on the
+  fallback rather than throwing. **Neither is a live proof.**
+
+  Live proof requires the one unprovisioned account, `4tekguyz@gmail.com`,
+  and `scripts/verify-notegen-pipeline.mjs` was NOT run against it. The
+  script signs in as `RLS_TEST_OWNER_EMAIL`, which is seeded and provisioned,
+  so every run reports `source=row`. That account is real, not hypothetical,
+  so this is a reachable production path with no live evidence behind it.
+
+  To close this rather than restate it: sign the script in as that account and
+  assert `source === "fallback"`. Until somebody does, the honest status is
+  unit-tested and accepted, not verified.
+
+  Same shape as the gap recorded further down this file for the shell's own
+  use of that constant, and it should be closed at the same time.
 
 - **Four personas exist, not five.** DECISIONS.md § "Already covered" said to
   fold framework-template naming "into the 5 built-in Personas". Both design
