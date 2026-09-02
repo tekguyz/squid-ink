@@ -1033,7 +1033,8 @@ The full encrypted 48-hour backup buffer (Core UX/UI phase — only the light
 version ships here, unencrypted, no expiry). Transcription and every
 `processing_status` transition past `'uploading'` (Track 3). Playback. Note
 deletion. Resume-upload after a failure. A mic-only mode — system+mic is
-mandatory, not optional.
+mandatory, not optional; see "Cancelling the share picker kills the recording"
+below for what that costs and why it is now an open question.
 
 ### Verified in a real browser, and what that did not cover
 
@@ -1080,6 +1081,70 @@ permission-dialog tax, not something recorded. Do not "clean this up."
 Related: `MediaRecorder` is given the Web Audio destination node's stream, never
 the mic stream. That indirection is the only reason `replaceMic()` can swap a
 microphone mid-recording without ending the recording.
+
+### Cancelling the share picker kills the recording — there is no mic-only path (recorded 2026-09-01)
+
+The line under "Not built at all" above — "A mic-only mode — system+mic is
+mandatory, not optional" — is accurate but too thin to plan against. It does not
+say what happens when the user declines the system-audio prompt, and the answer
+is worse than "no system audio".
+
+**Measured in the code, 2026-09-01, after the owner reported it in a real
+browser.** `startCapture()` in `lib/recorder/capture.ts:70` calls
+`getDisplayMedia({ audio: true, video: true })` first, and **does not wrap it**.
+Cancelling Chromium's share picker rejects with `NotAllowedError`, which escapes
+to the single `catch` in `lib/recorder/use-recorder.ts:117`. That `catch` tears
+the session down and puts the store in `error`. The `getUserMedia` mic prompt on
+the next line **never runs**, so no microphone is opened and nothing is
+recorded. The HUD shows the raw error message and, by the deliberate decision
+recorded in `components/recorder/record-hud.tsx:25`, offers no retry — so a
+cancelled picker is a dead end until the user starts over.
+
+The ordering is deliberate and its comment says so: system audio goes first
+because "its picker is the one the user is most likely to cancel", and failing
+before the mic prompt means one fewer dialog to dismiss. That reasoning assumes
+cancel means **abandon the recording**. The owner's reading is the opposite:
+cancel means **record my microphone only**.
+
+**The prior build had the fallback this one does not.** Reported by the owner
+2026-09-01: earlier versions offered local recording as its own option, and a
+cancelled system-audio prompt fell through to the microphone rather than
+failing. Relayed, not verified against v1 source here.
+
+**Why it matters, per the owner, 2026-09-01.** The app is primarily for
+meetings, but local recording is a first-class case of equal value, not a
+degraded one — an in-person meeting with no tab to share, or **Android, where
+the OS exposes no system-audio capture at all** and the user may have no Windows
+machine to fall back to. Under the current code every one of those users hits
+the dead end above.
+
+**This is not the local-first item ROADMAP §7 rejects.** §7 puts
+"local-first/offline recording with on-device transcription" out of scope on the
+grounds that it needs its own ASR and sync engine. A mic-only capture path needs
+neither: the bytes still upload to Storage and Gemini still transcribes them.
+Only the number of input tracks changes. Do not let the two be confused — the
+rejection does not reach this.
+
+**It also collides with the PWA.** ROADMAP § 2's app-shell row and § 8's Core
+UX/UI list both plan an installable PWA, and DECISIONS.md § PWA carries it. An Android install of that PWA cannot satisfy
+a mandatory `getDisplayMedia` audio request. Either mic-only ships or the PWA is
+desktop-only in practice; nothing currently records which.
+
+Two ways out were identified, neither built and neither chosen:
+
+- **Catch and fall through.** Wrap the `getDisplayMedia` call; on rejection,
+  continue to `getUserMedia` and build the graph with the mic branch only. One
+  code path, no new UI, but it makes an accidental cancel silently produce a
+  meeting recording with no meeting audio in it — the same class of quiet
+  failure as the muted-mic case above.
+- **A deliberate mode chosen before recording starts.** The user picks
+  "meeting" or "local" and only the matching prompts appear. Honest about what
+  is being captured, and the only shape that works on Android, but it needs a
+  design decision and HUD copy that surface 02b does not have.
+
+**Owner's call, not a code decision.** Recorded here so the planning Project
+briefs it rather than rediscovering it. `capture.ts` is written against an
+injectable `CaptureDeps`, so either shape is testable without a browser.
 
 ## Transcription pipeline (recorded 2026-08-31)
 
