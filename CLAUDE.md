@@ -146,6 +146,31 @@ one fallback persona for a user with no rows live in
 `lib/notes/default-persona.ts`, which is client-safe by design: the shell is a
 client component and must not pull in the server Supabase client.
 
+**Which persona row a generation pipeline reads its config from — locked
+2026-09-02.** Structured note generation resolves a lens per note by querying
+`personas` scoped to the note's owner: `user_id = <note.user_id> and slug =
+'neutral-analyst'`, the slug being `DEFAULT_PERSONA_ID`. Slug, not `name`:
+`unique (user_id, slug)` is the constraint `personas.sql` declares and
+indexes, `name` carries neither, and that file's own header says slug is the
+key chosen to survive a reseed. Never match on `personas.id` — it is a
+per-user `gen_random_uuid()` while `DEFAULT_PERSONA_ID` is a slug string, so
+the comparison is a type error rather than a quiet miss.
+
+Zero rows means an account created before the 2026-08-31 provisioning trigger
+and deliberately not backfilled; it falls back to `DEFAULT_PERSONA_FALLBACK`.
+Either path, a generated chunk still writes `note_chunks.persona_id = null`.
+The resolved row supplies `name` and `depth` to the generator and is never
+persisted onto the chunk, so the "null means default persona" convention above
+is unchanged.
+
+The cron path filters on `user_id` in application code. That is the one
+deliberate exception to § Supabase → RLS rules' standing "queries never filter
+on `user_id`", and it is not a lapse: cron runs as `service_role`, which
+bypasses RLS entirely, so an unfiltered lookup can return another account's
+row. The Server Action path filters identically — there RLS already scopes it,
+so the filter is defence in depth and one shared query shape, not a
+requirement.
+
 `lib/mock/note.ts` is no longer rendered. `mockNote` has no importer outside
 component tests, which use it as a fixture. Do not add new mock rows — new data
 goes in the database.
