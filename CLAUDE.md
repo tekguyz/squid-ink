@@ -107,8 +107,20 @@ directive is per module, and a folder of actions has no shared entry point to
 put it in. Type exports are fine alongside the async functions; they are erased
 before Next sees them.
 
-**Soft ceiling 250 lines, hard ceiling 400.** A file approaching the ceiling gets a
-purpose-named extraction, never a raised ceiling. The convention test enforces 400.
+**Soft ceiling 250 lines, hard ceiling 400 — on SHIPPED files.** A file
+approaching the ceiling gets a purpose-named extraction, never a raised
+ceiling. The convention test enforces 400, and its `sourceFiles()` walk skips
+`__tests__` entirely.
+
+That exclusion is deliberate, not an oversight, and the reason is worth stating
+because the ceiling reads like it applies to everything. A long source file is
+coupled: line 300 cannot be read without holding the first 299 in your head,
+which is the actual cost the ceiling exists to stop. A test file is a flat list
+of independent cases — test 12 needs nothing from tests 1 through 11 — so its
+length is quantity, not complexity, and splitting it buys nothing but churn.
+`lib/recorder/__tests__/use-recorder.test.tsx` is 431 lines for that reason and
+is fine. What is NOT fine in a test file is a shared harness that tests mutate
+between them; that is coupling, and it earns a split whatever the line count.
 
 ## Data
 
