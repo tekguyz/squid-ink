@@ -49,7 +49,7 @@ being built now and nothing here should assume it.
 |---|---|---|
 | Batch transcription (incl. diarization, word timestamps) | Gemini 3.5 Transcribe | Native diarization + timestamps at no extra cost; no latency pressure on this path |
 | Multimodal ingestion (docs, links, images) | Gemini 3.7 Flash | Cheap, multimodal, already-owned key |
-| Structured note generation, fact-grounding, summarization | Gemini 3.7 Flash (Pro optionally for "Exhaustive" depth — see §5) | High-volume, runs on every recording — cost-sensitive path by default |
+| Structured note generation, fact-grounding, summarization | Gemini 3.7 Flash only — no Pro (confirmed 2026-09-01, see §5) | High-volume, runs on every recording — cost-sensitive by default; depth varies `thinking_level` + prompt scope, not model |
 | Ask-your-notes chat (RAG + tool use, single-note or cross-note) | Claude (Sonnet/Opus) | Quality-sensitive, tool-chain reliability, low volume (user-initiated) |
 | Live voice assistant reasoning | Claude (Sonnet/Opus), orchestrated via Vapi | Claude has no native audio I/O (confirmed current as of Aug 2026 — text/image only); Vapi handles the STT+TTS glue and bills per-call, avoiding the per-open-session Gemini Live cost spiral seen previously |
 | Live voice assistant TTS | Vapi default, or Eleven Labs for a distinct branded voice | Eleven Labs optional, not load-bearing |
@@ -143,10 +143,13 @@ A **Persona** is one named preset bundling:
 1. **Lens** — whose expertise frames the analysis (e.g. Sales Coach,
    Investor, Engineering Lead, Neutral Analyst).
 2. **Depth/goal** — Brief / Dense / Exhaustive, replaces the prior build's separate
-   DepthToggle + GoalSelector. **Exhaustive depth may route structured-note
-   generation to Gemini Pro instead of Flash** (Core UX/UI) — a config
-   field on the existing Depth selector, not a new settings surface;
-   folds in the "Granular LLM Selector" idea without adding UI.
+   DepthToggle + GoalSelector. **Resolved 2026-09-01: single-model MVP, no
+   Gemini Pro anywhere** — Flash's `thinking_level` parameter (low/medium/
+   high) covers the reasoning-depth range Pro was reserved for at
+   materially lower cost. Depth varies **scope, not just length**:
+   Exhaustive does more analytical work (cross-referencing, deeper
+   action-item inference); Brief and Dense are narrower cuts of the same
+   extraction, not shorter versions of Exhaustive.
 3. **Quick-actions** — bundled recipe-equivalents specific to that lens.
    Concrete built-in set to design against (Core UX/UI): *Extract decisions
    only*, *Timeline of blockers*, *Unanswered questions*, *Diff against
@@ -167,6 +170,15 @@ Interactive action-item drawers (Core UX/UI): the `action_item` chunk type
 already exists in the schema — expanding checkbox items into a drawer with
 owner, due date, priority, and execution notes is an added-fields change,
 not a new pipeline.
+
+**Structured note generation — resolved 2026-09-01.** One Gemini call per
+note, taking lens + depth together; quick-actions are lens-gated
+afterward, not a second call. Input is the text transcript only
+(`raw_transcript` + `note_chunks`), not the source audio — audio-native
+input is named as a future option for Sales Coach specifically (tone/
+sentiment on a prospect call), not built or scheduled. Generation chains
+automatically once transcription reaches `'completed'`; the recorder's
+manual Transcribe-button trigger is unchanged.
 
 ## 6. Feature inventory — keep / redesign / new
 
@@ -247,7 +259,9 @@ which is a rounding error at this volume.
 **Core UX/UI** —
 - Claude Design pass (full visual + brand identity, no carryover from the prior build)
 - Personas (initial set): built-in personas, Quick Actions incl. draft-follow-up types,
-  Exhaustive-depth → Gemini Pro routing
+  Exhaustive depth as `thinking_level: high` + wider prompt scope on Flash
+  (**amended 2026-09-01** — this line read "Exhaustive-depth → Gemini Pro
+  routing"; §5 resolved that to a single model on that date)
 - Interactive action-item drawers (owner/due date/priority/notes)
 - Collections/tags
 - Share links + OG preview + guest link controls (revoke/expiry/per-link

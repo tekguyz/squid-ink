@@ -95,8 +95,9 @@ a separate, still-open question (see Branding below).
     pipeline: batch transcription, multimodal ingestion (docs/links/images),
     structured note generation, fact-grounding, summarization. Cheap,
     multimodal, already-owned key, no latency pressure on this path.
-    Exhaustive-depth Personas may route structured-note gen to Gemini Pro
-    instead — see ROADMAP.md §5.
+    **No Gemini Pro anywhere in this rebuild (confirmed 2026-09-01)** —
+    Flash's `thinking_level` parameter (minimal/low/medium/high) covers the
+    reasoning-depth range Pro was reserved for; see ROADMAP.md §5.
   - **Claude (Sonnet/Opus)** — the two lower-volume, quality-sensitive,
     user-initiated surfaces: ask-your-notes chat (RAG + tool use, single-
     note and cross-note) and the live voice assistant's reasoning layer.
@@ -190,11 +191,13 @@ a separate, still-open question (see Branding below).
 - One named preset bundling three things Granola keeps as two confusing
   systems: (1) Lens — whose expertise frames the analysis (Sales Coach,
   Investor, Engineering Lead, Neutral Analyst...); (2) Depth/goal — replaces
-  the prior build's separate DepthToggle + GoalSelector, and Exhaustive depth may route
-  to Gemini Pro instead of Flash (folds in the "Granular LLM Selector" idea
-  without new settings UI); (3) Quick-actions — bundled recipe-equivalents
-  specific to that lens, including draft-follow-up types (client email,
-  Slack message, Jira ticket) per lens.
+  the prior build's separate DepthToggle + GoalSelector. **Confirmed
+  2026-09-01: single-model MVP, Gemini 3.7 Flash only, no Pro anywhere.**
+  Depth is a `thinking_level` (low/medium/high) plus a scope change on the
+  prompt — Exhaustive does more analytical work (cross-referencing, deeper
+  action-item inference), not just a longer Dense; (3) Quick-actions —
+  bundled recipe-equivalents specific to that lens, including draft-
+  follow-up types (client email, Slack message, Jira ticket) per lens.
 - Default persona: neutral/dense, matching existing truth-first philosophy.
   MVP ships a handful of built-in personas only. User-authored custom
   personas are a later phase.
@@ -227,6 +230,32 @@ a separate, still-open question (see Branding below).
   a persona re-attributes its takeaways to the default persona rather than
   orphaning them, and nothing deletes a persona yet. See ROADMAP.md §5 /
   Core UX/UI for where this belongs.
+**Structured note generation** — resolved 2026-09-01, closes the depth-
+routing open item under Personas above and ROADMAP.md §5.
+- **No Gemini Pro anywhere in this rebuild.** Single model: Gemini 3.7 Flash
+  for all three depths. Supersedes every prior "Exhaustive may route to Pro"
+  line in this file and in ROADMAP.md §3/§5.
+- Depth is `thinking_level` (Brief → low, Dense → medium, Exhaustive → high)
+  **plus a scope change**, not length alone — Exhaustive does more
+  analytical work, not just a longer Dense output.
+- **One Gemini call per note-gen pass** — lens and depth are both inputs to
+  the same call; quick-actions are lens-gated after generation, not a
+  second call.
+- **Input is the text transcript only** (`notes.raw_transcript` +
+  speaker-tagged `note_chunks`), not the source audio, for all four
+  personas in MVP. Audio-native input (re-sending the recording for tone/
+  nuance) is named as a future option for the Sales Coach lens
+  specifically — not built, not scheduled.
+- **Trigger: note generation chains automatically off transcription
+  reaching `'completed'`** — no separate button, reusing the atomic-claim
+  pattern from Track 3. Distinct from, and does not change, the recorder's
+  own transcription trigger below.
+- **Recorder → transcription trigger is unchanged and stays manual.**
+  Reconfirmed 2026-09-01 against this decision: no auto-fire on recording
+  stop. A mis-started or wrong-meeting recording is a real failure mode on
+  an ambient, non-calendar-gated recorder, and burning a transcription on
+  one is worse than one extra click. The Transcribe button on Note Detail
+  remains the only way a recording reaches `'analyzing'`.
 **Recorder UI shape** — resolved 2026-08-30
 - Hybrid, not a binary float-vs-full-app pick: a small persistent
   **record pill/HUD** (start/stop/pause, timer, mic level) as the always-

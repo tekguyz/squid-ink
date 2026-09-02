@@ -195,10 +195,15 @@ things worth carrying forward:
   view type in `lib/notes/view-types.ts` and a checked `depth` column on
   `public.personas`. All four seeded personas carry `'dense'`, the column
   default — the pre-change constants encoded no depth, so none was invented.
-  What is still owed is the *behaviour*: no UI control sets depth and no
-  routing reads it (Exhaustive may route note generation to Gemini Pro rather
-  than Flash). The shape is complete; the pipeline that would honour it does
+  What is still owed is the *behaviour*: no UI control sets depth and nothing
+  reads it. The shape is complete; the pipeline that would honour it does
   not exist yet.
+
+  **Amended 2026-09-01.** The parenthesis here read "Exhaustive may route note
+  generation to Gemini Pro rather than Flash". DECISIONS.md § "Structured note
+  generation" closed that on 2026-09-01: single model, Gemini 3.7 Flash for all
+  three depths, with depth carried by `thinking_level` plus a wider prompt
+  scope. Depth is no longer a model-routing decision at all.
 
 - **Four personas exist, not five.** DECISIONS.md § "Already covered" said to
   fold framework-template naming "into the 5 built-in Personas". Both design
