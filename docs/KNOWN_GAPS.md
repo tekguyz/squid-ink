@@ -235,15 +235,30 @@ things worth carrying forward:
   for the resolution itself and another proving generation *completes* on the
   fallback rather than throwing. **Neither is a live proof.**
 
-  Live proof requires the one unprovisioned account, `4tekguyz@gmail.com`,
-  and `scripts/verify-notegen-pipeline.mjs` was NOT run against it. The
-  script signs in as `RLS_TEST_OWNER_EMAIL`, which is seeded and provisioned,
-  so every run reports `source=row`. That account is real, not hypothetical,
-  so this is a reachable production path with no live evidence behind it.
+  Live proof requires an account with no `neutral-analyst` row.
+  `scripts/verify-notegen-pipeline.mjs` signs in as `RLS_TEST_OWNER_EMAIL`,
+  which is seeded and provisioned, so every run reports `source=row`.
 
-  To close this rather than restate it: sign the script in as that account and
-  assert `source === "fallback"`. Until somebody does, the honest status is
-  unit-tested and accepted, not verified.
+  **Measured 2026-09-02, and it splits the gap in two.** Reading
+  `auth.users` against `personas` gives:
+
+      4tekguyz@gmail.com               0 persona rows,  0 notes
+      admin@tekguyz.com                4 persona rows,  2 notes
+      squid-ink-owner@example.test     4 persona rows,  2 notes
+      squid-ink-intruder@example.test  1 persona row,   0 notes
+
+  `4tekguyz@gmail.com` is genuinely unprovisioned, so it *would* take the
+  fallback — but it owns **no notes at all**. That means:
+
+  - **`resolvePersonaFor` returning the fallback is cheap to prove today.**
+    It takes a user id, not a note. Call it with that account's id and assert
+    `source === "fallback"`.
+  - **Generation *through* the fallback is not**, because there is no note to
+    generate from. Proving that end to end needs a note created for that
+    account first, which is a deliberate act nobody has had reason to perform.
+
+  Until both are done the honest status is unit-tested and accepted, not
+  verified. Do not let the first close stand in for the second.
 
   Same shape as the gap recorded further down this file for the shell's own
   use of that constant, and it should be closed at the same time.
