@@ -225,6 +225,25 @@ a separate, still-open question (see Branding below).
   no depth value to preserve. `lib/notes/persona-presets.ts` is deleted, not
   repointed. `lib/mock/types.ts` is folded into `lib/notes/view-types.ts`
   and deleted; zero remaining importers.
+- **Persona identity is the slug, never the name and never the id —
+  resolved 2026-09-02.** A pipeline with no persona-selection surface still
+  needs a concrete row to read `depth` and lens framing from, so structured
+  note generation resolves one per note as `user_id = <note.user_id> and slug
+  = 'neutral-analyst'` (`DEFAULT_PERSONA_ID`). Slug because `personas.sql`
+  declares and indexes `unique (user_id, slug)` and states in its own header
+  that slug is the key chosen to survive a reseed; `name` is display text
+  carrying no constraint and no index, so the custom-persona phase named above
+  — where a user may rename or duplicate a display name — would break a
+  name-scoped query silently. Not `personas.id` either: that is a per-user
+  `gen_random_uuid()` from the provisioning trigger, while
+  `DEFAULT_PERSONA_ID` is the slug string, making the comparison a type error.
+  Zero rows means an account predating the 2026-08-31 trigger and falls back to
+  `DEFAULT_PERSONA_FALLBACK`. Generated chunks still write `persona_id = null`
+  either way — this decides which config drives generation, not attribution.
+  The cron path filters `user_id` in application code, the one deliberate
+  exception to the standing "let RLS supply it" rule, because `service_role`
+  bypasses RLS and an unfiltered lookup can return another account's row.
+  Convention recorded in CLAUDE.md § Data.
 - **Still open:** no `auth.users` trigger provisions personas for a new
   account (fresh accounts get zero rows and fall back to one lens); deleting
   a persona re-attributes its takeaways to the default persona rather than
