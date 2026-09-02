@@ -1231,6 +1231,37 @@ revalidated it, and the deferred half runs on a token-only client —
 user, same RLS, same publishable key; `app/api/cron/transcribe/route.ts` is
 still the only shipped file reading `SUPABASE_SECRET_KEY`.
 
+**RE-VERIFIED 2026-09-01, after the deferred-client fix above.**
+`node scripts/verify-manual-transcribe.mjs` re-run against the live project and
+the real Gemini API, because the fix changed code in the claim path and the
+unit suite exercises that path only with fakes. PASS, exit 0, and the number
+that matters is the Gemini counter: **exactly one call across all four
+scenarios.**
+
+    Proof 1 — the shared function takes an 'uploading' row to 'completed'
+      ok    claimAndTranscribe reports 'transcribed'  got=transcribed
+      ok    exactly one Gemini call was made  calls=1
+      ok    the transcript contains a word we synthesised
+    Proof 2a — a second press on a finished note claims nothing
+      ok    the repeat attempt reports 'contended'  before=1 after=1
+    Proof 2b — two CONCURRENT claims, one row, one winner
+      ok    outcomes: ["claimed","contended"]
+      ok    NO Gemini call was made by the claim step at all  before=1 after=1
+    Proof 2c — the loser cannot transcribe by trying again
+      ok    the Gemini counter still did not move  before=1 after=1
+
+**What this run does NOT cover, stated so it is not mistaken for full
+coverage.** The script builds its own owner client at
+`scripts/verify-manual-transcribe.mjs:168` — publishable key, a real signed-in
+session — and calls `claimAndTranscribe` directly. It never calls
+`triggerTranscription`, never enters `after()`, and never constructs
+`createDeferredClient`. So the atomic claim and the no-double-spend guarantee
+are proven against live Postgres and live Gemini; **the deferred client itself
+is covered only by unit tests and by the fact that the shape it produces —
+publishable key plus a user JWT, no cookies — is the same shape this script
+signs in with.** Proving the rotation fix end to end needs a browser session
+crossing token expiry inside `after()`, which nothing here automates.
+
 Proof: `node scripts/verify-manual-transcribe.mjs` (imports the shipped claim
 through a Node resolve hook and counts Gemini calls across a repeat press, two
 concurrent claims and a losing caller's retry). End to end in a browser on
