@@ -1,6 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
-import { sweep } from "@/lib/transcription/sweep";
+import { createNotegenPorts } from "@/lib/notegen/notegen-ports";
+import { notegenSweep } from "@/lib/notegen/sweep";
+// Read-only import. lib/transcription/sweep.ts owns processing_status and is
+// not modified by this change; taking the number from there rather than
+// redeclaring it is what keeps the two phases on ONE budget.
+import { RUN_BUDGET_MS, sweep } from "@/lib/transcription/sweep";
 
 /** The Vercel Cron entry point, and the ONE piece of application code that
  *  holds the Supabase secret key.
@@ -30,6 +35,19 @@ import { sweep } from "@/lib/transcription/sweep";
  *  builds its ports — above all its CLAIM — from the same code rather than a
  *  second copy. Nothing about this route's gating or its role as the daily net
  *  changed with that move.
+ *
+ *  TWO PHASES ON ONE CLOCK, added 2026-09-02. Transcription runs first, then
+ *  structured note generation sweeps whatever has reached 'completed' —
+ *  including rows this same invocation just transcribed, which is why the
+ *  order is not arbitrary. Both phases share ONE startedAt and one
+ *  RUN_BUDGET_MS. Phase two is HANDED the remaining budget as a deadline
+ *  rather than computing its own, because two 240 s budgets under a 300 s
+ *  platform ceiling is a run that gets killed mid-write.
+ *
+ *  The note-gen ports are built from the SAME db client. A second client here
+ *  would be a second secret-key read for no reason — this route is still the
+ *  only shipped file that reads SUPABASE_SECRET_KEY, and
+ *  project-conventions.test.ts fails the build if that stops being true.
  *
  *  maxDuration is 300 because the TEKGUYZ team is on the Vercel Hobby plan,
  *  where 300 s is both the default and the hard ceiling — there is no extended
@@ -73,10 +91,22 @@ export async function GET(request: Request) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // ONE clock for both phases. Read before phase one so the deadline handed
+  // to phase two accounts for every millisecond transcription spends.
+  const startedAt = Date.now();
+
   try {
     const report = await sweep(createTranscriptionPorts(db, geminiKey));
     console.log(`[transcribe] ${JSON.stringify(report)}`);
-    return Response.json(report);
+
+    // Phase two, on the remainder of the SAME budget. A run where
+    // transcription used the clock claims nothing here and defers instead.
+    const notegen = await notegenSweep(createNotegenPorts(db, geminiKey), {
+      deadlineAt: startedAt + RUN_BUDGET_MS,
+    });
+    console.log(`[notegen] ${JSON.stringify(notegen)}`);
+
+    return Response.json({ ...report, notegen });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[transcribe] sweep aborted: ${message}`);

@@ -11,6 +11,7 @@ const row: NoteRow = {
   user_id: USER_ID,
   title: "Pilot pricing & rollout",
   processing_status: "completed",
+  notegen_status: null,
   raw_transcript: "…",
   diarization_enabled: true,
   audio_duration_seconds: 2467,

@@ -205,6 +205,64 @@ things worth carrying forward:
   three depths, with depth carried by `thinking_level` plus a wider prompt
   scope. Depth is no longer a model-routing decision at all.
 
+  **CLOSED 2026-09-02.** `lib/notegen/depth-policy.ts` consumes it.
+  `planForDepth` maps Brief to `thinking_level: 'low'` and a
+  decisions-and-actions scope, Dense to `'medium'` and a balanced scope, and
+  Exhaustive to `'high'` and a cross-referencing scope — scope, not only
+  length, per the decision above. `lib/notegen/notegen-ports.ts` reads the
+  `depth` column per note through `resolvePersonaFor`, and
+  `lib/notegen/gemini-client.ts` sends the level on the one
+  `interactions.create` call. Proved live on 2026-09-02 by
+  `scripts/verify-notegen-pipeline.mjs`, which read `depth=dense` off the
+  owner's row and generated at `thinking_level: 'medium'`.
+
+  **Two things this did NOT close, both still open, and neither is a defect.**
+  No UI control sets depth, so every persona still carries the `'dense'`
+  column default — Brief and Exhaustive are reachable today only by editing a
+  row by hand, and live verification therefore exercised Dense alone. And the
+  recorder still selects no persona at capture, so every note generates under
+  the Neutral Analyst / default lens; the other three framings in
+  `lib/notegen/lens-prompts.ts` are shipped and unit-tested but unexercised
+  end to end. Both belong to ROADMAP §5 / Core UX/UI.
+
+  **ACCEPTED, NOT PROVED: the `DEFAULT_PERSONA_FALLBACK` branch is
+  unit-tested only.** Recorded 2026-09-02, deliberately, so that it does not
+  quietly become "proved" in anybody's memory later.
+
+  `resolvePersonaFor` returns `DEFAULT_PERSONA_FALLBACK` when a user owns no
+  `neutral-analyst` row — an account created before the 2026-08-31
+  provisioning trigger and deliberately not backfilled. There is a unit test
+  for the resolution itself and another proving generation *completes* on the
+  fallback rather than throwing. **Neither is a live proof.**
+
+  Live proof requires an account with no `neutral-analyst` row.
+  `scripts/verify-notegen-pipeline.mjs` signs in as `RLS_TEST_OWNER_EMAIL`,
+  which is seeded and provisioned, so every run reports `source=row`.
+
+  **Measured 2026-09-02, and it splits the gap in two.** Reading
+  `auth.users` against `personas` gives:
+
+      4tekguyz@gmail.com               0 persona rows,  0 notes
+      admin@tekguyz.com                4 persona rows,  2 notes
+      squid-ink-owner@example.test     4 persona rows,  2 notes
+      squid-ink-intruder@example.test  1 persona row,   0 notes
+
+  `4tekguyz@gmail.com` is genuinely unprovisioned, so it *would* take the
+  fallback — but it owns **no notes at all**. That means:
+
+  - **`resolvePersonaFor` returning the fallback is cheap to prove today.**
+    It takes a user id, not a note. Call it with that account's id and assert
+    `source === "fallback"`.
+  - **Generation *through* the fallback is not**, because there is no note to
+    generate from. Proving that end to end needs a note created for that
+    account first, which is a deliberate act nobody has had reason to perform.
+
+  Until both are done the honest status is unit-tested and accepted, not
+  verified. Do not let the first close stand in for the second.
+
+  Same shape as the gap recorded further down this file for the shell's own
+  use of that constant, and it should be closed at the same time.
+
 - **Four personas exist, not five.** DECISIONS.md § "Already covered" said to
   fold framework-template naming "into the 5 built-in Personas". Both design
   files define exactly four — Neutral Analyst, Sales Coach, Investor,

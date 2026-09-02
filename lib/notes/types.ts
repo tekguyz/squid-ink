@@ -1,12 +1,17 @@
 /** Database row shapes. These mirror supabase/schemas/*.sql — they are not
  *  the view types the components consume, which live in lib/notes/view-types.ts. */
 
-import type { PersonaDepth, ProcessingStatus, SpeakerToken } from "@/lib/notes/view-types";
+import type {
+  NotegenStatus,
+  PersonaDepth,
+  ProcessingStatus,
+  SpeakerToken,
+} from "@/lib/notes/view-types";
 
 /** Declared in view-types.ts so client components can import it without
  *  pulling in the row shapes. Re-exported here because this is where the rest
  *  of the notes table's shape lives. */
-export type { ProcessingStatus } from "@/lib/notes/view-types";
+export type { ProcessingStatus, NotegenStatus } from "@/lib/notes/view-types";
 
 export type ChunkType =
   | "summary"
@@ -20,6 +25,9 @@ export interface NoteRow {
   user_id: string;
   title: string | null;
   processing_status: ProcessingStatus;
+  /** Structured note generation's queue, independent of the column above.
+   *  Null until a transcript exists. See supabase/schemas/notes.sql. */
+  notegen_status: NotegenStatus | null;
   raw_transcript: string | null;
   diarization_enabled: boolean;
   audio_duration_seconds: number | null;

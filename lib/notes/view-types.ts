@@ -18,6 +18,12 @@ export type ProcessingStatus =
   | "completed"
   | "failed";
 
+/** Structured note generation's own status, independent of
+ *  ProcessingStatus. Null means "not eligible yet" — the transcript does
+ *  not exist. Declared here rather than in types.ts for the same reason
+ *  ProcessingStatus is: client components import from this module. */
+export type NotegenStatus = "generating" | "completed" | "failed";
+
 export interface Speaker {
   name: string;
   initials: string;

@@ -105,7 +105,24 @@ create policy personas_delete_own on public.personas
 -- privileges. The project defaults hand anon and authenticated TRUNCATE,
 -- REFERENCES and TRIGGER on every new public table; TRUNCATE is not
 -- row-level, so RLS does not constrain it.
-revoke all on public.personas from anon, authenticated;
+revoke all on public.personas from anon, authenticated, service_role;
 
 -- anon is deliberately granted nothing — this app has no public reads.
 grant select, insert, update, delete on public.personas to authenticated;
+
+-- service_role, for app/api/cron/transcribe's note-generation phase, which
+-- must read the note owner's lens config to know which depth to generate at.
+--
+-- MEASURED 2026-09-02, the same way and with the same result as the notes and
+-- note_chunks gaps found on 2026-08-31: role_table_grants showed service_role
+-- holding only REFERENCES, TRIGGER and TRUNCATE here, so a cron persona read
+-- would have failed with "permission denied for table personas".
+--
+-- A GRANT, not a policy. service_role already bypasses RLS; what it lacked was
+-- reachability. The revoke above also strips the TRUNCATE it held for no
+-- reason -- TRUNCATE is not row-level, so RLS does not constrain it.
+--
+-- SELECT ONLY. Nothing in this project writes a persona as service_role:
+-- provisioning is a security definer trigger running as supabase_auth_admin,
+-- and every user-facing edit runs as authenticated under RLS.
+grant select on public.personas to service_role;

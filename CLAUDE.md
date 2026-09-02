@@ -371,6 +371,123 @@ is against known words, and proves all four paths: the `CRON_SECRET` gate, a
 recording reaching `'completed'`, a stale `'uploading'` orphan reaching
 `'failed'`, and a stale `'analyzing'` row reaching `'failed'`.
 
+## Note generation
+
+**`notegen_status` IS the queue**, exactly as `processing_status` is
+transcription's, and for the same reason: a second table would be a second
+source of truth. It is nullable with no default, and **null means "not
+eligible yet"** — there is no `'pending'` string, because the column's
+nullability already says it.
+
+The claim is one statement with **two** conditions:
+
+    UPDATE notes SET notegen_status = 'generating'
+    WHERE id = <id> AND processing_status = 'completed'
+      AND notegen_status IS NULL RETURNING id
+
+The `processing_status` clause is load-bearing, not belt-and-braces. It is
+what makes "cannot generate notes before a transcript exists" true **by
+construction** rather than by caller discipline. A zero-row claim must not
+spend a Gemini call, and that is proved by **counting calls** in
+`scripts/verify-notegen-pipeline.mjs`, never by reading the code.
+
+The blank-transcript guard runs **after** the claim, not before. Checking
+first would leave the row eligible forever, so every sweep would re-examine it
+and a handful of permanently blank rows could starve real work out of the
+per-run cap. Claiming then failing is terminal and self-clearing, and it is
+still before any model call — which is the guarantee that actually matters. It
+also means a lost claim never reaches that branch, so a blank row this process
+does not own can never be failed over the winner's `'generating'`.
+
+**Age alone IS terminal here**, unlike transcription. There, age could not
+fail a row on its own because an upload might still be arriving and object
+existence was the real check. Nothing is still arriving here — the transcript
+was written onto the row before it ever became eligible.
+
+`lib/notegen/sweep.ts` owns `notegen_status` and nothing else. Its stale
+pass is the same query *shape* as `lib/transcription/sweep.ts`'s
+stale-`'analyzing'` pass, deliberately reimplemented rather than reached
+across for. **Do not edit `lib/transcription/sweep.ts` to handle this
+column.**
+
+**Two triggers, one claim.** `claimAndGenerate` in
+`lib/notegen/generate-note.ts` is the shared unit;
+`lib/notegen/notegen-ports.ts` holds the one Supabase implementation of the
+claim. The cron route calls it through `notegenSweep` as a second phase, and
+`app/notes/actions/transcription.ts` calls it once inside its existing
+`after()` block. If they race, the loser takes a contended zero-row claim.
+
+**One clock, two phases.** `notegenSweep` takes `deadlineAt` as a
+parameter rather than computing a budget. The route reads one `startedAt`
+and hands phase two `startedAt + RUN_BUDGET_MS` — imported read-only from
+the transcription sweep, not redeclared. Two 240 s budgets under Hobby's 300 s
+hard ceiling is a run killed mid-write.
+
+**One deferred client, hoisted.** The manual path builds
+`createDeferredClient(...)` once inside `after()` and passes the same
+instance to both port factories. A second construction is a second client that
+can refresh, and a refresh after the response has been sent rotates the user's
+refresh token into a cookie write that is silently dropped — the bug
+`lib/supabase/deferred-client.ts` documents and that was fixed on
+2026-09-01. That path also **re-reads the note row**: `raw_transcript` is
+what transcription has just written, so the row carried in from the claim
+predates it.
+
+`MAX_NOTEGEN_PER_RUN = 5`, above transcription's 3, because a text-only call
+on roughly 12,000 tokens returns in seconds where an audio transcription takes
+minutes. The cap bounds cost; the shared budget bounds wall-clock. The cap
+counts **model attempts**, so a contended claim and a blank transcript spend
+no slot.
+
+Gemini specifics, all read from `genai.d.ts` at the pinned 2.19.0 and from
+the live models endpoint on 2026-09-02, never from samples:
+
+- **`response_format` is TOP LEVEL on `interactions.create`**, not inside
+  `generation_config`. Shape is
+  `{ type: "text", mime_type: "application/json", schema }`. The sibling
+  top-level `response_mime_type` is `@deprecated` — do not send it.
+- **`generation_config.thinking_level` takes the lowercase union**
+  `"minimal" | "low" | "medium" | "high"`. The SCREAMING_CASE
+  `ThinkingLevel` enum belongs to the camelCase `models.generateContent`
+  surface and is a 400 here. `depth-policy.ts` owns the mapping and a test
+  asserts the casing.
+- **`gemini-3.7-flash`, `inputTokenLimit` 1,048,576.** A 60-minute
+  transcript — the ceiling `diarization-policy.ts` enforces upstream — is
+  near 12,000 tokens. Context is not a constraint and no chunking path is owed.
+- **Text only.** This pipeline never fetches, re-sends or sees the audio.
+
+Lens framings are a **static lookup keyed by slug** in
+`lib/notegen/lens-prompts.ts`, not a column — the same category as
+`components/note-detail/speaker-colors.ts`, not the same category as the
+deleted `persona-presets.ts`. An unrecognised slug falls back to neutral
+rather than throwing. Which persona row supplies `name` and `depth` is
+settled in § Data above; do not re-derive that rule here.
+
+Generated chunks always write `persona_id: null` and `embedding: null`.
+Chunk writes precede the `'completed'` flip, and the staleness sweep is the
+rollback — no transaction, no compensating write.
+
+**The delete scope must match the insert scope, and `persona_id IS NULL` is
+what makes that true.** `deleteGeneratedChunks` filters on three things:
+`note_id`, `chunk_type` in the three generated types, and `persona_id IS
+NULL`. The third was missing until 2026-09-02 and the omission was a data-loss
+bug, not a tidiness one: this pipeline only ever *writes* default-lens rows, so
+a delete without that clause is wider than the insert and takes out every
+lens-attributed takeaway on the note. Those rows cannot be rewritten — nothing
+sets a persona at capture — so the Sales Coach, Investor and Engineering Lead
+rails would have rendered empty. The seeded note carries nine of them, three
+per lens. Two tests in `notegen-ports.test.ts` pin the clause, and both were
+confirmed to fail without it.
+
+**First run replaces the seed note's hand-written takeaways.** The claim guard
+matches every already-`'completed'` note, and the delete-then-insert is
+idempotency rather than cleanup. This is designed behaviour: those seed rows
+were a fixture standing in for this pipeline.
+
+    node scripts/verify-notegen-pipeline.mjs   # no dev server needed:
+                                               # five proofs, Gemini calls
+                                               # counted, rows deleted as owner
+
 ## Naming
 
 The application has no confirmed public name. **Do not put a name string —

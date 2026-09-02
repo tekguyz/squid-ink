@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createDeferredClient } from "@/lib/supabase/deferred-client";
 import { createClient } from "@/lib/supabase/server";
+import { claimAndGenerate } from "@/lib/notegen/generate-note";
+import { createNotegenPorts } from "@/lib/notegen/notegen-ports";
+import type { GeneratableRow } from "@/lib/notegen/sweep";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
 import {
   claimNoteForTranscription,
@@ -53,6 +56,12 @@ export type TranscriptionTrigger =
  * on that plan is also the hard maximum (docs/DEPLOYMENT.md § Plan limits) —
  * the same ceiling the cron sweep is sized against. It is NOT inherited from
  * the cron route's `maxDuration` export, which governs only that route.
+ *
+ * NOTE GENERATION CHAINS HERE, added 2026-09-02. Once transcription succeeds
+ * the same deferred client — one instance, hoisted, never constructed twice —
+ * carries straight into claimAndGenerate. The browser's answer is unchanged:
+ * it still learns only whether the transcription claim landed, in
+ * milliseconds, and note generation is entirely deferred behind it.
  *
  * TWO CLIENTS, ONE IDENTITY. The claim runs on the cookie client, while the
  * request is open and a rotated session can still be written back to the
@@ -125,19 +134,50 @@ export async function triggerTranscription(
     // in the log saying why. There is no error column at this scale — the
     // Vercel function log is where a failure is read, so it has to reach it.
     try {
-      // Fresh ports on the token client. Building them INSIDE the callback is
-      // deliberate: the cookie client above must not be reachable from here.
-      await transcribeClaimedNote(
-        createTranscriptionPorts(
-          createDeferredClient(session.access_token),
-          geminiKey,
-        ),
+      // ONE deferred client for BOTH phases, built once here. Building it
+      // INSIDE the callback is still deliberate: the cookie client above must
+      // not be reachable from this point.
+      //
+      // It was inlined into createTranscriptionPorts before 2026-09-02.
+      // Hoisting it is not tidying. A second construction would be a second
+      // client that can refresh, and a refresh inside after() rotates the
+      // user's refresh token into a cookie write that is silently dropped —
+      // the exact bug lib/supabase/deferred-client.ts documents and that was
+      // fixed on 2026-09-01. Cookies are not touched again in this block.
+      const deferred = createDeferredClient(session.access_token);
+
+      const transcribed = await transcribeClaimedNote(
+        createTranscriptionPorts(deferred, geminiKey),
         row,
+      );
+
+      // Note generation chains only off a real transcript. A failed
+      // transcription leaves processing_status at 'failed', so the note-gen
+      // claim's own guard would refuse it anyway — this check only avoids
+      // spending an UPDATE to find that out.
+      if (transcribed !== "transcribed") return;
+
+      // Re-read rather than reuse `row`: raw_transcript is what transcription
+      // just wrote, and the row carried in from above predates it.
+      const { data: generatable } = await deferred
+        .from("notes")
+        .select("id, user_id, raw_transcript, updated_at")
+        .eq("id", noteId)
+        .maybeSingle<GeneratableRow>();
+
+      if (!generatable) return;
+
+      // The SAME shared function the cron's phase two calls. If both reach
+      // this note, the loser takes a contended zero-row claim and spends no
+      // Gemini call — no new coordination needed.
+      await claimAndGenerate(
+        createNotegenPorts(deferred, geminiKey),
+        generatable,
       );
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       console.error(
-        `[transcribe] note ${noteId}: deferred transcription threw — ${reason}`,
+        `[transcribe] note ${noteId}: deferred work threw — ${reason}`,
       );
     }
   });
