@@ -38,7 +38,7 @@ export function createNotegenStore(db: SupabaseClient): NotegenStore {
         .from("note_chunks")
         .delete()
         .eq("note_id", noteId)
-        .in("chunk_type", GENERATED_TYPES as unknown as string[]);
+        .in("chunk_type", [...GENERATED_TYPES]);
       if (error) {
         throw new Error(`clearing old generated chunks failed: ${error.message}`);
       }

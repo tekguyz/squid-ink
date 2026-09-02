@@ -6,6 +6,7 @@ import { createDeferredClient } from "@/lib/supabase/deferred-client";
 import { createClient } from "@/lib/supabase/server";
 import { claimAndGenerate } from "@/lib/notegen/generate-note";
 import { createNotegenPorts } from "@/lib/notegen/notegen-ports";
+import type { GeneratableRow } from "@/lib/notegen/sweep";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
 import {
   claimNoteForTranscription,
@@ -162,7 +163,7 @@ export async function triggerTranscription(
         .from("notes")
         .select("id, user_id, raw_transcript, updated_at")
         .eq("id", noteId)
-        .maybeSingle();
+        .maybeSingle<GeneratableRow>();
 
       if (!generatable) return;
 
