@@ -97,7 +97,7 @@ hierarchy nobody can navigate.
 
 Server Actions follow the same shape. `app/notes/actions/` holds one file per
 track — `recording.ts` (createRecordedNote, markUploadFailed) and
-`transcription.ts` (triggerTranscription). They were one `actions.ts` until
+`transcription.ts` (triggerTranscription). They were a single actions.ts file until
 2026-09-01. It was split because the two are genuinely different tracks that
 share nothing but the Supabase client, not because of the line count; the
 ceiling is what made the split due, and the seam was already there.

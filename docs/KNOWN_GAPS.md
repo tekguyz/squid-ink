@@ -1176,7 +1176,8 @@ disabled control so there is no element to re-enable.
 
 What shipped, and where:
 
-- `triggerTranscription(noteId)` in `app/notes/actions.ts` — a Server Action,
+- `triggerTranscription(noteId)` in `app/notes/actions/transcription.ts` — a
+  Server Action,
   not a route. It runs as the signed-in user through the cookie client; RLS
   confines it to that user's own note, so a request for somebody else's row
   returns zero claimed rows exactly as a status mismatch does.
@@ -1208,6 +1209,28 @@ object existence is still what actually guards the Gemini call.
 it bounds one unattended sweep inside the 300 s function ceiling, and a user
 who wants a note now presses the button.
 
+**AMENDED 2026-09-01, later the same day.** The action above shipped with a
+defect in exactly the part this entry called deliberate: it answered the
+browser on the claim and finished in `after()`, but the deferred half kept
+using the cookie client. @supabase/auth-js refreshes an expired access token
+inside `__loadSession` whatever `autoRefreshToken` says — the option governs
+only the background timer — and a refresh ROTATES the refresh token. The
+replacement cookies went to the `setAll` in `lib/supabase/server.ts`, which is
+wrapped in a try/catch precisely because a write is impossible once the
+response has been sent. So the rotation succeeded server-side and was discarded
+browser-side: the user's cookie kept a refresh token GoTrue then revoked, and
+their next request signed them out with nothing in any log. Reachable whenever
+the token was near expiry at the moment the button was pressed, because the
+proxy refreshes an already-expired token rather than a nearly-expired one.
+
+Fixed by removing the need for a refresh rather than suppressing it. The access
+token is read while the request is still open, right after `getUser()` has
+revalidated it, and the deferred half runs on a token-only client —
+`lib/supabase/deferred-client.ts`. An access token is good for an hour and
+`after()` is capped at 300 s, so the deferred work never reaches expiry. Same
+user, same RLS, same publishable key; `app/api/cron/transcribe/route.ts` is
+still the only shipped file reading `SUPABASE_SECRET_KEY`.
+
 Proof: `node scripts/verify-manual-transcribe.mjs` (imports the shipped claim
 through a Node resolve hook and counts Gemini calls across a repeat press, two
 concurrent claims and a losing caller's retry). End to end in a browser on
@@ -1226,6 +1249,30 @@ out were recorded, and the owner chose the second:
 
 - A per-note route the recorder calls on stop. **Not built.**
 - A deliberate "Transcribe" action the user presses. **Built, 2026-09-01.**
+
+### The transcript pane is blank while a note is still processing (recorded 2026-09-01)
+
+`components/note-detail/transcript-pane.tsx` renders `note.segments` and
+nothing else. A note at `'uploading'` or `'analyzing'` has no segments, so the
+pane is empty — no heading, no line of prose, nothing that says the transcript
+is coming rather than missing. The Transcribe button is on the shell's meta
+line (`note-detail-shell.tsx`), which is where the prompt pack asked for it, so
+the pane itself says nothing at all.
+
+This is known rather than unnoticed because a parallel implementation of the
+same feature solved it and was not the one that shipped. That branch put the
+button inside the pane, wrapped in a `TranscriptEmptyState` that rendered a
+short prose line keyed off `processingStatus` — "why there is no transcript
+yet". Merging it now would double-mount the button, so the branch was deleted
+and its commit preserved as the tag `archive/on-demand-transcription`
+(`1bac5a4`, pushed to origin). Read that file for the copy and the shape:
+
+    git show archive/on-demand-transcription:components/note-detail/transcript-pane.tsx
+
+Not built here because it is a design decision, not a defect fix: the empty
+state needs its own copy for four statuses, and the wording is the owner's
+call. Whoever picks it up should take the idea from the tag and re-site it in
+the pane WITHOUT the button, which already has a home.
 
 ### Nothing renders a live transcript while recording (recorded 2026-08-31)
 
