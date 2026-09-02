@@ -205,6 +205,34 @@ things worth carrying forward:
   three depths, with depth carried by `thinking_level` plus a wider prompt
   scope. Depth is no longer a model-routing decision at all.
 
+  **CLOSED 2026-09-02.** `lib/notegen/depth-policy.ts` consumes it.
+  `planForDepth` maps Brief to `thinking_level: 'low'` and a
+  decisions-and-actions scope, Dense to `'medium'` and a balanced scope, and
+  Exhaustive to `'high'` and a cross-referencing scope — scope, not only
+  length, per the decision above. `lib/notegen/notegen-ports.ts` reads the
+  `depth` column per note through `resolvePersonaFor`, and
+  `lib/notegen/gemini-client.ts` sends the level on the one
+  `interactions.create` call. Proved live on 2026-09-02 by
+  `scripts/verify-notegen-pipeline.mjs`, which read `depth=dense` off the
+  owner's row and generated at `thinking_level: 'medium'`.
+
+  **Two things this did NOT close, both still open, and neither is a defect.**
+  No UI control sets depth, so every persona still carries the `'dense'`
+  column default — Brief and Exhaustive are reachable today only by editing a
+  row by hand, and live verification therefore exercised Dense alone. And the
+  recorder still selects no persona at capture, so every note generates under
+  the Neutral Analyst / default lens; the other three framings in
+  `lib/notegen/lens-prompts.ts` are shipped and unit-tested but unexercised
+  end to end. Both belong to ROADMAP §5 / Core UX/UI.
+
+  **Also still unmeasured: the zero-persona-row branch.** `resolvePersonaFor`
+  falls back to `DEFAULT_PERSONA_FALLBACK` for an account predating the
+  2026-08-31 provisioning trigger, and there is a unit test for it. The live
+  script signs in as the seeded owner, whose rows exist, so it reported
+  `source=row` and the fallback path did not execute against the real
+  database. Same shape as the gap recorded further down this file for the
+  shell's own use of that constant.
+
 - **Four personas exist, not five.** DECISIONS.md § "Already covered" said to
   fold framework-template naming "into the 5 built-in Personas". Both design
   files define exactly four — Neutral Analyst, Sales Coach, Investor,
