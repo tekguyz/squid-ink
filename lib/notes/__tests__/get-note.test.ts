@@ -46,6 +46,7 @@ const noteRow: NoteRow = {
   user_id: "79db5c35-8d50-41c9-a265-49b786994455",
   title: "Pilot pricing & rollout",
   processing_status: "completed",
+  notegen_status: null,
   raw_transcript: "…",
   diarization_enabled: true,
   audio_duration_seconds: 2467,

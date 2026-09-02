@@ -48,6 +48,30 @@ alter table public.notes
   check (processing_status in
     ('local', 'uploading', 'analyzing', 'completed', 'failed'));
 
+-- notegen_status: structured note generation's own queue, exactly as
+-- processing_status is transcription's. There is no job table here either.
+--
+-- Nullable with no default, and null is load-bearing: it means "not eligible
+-- yet". Every row is null until a transcript exists, so there is no 'pending'
+-- string to invent — the column's nullability already says it.
+--
+-- The claim guard is two conditions, not one:
+--   processing_status = 'completed' AND notegen_status IS NULL
+-- which makes "cannot generate notes before a transcript exists" true by
+-- construction rather than by caller discipline.
+--
+-- 'failed' is terminal and there is no retry, matching processing_status. It
+-- is reached two ways: a caught error during generation, and a 'generating'
+-- row swept after one hour by lib/notegen/sweep.ts.
+alter table public.notes
+  add column if not exists notegen_status text;
+
+alter table public.notes
+  drop constraint if exists notes_notegen_status_check;
+alter table public.notes
+  add constraint notes_notegen_status_check
+  check (notegen_status in ('generating', 'completed', 'failed'));
+
 -- Serves feed ordering, and indexes the column every RLS policy below
 -- filters on. Postgres does not index foreign keys automatically.
 create index if not exists notes_user_id_created_at_idx
