@@ -17,6 +17,11 @@
  *  the 1024 width are stated once, in voyage-client.ts, next to the reasons
  *  they were chosen.
  *
+ *  Imported through the "@/" alias, not a relative path. Every module under
+ *  lib/rag/ does, and it is load-bearing rather than stylistic: the verify
+ *  scripts run this file through Node ESM, which refuses an extensionless
+ *  relative specifier, and their resolve hook only maps "@/".
+ *
  *  Plain fields on the errors it throws, never constructor parameter
  *  properties — scripts/verify-chat-search.mjs loads this module through
  *  Node's strip-only type stripping, which rejects `readonly kind:` in a
@@ -30,7 +35,7 @@ import {
   VOYAGE_OUTPUT_DIMENSION,
   VoyageError,
   type VoyageErrorKind,
-} from "./voyage-client";
+} from "@/lib/rag/voyage-client";
 
 /** One question in, one vector out. */
 export type QueryEmbedder = (text: string) => Promise<number[]>;

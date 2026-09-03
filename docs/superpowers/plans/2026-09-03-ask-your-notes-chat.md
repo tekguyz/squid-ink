@@ -1206,7 +1206,7 @@ Create `lib/rag/search-tool.ts`:
 
 import { tool } from "ai";
 import { z } from "zod";
-import type { QueryEmbedder } from "./query-embed";
+import type { QueryEmbedder } from "@/lib/rag/query-embed";
 import type { SearchHit } from "@/lib/chat/types";
 
 /** The second cap. search_note_chunks already limits to 25; this holds even
