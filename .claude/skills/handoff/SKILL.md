@@ -195,6 +195,13 @@ Then repair whichever doc is stale, in that doc's own established format:
 - **`CLAUDE.md`** — correct the figure the script named. Do not reword a rule
   that the script cannot check; if a rule is genuinely wrong, that is a
   code-reading finding, and it is reported, not silently rewritten.
+  **If you change one byte of `CLAUDE.md`, set its `**Last updated:**` line
+  under `# Conventions` to today's date**, the same way `docs/ROADMAP.md`'s
+  header date is bumped. The line exists so a reader can tell at a glance
+  whether the file has been measured recently; leaving it behind a real edit
+  is the exact drift this audit exists to catch. Same rule for
+  `docs/ROADMAP.md`'s header and `docs/DECISIONS.md`'s "Working state as of"
+  line — a doc this job repairs is a doc whose date it stamps.
 - **`docs/KNOWN_GAPS.md`** — add a dated section for anything newly deferred,
   and mark anything now closed `**RESOLVED YYYY-MM-DD.**` in place, with what
   closed it.

@@ -1,5 +1,8 @@
 # Conventions
 
+**Last updated:** 2026-09-03
+Update this line whenever this file changes — don't let it drift from reality.
+
 ## Stack
 
 Next.js App Router with React Server Components, TypeScript, and Tailwind CSS v4.
