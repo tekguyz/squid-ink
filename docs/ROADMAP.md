@@ -113,6 +113,33 @@ architecture change (RLS already permits it); the work is a scope toggle in
 the query and including note title/date in returned chunk metadata so
 multi-note answers can cite *which* meeting supports each claim.
 
+**Single-note vs cross-note retrieval, added 2026-09-03 — supersedes the "single-note and cross-note" RAG framing above.** Single-note chat skips retrieval entirely: raw transcript + generated notes go directly into context with a 5-minute `cache_control` breakpoint. Cross-note chat is the only consumer of hybrid RRF search, implemented as a non-`SECURITY DEFINER` Postgres function (`search_note_chunks`) so RLS on `note_chunks`/`notes` does the owner-scoping. Candidate pool: `WHERE created_at > now() - interval '90 days' ORDER BY created_at DESC LIMIT 25` — one clause, naturally yields whichever bound is smaller. Result cap: 25 chunks post-RRF, always.
+
+**New table: `chat_messages`.**
+```sql
+create table chat_messages (
+  id uuid primary key default gen_random_uuid(),
+  note_id uuid not null references notes(id) on delete cascade,
+  user_id uuid not null references auth.users(id),
+  role text not null check (role in ('user','assistant')),
+  content text not null,
+  scope text check (scope in ('this_note','all_notes')),
+  metadata jsonb,
+  created_at timestamptz default now()
+);
+create index on chat_messages (note_id, created_at);
+```
+
+RLS: `user_id = auth.uid()`, matching every other owner-scoped table.
+
+**As shipped, tightened against the snippet above.** `user_id` carries
+`on delete cascade` (without it a deleted account leaves rows that fail every
+RLS predicate — invisible and undeletable), `metadata` is
+`not null default '{}'::jsonb` to match `note_chunks`, and there is a second
+index on `(user_id, created_at)` because the rate limit counts the caller's
+rows in the last 60 seconds on every send. `service_role` is granted nothing:
+no cron job touches this table.
+
 **Speaker tags** (Core UX/UI): the note-detail mockup already renders real
 speaker names (avatar + name in the transcript pane), not generic "Speaker
 1/2" — so the UI assumption is already correct. What's missing is the

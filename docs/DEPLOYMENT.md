@@ -42,10 +42,32 @@ Measured with:
 | `GEMINI_API_KEY` | Secret | Production |
 | `CRON_SECRET` | Secret | Production |
 | `VOYAGE_API_KEY` | Secret | Production |
+| `ANTHROPIC_API_KEY` | Secret | Production |
+| `ANTHROPIC_WORKSPACE_ID` | Config | Production |
 
 The first five rows were measured 2026-08-31. **`VOYAGE_API_KEY` was added and
 read back on 2026-09-03** with the same `vercel env ls`, when the embeddings
 pipeline shipped.
+
+**`ANTHROPIC_API_KEY` and `ANTHROPIC_WORKSPACE_ID` are required by
+`/api/chat` and must both be set before chat works in production.**
+Unlike the Voyage key — where an unset value skips embedding and loses
+only latency, because the cron sweep is also the backfill — an unset
+`ANTHROPIC_API_KEY` makes every chat request return
+`500 {"error":"Chat is not configured."}`. There is no backfill and no
+retry; the feature is simply down.
+
+`ANTHROPIC_WORKSPACE_ID` is needed only because the key in use is
+**identity-linked** — scoped to a person rather than a workspace. Such a
+key must name its workspace on every request or the API answers 400
+(`anthropic-workspace-id is required when authenticating with an
+identity-linked API key`), measured against the live API on 2026-09-03.
+The route sends the header only when the variable is set, so swapping to
+a plain workspace-scoped key later means deleting this variable and
+changing no code. It is Config rather than Secret because a workspace id
+is an identifier, not a credential — but it still carries no
+`NEXT_PUBLIC_` prefix, and `project-conventions.test.ts` fails the build
+if one is ever added.
 
 `NEXT_PUBLIC_SUPABASE_URL` is `https://pbwvvakzbrimmdntqxxn.supabase.co`.
 

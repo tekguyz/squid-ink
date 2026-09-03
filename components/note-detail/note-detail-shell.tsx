@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Note } from "@/lib/notes/view-types";
+import type { ChatTurn } from "@/lib/chat/types";
 import { seedNotePersona, setNotePersona } from "@/app/notes/actions/persona";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ActionItemsTable } from "./action-items-table";
 import { AudioPlayer } from "./audio-player";
-import { ChatComposer } from "./chat-composer";
+import { ChatPanel } from "./chat/chat-panel";
 import { NoteHeader } from "./note-header";
 import { PersonaRail } from "./persona-rail";
 import { SpeakerInsights } from "./speaker-insights";
@@ -32,7 +33,13 @@ const SCROLL_OFFSET = 56;
  *  slips past the guard. */
 const SELECTABLE: ReadonlySet<string> = new Set(["local", "uploading"]);
 
-export function NoteDetailShell({ note }: { note: Note }) {
+export function NoteDetailShell({
+  note,
+  history,
+}: {
+  note: Note;
+  history: ChatTurn[];
+}) {
   const [activeSegmentId, setActiveSegmentId] = useState(INITIAL_SEGMENT_ID);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -149,10 +156,11 @@ export function NoteDetailShell({ note }: { note: Note }) {
           <SpeakerInsights stats={note.stats} />
         </div>
 
-        <ChatComposer
+        <ChatPanel
+          noteId={note.id}
           personaLabel={persona.name}
-          question={note.sampleExchange.question}
-          answer={note.sampleExchange.answer}
+          history={history}
+          segments={note.segments}
           activeSegmentId={activeSegmentId}
           onCitationSelect={handleCitationSelect}
         />
