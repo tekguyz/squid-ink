@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { parseAnswer } from "./parse-citations";
 import { CiteRuns } from "./cite-runs";
 import type { Citation } from "@/lib/chat/types";
@@ -19,21 +20,33 @@ export function ChatMessage({
   activeSegmentId: number;
   onCitationSelect: (segmentId: number) => void;
 }) {
-  if (role === "user") {
+  // Memoised on the three inputs that can change it, NOT on activeSegmentId —
+  // which changes on every citation click and does not affect parsing.
+  //
+  // Without this, every persisted turn re-parses on every streamed token: the
+  // panel re-renders per token, and a twenty-turn history means twenty regex
+  // passes for each one. The parse is cheap; doing it a few thousand times a
+  // second is not.
+  const parsed = useMemo(
+    () => (role === "assistant" ? parseAnswer(content, citations, segments) : null),
+    [role, content, citations, segments],
+  );
+
+  if (role === "user" || !parsed) {
     return (
       <div className="flex items-baseline gap-[9px] pb-2">
         <span className="flex-none font-mono text-[9px] text-meta">YOU</span>
-        <span className="text-[13px] text-ink-2">{content}</span>
+        <span className="min-w-0 text-[13px] break-words text-ink-2">
+          {content}
+        </span>
       </div>
     );
   }
 
-  const parsed = parseAnswer(content, citations, segments);
-
   return (
     <div className="flex items-baseline gap-[9px] pb-2">
       <span className="flex-none font-mono text-[9px] text-accent">NOTE</span>
-      <span className="min-w-0 text-[13px] leading-[1.55] text-ink-2">
+      <span className="min-w-0 text-[13px] leading-[1.55] break-words text-ink-2">
         <CiteRuns
           runs={parsed.runs}
           activeSegmentId={activeSegmentId}

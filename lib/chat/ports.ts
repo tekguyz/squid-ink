@@ -102,19 +102,28 @@ export function createChatPorts(supabase: SupabaseClient) {
     /** The single-note context. Reads the transcript and the generated
      *  chunks; deliberately does NOT read notegen_status. */
     async readNoteContext(noteId: string): Promise<NoteContext | null> {
-      const { data: note, error: noteError } = await supabase
-        .from("notes")
-        .select("raw_transcript")
-        .eq("id", noteId)
-        .maybeSingle();
+      // Issued together, not in sequence. The chunks do not depend on the
+      // note row, so awaiting one before starting the other adds a whole
+      // round trip to every single-note question for nothing.
+      const [
+        { data: note, error: noteError },
+        { data: chunks, error: chunkError },
+      ] = await Promise.all([
+        supabase
+          .from("notes")
+          .select("raw_transcript")
+          .eq("id", noteId)
+          .maybeSingle(),
+        supabase
+          .from("note_chunks")
+          .select("chunk_type, content, metadata")
+          .eq("note_id", noteId),
+      ]);
       if (noteError) throw noteError;
-      if (!note) return null;
-
-      const { data: chunks, error: chunkError } = await supabase
-        .from("note_chunks")
-        .select("chunk_type, content, metadata")
-        .eq("note_id", noteId);
       if (chunkError) throw chunkError;
+      // Checked after both settle: a missing note means the chunk query was
+      // wasted, but RLS makes that the rare case rather than the common one.
+      if (!note) return null;
 
       const rows = (chunks ?? []) as ChunkRow[];
       const ofType = (t: string) =>

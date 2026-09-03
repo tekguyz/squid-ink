@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import type { ChatScope, ChatTurn, Citation } from "@/lib/chat/types";
@@ -39,6 +39,12 @@ function liveCitations(parts: { type: string; [k: string]: unknown }[]): Citatio
   });
 }
 
+/** Groups the digits: 4,000 rather than 4000. Fixed to en-US rather than
+ *  the runtime locale, because a locale-dependent string differs between
+ *  server and client and React reports it as a hydration mismatch — the
+ *  same reason note-view-model.ts formats dates from explicit UTC parts. */
+const CAP = new Intl.NumberFormat("en-US");
+
 export function ChatPanel({
   noteId,
   personaLabel,
@@ -57,22 +63,34 @@ export function ChatPanel({
   const [draft, setDraft] = useState("");
   const [scope, setScope] = useState<ChatScope>("this_note");
 
-  const { messages, sendMessage, status, error } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      // The server takes the newest message and the scope and nothing else.
-      // History is re-read from the database, so a forged client payload
-      // cannot walk past the trim.
-      prepareSendMessagesRequest: ({ messages: sent }) => ({
-        body: {
-          noteId,
-          scope,
-          text:
-            sent.at(-1)?.parts.find((p) => p.type === "text")?.text ?? "",
-        },
+  // Scope is read through a ref, not closed over, so the transport below can
+  // be built ONCE. Putting scope in the memo's deps would rebuild the
+  // transport every time the toggle moves, and building it in the render body
+  // — which is what this replaced — allocated a fresh one on every streamed
+  // token.
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        // The server takes the newest message and the scope and nothing
+        // else. History is re-read from the database, so a forged client
+        // payload cannot walk past the trim.
+        prepareSendMessagesRequest: ({ messages: sent }) => ({
+          body: {
+            noteId,
+            scope: scopeRef.current,
+            text:
+              sent.at(-1)?.parts.find((p) => p.type === "text")?.text ?? "",
+          },
+        }),
       }),
-    }),
-  });
+    [noteId],
+  );
+
+  const { messages, sendMessage, status, error } = useChat({ transport });
 
   const busy = status === "submitted" || status === "streaming";
   const tooLong = draft.length > MAX_MESSAGE_CHARS;
@@ -88,6 +106,14 @@ export function ChatPanel({
     [canSubmit, draft, sendMessage],
   );
 
+  // The list is a short scroll box. Without this, a streamed answer lands
+  // below the fold after two turns and the reader watches a blank panel.
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, [history.length, messages]);
+
   const searching = messages
     .at(-1)
     ?.parts.some(
@@ -96,7 +122,10 @@ export function ChatPanel({
 
   return (
     <div className="border-t border-rule bg-dock px-[26px] pt-3 pb-3.5">
-      <div className="max-h-[220px] overflow-y-auto">
+      <div
+        ref={listRef}
+        className="max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain"
+      >
         {/* Persisted turns first, then anything streaming in this session. */}
         {history.map((turn) => (
           <ChatMessage
@@ -127,14 +156,16 @@ export function ChatPanel({
           />
         ))}
 
-        {searching ? (
-          <p
-            aria-live="polite"
-            className="pb-2 font-mono text-[9px] uppercase tracking-[0.06em] text-meta"
-          >
-            Searching your notes…
-          </p>
-        ) : null}
+        {/* Always mounted. A live region created at the same instant as its
+            content is frequently not announced at all — the element has to
+            already be in the tree when the text changes. Empty renders as
+            nothing, so there is no visual cost to keeping it. */}
+        <p
+          aria-live="polite"
+          className="font-mono text-[9px] uppercase tracking-[0.06em] text-meta empty:hidden pb-2"
+        >
+          {searching ? "Searching your notes…" : ""}
+        </p>
 
         {/* A pipeline failure, NOT an empty search. An empty search is a
             normal answer and arrives as ordinary prose. */}
@@ -173,7 +204,7 @@ export function ChatPanel({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="flex-none font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed disabled:cursor-not-allowed disabled:text-faint focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+          className="flex-none touch-manipulation font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed disabled:cursor-not-allowed disabled:text-faint focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
         >
           Ask
         </button>
@@ -181,7 +212,7 @@ export function ChatPanel({
 
       {tooLong ? (
         <p role="alert" className="pt-1 font-mono text-[9px] text-notice">
-          Too long — keep it under {MAX_MESSAGE_CHARS} characters.
+          Too long — keep it under {CAP.format(MAX_MESSAGE_CHARS)} characters.
         </p>
       ) : null}
     </div>

@@ -19,7 +19,12 @@ export function CiteRuns({
   return (
     <>
       {runs.map((run, i) => (
-        <span key={i}>
+        // Keyed on position AND on what the run resolves to. A bare index makes
+        // React reuse a chip DOM node across different citations while the
+        // answer streams, because the run list is re-derived on every token.
+        <span key={`${i}:${run.cite?.kind ?? "text"}:${
+          run.cite?.kind === "segment" ? run.cite.segmentId : run.cite?.noteId ?? ""
+        }`}>
           {run.text}
           {run.cite?.kind === "segment" ? (
             <CitationChip

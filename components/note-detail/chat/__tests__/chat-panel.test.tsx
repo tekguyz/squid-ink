@@ -112,6 +112,50 @@ describe("ChatPanel — scope", () => {
   });
 });
 
+describe("ChatPanel — keyboard and announcements", () => {
+  it("moves scope with arrow keys, both directions and wrapping", async () => {
+    // role=radiogroup promises this. Declaring the role without honouring it
+    // is worse than plain buttons: it advertises a keyboard model that is not
+    // there.
+    render(<ChatPanel {...base} onCitationSelect={vi.fn()} />);
+    const thisNote = screen.getByRole("radio", { name: "This note" });
+    const allNotes = screen.getByRole("radio", { name: "All notes" });
+
+    thisNote.focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(allNotes).toBeChecked();
+
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(thisNote).toBeChecked();
+
+    // Wraps rather than dead-ending.
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(allNotes).toBeChecked();
+  });
+
+  it("is a single tab stop — roving tabindex, not two", () => {
+    render(<ChatPanel {...base} onCitationSelect={vi.fn()} />);
+    expect(screen.getByRole("radio", { name: "This note" })).toHaveAttribute(
+      "tabindex",
+      "0",
+    );
+    expect(screen.getByRole("radio", { name: "All notes" })).toHaveAttribute(
+      "tabindex",
+      "-1",
+    );
+  });
+
+  it("keeps the live region mounted while idle", () => {
+    // A live region created at the same instant as its content is frequently
+    // not announced at all. It has to already be in the tree.
+    const { container } = render(
+      <ChatPanel {...base} onCitationSelect={vi.fn()} />,
+    );
+    const live = container.querySelector('[aria-live="polite"]');
+    expect(live).toBeInTheDocument();
+    expect(live).toHaveTextContent("");
+  });
+});
 describe("ChatPanel — persisted history", () => {
   it("renders a turn read back from the database", () => {
     render(
