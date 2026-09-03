@@ -56,6 +56,15 @@ export interface ChunkMetadata {
   ts_end_seconds?: number;
   source_url?: string;
   segment_id?: number;
+  /** Embedding retry bookkeeping, written by lib/rag/*. The chunk row's own
+   *  `embedding IS NULL` is the queue; this is only the give-up counter, so a
+   *  chunk that can never be embedded stops being retried forever. Merged into
+   *  this object, never written over it — a transcript_segment's speaker and
+   *  timestamps live here too. */
+  embed_attempts?: number;
+  /** The last failure reason, truncated. There is no error column at this
+   *  scale and the Vercel log rotates; this is what a later operator reads. */
+  embed_error?: string;
   /** Takeaway ordinal, rendered as "01", "02", "03". */
   n?: string;
   /** Action item only. */

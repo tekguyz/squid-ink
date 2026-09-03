@@ -55,7 +55,7 @@ being built now and nothing here should assume it.
 | Ask-your-notes chat (RAG + tool use, single-note or cross-note) | Claude (Sonnet/Opus) | Quality-sensitive, tool-chain reliability, low volume (user-initiated) |
 | Live voice assistant reasoning | Claude (Sonnet/Opus), orchestrated via Vapi | Claude has no native audio I/O (confirmed current as of Aug 2026 — text/image only); Vapi handles the STT+TTS glue and bills per-call, avoiding the per-open-session Gemini Live cost spiral seen previously |
 | Live voice assistant TTS | Vapi default, or Eleven Labs for a distinct branded voice | Eleven Labs optional, not load-bearing |
-| RAG embeddings | Voyage AI (`voyage-3-large`) — **confirmed** | Anthropic's recommended pairing for Claude-consumed retrieval; $0.06/1M, 32K context |
+| RAG embeddings | Voyage AI (`voyage-4`) — **confirmed** | Anthropic's recommended pairing for Claude-consumed retrieval; $0.06/1M, 32K context. Read `voyage-3-large` until 2026-09-03; that model is now Voyage's legacy tier at $0.18/1M with no free allowance, so only the name here was stale — the $0.06 figure was already `voyage-4`'s. See DECISIONS.md § RAG |
 
 Claude Code is the **build tool only** — no runtime role in the shipped app.
 

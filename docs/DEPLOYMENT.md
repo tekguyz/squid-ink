@@ -30,7 +30,7 @@ sign-in on 2026-08-30; see below.
 
 ### Environment variables
 
-Measured 2026-08-31 with:
+Measured with:
 
     npx vercel env ls --project squid-ink --scope tekguyz
 
@@ -41,8 +41,24 @@ Measured 2026-08-31 with:
 | `SUPABASE_SECRET_KEY` | Secret | Production |
 | `GEMINI_API_KEY` | Secret | Production |
 | `CRON_SECRET` | Secret | Production |
+| `VOYAGE_API_KEY` | Secret | Production |
+
+The first five rows were measured 2026-08-31. **`VOYAGE_API_KEY` was added and
+read back on 2026-09-03** with the same `vercel env ls`, when the embeddings
+pipeline shipped.
 
 `NEXT_PUBLIC_SUPABASE_URL` is `https://pbwvvakzbrimmdntqxxn.supabase.co`.
+
+**An unset `VOYAGE_API_KEY` fails quietly, so check this row before assuming
+the cron embeds anything.** Both call sites — `app/api/cron/transcribe/route.ts`
+and the `after()` chain in `app/notes/actions/transcription.ts` — **skip rather
+than throw** when it is
+unset, so a deployment without it produces a cron that silently embeds nothing.
+The only trace is a `[embed] skipped: VOYAGE_API_KEY is not set` line in the
+Vercel function log. That is deliberate — transcription and note generation have
+already committed real work by then, and failing the route would throw their
+report away — but it means an unset key looks exactly like a healthy run unless
+you read the log.
 
 **`SUPABASE_SECRET_KEY` used to be recorded here as "correctly absent" from
 Vercel. That is no longer true, and the change is deliberate.**

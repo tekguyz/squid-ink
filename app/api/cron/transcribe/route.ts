@@ -6,6 +6,8 @@ import { notegenSweep } from "@/lib/notegen/sweep";
 // not modified by this change; taking the number from there rather than
 // redeclaring it is what keeps the two phases on ONE budget.
 import { RUN_BUDGET_MS, sweep } from "@/lib/transcription/sweep";
+import { createEmbeddingPorts } from "@/lib/rag/supabase-ports";
+import { embeddingSweep, type EmbedSweepReport } from "@/lib/rag/sweep";
 
 /** The Vercel Cron entry point, and the ONE piece of application code that
  *  holds the Supabase secret key.
@@ -43,6 +45,14 @@ import { RUN_BUDGET_MS, sweep } from "@/lib/transcription/sweep";
  *  RUN_BUDGET_MS. Phase two is HANDED the remaining budget as a deadline
  *  rather than computing its own, because two 240 s budgets under a 300 s
  *  platform ceiling is a run that gets killed mid-write.
+ *
+ *  THREE PHASES ON ONE CLOCK, from 2026-09-03. Embedding population sweeps
+ *  last, over every chunk in the table that still has no vector, for every
+ *  user — which makes this phase the BACKFILL as well as the backstop. It
+ *  takes the same startedAt + RUN_BUDGET_MS deadline as phase two rather than
+ *  a third budget of its own, and its own MAX_EMBED_NOTES_PER_RUN cap bounds
+ *  cost. An unset VOYAGE_API_KEY skips this phase and is reported in the
+ *  response body; it does not fail a run whose first two phases succeeded.
  *
  *  The note-gen ports are built from the SAME db client. A second client here
  *  would be a second secret-key read for no reason — this route is still the
@@ -106,7 +116,39 @@ export async function GET(request: Request) {
     });
     console.log(`[notegen] ${JSON.stringify(notegen)}`);
 
-    return Response.json({ ...report, notegen });
+    // Phase three, on the remainder of the SAME budget. ONE clock, THREE
+    // phases now — the route still reads a single startedAt and every phase is
+    // handed the same deadline rather than starting its own. Embedding runs
+    // last on purpose: it is the only phase with a standing backstop, since
+    // this same sweep is also the backfill, so a busy run deferring it costs
+    // nothing but a day.
+    const voyageKey = process.env.VOYAGE_API_KEY;
+    let embeddings: EmbedSweepReport | { skipped: string } = {
+      skipped: "VOYAGE_API_KEY is not set",
+    };
+
+    if (voyageKey) {
+      // Its OWN boundary, not the route's. An unset key is not the only way
+      // this phase can fail — a revoked key is a fatal VoyageError that
+      // propagates out of embeddingSweep — and both deserve the same answer,
+      // because phases one and two have already committed real work whose
+      // report would otherwise be thrown away with a 500.
+      try {
+        embeddings = await embeddingSweep(createEmbeddingPorts(db, voyageKey), {
+          deadlineAt: startedAt + RUN_BUDGET_MS,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[embed] phase failed: ${message}`);
+        embeddings = { skipped: message };
+      }
+    } else {
+      // Loud, but not fatal. Same reasoning as the catch above.
+      console.error(`[embed] skipped: VOYAGE_API_KEY is not set`);
+    }
+    console.log(`[embed] ${JSON.stringify(embeddings)}`);
+
+    return Response.json({ ...report, notegen, embeddings });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[transcribe] sweep aborted: ${message}`);

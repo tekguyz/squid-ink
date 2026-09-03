@@ -34,8 +34,12 @@ create table if not exists public.note_chunks (
   -- as a composite, so that it is stated in exactly one place.
   persona_id uuid,
   content text not null,
-  -- voyage-3-large output width (ROADMAP.md §3). Null until the embedding
-  -- pipeline ships — no embedding code is in scope for this prompt.
+  -- voyage-4 output width, pinned on every call in lib/rag/voyage-client.ts
+  -- rather than taken from the API default — 1024 is that model's default
+  -- today, but it also offers 2048/512/256 and this column is FIXED.
+  -- Populated since 2026-09-03; null means "not embedded yet", which is the
+  -- queue itself (CLAUDE.md § Embeddings). The model changed from
+  -- voyage-3-large on cost grounds the same day; see docs/DECISIONS.md § RAG.
   embedding extensions.vector(1024),
   -- {speaker, ts_start, ts_end, source_url, seq} plus per-type extras:
   -- runs (summary), owner/due (action_item), segment_id (citations),
@@ -106,6 +110,26 @@ create index if not exists note_chunks_embedding_idx
 
 create index if not exists note_chunks_content_fts_idx
   on public.note_chunks using gin (to_tsvector('english', content));
+
+-- The embedding QUEUE, as opposed to the retrieval index above.
+--
+-- lib/rag/sweep.ts asks one question on every cron run: "which chunks, across
+-- every user, still have no vector?" Without this the answer is a sequential
+-- scan of the whole table, and it gets slower with every note ever recorded --
+-- while the set it is looking for shrinks towards empty. A partial index
+-- inverts that: it holds only the rows that are actually pending, so a fully
+-- embedded table is answered from an index with no entries in it.
+--
+-- Keyed on created_at because that is the sweep's ORDER BY: oldest chunk
+-- first, so the note that has waited longest is taken up first.
+--
+-- `embedding is null` is immutable, which is what a partial index predicate
+-- requires. The attempt cap is deliberately NOT in the predicate: it reads
+-- metadata, and a chunk that has given up permanently is a rounding error in
+-- the index while a jsonb predicate would make every UPDATE re-evaluate it.
+create index if not exists note_chunks_pending_embedding_idx
+  on public.note_chunks (created_at)
+  where embedding is null;
 
 alter table public.note_chunks enable row level security;
 
