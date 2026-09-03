@@ -1888,3 +1888,30 @@ That is survivable — the row is left at `'analyzing'` and the staleness sweep
 marks it `'failed'` on a later tick — but on the Hobby daily schedule "a later
 tick" is up to 24 hours. A per-call timeout on the Gemini request would close
 it properly.
+
+## Note Detail layout has no responsive/minimize path, and two bottom-right elements collide (recorded 2026-09-03)
+
+Screenshot review against the shipped app, not the design file.
+
+- **No collapse/minimize for the left rail or Transcript pane.** Layout is
+  fixed per the 2026-08-30 entry above (rail 136px, transcript pane 404px,
+  no responsive breakpoint in scope). Confirmed still true. Hide, resize, and
+  detach are all undecided, not just unbuilt.
+- **Theme toggle and Record HUD both claim "fixed bottom-right" independently.**
+  `components/theme-toggle.tsx` was placed there at the user's request
+  (2026-08-30 entry, outside the design file). The Record HUD dock is
+  separately fixed bottom-right by design (drag/snap-to-corner was
+  considered and rejected — see "Not built from surface 02b" above). Neither
+  decision accounted for the other. Needs a real z-index/position
+  arbitration, not a coincidence of whichever renders last.
+- **No safe-margin exclusion zone defined around the Record HUD.** It's
+  persistent by design (ambient trigger), which means anything else that
+  could render in that corner needs to know to avoid it. No such rule
+  exists yet — the theme-toggle collision is the first instance, not
+  necessarily the last.
+- **Notes have no auto-titling.** Default is the literal string "Untitled
+  note," unset until manually renamed. Blocks ROADMAP §4's "ask all notes"
+  citation requirement (cite *which* meeting supports each claim) — a
+  citation naming "Untitled note" three times over is not a citation.
+  Needs a decision before cross-note chat ships: derive a title from
+  generated content, a dedicated call, or require manual naming.
