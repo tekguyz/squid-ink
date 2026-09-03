@@ -97,6 +97,17 @@ describe("app/api/chat/route.ts invariants", () => {
     expect(SOURCE).not.toMatch(/NEXT_PUBLIC_ANTHROPIC/);
   });
 
+  it("sends the workspace id only when one is configured", () => {
+    // An identity-linked key is scoped to a person, not a workspace, and the
+    // API answers 400 without this header. A plain workspace-scoped key must
+    // NOT send it, so it is conditional rather than always-on. Measured
+    // against the live API on 2026-09-03.
+    expect(SOURCE).toMatch(/process\.env\.ANTHROPIC_WORKSPACE_ID/);
+    expect(SOURCE).toMatch(/"anthropic-workspace-id"/);
+    // Conditional, not unconditional: the header is spread in behind a check.
+    expect(SOURCE).toMatch(/\.\.\.\(workspaceId/);
+  });
+
   it("caps its own duration well under the Hobby ceiling", () => {
     // 300 s is both the default and the hard maximum on Hobby. A chat turn is
     // seconds; leaving it at the ceiling would let one hung request hold a

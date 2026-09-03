@@ -94,13 +94,26 @@ export async function POST(req: Request) {
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) return bad(500, "Chat is not configured.");
 
+  // An IDENTITY-LINKED key is scoped to a person rather than a workspace, and
+  // the API answers 400 unless every request names the workspace it acts in.
+  // A plain workspace-scoped key needs no such header, so this is sent only
+  // when the variable is set rather than always. Measured 2026-09-03 against
+  // the live API: without it, "anthropic-workspace-id is required when
+  // authenticating with an identity-linked API key".
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
+
   // 4. Persist the user's turn, then read history back. The insert lands
   //    first so the newest message is part of the history we send.
   await ports.insertUserMessage(noteId, user.id, text, scope);
   const history = trimHistory(await ports.readHistory(noteId));
 
   // 5. Build this turn's context from THIS turn's scope. Nothing is carried.
-  const anthropic = createAnthropic({ apiKey: anthropicKey });
+  const anthropic = createAnthropic({
+    apiKey: anthropicKey,
+    ...(workspaceId
+      ? { headers: { "anthropic-workspace-id": workspaceId } }
+      : {}),
+  });
   const flat = flattenHistory(history);
 
   let system = ALL_NOTES_SYSTEM;
