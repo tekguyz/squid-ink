@@ -1735,8 +1735,20 @@ lands — that is when a missing chunk starts to cost an answer.
 only once a payment method is on file. Without one the account is held at
 **3 RPM and 10,000 TPM**, and the 429 says so in its response body.
 
-**The pipeline is correct under this and nothing needs changing in `lib/rag`.**
-A 429 is classified `transient`: the chunk's attempt counter is untouched, the
+**Corrected 2026-09-03, the same day, in code review.** This read "the pipeline
+is correct under this and nothing needs changing in `lib/rag`", and the
+production estimate below said "up to 10 requests". Both were wrong by about
+two orders of magnitude. `embedChunks` fell through to its one-at-a-time
+fallback on **every** non-fatal batch error, so a 429 on a 100-chunk note
+produced 1 + 100 requests, all of them doomed, aimed at the very limit that had
+just rejected the batch. A transient error now defers the whole batch and
+`continue`s, and the individual fallback means what its comment always claimed:
+isolating one poison chunk out of a **content** error. A test pins the call
+count at one.
+
+The classification itself was right all along, and is what kept this from being
+a data problem: a 429 is `transient`, so the chunk's attempt counter is
+untouched, the
 row stays eligible, and the next sweep retries it. Six chunks took that path in
 the first run and embedded cleanly in the second. The only accommodation is in
 the harness — `scripts/verify-embeddings-pipeline.mjs` spaces its calls 21 s

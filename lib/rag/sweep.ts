@@ -38,8 +38,13 @@ export const MAX_EMBED_ATTEMPTS = 3;
 export const MAX_EMBED_NOTES_PER_RUN = 10;
 
 /** How many pending chunks one sweep pulls before grouping them into notes.
- *  Wide enough that MAX_EMBED_NOTES_PER_RUN notes are actually reachable even
- *  when the oldest note is a long one. */
+ *  It is a CHUNK cap, so it can bind before MAX_EMBED_NOTES_PER_RUN does: at
+ *  the ~100-chunk long note quoted above, 500 chunks reaches five notes, not
+ *  ten. That is deliberate and not a bug — the sweep is idempotent and runs
+ *  daily, so the remainder is the next run's work, and a window wide enough to
+ *  always reach ten long notes would be 1,000 write-backs in one phase of a
+ *  shared 300 s budget. Short notes, which are the common case, reach the note
+ *  cap first. */
 export const EMBED_CHUNK_WINDOW = 500;
 
 /** A chunk waiting for its vector. Deliberately these columns and nothing more
@@ -67,7 +72,15 @@ export function attemptsIn(metadata: ChunkMetadata): number {
  *  PostgREST cannot send `metadata || jsonb_build_object(...)` — it has no way
  *  to express a SQL expression in an update. So the merge happens here, on the
  *  object the listing query already returned, and the guarded UPDATE writes
- *  the merged whole. Same result, and a unit test can hold it to it. */
+ *  the merged whole. Same result for one writer, and a unit test can hold it
+ *  to it.
+ *
+ *  Not identical for two. Because the merge is client-side, two triggers
+ *  failing the same chunk at once each merge onto their own snapshot, so the
+ *  counter can land at 1 where a SQL-side `||` would have reached 2. That
+ *  errs toward MORE retries, never fewer, and never toward a lost field — the
+ *  worst case is a poison chunk taking an extra sweep to exhaust. It is
+ *  accepted, not overlooked. */
 export function withEmbedAttempt(
   metadata: ChunkMetadata,
   attempts: number,

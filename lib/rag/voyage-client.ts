@@ -194,6 +194,20 @@ export function createVoyageEmbedder(apiKey: string): DocumentEmbedder {
       ordered[index] = embedding as number[];
     }
 
+    // The count check above passes if two rows carry the SAME index, which
+    // leaves a hole. An undefined slot reaches writeEmbedding, JSON.stringify
+    // yields the literal `undefined`, and the update body loses its embedding
+    // key — a chunk reported as embedded while its column is still null.
+    for (let i = 0; i < ordered.length; i += 1) {
+      if (ordered[i] === undefined) {
+        throw new VoyageError(
+          `voyage returned no vector for text ${i} (duplicate index)`,
+          "content",
+          response.status,
+        );
+      }
+    }
+
     return ordered;
   };
 }

@@ -211,6 +211,15 @@ export async function triggerTranscription(
         return;
       }
 
+      // NO CLOCK BUDGET HERE, unlike the cron route's three phases. This
+      // chain — transcribe, generate, embed — runs inside one after() under
+      // the same 300 s Hobby ceiling, and a long recording plus a long note's
+      // write-backs can now exceed it. The overrun is ACCEPTED rather than
+      // guarded: a killed embed leaves chunks null, which is exactly the
+      // state the cron sweep exists to backfill, so the cost of overrunning
+      // is one day of latency on a note that already has its transcript and
+      // its takeaways. Guarding it would buy a cleaner log line and nothing
+      // else. The earlier two phases had no budget before this change either.
       const embedded = await embedNoteChunks(
         createEmbeddingPorts(deferred, voyageKey),
         noteId,

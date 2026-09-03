@@ -328,6 +328,14 @@ try {
   check("no Voyage call", voyageCalls - before3 === 0, `(${voyageCalls - before3})`);
 
   // ---- Proof 4 -------------------------------------------------------------
+  // SCOPE LIMIT, stated rather than glossed. `ports` is built on the
+  // authenticated owner client, so this exercises listPending's lack of a
+  // user_id filter but NOT its cross-tenant reach — RLS scopes the read to one
+  // user. Proving the cross-tenant half needs service_role, which would
+  // contradict this script's own rule of deleting and reading as the owner so
+  // that the RLS path is the one under test. The cross-user claim is carried
+  // by the code comment in lib/rag/sweep.ts and by the cron route being the
+  // only caller that holds the secret key.
   console.log("\nProof 4 — the sweep backfills chunks the inline path never saw");
   const note2 = await seedNote("embeddings proof 4 (backfill)");
   await seedChunk(note2, "Priya flagged that the old customer IDs must survive.");

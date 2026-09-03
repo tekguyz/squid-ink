@@ -185,9 +185,25 @@ export async function embedChunks(
     } catch (error) {
       if (error instanceof VoyageError && error.kind === "fatal") throw error;
 
-      // ONE MALFORMED CHUNK MUST NOT COST ITS SIBLINGS THEIR ATTEMPT. The
-      // batch told us nothing about WHICH text was at fault, so every member
-      // gets its own call; only the ones that fail alone are charged.
+      // A TRANSIENT FAILURE MUST NOT FAN OUT. A 429 or a 5xx says nothing
+      // about any individual text, so calling each member alone cannot
+      // produce a different answer — it turns one rejected request into
+      // 1 + N rejected requests aimed at the very limit that rejected it.
+      // Every member stays eligible with its counter untouched and the next
+      // sweep retries the batch whole.
+      if (error instanceof VoyageError && error.kind === "transient") {
+        report.retryable += batch.length;
+        ports.log(
+          `note ${batch[0].note_id}: batch of ${batch.length} deferred ` +
+            `(${error.message}). Still eligible.`,
+        );
+        continue;
+      }
+
+      // ONE MALFORMED CHUNK MUST NOT COST ITS SIBLINGS THEIR ATTEMPT. Only a
+      // content error reaches here, and it told us nothing about WHICH text
+      // was at fault — so every member gets its own call, purely to isolate
+      // the poison one; only the chunks that fail alone are charged.
       const reason = error instanceof Error ? error.message : String(error);
       ports.log(
         `note ${batch[0].note_id}: batch of ${batch.length} failed (${reason}) — ` +

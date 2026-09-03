@@ -7,7 +7,7 @@ import { notegenSweep } from "@/lib/notegen/sweep";
 // redeclaring it is what keeps the two phases on ONE budget.
 import { RUN_BUDGET_MS, sweep } from "@/lib/transcription/sweep";
 import { createEmbeddingPorts } from "@/lib/rag/supabase-ports";
-import { embeddingSweep } from "@/lib/rag/sweep";
+import { embeddingSweep, type EmbedSweepReport } from "@/lib/rag/sweep";
 
 /** The Vercel Cron entry point, and the ONE piece of application code that
  *  holds the Supabase secret key.
@@ -123,16 +123,27 @@ export async function GET(request: Request) {
     // this same sweep is also the backfill, so a busy run deferring it costs
     // nothing but a day.
     const voyageKey = process.env.VOYAGE_API_KEY;
-    let embeddings: unknown = { skipped: "VOYAGE_API_KEY is not set" };
+    let embeddings: EmbedSweepReport | { skipped: string } = {
+      skipped: "VOYAGE_API_KEY is not set",
+    };
 
     if (voyageKey) {
-      embeddings = await embeddingSweep(createEmbeddingPorts(db, voyageKey), {
-        deadlineAt: startedAt + RUN_BUDGET_MS,
-      });
+      // Its OWN boundary, not the route's. An unset key is not the only way
+      // this phase can fail — a revoked key is a fatal VoyageError that
+      // propagates out of embeddingSweep — and both deserve the same answer,
+      // because phases one and two have already committed real work whose
+      // report would otherwise be thrown away with a 500.
+      try {
+        embeddings = await embeddingSweep(createEmbeddingPorts(db, voyageKey), {
+          deadlineAt: startedAt + RUN_BUDGET_MS,
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[embed] phase failed: ${message}`);
+        embeddings = { skipped: message };
+      }
     } else {
-      // Loud, but not fatal. Transcription and note generation have already
-      // run and their results must still be returned; failing the whole route
-      // over an unset embedding key would throw away real work.
+      // Loud, but not fatal. Same reasoning as the catch above.
       console.error(`[embed] skipped: VOYAGE_API_KEY is not set`);
     }
     console.log(`[embed] ${JSON.stringify(embeddings)}`);

@@ -620,11 +620,20 @@ the live docs that day, never from memory:
   parameter list. Keep every shipped module a verify script imports loadable
   that way.
 
-**Only a chunk that fails ON ITS OWN is charged an attempt.** A failed batch is
-retried one chunk at a time precisely so one poison chunk cannot spend its
-siblings' attempts. A `429`/`5xx`/network failure is transient and increments
-nothing; a `401`/`403` aborts the run rather than burning every chunk's counter;
-only a `400`/`422` counts. Three charged attempts and the chunk is left null
+**Only a chunk that fails ON ITS OWN is charged an attempt.** A `429`/`5xx`/
+network failure is transient and increments nothing; a `401`/`403` aborts the
+run rather than burning every chunk's counter; only a `400`/`422` counts.
+
+**The one-at-a-time fallback fires on a CONTENT error only, never a transient
+one — corrected 2026-09-03 in code review.** Retrying each member alone is how
+one poison chunk is isolated so it cannot spend its siblings' attempts, and a
+`400` is the only error that says nothing about *which* text was at fault. A
+`429` says nothing about any text at all, so calling each member alone cannot
+produce a different answer — it turns one rejected request into `1 + N`
+rejected requests aimed at the limit that just rejected it. On the unbilled
+3 RPM tier that was ~101 requests per long note. A transient batch now defers
+whole, every member still eligible, counters untouched; a test pins the call
+count at one. Three charged attempts and the chunk is left null
 permanently — a real gap, recorded in `docs/KNOWN_GAPS.md` § "An unembeddable
 chunk gives up silently".
 

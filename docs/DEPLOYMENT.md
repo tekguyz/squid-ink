@@ -41,8 +41,24 @@ Measured 2026-08-31 with:
 | `SUPABASE_SECRET_KEY` | Secret | Production |
 | `GEMINI_API_KEY` | Secret | Production |
 | `CRON_SECRET` | Secret | Production |
+| `VOYAGE_API_KEY` | Secret | Production — **required, not yet measured as set** |
 
 `NEXT_PUBLIC_SUPABASE_URL` is `https://pbwvvakzbrimmdntqxxn.supabase.co`.
+
+**`VOYAGE_API_KEY` is the one row in this table that has not been read back
+from Vercel.** It shipped with the embeddings pipeline on 2026-09-03 and exists
+in `.env.local`; the table above was measured 2026-08-31 and has not been
+re-measured since. Set it before trusting the cron to embed anything, and
+re-run the `vercel env ls` above to move this row into the measured set.
+
+Both call sites — `app/api/cron/transcribe/route.ts` and the `after()` chain in
+`app/notes/actions/transcription.ts` — **skip rather than throw** when it is
+unset, so a deployment without it produces a cron that silently embeds nothing.
+The only trace is a `[embed] skipped: VOYAGE_API_KEY is not set` line in the
+Vercel function log. That is deliberate — transcription and note generation have
+already committed real work by then, and failing the route would throw their
+report away — but it means an unset key looks exactly like a healthy run unless
+you read the log.
 
 **`SUPABASE_SECRET_KEY` used to be recorded here as "correctly absent" from
 Vercel. That is no longer true, and the change is deliberate.**

@@ -187,6 +187,27 @@ describe("embedChunks — the batch fallback", () => {
     expect(report.exhausted).toBe(0);
   });
 
+  it("does NOT fan a transient batch failure out into one call per chunk", async () => {
+    // A 429 or a 5xx says nothing about any individual text, so retrying each
+    // member alone cannot produce a different answer — it only multiplies one
+    // failed request into 1 + N against the very limit that rejected it.
+    const embed = vi.fn(async () => {
+      throw new VoyageError("429", "transient", 429);
+    });
+    const { ports } = harness({ embed });
+
+    const report = await embedChunks(ports, [
+      chunk("a"),
+      chunk("b"),
+      chunk("c"),
+    ]);
+
+    expect(embed).toHaveBeenCalledTimes(1);
+    expect(ports.recordAttempt).not.toHaveBeenCalled();
+    expect(report.retryable).toBe(3);
+    expect(report.exhausted).toBe(0);
+  });
+
   it("ABORTS the whole run on a fatal error rather than burning every counter", async () => {
     const embed = vi.fn(async () => {
       throw new VoyageError("401", "fatal", 401);
