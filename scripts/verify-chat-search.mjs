@@ -111,7 +111,11 @@ const userId = session.user.id;
  *  unbilled limit is 3 requests per ROLLING 60 s window, so 21 s start-to-start
  *  puts three calls inside one window right on the boundary and any jitter
  *  trips it. */
-const MIN_CALL_INTERVAL_MS = Number(env.VOYAGE_MIN_CALL_INTERVAL_MS ?? 31_000);
+const MIN_CALL_INTERVAL_MS = Number(
+  process.env.VOYAGE_MIN_CALL_INTERVAL_MS ??
+    env.VOYAGE_MIN_CALL_INTERVAL_MS ??
+    31_000,
+);
 let lastCallAt = 0;
 async function paced(fn) {
   const wait = lastCallAt + MIN_CALL_INTERVAL_MS - Date.now();
