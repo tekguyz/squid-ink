@@ -1658,10 +1658,104 @@ nothing else" — **no longer holds**, and the seeded note's hand-written
 takeaways are replaced by the pipeline's own on its first run, which is designed
 behaviour rather than a regression.
 
-**Embeddings — still open, unchanged.** `note_chunks.embedding` is written
-**`null` on purpose**, by both pipelines. The hnsw index over that column exists
-and is empty. Nothing populates it, and no retrieval path reads it; RAG remains
-a Core UX/UI item in `docs/ROADMAP.md` §4.
+**Embeddings — CLOSED 2026-09-03.** `note_chunks.embedding` is populated. The
+chunk's own `embedding IS NULL` is the queue — no new status column, no job
+table, the same "a row's own state is the queue" rule as `processing_status`
+and `notegen_status`, at chunk grain. `lib/rag/*` batches a note's pending
+chunks through Voyage **`voyage-4`** (`input_type: "document"`,
+`output_dimension: 1024`, `output_dtype: "float"`, all pinned) and writes each
+vector back under a per-row guarded `UPDATE ... WHERE id = $1 AND embedding IS
+NULL`. Two triggers: the end of the existing `after()` chain in
+`app/notes/actions/transcription.ts`, and phase three of
+`app/api/cron/transcribe/route.ts`, which is also the backfill for every chunk
+written before this shipped. A new partial index,
+`note_chunks_pending_embedding_idx`, keeps the sweep's "which chunks have no
+vector" question off a sequential scan; `EXPLAIN` was read back from the live
+project and the planner picks it.
+
+The hnsw index over the column is no longer empty: 33 of the table's 121 chunks
+carried real vectors when this was written, proved by
+`node scripts/verify-embeddings-pipeline.mjs`.
+
+**No retrieval path reads it yet** — hybrid vector + full-text search via
+reciprocal rank fusion is still a Core UX/UI item in `docs/ROADMAP.md` §4, and
+that is what the embeddings now exist for. Two things below it are worth
+reading before that work starts: the new "unembeddable chunk" gap immediately
+following, and the free-tier rate limit recorded with it.
+
+### An unembeddable chunk gives up silently, and nothing says so
+
+**Opened 2026-09-03, with the embeddings pipeline.**
+
+A chunk that fails to embed three times is left with `embedding` null
+permanently. `lib/rag/embed-note.ts` counts the attempts in
+`note_chunks.metadata.embed_attempts` and the eligibility filter in
+`lib/rag/supabase-ports.ts` stops listing it at three, so it is never retried
+again — by the inline trigger or by the cron sweep.
+
+**Nothing reports this.** There is no error column at single-owner scale
+(§ Transcription made that choice and this pipeline follows it), so the only
+trace is one `[embed]` line in the Vercel function log at the moment the third
+attempt fails, and `metadata.embed_error` on the row itself. The log rotates.
+Nobody is paged, no dashboard turns red, and the note renders completely
+normally — the chunk is simply invisible to a retrieval path that does not
+exist yet.
+
+The failure is therefore **silent and permanent**, and it will only be
+discovered when hybrid retrieval ships and somebody notices a specific
+takeaway is never returned. The cap itself is right: three attempts on a chunk
+that Voyage rejects for its content is enough, and retrying forever would spend
+real money on a text that will never embed. Transient failures — rate limits,
+5xx, network — deliberately do **not** increment the counter, so this only ever
+catches genuinely unembeddable content. That distinction was exercised for real
+on 2026-09-03, not just unit-tested; see the rate-limit note below.
+
+**The measurement that would close it** is one query, which nothing runs today:
+
+```sql
+select id, note_id, metadata->>'embed_error' as reason
+from public.note_chunks
+where embedding is null and (metadata->>'embed_attempts')::int >= 3;
+```
+
+The honest options are (a) surface that count in the cron route's JSON response
+so a failing run is visible where the sweep report already is, (b) add the
+error column this project has twice decided not to add, or (c) accept it until
+retrieval ships and the absence becomes visible on its own. **(c) is what is
+accepted today**, deliberately, because at one user with a handful of notes the
+query above is a thirty-second manual check and the pipeline has no
+observability budget of its own. Revisit at the same moment hybrid retrieval
+lands — that is when a missing chunk starts to cost an answer.
+
+### The Voyage account is on the unbilled tier: 3 RPM, not 2,000
+
+**Measured 2026-09-03**, from a live 429 body during the first run of
+`scripts/verify-embeddings-pipeline.mjs`. Voyage's published tier-1 limits for
+`voyage-4` are 2,000 requests and 8,000,000 tokens per minute, but those apply
+only once a payment method is on file. Without one the account is held at
+**3 RPM and 10,000 TPM**, and the 429 says so in its response body.
+
+**The pipeline is correct under this and nothing needs changing in `lib/rag`.**
+A 429 is classified `transient`: the chunk's attempt counter is untouched, the
+row stays eligible, and the next sweep retries it. Six chunks took that path in
+the first run and embedded cleanly in the second. The only accommodation is in
+the harness — `scripts/verify-embeddings-pipeline.mjs` spaces its calls 21 s
+apart so its proofs have something to observe, and that spacing is switched off
+with `VOYAGE_MIN_CALL_INTERVAL_MS=0`.
+
+**What it costs in production:** the daily cron sweep embeds up to
+`MAX_EMBED_NOTES_PER_RUN = 10` notes, which is up to 10 requests, and 3 RPM
+means roughly two thirds of them 429 and defer to the following day. The
+backlog still clears — it just clears slowly, and the log fills with transient
+lines that look alarming and are not. **Adding a payment method removes this
+entirely**; `voyage-4` carries 200 million free tokens per account, so a card
+on file is not the same as a bill. That is the one-line fix and it is the
+owner's call, not a code change.
+
+Deliberately **not** doing: a retry-with-backoff inside a single run. It would
+spend the shared 300 s Vercel budget waiting, it would make the free tier look
+survivable when the real answer is a billing setting, and this project's
+standing rule is not to add mitigation speculatively.
 
 ### The verification script cannot run unattended
 

@@ -163,8 +163,46 @@ a separate, still-open question (see Branding below).
   already bundled in the existing Supabase plan. The only recurring RAG cost
   is the embedding API call, which is a rounding error at this app's volume
   (well under $0.01/month at ~50 meetings/month).
-- Embedding vendor: **Voyage AI `voyage-3-large`, confirmed** (was the open
-  item, now closed).
+- Embedding vendor: **Voyage AI `voyage-4`, confirmed.** This line read
+  `voyage-3-large` until 2026-09-03 and was changed on cost, measured against
+  docs.voyageai.com/docs/pricing that day: `voyage-3-large` is now Voyage's
+  legacy tier at **$0.18/M tokens with no free allowance**, `voyage-4` is
+  current-generation at **$0.06/M with 200 million free tokens per account**.
+  $0.06/M is the number ROADMAP.md §3 already quoted, so the cost modelling
+  below never needed revising — only the model name was stale. Everything this
+  project depends on is identical across the two: 1024 default dimension (also
+  2048/512/256), the same five output dtypes, 32,000-token context. The one
+  real difference is the per-request cap, **320,000 tokens for `voyage-4`**
+  against 120,000, which only widens the batching headroom.
+- **Embedding population — shipped 2026-09-03.** `note_chunks.embedding IS
+  NULL` **is** the queue: no new status column and no job table, the same
+  "a row's own state is the queue" rule as `processing_status` and
+  `notegen_status`, applied at chunk grain because embeddings are per chunk,
+  not per note. A retry cap of **3** is tracked in the existing
+  `note_chunks.metadata` jsonb, **merged into it, never written over it** — a
+  `transcript_segment` row already carries `speaker`, `ts_start`, `ts_end` and
+  `seq` there. Embedding is triggered **once at the end of the existing
+  transcription → notegen `after()` chain** (by which point both chunk kinds
+  exist, so one call covers both), plus a **daily cron sweep sharing the run's
+  single `startedAt`-derived deadline** — three phases, one clock — which
+  doubles as the **backfill** for every chunk written before this shipped.
+  Chunks are **batched per note through Voyage in one call**, with
+  `input_type: "document"` (the asymmetric mode for stored content — the
+  retrieval side owes `"query"` on the question), a pinned
+  `output_dimension: 1024` and `output_dtype: "float"` on every call, since the
+  column is a fixed `vector(1024)` and an API default could move. On a batch
+  failure each chunk is **retried individually**, so one poison chunk cannot
+  cost its siblings their attempt; only a chunk that fails **on its own**
+  increments the counter, and only a content error does — a 429/5xx leaves the
+  row eligible, and a 401/403 aborts the run rather than burning every chunk's
+  attempts. **The inline path and the sweep are allowed to race.** This is a
+  deliberate deviation from the claim-before-spend pattern transcription and
+  note generation use: a race here costs a **duplicate Voyage call, never a
+  duplicate write**, because the per-row `UPDATE ... WHERE id = $1 AND
+  embedding IS NULL` guard is atomic — and a Voyage call at $0.06/M tokens
+  against a 200-million-token free allowance is a rounding error where a Gemini
+  transcription call is not. Adding a note-level lock would buy nothing and add
+  a second mechanism to get wrong.
 **Cost — validated against real usage, not just estimated**
 - Reviewed the prior build's actual GCP bill for March 2026: **$13.32 total
   for the month**. 78% of that was Gemini 3 Pro text tokens; every
