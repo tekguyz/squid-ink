@@ -126,3 +126,41 @@ grant select, insert, update, delete on public.personas to authenticated;
 -- provisioning is a security definer trigger running as supabase_auth_admin,
 -- and every user-facing edit runs as authenticated under RLS.
 grant select on public.personas to service_role;
+
+-- notes.persona_id's foreign key — which lens a note generates under.
+--
+-- DECLARED HERE, NOT IN notes.sql, and that is not a filing preference.
+-- config.toml applies notes.sql first, so a reference to public.personas
+-- written there would not resolve on a fresh apply. The column itself is
+-- declared in notes.sql, where the notes table lives; only the constraint has
+-- to wait for this file. Read the order out of config.toml, not from memory.
+--
+-- COMPOSITE, for the reason note_chunks_persona_id_fkey is composite: a
+-- foreign key is validated as the referenced table's owner and is NOT subject
+-- to row level security, so a plain references personas (id) would happily let
+-- one user's note point at another user's lens. Carrying user_id into the key
+-- makes the database refuse it. personas_id_user_id_key above is the unique
+-- constraint this requires, which is why it is declared before the grants.
+--
+-- MATCH SIMPLE (the default) means a null persona_id satisfies the constraint
+-- with no lookup at all — null still means "the default persona", exactly as
+-- it does on note_chunks.
+--
+-- set null names persona_id explicitly (Postgres 15 and later). Without the
+-- column list, deleting a persona would try to null notes.user_id too, which
+-- is not null. Same trap note_chunks.sql documents.
+--
+-- Drop-then-add rather than add-if-not-exists: Postgres has no if-not-exists
+-- for constraints, and both statements are idempotent, which is what lets this
+-- whole file be re-applied after an edit.
+alter table public.notes
+  drop constraint if exists notes_persona_id_fkey;
+alter table public.notes
+  add constraint notes_persona_id_fkey
+  foreign key (persona_id, user_id) references public.personas (id, user_id)
+  on delete set null (persona_id);
+
+-- Postgres does not index foreign keys automatically, and on delete set null
+-- has to find the rows it is nulling.
+create index if not exists notes_persona_id_idx
+  on public.notes (persona_id);

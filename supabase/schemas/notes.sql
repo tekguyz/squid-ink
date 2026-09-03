@@ -72,6 +72,19 @@ alter table public.notes
   add constraint notes_notegen_status_check
   check (notegen_status in ('generating', 'completed', 'failed'));
 
+-- persona_id: which lens this note generates under. Nullable, and null keeps
+-- meaning exactly what it means on note_chunks — the default persona. Every
+-- note written before 2026-09-02 is null and generates as it always did; there
+-- is no backfill, matching the persona provisioning trigger's own deliberate
+-- no-backfill decision.
+--
+-- THE FOREIGN KEY IS NOT HERE. config.toml applies this file BEFORE
+-- personas.sql, so a reference to public.personas would not resolve on a fresh
+-- apply. The constraint is declared at the end of personas.sql instead. The
+-- column is declared here because this is the notes table.
+alter table public.notes
+  add column if not exists persona_id uuid;
+
 -- Serves feed ordering, and indexes the column every RLS policy below
 -- filters on. Postgres does not index foreign keys automatically.
 create index if not exists notes_user_id_created_at_idx
