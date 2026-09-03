@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { claimAndGenerate } from "@/lib/notegen/generate-note";
 import { createNotegenPorts } from "@/lib/notegen/notegen-ports";
 import type { GeneratableRow } from "@/lib/notegen/sweep";
+import { embedNoteChunks } from "@/lib/rag/embed-note";
+import { createEmbeddingPorts } from "@/lib/rag/supabase-ports";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
 import {
   claimNoteForTranscription,
@@ -62,6 +64,12 @@ export type TranscriptionTrigger =
  * carries straight into claimAndGenerate. The browser's answer is unchanged:
  * it still learns only whether the transcription claim landed, in
  * milliseconds, and note generation is entirely deferred behind it.
+ *
+ * EMBEDDINGS CHAIN AFTER THAT, added 2026-09-03, on the same client again.
+ * One call, once both chunk kinds exist. It takes no claim: the per-chunk
+ * guarded UPDATE in lib/rag/supabase-ports.ts makes a race with the cron sweep
+ * cost a duplicate Voyage call and never a duplicate write, and a Voyage call
+ * is a rounding error where a Gemini one is not.
  *
  * TWO CLIENTS, ONE IDENTITY. The claim runs on the cookie client, while the
  * request is open and a rotated session can still be written back to the
@@ -174,6 +182,40 @@ export async function triggerTranscription(
         createNotegenPorts(deferred, geminiKey),
         generatable,
       );
+
+      // ---- Embeddings, the third and last deferred phase ------------------
+      //
+      // ONE call covers BOTH kinds of chunk. By this point transcription has
+      // written its transcript_segment rows and note generation has written
+      // its summary/takeaway/action_item rows, so "every chunk on this note
+      // with no vector" is the complete set. Placing it earlier would embed
+      // the transcript and leave the generated chunks to the cron.
+      //
+      // THE SAME deferred client, never a second one. A second construction
+      // would be a second client that can refresh, and a refresh after the
+      // response has been sent rotates the user's refresh token into a cookie
+      // write that is silently dropped — the bug
+      // lib/supabase/deferred-client.ts documents.
+      //
+      // A missing key SKIPS rather than throws. Embedding is the one phase
+      // with a standing backstop: tomorrow's cron sweep is also the backfill,
+      // so an unconfigured deployment loses nothing but latency, whereas
+      // throwing here would put a red herring in the log for a note that
+      // transcribed and generated perfectly well.
+      const voyageKey = process.env.VOYAGE_API_KEY;
+      if (!voyageKey) {
+        console.warn(
+          `[embed] note ${noteId}: VOYAGE_API_KEY is not set — leaving the ` +
+            `chunks for the cron sweep, which is also the backfill.`,
+        );
+        return;
+      }
+
+      const embedded = await embedNoteChunks(
+        createEmbeddingPorts(deferred, voyageKey),
+        noteId,
+      );
+      console.log(`[embed] note ${noteId}: ${JSON.stringify(embedded)}`);
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
       console.error(

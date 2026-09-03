@@ -70,6 +70,39 @@ describe("project conventions", () => {
     ]);
   });
 
+  it("reads VOYAGE_API_KEY from exactly the two shipped triggers", () => {
+    // Server-only, exactly like the Gemini key. The embedding pipeline has two
+    // entry points and no third: the deferred half of the Transcribe action,
+    // and the cron route's third phase. If a client component ever reaches a
+    // module that reads this, the key ships to the browser — this is the guard
+    // that stops that, and lib/rag/* deliberately reads no env var at all.
+    const readers = sourceFiles().filter((f) =>
+      read(f).includes("process.env.VOYAGE_API_KEY"),
+    );
+    expect(readers.sort()).toEqual([
+      path.join("app", "api", "cron", "transcribe", "route.ts"),
+      path.join("app", "notes", "actions", "transcription.ts"),
+    ]);
+  });
+
+  it("keeps VOYAGE_API_KEY out of every client component's import graph", () => {
+    // A blunt but decisive check: no file that declares "use client" may
+    // mention the key, and no file under lib/rag/ may read process.env at all,
+    // so a client component cannot reach it transitively through lib/rag.
+    const clientFiles = sourceFiles().filter((f) =>
+      /^\s*["']use client["']/m.test(read(f)),
+    );
+    expect(clientFiles.filter((f) => read(f).includes("VOYAGE_API_KEY"))).toEqual(
+      [],
+    );
+
+    const ragFiles = sourceFiles().filter((f) =>
+      f.startsWith(path.join("lib", "rag")),
+    );
+    expect(ragFiles.length).toBeGreaterThan(0);
+    expect(ragFiles.filter((f) => read(f).includes("process.env"))).toEqual([]);
+  });
+
   it("keeps every file under the 400-line hard ceiling", () => {
     const offenders = sourceFiles()
       .map((f) => [f, read(f).split("\n").length] as const)
