@@ -28,6 +28,11 @@ export interface NoteRow {
   /** Structured note generation's queue, independent of the column above.
    *  Null until a transcript exists. See supabase/schemas/notes.sql. */
   notegen_status: NotegenStatus | null;
+  /** Which lens this note generates under. Null means the default persona —
+   *  the same meaning the column carries on note_chunks. Every note written
+   *  before 2026-09-02 is null and there is no backfill. Composite FK to
+   *  personas (id, user_id); see supabase/schemas/personas.sql. */
+  persona_id: string | null;
   raw_transcript: string | null;
   diarization_enabled: boolean;
   audio_duration_seconds: number | null;
