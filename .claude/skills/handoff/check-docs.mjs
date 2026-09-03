@@ -40,6 +40,32 @@ const BASENAMES = (() => {
 })();
 const basenameExists = (name) => BASENAMES.has(name);
 
+/** Basenames under node_modules, built lazily and only when something needs
+ *  one. CLAUDE.md cites a dependency's own type file by name at a pinned
+ *  version; that is a real claim, it just does not live in this tree. */
+let DEP_BASENAMES = null;
+const dependencyFileExists = (name) => {
+  if (DEP_BASENAMES === null) {
+    DEP_BASENAMES = new Set();
+    const walk = (dir, depth) => {
+      if (depth > 5 || !existsSync(dir)) return;
+      for (const entry of readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        let st;
+        try {
+          st = statSync(full);
+        } catch {
+          continue;
+        }
+        if (st.isDirectory()) walk(full, depth + 1);
+        else DEP_BASENAMES.add(entry);
+      }
+    };
+    walk(path.join(ROOT, "node_modules"), 0);
+  }
+  return DEP_BASENAMES.has(name);
+};
+
 function fatal(message) {
   console.error(`CANNOT RUN — ${message}`);
   process.exit(2);
@@ -108,11 +134,22 @@ const pkg = JSON.parse(read("package.json"));
   // `verify-rls.mjs`). Those are real files, just not at the repo root, so a
   // bare name is resolved by basename anywhere in the tree rather than being
   // reported missing. A name carrying a slash is still an exact path claim.
+  // Two shapes of name are true claims about a file that is correctly absent
+  // from the tree, and reporting them is noise rather than drift:
+  //
+  //  - a dependency's own file (`genai.d.ts`), read at a pinned version. The
+  //    BASENAMES walk skips node_modules deliberately, so resolve these there.
+  //  - a file the prose names as DELETED. "the deleted `persona-presets.ts`"
+  //    is a claim that it is gone; demanding it exist inverts the sentence.
+  const deletedNames = new Set(
+    [...claude.matchAll(/deleted `([a-zA-Z0-9_./-]+)`/g)].map((m) => m[1]),
+  );
   let checked = 0;
   for (const p of paths) {
     if (p.startsWith(".") && !p.startsWith("./")) continue; // dotfiles like .gitignore
+    if (deletedNames.has(p)) continue;
     checked++;
-    const found = p.includes("/") ? has(p) : basenameExists(p);
+    const found = p.includes("/") ? has(p) : basenameExists(p) || dependencyFileExists(p);
     if (!found) findings.push(`CLAUDE.md names \`${p}\`, which does not exist`);
   }
   notes.push(`paths: ${checked} named in CLAUDE.md, all exist`);

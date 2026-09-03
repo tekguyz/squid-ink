@@ -1,7 +1,12 @@
 # Squid Ink: Decisions Log
  
-Working state as of 2026-08-30. Update this file as decisions change — don't
+Working state as of 2026-09-03. Update this file as decisions change — don't
 let it drift from reality.
+
+**Date corrected 2026-09-03.** This line read 2026-08-30 while the body already
+carried amendments dated 2026-09-01, 2026-09-02 and 2026-09-03 — including the
+persona-resolution rule and the corrections under § Personas. `ROADMAP.md`'s
+header was stamped in the same 2026-09-03 pass and this one was missed.
  
 ## What this project is
  
