@@ -154,7 +154,9 @@ transcription or RAG data, PWA setup, brand assets, and routing beyond
 three of its items have since closed: Supabase, auth and the `/login` +
 `/auth/confirm` routes shipped on 2026-08-30, and surface 02b shipped on
 2026-08-31. Still unbuilt: the remaining nine App Surfaces screens, RAG,
-PWA setup, brand assets, and the composer's send path. **Transcription closed
+PWA setup and brand assets. **The composer's send path closed on 2026-09-03**
+— it posts to `/api/chat`, streams an answer, cites it, and persists the
+thread in `chat_messages`. **Transcription closed
 too, in two steps:** the cron sweep on 2026-08-31 and the user-pressed
 Transcribe action on 2026-09-01 — see the dated sections below. Read the dated
 sections below rather than this one — it is kept for the reasoning, not as a
@@ -330,6 +332,13 @@ things worth carrying forward:
   notes" mode alongside the existing "Ask this note…" composer, in Core UX/UI.
   The composer here reads "Ask this note…" and has no scope toggle, which is the
   correct MVP state.
+
+  **CLOSED 2026-09-03.** Both modes ship. The composer became
+  `components/note-detail/chat/` with a This note / All notes toggle, and
+  cross-note answers cite the note they came from and link to it. The
+  retrieval architecture turned out to split by scope rather than being one
+  path with a flag — single-note uses no retrieval at all. See CLAUDE.md
+  § Chat and docs/DECISIONS.md § RAG.
 
 ## Supabase persistence layer (recorded 2026-08-30)
 
@@ -1915,3 +1924,20 @@ Screenshot review against the shipped app, not the design file.
   citation naming "Untitled note" three times over is not a citation.
   Needs a decision before cross-note chat ships: derive a title from
   generated content, a dedicated call, or require manual naming.
+
+  **Still open, and it now has a live consumer — 2026-09-03.** Cross-note
+  chat shipped without waiting for this. A `[[cite:c<n>]]` chip renders
+  `notes.title` and falls back to the literal "Untitled note", so on an
+  untitled archive every cross-note citation reads the same and the reader
+  cannot tell the meetings apart. The feature works; the citations are
+  simply weaker than they should be. This was flagged up front in that
+  pack rather than discovered late.
+
+- **Cross-note search ignores `persona_id`, by instruction — recorded
+  2026-09-03.** `note_chunks` carries the lens that produced a chunk, and
+  `search_note_chunks` does not filter on it, so an all-notes question can
+  return a Sales Coach takeaway while the rail shows Neutral Analyst. That
+  was explicitly out of scope for the chat pack rather than an oversight.
+  Nobody has decided whether an active lens *should* narrow retrieval, and
+  both answers are defensible: filtering makes the lens mean something in
+  chat, not filtering keeps "ask all notes" literally true.
