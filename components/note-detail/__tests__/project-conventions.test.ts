@@ -121,9 +121,7 @@ describe("project conventions", () => {
     ]);
   });
 
-  // UNSKIP IN TASK 8, when app/api/chat/route.ts lands. Left skipped rather
-  // than deleted so the guard cannot be forgotten.
-  it.skip("reads VOYAGE_API_KEY from exactly the three shipped triggers", () => {
+  it("reads VOYAGE_API_KEY from exactly the three shipped triggers", () => {
     // Server-only, exactly like the Gemini key. Three entry points and no
     // fourth: the deferred half of the Transcribe action, the cron route's
     // third phase, and the chat route, which embeds the QUESTION at
@@ -140,9 +138,7 @@ describe("project conventions", () => {
     ]);
   });
 
-  // UNSKIP IN TASK 8, when app/api/chat/route.ts lands. Left skipped rather
-  // than deleted so the guard cannot be forgotten.
-  it.skip("reads ANTHROPIC_API_KEY from exactly one shipped file", () => {
+  it("reads ANTHROPIC_API_KEY from exactly one shipped file", () => {
     // The chat route is the only place that talks to Claude. Same reasoning as
     // the Voyage guard: a second reader is how a server key finds its way into
     // a client component's import graph.
