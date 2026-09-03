@@ -7,17 +7,36 @@ export interface PersonaRailProps {
   selectedId: string;
   quickActions: string[];
   spansLinked: number;
+  /** True once the note's lens is frozen — generation has been committed to,
+   *  either by reaching notegen_status or by Transcribe having been pressed.
+   *
+   *  The lens a note generated under is a FACT about that note, not a filter
+   *  over it: docs/DECISIONS.md § Personas rejected regeneration on
+   *  2026-08-30. This is the UX half of enforcing that; the half that actually
+   *  holds is the guarded UPDATE in app/notes/actions/persona.ts. */
+  locked: boolean;
   onSelect: (personaId: string) => void;
 }
 
 const LABEL =
   "font-mono text-[8.5px] tracking-[0.14em] uppercase text-meta";
 
+/** A NATIVE `disabled`, not the `aria-disabled` transcribe-button.tsx uses.
+ *  The difference is deliberate and worth stating, because the two controls
+ *  sit on the same screen and look inconsistent otherwise.
+ *
+ *  That button stays focusable because it has something to announce — a
+ *  'failed' note's prose explains an outcome the reader needs. A locked lens
+ *  announces nothing a screen reader does not already get from aria-selected,
+ *  so removing it from the tab order costs no information and correctly says
+ *  "this is not actionable". */
+
 export function PersonaRail({
   personas,
   selectedId,
   quickActions,
   spansLinked,
+  locked,
   onSelect,
 }: PersonaRailProps) {
   return (
@@ -33,15 +52,22 @@ export function PersonaRail({
               type="button"
               role="tab"
               aria-selected={selected}
+              disabled={locked}
               title={persona.sub}
               onClick={() => onSelect(persona.id)}
               className={[
-                "cursor-pointer border-l-2 px-[11px] pt-2 pb-[9px] text-left",
+                "border-l-2 px-[11px] pt-2 pb-[9px] text-left",
                 "font-header text-sm font-semibold leading-[1.25]",
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+                locked ? "cursor-default" : "cursor-pointer",
                 selected
-                  ? "border-accent bg-paper text-ink"
-                  : "border-transparent text-rail-idle hover:bg-raised",
+                  ? // The selected lens keeps full contrast even when locked.
+                    // It is reporting which lens generated this note, and
+                    // dimming it would hide the answer along with the control.
+                    "border-accent bg-paper text-ink"
+                  : locked
+                    ? "border-transparent text-placeholder"
+                    : "border-transparent text-rail-idle hover:bg-raised",
               ].join(" ")}
             >
               {persona.name}
