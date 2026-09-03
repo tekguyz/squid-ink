@@ -561,15 +561,20 @@ started**, or is a known incompleteness in what shipped.
   place rather than deleted outside that change's stated file scope. Delete it,
   or give it a caller, when the real dashboard lands.
 
-- **The colour-literal guard does not cover `app/`.**
-  `components/note-detail/__tests__/project-conventions.test.ts` walks
-  `components/` and `lib/` only (`const SCANNED = ["components", "lib"]`), so
-  `app/page.tsx`, `app/login/`, `app/notes/[id]/` and `app/layout.tsx` are
-  outside it. `app/globals.css` is *meant* to be outside — it is the one file
-  that names colours — but the route files are unguarded by accident, not by
-  design, and the guard passing says nothing about them. Widening `SCANNED` to
-  include `app/` while excluding `globals.css` is a small change nobody has made
-  yet.
+- **The colour-literal guard scanned an allowlist of directories — RESOLVED
+  2026-09-03.** `components/note-detail/__tests__/project-conventions.test.ts`
+  walked `const SCANNED = [...]`. `app/` was added to that array on 2026-08-31,
+  which closed the instance but not the gap: a directory list is always one new
+  folder behind, and no `.css` file was ever scanned at all, so the one rule
+  the exemption is written for — `app/globals.css` is the only file allowed to
+  name a colour — was enforced against TypeScript only. The walk now starts at
+  the repo root and excludes by convention instead: build output, dependencies,
+  dot-folders, `__tests__`, and files named `*.config.*` / `*.setup.*` /
+  `*.test.*` / `*.d.ts`. The colour scan covers TypeScript **and** stylesheets,
+  and exempts `globals.css` by **basename**, so a stylesheet grown in a new
+  folder is covered the day it appears. Proved by adding a literal to
+  `app/page.tsx` and a rogue `.css` outside `app/`: both were reported, and both
+  were removed. The widened guard is clean against current source.
 
 - **`waveform`, `playhead` and `sampleExchange` are constants, not data.** No
   column backs any of them. The timeline bar is Advanced-phase, playhead is
