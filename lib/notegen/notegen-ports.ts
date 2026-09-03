@@ -6,10 +6,13 @@ import type {
   NotegenPorts,
   ResolvedPersona,
 } from "@/lib/notegen/sweep";
-import {
-  DEFAULT_PERSONA_FALLBACK,
-  DEFAULT_PERSONA_ID,
-} from "@/lib/notes/default-persona";
+import { resolvePersonaFor } from "@/lib/notegen/resolve-persona";
+
+/** Re-exported so callers and tests that already import it from here keep
+ *  working. It MOVED on 2026-09-02, it did not change owner: per-note lens
+ *  selection gave it a second branch, and this file was 227 lines against a
+ *  250-line soft ceiling. See lib/notegen/resolve-persona.ts. */
+export { resolvePersonaFor } from "@/lib/notegen/resolve-persona";
 
 /** The Supabase implementation of NotegenPorts — the only place in this track
  *  that turns the state machine's ports into real queries.
@@ -100,66 +103,6 @@ export function createNotegenStore(db: SupabaseClient): NotegenStore {
   };
 }
 
-/** Which persona config a note generates under.
- *
- *  SCOPED BY user_id AND slug. Never personas.id — that is a per-user
- *  gen_random_uuid() from the provisioning trigger, while DEFAULT_PERSONA_ID
- *  is the slug string "neutral-analyst", so the comparison would be a type
- *  error rather than a quiet miss. Never name either: personas.sql declares
- *  and indexes unique (user_id, slug) and states in its own header that slug
- *  is the key chosen to survive a reseed, whereas name is display text
- *  carrying no constraint at all. Recorded in CLAUDE.md § Data and
- *  DECISIONS.md § Personas on 2026-09-02.
- *
- *  THE user_id FILTER IS THE ONE DELIBERATE EXCEPTION to the standing rule
- *  that queries never filter on user_id in application code. That rule exists
- *  because RLS supplies the owner and a redundant filter would mask an RLS
- *  failure instead of exposing it. The cron caller has no RLS to mask:
- *  service_role bypasses it entirely, so an unfiltered lookup would return
- *  whichever account's neutral-analyst row Postgres reached first. The Server
- *  Action caller filters identically, where it is defence in depth and one
- *  shared query shape rather than a requirement. */
-export async function resolvePersonaFor(
-  db: SupabaseClient,
-  userId: string,
-): Promise<ResolvedPersona> {
-  const { data, error } = await db
-    .from("personas")
-    .select("slug, name, depth")
-    .eq("user_id", userId)
-    .eq("slug", DEFAULT_PERSONA_ID)
-    .maybeSingle<{
-      slug: string;
-      name: string;
-      depth: ResolvedPersona["depth"];
-    }>();
-
-  // Thrown, not swallowed into the fallback. "permission denied for table
-  // personas" is precisely what a missing service_role grant returns, and
-  // falling back would hide that behind output that looks correct — which is
-  // how the notes and note_chunks grant gaps stayed invisible until 2026-08-31.
-  if (error) throw new Error(`resolving persona failed: ${error.message}`);
-
-  if (data) {
-    return {
-      slug: data.slug,
-      name: data.name,
-      depth: data.depth,
-      source: "row",
-    };
-  }
-
-  // Zero rows: an account created before the 2026-08-31 provisioning trigger
-  // and deliberately not backfilled. The fallback is a crash floor that keeps
-  // generation working for it.
-  return {
-    slug: DEFAULT_PERSONA_FALLBACK.id,
-    name: DEFAULT_PERSONA_FALLBACK.name,
-    depth: DEFAULT_PERSONA_FALLBACK.depth,
-    source: "fallback",
-  };
-}
-
 export function createNotegenPorts(
   db: SupabaseClient,
   geminiKey: string,
@@ -220,7 +163,8 @@ export function createNotegenPorts(
       return (data?.length ?? 0) === 1;
     },
 
-    resolvePersona: (userId) => resolvePersonaFor(db, userId),
+    resolvePersona: (userId, personaId) =>
+      resolvePersonaFor(db, userId, personaId),
     generate: createGeminiNoteGenerator(geminiKey),
     store: createNotegenStore(db),
   };

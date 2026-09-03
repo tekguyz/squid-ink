@@ -5,11 +5,8 @@ import {
   createNotegenStore,
   resolvePersonaFor,
 } from "@/lib/notegen/notegen-ports";
+import { resolvePersonaFor as fromItsOwnModule } from "@/lib/notegen/resolve-persona";
 import { generatedChunkRowsFor } from "@/lib/notegen/persist-result";
-import {
-  DEFAULT_PERSONA_FALLBACK,
-  DEFAULT_PERSONA_ID,
-} from "@/lib/notes/default-persona";
 
 /** Records the whole builder chain, so a test can assert WHICH columns were
  *  filtered on rather than only that a row came back. The guarded UPDATE is
@@ -59,68 +56,13 @@ function fakeDb(
   return { db, chain, tables };
 }
 
-describe("resolvePersonaFor", () => {
-  it("filters on user_id and slug, never on id and never on name", async () => {
-    const { db, chain } = fakeDb({
-      data: { slug: DEFAULT_PERSONA_ID, name: "Neutral Analyst", depth: "dense" },
-      error: null,
-    });
-
-    await resolvePersonaFor(db, "u1");
-
-    const eqs = chain.filter(([m]) => m === "eq").map(([, col, val]) => [col, val]);
-    expect(eqs).toEqual([
-      ["user_id", "u1"],
-      ["slug", DEFAULT_PERSONA_ID],
-    ]);
-    const columns = eqs.map(([c]) => c);
-    expect(columns).not.toContain("id");
-    expect(columns).not.toContain("name");
-  });
-
-  it("reads from personas", async () => {
-    const { db, tables } = fakeDb({
-      data: { slug: DEFAULT_PERSONA_ID, name: "Neutral Analyst", depth: "dense" },
-      error: null,
-    });
-    await resolvePersonaFor(db, "u1");
-    expect(tables).toEqual(["personas"]);
-  });
-
-  it("reports source 'row' when the account is provisioned", async () => {
-    const { db } = fakeDb({
-      data: { slug: DEFAULT_PERSONA_ID, name: "Neutral Analyst", depth: "brief" },
-      error: null,
-    });
-    expect(await resolvePersonaFor(db, "u1")).toEqual({
-      slug: DEFAULT_PERSONA_ID,
-      name: "Neutral Analyst",
-      depth: "brief",
-      source: "row",
-    });
-  });
-
-  it("falls back with source 'fallback' on zero rows", async () => {
-    // An account created before the 2026-08-31 provisioning trigger, and
-    // deliberately not backfilled.
-    const { db } = fakeDb({ data: null, error: null });
-    expect(await resolvePersonaFor(db, "u1")).toEqual({
-      slug: DEFAULT_PERSONA_FALLBACK.id,
-      name: DEFAULT_PERSONA_FALLBACK.name,
-      depth: DEFAULT_PERSONA_FALLBACK.depth,
-      source: "fallback",
-    });
-  });
-
-  it("throws on a real query error rather than silently falling back", async () => {
-    // permission denied is exactly what a missing service_role grant returns.
-    // Swallowing it into the fallback would hide the grant gap behind output
-    // that looks correct.
-    const { db } = fakeDb({
-      data: null,
-      error: { message: "permission denied for table personas" },
-    });
-    await expect(resolvePersonaFor(db, "u1")).rejects.toThrow(/permission denied/);
+describe("resolvePersonaFor's re-export", () => {
+  it("is the same function as resolve-persona.ts's", () => {
+    // Its own behaviour is covered in resolve-persona.test.ts, where the
+    // function now lives. This pins only the re-export, which exists so the
+    // 2026-09-02 move did not have to touch every importer — and which a tidy
+    // -up would otherwise delete without noticing anything broke here.
+    expect(resolvePersonaFor).toBe(fromItsOwnModule);
   });
 });
 

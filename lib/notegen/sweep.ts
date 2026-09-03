@@ -58,7 +58,12 @@ export interface ResolvedPersona {
   slug: string;
   name: string;
   depth: PersonaDepth;
-  source: "row" | "fallback";
+  /** Which branch resolved this. "note" means the note carried an explicit
+   *  persona_id — the lens its owner picked on Note Detail; "row" the
+   *  neutral-analyst slug lookup; "fallback" an account with no personas rows
+   *  at all. generate-note.ts prints it, so a build report can answer "which
+   *  path ran" with evidence rather than inference. */
+  source: "note" | "row" | "fallback";
 }
 
 export interface NotegenPorts {
@@ -71,9 +76,13 @@ export interface NotegenPorts {
   /** THE claim. One statement, one implementation, two callers. True only if
    *  this caller's UPDATE was the one that matched. */
   claimForGeneration(noteId: string): Promise<boolean>;
-  /** Scoped by user_id AND slug — never personas.id, never name. See
-   *  CLAUDE.md § Data. */
-  resolvePersona(userId: string): Promise<ResolvedPersona>;
+  /** The note's own persona_id first, then the neutral-analyst slug, then the
+   *  fallback. Scoped by user_id throughout — never by name. See CLAUDE.md
+   *  § Data and lib/notegen/resolve-persona.ts. */
+  resolvePersona(
+    userId: string,
+    personaId: string | null,
+  ): Promise<ResolvedPersona>;
   generate: NoteGenerator;
   store: NotegenStore;
 }
