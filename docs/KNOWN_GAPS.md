@@ -1747,10 +1747,11 @@ isolating one poison chunk out of a **content** error. A test pins the call
 count at one.
 
 The classification itself was right all along, and is what kept this from being
-a data problem: a 429 is `transient`, so the chunk's attempt counter is
-untouched, the
-row stays eligible, and the next sweep retries it. Six chunks took that path in
-the first run and embedded cleanly in the second. The only accommodation is in
+a data problem rather than only a cost-and-volume one: a 429 is `transient`, so
+the chunk's attempt counter is untouched, the row stays eligible, and the next
+sweep retries it. Six chunks took that path in the first run and embedded
+cleanly in the second. **The "up to 10 requests" figure below is accurate as of
+the fix**, one batch per note; it was not before. The only accommodation is in
 the harness — `scripts/verify-embeddings-pipeline.mjs` spaces its calls 21 s
 apart so its proofs have something to observe, and that spacing is switched off
 with `VOYAGE_MIN_CALL_INTERVAL_MS=0`.
@@ -1768,6 +1769,45 @@ Deliberately **not** doing: a retry-with-backoff inside a single run. It would
 spend the shared 300 s Vercel budget waiting, it would make the free tier look
 survivable when the real answer is a billing setting, and this project's
 standing rule is not to add mitigation speculatively.
+
+### The migration chain can no longer rebuild the database
+
+**Opened 2026-09-03, found in code review of the embeddings pipeline.**
+
+`supabase/schemas/*.sql` is the source of truth and the live project matches it.
+`supabase/migrations/` does **not**. Two pieces of applied DDL were never written
+into the chain:
+
+- **`notes.persona_id`**, its composite foreign key and its index — shipped
+  2026-09-02 with per-note persona selection. Pre-existing; not this branch.
+- **`note_chunks_pending_embedding_idx`**, the partial index — shipped
+  2026-09-03 with this branch.
+
+Both were applied correctly, through `db query --file` on the schema file, which
+is the workflow CLAUDE.md § Declarative schema workflow mandates. What was
+skipped is that section's *last* step: "When the shape is final:
+`supabase migration new`, fill it with `cat` of the schema files in order,
+`migration repair --status applied`."
+
+**Nothing is broken today.** The live database is correct, the app runs against
+it, and `verify-rls.mjs` and the pipeline scripts all pass. The cost is entirely
+latent: a `db reset`, a fresh environment, or a rebuild from migrations produces
+a database missing both objects, and the drift is now silent because the last
+migration (`20260902053323`, 288 lines) is a **curated partial concat**, not the
+709-line verbatim concatenation of all five schema files that the first migration
+was. Nothing compares the two, so nothing fails loudly.
+
+**Deliberately not fixed inside the embeddings branch.** Adding a migration for
+the index alone would leave `notes.persona_id` still missing, producing a chain
+that still cannot rebuild the database while *looking* reconciled — false
+comfort, which is worse than a recorded gap. The fix is one pass that catches
+both, and it belongs in its own change where the `git hash-object` check and the
+live catalog read-back can be the point rather than a footnote.
+
+**To close it:** one `supabase migration new reconcile_persona_id_and_embedding_index`,
+filled from the schema files in `config.toml` order, then
+`migration repair --status applied`, then `migration list --linked`, then read
+`pg_indexes` and `pg_constraint` back to confirm the live catalog is unchanged.
 
 ### The verification script cannot run unattended
 

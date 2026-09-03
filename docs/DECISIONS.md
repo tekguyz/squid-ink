@@ -191,11 +191,17 @@ a separate, still-open question (see Branding below).
   retrieval side owes `"query"` on the question), a pinned
   `output_dimension: 1024` and `output_dtype: "float"` on every call, since the
   column is a fixed `vector(1024)` and an API default could move. On a batch
-  failure each chunk is **retried individually**, so one poison chunk cannot
-  cost its siblings their attempt; only a chunk that fails **on its own**
-  increments the counter, and only a content error does — a 429/5xx leaves the
-  row eligible, and a 401/403 aborts the run rather than burning every chunk's
-  attempts. **The inline path and the sweep are allowed to race.** This is a
+  failure **from a content error (400/422)** each chunk is **retried
+  individually**, so one poison chunk cannot cost its siblings their attempt;
+  only a chunk that fails **on its own** increments the counter. A **429/5xx
+  defers the whole batch** without retrying its members — that error says
+  nothing about any individual text, so calling each one alone cannot produce a
+  different answer, it only turns one rejected request into `1 + N` aimed at
+  the limit that just rejected it. Every member stays eligible with its counter
+  untouched. A 401/403 aborts the run rather than burning every chunk's
+  attempts. (The transient case fell through to the individual fallback until
+  code review caught it the same day; see `docs/KNOWN_GAPS.md` § "The Voyage
+  account is on the unbilled tier".) **The inline path and the sweep are allowed to race.** This is a
   deliberate deviation from the claim-before-spend pattern transcription and
   note generation use: a race here costs a **duplicate Voyage call, never a
   duplicate write**, because the per-row `UPDATE ... WHERE id = $1 AND

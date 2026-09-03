@@ -173,8 +173,14 @@ const userId = signIn.user.id;
  *
  *  So the pacing lives here, in the harness, and not in lib/rag. Set
  *  VOYAGE_MIN_CALL_INTERVAL_MS=0 once the account is billed to run at full
- *  speed. */
-const MIN_CALL_INTERVAL_MS = Number(env.VOYAGE_MIN_CALL_INTERVAL_MS ?? 21_000);
+ *  speed.
+ *
+ *  31 s, not 21 s. The limit is 3 requests per ROLLING 60 s window, so 21 s
+ *  start-to-start puts calls at t=0, 21, 42 — exactly three inside one window,
+ *  right on the boundary, and any jitter or server-side clock skew trips it.
+ *  Measured 2026-09-03: it did, and Proof 6's sibling 429'd. 31 s puts at most
+ *  two in any window, which is real margin rather than an exact fit. */
+const MIN_CALL_INTERVAL_MS = Number(env.VOYAGE_MIN_CALL_INTERVAL_MS ?? 31_000);
 let lastCallAt = 0;
 
 async function paced(fn) {
@@ -382,6 +388,17 @@ try {
     },
   };
 
+  // PROOF 6 IS "THE SIBLING DOES NOT WAIT FOR THE POISON CHUNK TO GIVE UP",
+  // not "Voyage never rate-limits us". Those were conflated until 2026-09-03:
+  // the assertion demanded the sibling embed on run 1, and a free-tier 429 on
+  // that one call failed the script while the pipeline had behaved perfectly —
+  // the sibling was deferred as transient, charged nothing, stayed eligible and
+  // embedded on run 2. So the run number is recorded rather than fixed, and the
+  // claim is that it landed STRICTLY BEFORE the run that exhausts the poison
+  // chunk. The never-charged assertion is checked on EVERY run, not just the
+  // first, because that is the half a 429 must never move.
+  let siblingEmbeddedOnRun = null;
+
   for (let attempt = 1; attempt <= MAX_EMBED_ATTEMPTS; attempt += 1) {
     const pending = await realPorts.listPendingForNote(note3, EMBED_CHUNK_WINDOW);
     const run = await embedChunks(poisonPorts, pending);
@@ -392,19 +409,22 @@ try {
     );
     check(`run ${attempt} records attempt ${attempt}`, row.metadata.embed_attempts === attempt);
 
-    if (attempt === 1) {
-      const sib = await chunkRow(sibling);
-      check(
-        "PROOF 6: the healthy sibling embedded on the FIRST run",
-        parseVector(sib.embedding)?.length === VOYAGE_OUTPUT_DIMENSION,
-      );
-      check(
-        "PROOF 6: the sibling was never charged an attempt",
-        sib.metadata.embed_attempts === undefined,
-        JSON.stringify(sib.metadata),
-      );
+    const sib = await chunkRow(sibling);
+    if (siblingEmbeddedOnRun === null && parseVector(sib.embedding)?.length === VOYAGE_OUTPUT_DIMENSION) {
+      siblingEmbeddedOnRun = attempt;
     }
+    check(
+      `run ${attempt}: the sibling was never charged an attempt`,
+      sib.metadata.embed_attempts === undefined,
+      JSON.stringify(sib.metadata),
+    );
   }
+
+  check(
+    "PROOF 6: the healthy sibling embedded, and did NOT wait for the poison chunk to exhaust",
+    siblingEmbeddedOnRun !== null && siblingEmbeddedOnRun < MAX_EMBED_ATTEMPTS,
+    `(embedded on run ${siblingEmbeddedOnRun ?? "never"} of ${MAX_EMBED_ATTEMPTS})`,
+  );
 
   const afterCap = await realPorts.listPendingForNote(note3, EMBED_CHUNK_WINDOW);
   check(
