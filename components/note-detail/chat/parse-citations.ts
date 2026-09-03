@@ -50,10 +50,15 @@ function labelFor(citation: Citation, title: string): string {
   return `${title} · ${TYPE_LABEL[citation.chunkType] ?? "Note"}`;
 }
 
+/** `warn` is off while a message is still streaming. Mid-stream the text
+ *  is a prefix, so a marker whose closing brackets have not arrived is
+ *  simply not there yet — warning about it would emit one line per token
+ *  and bury the real case, which is a citation that never resolves. */
 export function parseAnswer(
   text: string,
   citations: Citation[],
   segments: { id: number; time: string }[],
+  { warn = true }: { warn?: boolean } = {},
 ): ParsedAnswer {
   const byKey = new Map(citations.map((c) => [c.key, c]));
   const byId = new Map(segments.map((s) => [s.id, s]));
@@ -100,7 +105,11 @@ export function parseAnswer(
       // a deleted chunk or a removed note. Warn so the failure stays visible
       // to whoever is debugging, and let `ungrounded` carry the user-facing
       // half.
-      console.warn(`[chat] dropped an unresolvable citation marker: ${whole}`);
+      if (warn) {
+        console.warn(
+          `[chat] dropped an unresolvable citation marker: ${whole}`,
+        );
+      }
       runs.push({ text: before });
     }
   }

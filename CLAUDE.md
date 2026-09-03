@@ -715,7 +715,31 @@ asserts the block never contains the words notegen, generating or failed.
 **The cached block must stay byte-stable across turns.** Prompt caching is a
 prefix match, so one timestamp, turn counter or random id in that block leaves
 `cache_read_input_tokens` at zero forever while everything still looks
-correct. A test asserts two calls produce an identical string. The breakpoint
+correct. A test asserts two calls produce an identical string.
+
+**And it must sit AHEAD of the history, not after it — found in code review
+2026-09-03.** Byte stability is necessary and NOT sufficient: caching
+matches a prefix from the start of the request, so a block placed after the
+conversation diverges from turn 1's prefix the moment a second turn exists,
+and the cache never reads. The transcript therefore leads `messages` as its
+own user block and the history follows; the provider merges consecutive
+same-role messages, so it coalesces with the first question. A route test
+asserts the ordering, because the byte-stability test passes either way and
+would have let this ship.
+
+**MEASURED 2026-09-03, and the numbers are in the log on purpose.** The route
+prints `[chat] scope=… in=… cacheRead=… cacheWrite=… out=…` on every turn.
+A 5,700-token transcript gave `cacheWrite=7483` on turn 1 and
+`cacheRead=7483` on turn 2 — the whole prefix served from cache. Keep the log
+line: the cache can stop hitting from a change nowhere near the route, and
+nothing fails when it does. Only the bill moves.
+
+**A short note will never cache, and that is correct.** Anthropic declines to
+cache a prefix under roughly 1,024 tokens and says nothing about it. A
+six-line transcript measured `in=554 cacheWrite=0` — there is nothing worth
+saving there, so this is not a bug and must not be "fixed". It does mean a
+small fixture cannot prove the cache works; measure with a realistic
+transcript or you are testing nothing. The breakpoint
 is `providerOptions.anthropic.cacheControl: { type: "ephemeral" }`, whose
 default TTL is the 5 minutes this design wants — read from the AI SDK's
 Anthropic provider docs on 2026-09-03, not assumed.
@@ -769,13 +793,30 @@ Gemini is not involved. Claude specifics, all measured against the live API on
 - **Sonnet 5 removed `budget_tokens` and answers 400 if it is sent.** Use
   `thinking: { type: "adaptive" }`. A route test asserts the string never
   appears.
-- **The AI SDK step-loop helper is `isStepCount(n)`, NOT `stepCountIs(n)`.**
-  The older name does not exist in `ai` 7.x, and without a working stop
-  condition the run halts after the tool call and never writes an answer.
-- **`sendReasoning` must stay unset** on `toUIMessageStream`. Reasoning is a
-  separate part type and the renderer ignores it, but leaving the flag off
-  keeps chain-of-thought off the wire entirely. Three layers, and a test pins
-  the middle one.
+- **Pass a stop condition, or the tool loop never answers.** `stopWhen:
+  isStepCount(5)`. Without one the run halts after the tool call and no
+  text is ever written.
+
+  **Corrected 2026-09-03, in code review.** This read "the step-loop helper
+  is `isStepCount(n)`, NOT `stepCountIs(n)` — the older name does not exist
+  in `ai` 7.x". It does exist: `index.d.ts` exports `isStepCount as
+  stepCountIs`, so the two are the same function and either name works. The
+  claim was written from the docs' prose rather than from the installed
+  `.d.ts`, which is exactly what § Transcription's own rule forbids.
+- **`sendReasoning: false` must be passed EXPLICITLY** to
+  `toUIMessageStream`. It **defaults to `true`** in `ai` 7.0.92 —
+  `node_modules/ai/dist/index.js:7932` — so omitting it opts IN and
+  forwards reasoning deltas to the browser. A test pins the explicit
+  `false`.
+
+  **Corrected 2026-09-03, in code review.** This read "`sendReasoning` must
+  stay unset … leaving the flag off keeps chain-of-thought off the wire",
+  which is the opposite of what the installed version does. The test
+  asserted the same mistake and therefore forbade the fix. Layers 1 and 3
+  (the renderer ignores `reasoning` parts; Sonnet 5 defaults
+  `thinking.display` to `"omitted"`) held throughout, so nothing leaked —
+  but an inverted defence-in-depth layer is worse than a missing one,
+  because it is believed.
 - **An identity-linked API key needs `anthropic-workspace-id` on every
   request** or the API answers 400. `ANTHROPIC_WORKSPACE_ID` is sent only when
   set, because a plain workspace-scoped key must not send it. Confirmed by the

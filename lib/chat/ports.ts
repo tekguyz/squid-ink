@@ -131,8 +131,13 @@ export function createChatPorts(supabase: SupabaseClient) {
 
       const segments = rows
         .filter((r) => r.chunk_type === "transcript_segment")
-        .map((r) => ({
-          seq: r.metadata?.seq ?? 0,
+        // The fallback MATCHES lib/notes/note-view-model.ts:60 on purpose.
+        // It numbers from 1; if this numbered from 0, a note whose chunks
+        // lack `seq` would show Claude [0] for every line while the client
+        // numbered them 1..N — so every [[cite:t…]] would drop and the
+        // ungrounded notice would fire on every answer.
+        .map((r, index) => ({
+          seq: r.metadata?.seq ?? index + 1,
           time: r.metadata?.ts_start ?? "00:00",
           speaker: r.metadata?.speaker?.name ?? "Unknown",
           text: r.content,

@@ -29,18 +29,46 @@ const SOURCE = (() => {
 })();
 
 describe("app/api/chat/route.ts invariants", () => {
-  it("never forwards reasoning to the client", () => {
-    // Reasoning is a separate part type and the renderer ignores it — but
-    // sendReasoning: true would put chain-of-thought on the wire beside
-    // "Searching your notes…". Three layers; this is the second.
-    expect(SOURCE).not.toMatch(/sendReasoning/);
+  it("turns reasoning forwarding OFF explicitly", () => {
+    // CORRECTED 2026-09-03. This asserted the OPPOSITE — that the source
+    // never mentions sendReasoning — on the belief that the flag is
+    // opt-in. It is not: ai 7.0.92 defaults it to TRUE
+    // (node_modules/ai/dist/index.js:7932). Omitting it opted IN, and this
+    // test locked that in by forbidding the fix.
+    expect(SOURCE).toMatch(/sendReasoning:\s*false/);
   });
 
-  it("uses isStepCount, not the older stepCountIs name", () => {
-    // stepCountIs does not exist in ai 7.x. Without a working stop condition
+  it("consumes the stream independently of the response", () => {
+    // onFinish fires when the stream ends. If the HTTP response is its
+    // only reader, closing the tab mid-answer cancels it, the callback
+    // never runs, and the thread ends on a user turn with no reply.
+    expect(SOURCE).toMatch(/consumeStream\(\)/);
+  });
+
+  it("wraps the handler so a port error returns JSON, not HTML", () => {
+    // Every port throws on a Postgres error, and the client parses JSON.
+    expect(SOURCE).toMatch(/catch \(error\)/);
+  });
+
+  it("puts the cached transcript block AHEAD of history", () => {
+    // Anthropic caching is a prefix match. With the block after history,
+    // turn 2 diverges from turn 1's prefix right after `system` and the
+    // cache never reads — which would falsify the whole single-note cost
+    // claim while every other test still passed.
+    const blockAt = SOURCE.indexOf("buildTranscriptBlock(noteContext)");
+    const spreadAt = SOURCE.indexOf("...flat,");
+    expect(blockAt).toBeGreaterThan(-1);
+    expect(spreadAt).toBeGreaterThan(-1);
+    expect(blockAt).toBeLessThan(spreadAt);
+  });
+
+  it("passes a stop condition so the tool loop can finish", () => {
+    // CORRECTED 2026-09-03. The old name of this test claimed stepCountIs
+    // does not exist in ai 7.x. It does — index.d.ts exports
+    // `isStepCount as stepCountIs`, so the two are the same function. What
+    // actually matters is that SOME stop condition is passed: without one
     // the run halts after the tool call and never writes an answer.
-    expect(SOURCE).toMatch(/isStepCount\(/);
-    expect(SOURCE).not.toMatch(/stepCountIs/);
+    expect(SOURCE).toMatch(/stopWhen:\s*(isStepCount|stepCountIs)\(/);
   });
 
   it("never sends budget_tokens — Sonnet 5 answers 400", () => {

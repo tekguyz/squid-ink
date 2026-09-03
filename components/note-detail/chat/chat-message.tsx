@@ -12,6 +12,7 @@ export function ChatMessage({
   segments,
   activeSegmentId,
   onCitationSelect,
+  settled = true,
 }: {
   role: "user" | "assistant";
   content: string;
@@ -19,6 +20,10 @@ export function ChatMessage({
   segments: { id: number; time: string }[];
   activeSegmentId: number;
   onCitationSelect: (segmentId: number) => void;
+  /** False while this turn is still streaming. A half-arrived answer has
+   *  markers that simply have not finished arriving, so it must neither
+   *  warn about them nor be judged ungrounded. */
+  settled?: boolean;
 }) {
   // Memoised on the three inputs that can change it, NOT on activeSegmentId —
   // which changes on every citation click and does not affect parsing.
@@ -28,8 +33,11 @@ export function ChatMessage({
   // passes for each one. The parse is cheap; doing it a few thousand times a
   // second is not.
   const parsed = useMemo(
-    () => (role === "assistant" ? parseAnswer(content, citations, segments) : null),
-    [role, content, citations, segments],
+    () =>
+      role === "assistant"
+        ? parseAnswer(content, citations, segments, { warn: settled })
+        : null,
+    [role, content, citations, segments, settled],
   );
 
   if (role === "user" || !parsed) {
@@ -56,7 +64,7 @@ export function ChatMessage({
             mid-conversation, most likely. The prose still renders, because
             withholding it would be worse, but it is not allowed to read as
             sourced. DESIGN.md § Components → Cards notice-block treatment. */}
-        {parsed.ungrounded ? (
+        {settled && parsed.ungrounded ? (
           <span className="mt-1.5 block bg-notice-bg px-[9px] py-[7px] text-[11.5px] text-notice">
             Sources unavailable — the notes this cited may have been deleted.
           </span>

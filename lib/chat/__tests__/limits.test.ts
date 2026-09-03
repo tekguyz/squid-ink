@@ -83,6 +83,26 @@ describe("trimHistory", () => {
     expect(trimHistory(turns)).toHaveLength(1);
   });
 
+  it("never leaves an assistant turn leading", () => {
+    // Anthropic rejects a leading assistant message. Both cuts drop one
+    // turn at a time regardless of role, so this is reachable whenever the
+    // token budget bites — and it surfaces as the generic error banner.
+    const turns = Array.from({ length: 20 }, (_, i) =>
+      turn(i, "x".repeat(2000)),
+    );
+    const kept = trimHistory(turns);
+
+    expect(kept.length).toBeGreaterThan(0);
+    expect(kept[0].role).toBe("user");
+  });
+
+  it("keeps the newest turn even when it is the only one and is assistant", () => {
+    // The guard must not empty the array chasing a user turn that is not
+    // there; sending Claude nothing at all is a 400, not a degradation.
+    const only = { ...turn(1), role: "assistant" as const };
+    expect(trimHistory([only])).toEqual([only]);
+  });
+
   it("handles an empty history", () => {
     expect(trimHistory([])).toEqual([]);
   });

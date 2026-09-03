@@ -153,6 +153,9 @@ export function ChatPanel({
             segments={segments}
             activeSegmentId={activeSegmentId}
             onCitationSelect={onCitationSelect}
+            // The last message is still arriving while the run is live. Its
+            // markers are a prefix, not a failure.
+            settled={!busy || message.id !== messages.at(-1)?.id}
           />
         ))}
 

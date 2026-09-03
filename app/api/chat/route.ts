@@ -46,6 +46,18 @@ const bad = (status: number, message: string) =>
   Response.json({ error: message }, { status });
 
 export async function POST(req: Request) {
+  try {
+    return await handle(req);
+  } catch (error) {
+    // Every port throws on a Postgres error. Without this the route returns
+    // Next's HTML 500 and breaks its own JSON contract, so the client shows a
+    // parse failure instead of the banner.
+    console.error("[chat] request failed", error);
+    return bad(500, "Something went wrong answering that.");
+  }
+}
+
+async function handle(req: Request) {
   // 1. Auth. The session middleware already protects this path; this is the
   //    in-route half, so a fetch gets JSON rather than a login page's HTML.
   const supabase = await createClient();
@@ -102,58 +114,71 @@ export async function POST(req: Request) {
   // authenticating with an identity-linked API key".
   const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
 
-  // 4. Persist the user's turn, then read history back. The insert lands
+  const voyageKey = scope === "all_notes" ? process.env.VOYAGE_API_KEY : null;
+  if (scope === "all_notes" && !voyageKey) {
+    return bad(500, "Search is not configured.");
+  }
+
+  // 4. Read the note BEFORE persisting anything. RLS returns null for a note
+  //    the caller does not own, so this doubles as the ownership check — and
+  //    doing it first means a bad note id cannot burn a rate-limit slot or
+  //    leave an orphaned row behind.
+  const noteContext =
+    scope === "this_note" ? await ports.readNoteContext(noteId) : null;
+  if (scope === "this_note" && !noteContext) return bad(404, "Note not found.");
+
+  // 5. Persist the user's turn, then read history back. The insert lands
   //    first so the newest message is part of the history we send.
   await ports.insertUserMessage(noteId, user.id, text, scope);
   const history = trimHistory(await ports.readHistory(noteId));
 
-  // 5. Build this turn's context from THIS turn's scope. Nothing is carried.
+  // 6. Build this turn's context from THIS turn's scope. Nothing is carried.
   const anthropic = createAnthropic({
     apiKey: anthropicKey,
     ...(workspaceId
       ? { headers: { "anthropic-workspace-id": workspaceId } }
       : {}),
   });
-  const flat = flattenHistory(history);
+  const flat = flattenHistory(history) as ModelMessage[];
 
   let system = ALL_NOTES_SYSTEM;
-  let messages: ModelMessage[] = flat as ModelMessage[];
+  let messages: ModelMessage[] = flat;
   let tools: Record<string, ReturnType<typeof createSearchTool>> | undefined;
 
-  if (scope === "this_note") {
-    const noteContext = await ports.readNoteContext(noteId);
-    if (!noteContext) return bad(404, "Note not found.");
-
+  if (noteContext) {
     system = THIS_NOTE_SYSTEM;
-    const older = flat.slice(0, -1) as ModelMessage[];
-    const newest = flat.at(-1);
 
+    // The transcript goes FIRST, ahead of all history.
+    //
+    // Anthropic caching is a prefix match from the start of the request. With
+    // the block after the history, turn 2 sends system + q1 + a1 + transcript
+    // and diverges from turn 1's cached prefix immediately after `system` —
+    // so the cache never reads and every turn re-pays for the whole
+    // transcript. Leading it makes the cached prefix `system + transcript`,
+    // which is byte-identical on every turn of the conversation.
+    //
+    // The provider merges consecutive same-role messages, so this block and
+    // the first user question coalesce into one turn; the breakpoint stays at
+    // the end of the transcript text either way.
     messages = [
-      ...older,
       {
         role: "user",
         content: [
           {
             type: "text",
             text: buildTranscriptBlock(noteContext),
-            // The 5-minute breakpoint. Byte-stable across turns, so a
-            // multi-turn conversation pays full input price for the
-            // transcript once.
             providerOptions: {
               anthropic: { cacheControl: { type: "ephemeral" } },
             },
           },
-          { type: "text", text: newest?.content ?? text },
         ],
       },
+      ...flat,
     ];
   } else {
-    const voyageKey = process.env.VOYAGE_API_KEY;
-    if (!voyageKey) return bad(500, "Search is not configured.");
-
     tools = {
       searchNotes: createSearchTool({
-        embedQuery: createVoyageQueryEmbedder(voyageKey),
+        embedQuery: createVoyageQueryEmbedder(voyageKey!),
         rpc: (vector, query) => ports.searchRpc(vector, query),
       }),
     };
@@ -166,7 +191,18 @@ export async function POST(req: Request) {
     // Sonnet 5 removed budget_tokens and answers 400 if it is sent.
     providerOptions: { anthropic: { thinking: { type: "adaptive" } } },
     ...(tools ? { tools, stopWhen: isStepCount(5) } : {}),
-    onFinish: async ({ text: answer, steps }) => {
+    onFinish: async ({ text: answer, steps, usage }) => {
+      // One line, kept deliberately. The cache is invisible otherwise: the
+      // breakpoint can stop hitting from a change nowhere near this file and
+      // nothing would fail, only the bill would move. Read it in the Vercel
+      // function log, the same place transcription failures are read.
+      console.log(
+        `[chat] scope=${scope} in=${usage?.inputTokens ?? "?"} ` +
+          `cacheRead=${usage?.inputTokenDetails?.cacheReadTokens ?? 0} ` +
+          `cacheWrite=${usage?.inputTokenDetails?.cacheWriteTokens ?? 0} ` +
+          `out=${usage?.outputTokens ?? "?"}`,
+      );
+
       try {
         await ports.insertAssistantMessage(
           noteId,
@@ -183,10 +219,19 @@ export async function POST(req: Request) {
     },
   });
 
-  // sendReasoning is deliberately NOT set. Reasoning is a separate part type
-  // and the renderer ignores it, but leaving it off keeps chain-of-thought off
-  // the wire entirely.
+  // Consume the stream independently of the HTTP response. Without this,
+  // closing the tab mid-answer cancels the only reader, onFinish never runs,
+  // and the thread is left ending on a user turn with no reply and no log
+  // line. Fire-and-forget: the response below still streams normally.
+  void result.consumeStream();
+
+  // sendReasoning DEFAULTS TO TRUE in ai 7.0.92 — read from
+  // node_modules/ai/dist/index.js:7932, not from the docs, which describe it
+  // as opt-in. Omitting it would forward reasoning deltas to the browser.
+  // The renderer ignores them and Sonnet 5's thinking.display defaults to
+  // "omitted", so nothing leaks today; this is the layer that stops it
+  // silently starting to.
   return createUIMessageStreamResponse({
-    stream: toUIMessageStream({ stream: result.stream }),
+    stream: toUIMessageStream({ stream: result.stream, sendReasoning: false }),
   });
 }

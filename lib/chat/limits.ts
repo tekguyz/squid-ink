@@ -52,5 +52,15 @@ export function trimHistory(turns: ChatTurn[]): ChatTurn[] {
     start += 1;
   }
 
+  // Both cuts above drop one turn at a time with no regard for role, and
+  // history alternates user/assistant — so the survivor is an assistant
+  // turn about half the time. The Anthropic API rejects a leading
+  // assistant message outright, which surfaces to the reader as the
+  // generic error banner. Drop them until a user turn leads, keeping at
+  // least one message either way.
+  while (start < recent.length - 1 && recent[start].role === "assistant") {
+    start += 1;
+  }
+
   return recent.slice(start);
 }

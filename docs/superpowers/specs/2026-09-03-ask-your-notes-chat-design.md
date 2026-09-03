@@ -264,8 +264,11 @@ Three independent layers, in order of how much they are relied on:
 1. **Structural.** Reasoning streams as `part.type === 'reasoning'`, a distinct part type
    from `'text'`. The renderer switches on `'text'` and `'tool-searchNotes'` only, so
    reasoning has no path to the screen even if it arrives.
-2. **Route.** `sendReasoning` on `toUIMessageStream` is opt-in and is left unset. A test
-   asserts the route never sets it.
+2. **Route.** `sendReasoning: false` is passed explicitly to
+   `toUIMessageStream`. **Corrected 2026-09-03 in code review:** this said
+   the flag is opt-in and should be left unset. It defaults to `true` in
+   `ai` 7.0.92, so omitting it opted in. A test now pins the explicit
+   `false`.
 3. **Model.** Sonnet 5 defaults `thinking.display` to `"omitted"`, so the thinking text is
    empty unless `"summarized"` is explicitly requested. It is not.
 
@@ -287,7 +290,14 @@ One user content block, cached:
 ```
 
 `cacheControl: { type: 'ephemeral' }` is the 5-minute TTL — verified against the AI SDK
-Anthropic provider docs on 2026-09-03, not assumed. A multi-turn conversation pays full
+Anthropic provider docs on 2026-09-03, not assumed.
+
+**Corrected 2026-09-03 in code review:** the block above must be the FIRST
+message, ahead of the history, not the last. Caching matches a prefix from
+the start of the request; with the block after the conversation, turn 2
+diverges from turn 1's cached prefix immediately and the cache never reads,
+silently falsifying the "pays full input price once" claim this whole
+section exists to make. A multi-turn conversation pays full
 input price for the transcript once.
 
 The block is built from `notes.raw_transcript` plus this note's `summary`, `takeaway` and

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type { ChatScope } from "@/lib/chat/types";
 
 const OPTIONS: { value: ChatScope; label: string }[] = [
@@ -28,6 +29,7 @@ export function ScopeToggle({
   onChange: (scope: ChatScope) => void;
 }) {
   const selected = OPTIONS.findIndex((o) => o.value === value);
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
 
   const onKeyDown = (event: React.KeyboardEvent) => {
     const forward = event.key === "ArrowRight" || event.key === "ArrowDown";
@@ -38,13 +40,20 @@ export function ScopeToggle({
     const next =
       (selected + (forward ? 1 : OPTIONS.length - 1)) % OPTIONS.length;
     onChange(OPTIONS[next].value);
+    // Selection and focus must not diverge. The roving tabindex takes the
+    // old option out of the tab order, so leaving focus on it strands the
+    // keyboard user on an element they can no longer tab back to.
+    buttons.current[next]?.focus();
   };
 
   return (
     <div role="radiogroup" aria-label="Search scope" className="flex">
-      {OPTIONS.map((option) => (
+      {OPTIONS.map((option, i) => (
         <button
           key={option.value}
+          ref={(el) => {
+            buttons.current[i] = el;
+          }}
           type="button"
           role="radio"
           aria-checked={value === option.value}
