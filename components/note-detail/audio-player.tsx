@@ -76,6 +76,48 @@ function mmss(seconds: number): string {
   return `${String(Math.floor(whole / 60)).padStart(2, "0")}:${String(whole % 60).padStart(2, "0")}`;
 }
 
+/** Far past the end of any recording this app will ever hold — 60 minutes is
+ *  the hard ceiling diarization-policy.ts enforces upstream. Seeking here is a
+ *  request for the true length, not a real position. */
+const PROBE_SECONDS = 1e7;
+
+/** The element's own answer to "how long is this", or null when it does not
+ *  have one yet. Infinity is the answer a headerless WebM gives, and it is a
+ *  "don't know", not a length. */
+function usableLength(element: HTMLAudioElement): number | null {
+  if (Number.isFinite(element.duration) && element.duration > 0) return element.duration;
+  if (element.seekable.length > 0) {
+    const end = element.seekable.end(element.seekable.length - 1);
+    if (Number.isFinite(end) && end > 0) return end;
+  }
+  return null;
+}
+
+/** Both glyphs are 9px square and take their colour from `currentColor`, so
+ *  the button's own token drives them and no literal enters the file. Square
+ *  edges, per DESIGN.md — the triangle is cut with clip-path, not a border
+ *  trick, so it stays a hard-edged shape at every zoom level.
+ *
+ *  A filled square and a bordered square, the previous pair, read as the same
+ *  9px dot on a real screen; that is why the button looked static. */
+function PlayGlyph() {
+  return (
+    <span
+      aria-hidden
+      className="h-[9px] w-[9px] bg-current [clip-path:polygon(0_0,100%_50%,0_100%)]"
+    />
+  );
+}
+
+function PauseGlyph() {
+  return (
+    <span aria-hidden className="flex h-[9px] w-[9px] gap-[3px]">
+      <span className="w-[3px] bg-current" />
+      <span className="w-[3px] bg-current" />
+    </span>
+  );
+}
+
 type Status = "loading" | "unavailable" | "ready";
 
 export function AudioPlayer({ storagePath }: { storagePath: string | null }) {
@@ -85,6 +127,7 @@ export function AudioPlayer({ storagePath }: { storagePath: string | null }) {
   const [playing, setPlaying] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [duration, setDuration] = useState(0);
+  const probe = useRef<"idle" | "seeking" | "done">("idle");
 
   // The object URL's whole lifetime is this effect. It is created only after a
   // successful download, and revoked both on unmount and when storagePath
@@ -98,6 +141,7 @@ export function AudioPlayer({ storagePath }: { storagePath: string | null }) {
 
     setStatus("loading");
     setUrl(null);
+    probe.current = "idle";
     setPlaying(false);
     setElapsed(0);
     setDuration(0);
@@ -129,17 +173,57 @@ export function AudioPlayer({ storagePath }: { storagePath: string | null }) {
     };
   }, [storagePath]);
 
+  // The button asks; the element answers. Nothing here sets `playing` — that
+  // state is written only by the element's own play/pause/ended events below,
+  // so a play() the browser refuses (autoplay policy, a decode failure) can
+  // never leave the control claiming to be playing.
   const toggle = useCallback(() => {
     const element = audio.current;
     if (!element) return;
-    if (playing) {
-      element.pause();
-      setPlaying(false);
-    } else {
-      void element.play();
-      setPlaying(true);
+    if (element.paused) void element.play();
+    else element.pause();
+  }, []);
+
+  /**
+   * MEASURED 2026-09-02 in Chromium against a real recording: a MediaRecorder
+   * WebM carries no duration in its container header, so BOTH `duration` and
+   * `seekable.end()` report Infinity at readyState 4 and the readout stuck at
+   * "00:00 / 00:00" forever. The old `duration || 0` could not catch it —
+   * Infinity is truthy.
+   *
+   * Three sources, cheapest first, every one native to the element:
+   *   1. `duration`, when the container actually carries one (MP4 does).
+   *   2. `seekable.end()`, which some builds fill in and this one does not.
+   *   3. A one-shot seek far past the end. The browser answers by scanning to
+   *      the true end and firing `durationchange`, at which point 1 or 2
+   *      answers. The playhead goes back to 0 only WHEN that answer arrives —
+   *      resetting in the same tick cancels the scan, which is the version
+   *      that did not work.
+   *
+   * The probe runs at most once per source and only before playback, so the
+   * seek bar's own behaviour is untouched.
+   */
+  const readDuration = useCallback((element: HTMLAudioElement) => {
+    const known = usableLength(element);
+
+    if (known === null) {
+      if (probe.current !== "idle") return;
+      probe.current = "seeking";
+      try {
+        element.currentTime = PROBE_SECONDS;
+      } catch {
+        // An element that refuses the seek simply keeps 00:00 — nothing to undo.
+        probe.current = "done";
+      }
+      return;
     }
-  }, [playing]);
+
+    setDuration(known);
+    if (probe.current === "seeking") {
+      probe.current = "done";
+      element.currentTime = 0;
+    }
+  }, []);
 
   const seek = useCallback((seconds: number) => {
     const element = audio.current;
@@ -158,8 +242,12 @@ export function AudioPlayer({ storagePath }: { storagePath: string | null }) {
         ref={audio}
         src={url ?? undefined}
         preload="metadata"
-        onLoadedMetadata={(event) => setDuration(event.currentTarget.duration || 0)}
+        onLoadedMetadata={(event) => readDuration(event.currentTarget)}
+        onDurationChange={(event) => readDuration(event.currentTarget)}
+        onProgress={(event) => readDuration(event.currentTarget)}
         onTimeUpdate={(event) => setElapsed(event.currentTarget.currentTime)}
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
       />
 
@@ -173,10 +261,7 @@ export function AudioPlayer({ storagePath }: { storagePath: string | null }) {
         className={BUTTON}
         onClick={toggle}
       >
-        <span
-          aria-hidden
-          className={`h-[9px] w-[9px] ${playing ? "border border-current" : "bg-current"}`}
-        />
+        {playing ? <PauseGlyph /> : <PlayGlyph />}
         {playing ? "Pause" : "Play"}
       </button>
 

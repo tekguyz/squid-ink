@@ -12,9 +12,22 @@ const PATH = "user-1/note-1";
 const revoke = vi.fn();
 
 // jsdom implements no media pipeline at all: play() and pause() are stubs that
-// throw "not implemented", and duration is always NaN.
-const play = vi.fn(async () => {});
-const pause = vi.fn();
+// throw "not implemented", and duration is always NaN. The component no longer
+// takes its playing state from the click — it takes it from the element's own
+// play/pause events — so these stubs do what a real element does: flip
+// `paused` and announce the change.
+function setPaused(element: HTMLMediaElement, value: boolean) {
+  Object.defineProperty(element, "paused", { value, configurable: true });
+}
+
+const play = vi.fn(async function (this: HTMLMediaElement) {
+  setPaused(this, false);
+  this.dispatchEvent(new Event("play"));
+});
+const pause = vi.fn(function (this: HTMLMediaElement) {
+  setPaused(this, true);
+  this.dispatchEvent(new Event("pause"));
+});
 
 function media() {
   return document.querySelector("audio") as HTMLAudioElement;
@@ -91,6 +104,57 @@ describe("AudioPlayer", () => {
     announceDuration(125);
     const readout = screen.getByText("00:00 / 02:05");
     expect(readout.className).toContain("font-mono");
+  });
+
+  // A MediaRecorder WebM carries no duration in its header, so a real browser
+  // reports Infinity here. The old `duration || 0` let it through — Infinity is
+  // truthy — and mmss() then printed 00:00 forever.
+  it("takes the length from seekable when the container reports Infinity", async () => {
+    render(<AudioPlayer storagePath={PATH} />);
+    await screen.findByRole("button", { name: /play recording/i });
+
+    const el = media();
+    Object.defineProperty(el, "seekable", {
+      configurable: true,
+      value: { length: 1, end: () => 357 },
+    });
+    announceDuration(Number.POSITIVE_INFINITY);
+
+    expect(screen.getByText("00:00 / 05:57")).toBeInTheDocument();
+    expect(screen.getByRole("slider", { name: /seek/i })).toHaveAttribute("max", "357");
+  });
+
+  it("asks the browser for the real length by seeking past the end, once", async () => {
+    render(<AudioPlayer storagePath={PATH} />);
+    await screen.findByRole("button", { name: /play recording/i });
+
+    const el = media();
+    const writes: number[] = [];
+    Object.defineProperty(el, "seekable", {
+      configurable: true,
+      value: { length: 0, end: () => 0 },
+    });
+    Object.defineProperty(el, "currentTime", {
+      configurable: true,
+      get: () => 0,
+      set: (value: number) => writes.push(value),
+    });
+
+    announceDuration(Number.POSITIVE_INFINITY);
+    announceDuration(Number.POSITIVE_INFINITY);
+
+    // Probed once, and not again while the answer is outstanding.
+    expect(writes).toEqual([1e7]);
+
+    // The scan lands: the length is taken, and the playhead goes back to 0.
+    Object.defineProperty(el, "seekable", {
+      configurable: true,
+      value: { length: 1, end: () => 357 },
+    });
+    announceDuration(Number.POSITIVE_INFINITY);
+
+    expect(writes).toEqual([1e7, 0]);
+    expect(screen.getByText("00:00 / 05:57")).toBeInTheDocument();
   });
 
   it("gives the seek control an accessible name and the real duration", async () => {
