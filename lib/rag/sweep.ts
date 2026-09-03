@@ -1,4 +1,5 @@
 import type { ChunkMetadata } from "@/lib/notes/types";
+import { embedChunks } from "@/lib/rag/embed-note";
 import type { DocumentEmbedder } from "@/lib/rag/voyage-client";
 
 /** All the branching, and none of the I/O.
@@ -117,4 +118,93 @@ export interface EmbedReport {
 
 export function emptyReport(): EmbedReport {
   return { embedded: 0, blank: 0, exhausted: 0, retryable: 0, contended: 0 };
+}
+
+/** The run's own counters on top of the per-note ones. */
+export interface EmbedSweepReport extends EmbedReport {
+  /** Notes this run actually took up. */
+  notes: number;
+  /** Notes pushed to the next tick by the per-run cap or the shared budget. */
+  deferred: number;
+}
+
+/** PHASE THREE of the cron run, and the BACKFILL.
+ *
+ *  It is both at once and deliberately so: "every chunk with no vector,
+ *  oldest first, across every user" describes the rows the inline path missed
+ *  AND every row that existed before this pipeline shipped. A separate
+ *  one-shot backfill script would be a second implementation of the same
+ *  query, and it would be dead code the day after it ran.
+ *
+ *  NO user_id FILTER. The standing rule in CLAUDE.md § Supabase → RLS rules is
+ *  that queries never filter on user_id in application code, and this obeys
+ *  it: the sweep runs as service_role, which bypasses RLS, and crossing every
+ *  tenant's pending chunks is its entire purpose. This is NOT the
+ *  persona-resolution exception, which filters precisely because an unfiltered
+ *  single-row lookup could return the wrong account's row — there is no wrong
+ *  account here.
+ *
+ *  deadlineAt is passed IN rather than computed, the same "one clock, N
+ *  phases" rule note generation established against transcription's budget.
+ *  The route reads one startedAt; transcription spends from it, note
+ *  generation spends what is left, and this gets the remainder. A third
+ *  independent budget would let one invocation run past the 300 s Hobby
+ *  ceiling and be killed mid-write. This phase runs LAST, so on a busy run it
+ *  is the one that defers — which is correct: a missing vector is invisible
+ *  until retrieval ships, and tomorrow's sweep picks it up. */
+export async function embeddingSweep(
+  ports: EmbeddingPorts,
+  options: { deadlineAt: number },
+): Promise<EmbedSweepReport> {
+  const report: EmbedSweepReport = { ...emptyReport(), notes: 0, deferred: 0 };
+
+  const pending = await ports.listPending(EMBED_CHUNK_WINDOW);
+  if (pending.length === 0) return report;
+
+  // Grouped in listing order, which is oldest-chunk-first, so the note that
+  // has waited longest is taken up first.
+  const byNote = new Map<string, PendingChunk[]>();
+  for (const chunk of pending) {
+    const group = byNote.get(chunk.note_id);
+    if (group) group.push(chunk);
+    else byNote.set(chunk.note_id, [chunk]);
+  }
+
+  for (const [noteId, chunks] of byNote) {
+    if (
+      report.notes >= MAX_EMBED_NOTES_PER_RUN ||
+      ports.now() > options.deadlineAt
+    ) {
+      report.deferred += 1;
+      continue;
+    }
+
+    // The SAME unit the inline trigger calls. The chunks are already in hand
+    // from the window above, so this takes embedChunks directly rather than
+    // embedNoteChunks — one fewer round trip, identical behaviour.
+    const noteReport = await embedChunks(ports, chunks);
+
+    report.notes += 1;
+    report.embedded += noteReport.embedded;
+    report.blank += noteReport.blank;
+    report.exhausted += noteReport.exhausted;
+    report.retryable += noteReport.retryable;
+    report.contended += noteReport.contended;
+
+    if (noteReport.embedded > 0) {
+      ports.log(`note ${noteId}: embedded ${noteReport.embedded} chunk(s).`);
+    }
+  }
+
+  // Never let a cap read as completeness — but only say "deferred" when work
+  // was genuinely pushed aside, so a healthy tick does not cry wolf.
+  if (report.deferred > 0) {
+    ports.log(
+      `${report.deferred} note(s) deferred to the next tick — per-run cap ` +
+        `${MAX_EMBED_NOTES_PER_RUN} note(s), shared budget ends at ` +
+        `${options.deadlineAt}.`,
+    );
+  }
+
+  return report;
 }
