@@ -332,9 +332,9 @@ Expected: success, no rows. Re-run it once more and confirm it succeeds again �
 `db diff` is unavailable without Docker, so confirm from the catalog directly:
 
 ```bash
-npx supabase db query --linked --project-ref <ref> --query "select policyname, cmd, qual, with_check from pg_policies where tablename = 'chat_messages' order by policyname"
-npx supabase db query --linked --project-ref <ref> --query "select indexname from pg_indexes where tablename = 'chat_messages' order by indexname"
-npx supabase db query --linked --project-ref <ref> --query "select grantee, privilege_type from information_schema.role_table_grants where table_name = 'chat_messages' order by grantee, privilege_type"
+npx supabase db query --linked --project-ref <ref> "select policyname, cmd, qual, with_check from pg_policies where tablename = 'chat_messages' order by policyname"
+npx supabase db query --linked --project-ref <ref> "select indexname from pg_indexes where tablename = 'chat_messages' order by indexname"
+npx supabase db query --linked --project-ref <ref> "select grantee, privilege_type from information_schema.role_table_grants where table_name = 'chat_messages' order by grantee, privilege_type"
 ```
 
 Expected: four policies (`chat_messages_delete_own`, `_insert_own`, `_select_own`, `_update_own`); update carries a non-null `with_check`; three indexes (pkey + the two named above); grants list `authenticated` with SELECT/INSERT/UPDATE/DELETE and **no** `anon` and **no** `service_role` rows.
@@ -525,7 +525,7 @@ Expected: success. Run it a second time and confirm it succeeds again.
 - [ ] **Step 4: Confirm it is not `SECURITY DEFINER`**
 
 ```bash
-npx supabase db query --linked --project-ref <ref> --query "select proname, prosecdef, proconfig from pg_proc where proname = 'search_note_chunks'"
+npx supabase db query --linked --project-ref <ref> "select proname, prosecdef, proconfig from pg_proc where proname = 'search_note_chunks'"
 ```
 
 Expected: `prosecdef` is `false`. `proconfig` contains `search_path=`. If `prosecdef` is `true` the function bypasses RLS and the whole owner-scoping story is void — stop and fix it.
@@ -535,7 +535,7 @@ Expected: `prosecdef` is `false`. `proconfig` contains `search_path=`. If `prose
 This is the `'pg_catalog.english'` trap. Run:
 
 ```bash
-npx supabase db query --linked --project-ref <ref> --query "explain select id from public.note_chunks where to_tsvector('pg_catalog.english'::regconfig, content) @@ plainto_tsquery('pg_catalog.english'::regconfig, 'budget')"
+npx supabase db query --linked --project-ref <ref> "explain select id from public.note_chunks where to_tsvector('pg_catalog.english'::regconfig, content) @@ plainto_tsquery('pg_catalog.english'::regconfig, 'budget')"
 ```
 
 Expected: the plan names `note_chunks_content_fts_idx` (a Bitmap Index Scan). If it shows a Seq Scan, the regconfig OIDs differ and every full-text query will scan the table — fix the expression before continuing.
@@ -2957,7 +2957,7 @@ Expected: `400`. Repeat with `4000` characters and expect a stream, not a `400`.
 Set one note to `notegen_status = 'generating'` and another to `'failed'`, both with `processing_status = 'completed'` and a real transcript. Ask each a question in the browser. Both must answer. Screenshot both.
 
 ```bash
-npx supabase db query --linked --project-ref <ref> --query "update public.notes set notegen_status = 'generating' where id = '<id>'"
+npx supabase db query --linked --project-ref <ref> "update public.notes set notegen_status = 'generating' where id = '<id>'"
 ```
 
 - [ ] **Step 7: Append to `docs/DECISIONS.md`**
