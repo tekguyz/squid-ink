@@ -1727,16 +1727,42 @@ query above is a thirty-second manual check and the pipeline has no
 observability budget of its own. Revisit at the same moment hybrid retrieval
 lands — that is when a missing chunk starts to cost an answer.
 
-### The Voyage account is on the unbilled tier: 3 RPM, not 2,000
+### The Voyage account was on the unbilled tier: 3 RPM, not 2,000 — RESOLVED 2026-09-03
 
-**Measured 2026-09-03**, from a live 429 body during the first run of
+**Opened 2026-09-03, closed the same day.** A payment method is now on file and
+the throttle is gone.
+
+**What it was.** Measured from a live 429 body during the first run of
 `scripts/verify-embeddings-pipeline.mjs`. Voyage's published tier-1 limits for
 `voyage-4` are 2,000 requests and 8,000,000 tokens per minute, but those apply
-only once a payment method is on file. Without one the account is held at
-**3 RPM and 10,000 TPM**, and the 429 says so in its response body.
+only once a payment method is on file. Without one the account was held at
+**3 RPM and 10,000 TPM**, and the 429 said so in its response body.
 
-**Corrected 2026-09-03, the same day, in code review.** This read "the pipeline
-is correct under this and nothing needs changing in `lib/rag`", and the
+**How the lift was measured, 2026-09-03**, and not taken from the billing page:
+
+- **30 concurrent requests to `POST /v1/embeddings`, all 200, in 0.62 s** — an
+  attempted rate of about 2,900 requests per minute. On the unbilled tier the
+  same burst is roughly 27 rejections. This is the discriminating measurement:
+  a burst is the only shape that separates "the limit is raised" from "the
+  calls happened to be spread out".
+- **`VOYAGE_MIN_CALL_INTERVAL_MS=0 node scripts/verify-embeddings-pipeline.mjs`
+  passes with zero 429s across 9 unpaced Voyage calls** — all six proofs green,
+  including the sweep backfill and the 3-attempt cap. That run previously
+  needed 21 s of spacing between calls to complete at all.
+
+**What this changes in the code: nothing, deliberately.** The 21 s pacing in
+`scripts/verify-embeddings-pipeline.mjs` stays, and `VOYAGE_MIN_CALL_INTERVAL_MS`
+stays as its switch. The harness must remain runnable against an account that
+has been throttled again — a lapsed card, a new account, a fresh clone — and
+removing the pacing would trade a slow proof for one that fails confusingly. The
+default is the safe one; the env var is the fast one, and it is now the one to
+use here.
+
+**The transient-vs-content correction below is unaffected and is not a
+workaround for this.** It was a real defect in its own right, and it stays.
+
+**Corrected 2026-09-03, the same day, in code review.** This section read "the
+pipeline is correct under this and nothing needs changing in `lib/rag`", and the
 production estimate below said "up to 10 requests". Both were wrong by about
 two orders of magnitude. `embedChunks` fell through to its one-at-a-time
 fallback on **every** non-fatal batch error, so a 429 on a 100-chunk note
@@ -1750,25 +1776,17 @@ The classification itself was right all along, and is what kept this from being
 a data problem rather than only a cost-and-volume one: a 429 is `transient`, so
 the chunk's attempt counter is untouched, the row stays eligible, and the next
 sweep retries it. Six chunks took that path in the first run and embedded
-cleanly in the second. **The "up to 10 requests" figure below is accurate as of
-the fix**, one batch per note; it was not before. The only accommodation is in
-the harness — `scripts/verify-embeddings-pipeline.mjs` spaces its calls 21 s
-apart so its proofs have something to observe, and that spacing is switched off
-with `VOYAGE_MIN_CALL_INTERVAL_MS=0`.
+cleanly in the second.
 
-**What it costs in production:** the daily cron sweep embeds up to
-`MAX_EMBED_NOTES_PER_RUN = 10` notes, which is up to 10 requests, and 3 RPM
-means roughly two thirds of them 429 and defer to the following day. The
-backlog still clears — it just clears slowly, and the log fills with transient
-lines that look alarming and are not. **Adding a payment method removes this
-entirely**; `voyage-4` carries 200 million free tokens per account, so a card
-on file is not the same as a bill. That is the one-line fix and it is the
-owner's call, not a code change.
+**What it costs in production now:** the daily cron sweep embeds up to
+`MAX_EMBED_NOTES_PER_RUN = 10` notes, which is up to 10 requests — comfortably
+inside 2,000 RPM, so nothing defers to the following day any more. `voyage-4`
+carries 200 million free tokens per account, so the card on file is not the same
+as a bill.
 
-Deliberately **not** doing: a retry-with-backoff inside a single run. It would
-spend the shared 300 s Vercel budget waiting, it would make the free tier look
-survivable when the real answer is a billing setting, and this project's
-standing rule is not to add mitigation speculatively.
+Still deliberately **not** doing: a retry-with-backoff inside a single run. It
+would spend the shared 300 s Vercel budget waiting, and with the limit lifted
+there is even less reason to add mitigation speculatively.
 
 ### The migration chain can no longer rebuild the database — CLOSED 2026-09-03
 

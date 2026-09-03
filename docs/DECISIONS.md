@@ -201,7 +201,7 @@ a separate, still-open question (see Branding below).
   untouched. A 401/403 aborts the run rather than burning every chunk's
   attempts. (The transient case fell through to the individual fallback until
   code review caught it the same day; see `docs/KNOWN_GAPS.md` § "The Voyage
-  account is on the unbilled tier".) **The inline path and the sweep are allowed to race.** This is a
+  account was on the unbilled tier".) **The inline path and the sweep are allowed to race.** This is a
   deliberate deviation from the claim-before-spend pattern transcription and
   note generation use: a race here costs a **duplicate Voyage call, never a
   duplicate write**, because the per-row `UPDATE ... WHERE id = $1 AND

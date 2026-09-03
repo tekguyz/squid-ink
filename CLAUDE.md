@@ -607,11 +607,14 @@ the live docs that day, never from memory:
   vectors the column refuses, or integers it silently accepts as nonsense.
 - Caps: **1,000 texts and 320,000 tokens per request**; `VOYAGE_MAX_BATCH_TEXTS`
   is 128 and `VOYAGE_MAX_BATCH_TOKENS` 100,000, both well under.
-- **The published rate limit is not what this account gets.** Tier 1 for
-  `voyage-4` is 2,000 RPM / 8,000,000 TPM, but only with a payment method on
-  file. Without one Voyage holds the account at **3 RPM / 10,000 TPM** and says
-  so in the 429 body — measured 2026-09-03. See `docs/KNOWN_GAPS.md` § "The
-  Voyage account is on the unbilled tier".
+- **The rate limit depends on billing, and this account is now billed.** Tier 1
+  for `voyage-4` is 2,000 RPM / 8,000,000 TPM, but only with a payment method
+  on file. Without one Voyage holds the account at **3 RPM / 10,000 TPM** and
+  says so in the 429 body — measured 2026-09-03. A card went on file the same
+  day and the lift was measured, not assumed: 30 concurrent requests all
+  returned 200 in 0.62 s. See `docs/KNOWN_GAPS.md` § "The Voyage account was on
+  the unbilled tier", RESOLVED. Re-measure with a burst before trusting the
+  headroom again — spread-out calls cannot tell the two tiers apart.
 - The vector crosses PostgREST as `JSON.stringify(vector)` — pgvector's own
   text input format. A raw array serialises as a JSON array, a different type.
 - **`VoyageError` uses plain fields, not constructor parameter properties.**
@@ -631,7 +634,8 @@ one poison chunk is isolated so it cannot spend its siblings' attempts, and a
 `429` says nothing about any text at all, so calling each member alone cannot
 produce a different answer — it turns one rejected request into `1 + N`
 rejected requests aimed at the limit that just rejected it. On the unbilled
-3 RPM tier that was ~101 requests per long note. A transient batch now defers
+3 RPM tier this account was held at that day, that was ~101 requests per long
+note. A transient batch now defers
 whole, every member still eligible, counters untouched; a test pins the call
 count at one. Three charged attempts and the chunk is left null
 permanently — a real gap, recorded in `docs/KNOWN_GAPS.md` § "An unembeddable
@@ -681,10 +685,15 @@ would do here. `EXPLAIN` against the live project confirms the planner uses it.
                                                   # measured, the 3-attempt cap
                                                   # exercised with a healthy
                                                   # sibling alongside it.
-                                                  # Paces itself for the
-                                                  # unbilled 3 RPM tier; set
+                                                  # Paces itself 21 s apart for
+                                                  # a throttled account. A card
+                                                  # is on file as of 2026-09-03,
+                                                  # so run it with
                                                   # VOYAGE_MIN_CALL_INTERVAL_MS=0
-                                                  # once a card is on file.
+                                                  # -- seconds, not minutes.
+                                                  # Keep the default: it is what
+                                                  # makes the script runnable on
+                                                  # an account throttled again.
 
 ## Naming
 
