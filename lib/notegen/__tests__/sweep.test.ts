@@ -24,7 +24,7 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
     log: vi.fn(),
     listGeneratable: vi.fn(async () => rowsOf(2)),
     listStaleGenerating: vi.fn(async () => []),
-    claimForGeneration: vi.fn(async () => true),
+    claimForGeneration: vi.fn(async () => ({ status: "claimed" as const, personaId: null })),
     resolvePersona: vi.fn(async () => ({
       slug: "neutral-analyst",
       name: "Neutral Analyst",
@@ -117,7 +117,7 @@ describe("notegenSweep", () => {
   it("counts a contended row without spending its cap slot", async () => {
     const { ports: p, generate } = ports({
       listGeneratable: vi.fn(async () => rowsOf(MAX_NOTEGEN_PER_RUN + 1)),
-      claimForGeneration: vi.fn(async () => false),
+      claimForGeneration: vi.fn(async () => ({ status: "lost" as const })),
     });
     const report = await notegenSweep(p, FAR);
     expect(report.contended).toBe(MAX_NOTEGEN_PER_RUN + 1);

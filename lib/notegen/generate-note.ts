@@ -30,6 +30,18 @@ export type ClaimOutcome =
 
 export type NotegenOutcome = ClaimOutcome | "generated" | "failed";
 
+/** The claim's answer, carrying the persona the claim itself returned.
+ *
+ *  An object rather than the bare ClaimOutcome string it used to be, for the
+ *  same reason ClaimResult is tagged: the persona is nullable and so is "no
+ *  result", and a caller must never tell those apart by a truthiness check.
+ *  ClaimOutcome survives as the `outcome` field's type because the sweep's
+ *  counters key on exactly those three strings. */
+export type ClaimResolution =
+  | { outcome: "claimed"; personaId: string | null }
+  | { outcome: "contended" }
+  | { outcome: "blank" };
+
 /** Narrower than NotegenPorts so a caller cannot reach the generator from the
  *  claim. store is included because a blank transcript is failed here. */
 export type ClaimPorts = Pick<
@@ -46,12 +58,16 @@ export type GeneratePorts = Pick<
 export async function claimNoteForGeneration(
   ports: ClaimPorts,
   row: GeneratableRow,
-): Promise<ClaimOutcome> {
+): Promise<ClaimResolution> {
   // THE claim, through the one implementation in notegen-ports.ts. The guard
   // it carries — processing_status = 'completed' AND notegen_status IS NULL —
   // is what makes "cannot generate notes before a transcript exists" true by
   // construction rather than by caller discipline.
-  if (!(await ports.claimForGeneration(row.id))) return "contended";
+  //
+  // It also hands back the note's persona_id, read from its own RETURNING. See
+  // ClaimResult: the lens is frozen at the instant this UPDATE matches.
+  const claim = await ports.claimForGeneration(row.id);
+  if (claim.status !== "claimed") return { outcome: "contended" };
 
   // Blankness is checked AFTER the claim, not before, and that is deliberate.
   // Checking first would leave the row eligible forever, so every sweep would
@@ -69,23 +85,28 @@ export async function claimNoteForGeneration(
         `Marked 'failed' without a model call.`,
     );
     await ports.store.failNotegen(row.id);
-    return "blank";
+    return { outcome: "blank" };
   }
 
-  return "claimed";
+  return { outcome: "claimed", personaId: claim.personaId };
 }
 
 export async function generateClaimedNote(
   ports: GeneratePorts,
   row: GeneratableRow,
+  /** From the claim's own RETURNING, never a fresh read. Null means the note
+   *  carries no lens — every note written before 2026-09-02 — and resolution
+   *  falls to the default slug exactly as it always did. */
+  personaId: string | null,
 ): Promise<"generated" | "failed"> {
   try {
-    // Scoped by user_id AND slug. The user_id filter is application-level,
-    // which the standing rule forbids everywhere else; it is the one
-    // deliberate exception, because the cron caller runs as service_role and
-    // bypasses RLS, so an unfiltered lookup can return another account's row.
-    // See CLAUDE.md § Data.
-    const persona = await ports.resolvePersona(row.user_id);
+    // The note's own lens first, then the neutral-analyst slug, then the
+    // fallback. The user_id filter is application-level, which the standing
+    // rule forbids everywhere else; it is the one deliberate exception,
+    // because the cron caller runs as service_role and bypasses RLS, so an
+    // unfiltered lookup can return another account's row. See CLAUDE.md
+    // § Data and lib/notegen/resolve-persona.ts.
+    const persona = await ports.resolvePersona(row.user_id, personaId);
     const plan = planForDepth(persona.depth);
     const lens = lensPromptFor(persona.slug);
 
@@ -137,7 +158,7 @@ export async function claimAndGenerate(
   ports: ClaimPorts & GeneratePorts,
   row: GeneratableRow,
 ): Promise<NotegenOutcome> {
-  const outcome = await claimNoteForGeneration(ports, row);
-  if (outcome !== "claimed") return outcome;
-  return generateClaimedNote(ports, row);
+  const claim = await claimNoteForGeneration(ports, row);
+  if (claim.outcome !== "claimed") return claim.outcome;
+  return generateClaimedNote(ports, row, claim.personaId);
 }

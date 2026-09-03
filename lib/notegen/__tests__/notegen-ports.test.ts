@@ -70,7 +70,10 @@ describe("claimForGeneration", () => {
   it("guards on BOTH processing_status and a null notegen_status", async () => {
     // The processing_status clause is what makes "cannot generate notes before
     // a transcript exists" true by construction. Losing it would be silent.
-    const { db, chain } = fakeDb();
+    const { db, chain } = fakeDb({
+      data: [{ id: "n1", persona_id: null }],
+      error: null,
+    });
     await createNotegenPorts(db, "key").claimForGeneration("n1");
 
     expect(chain).toContainEqual(["update", { notegen_status: "generating" }]);
@@ -79,14 +82,51 @@ describe("claimForGeneration", () => {
     expect(chain).toContainEqual(["is", "notegen_status", null]);
   });
 
-  it("is true only when exactly one row matched", async () => {
-    const { db } = fakeDb({ data: [{ id: "n1" }], error: null });
-    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toBe(true);
+  it("RETURNS persona_id from the claim itself, not a second select", async () => {
+    // The value generation uses must be the one on the row this UPDATE
+    // row-locked. A second select afterwards could read a write that landed
+    // in between, and the note would generate under a lens its owner had
+    // already moved away from — which is the whole thing the lock prevents.
+    const { db, chain, tables } = fakeDb({
+      data: [{ id: "n1", persona_id: "p-uuid" }],
+      error: null,
+    });
+    await createNotegenPorts(db, "key").claimForGeneration("n1");
+
+    expect(chain).toContainEqual(["select", "id, persona_id"]);
+    expect(tables).toEqual(["notes"]);
   });
 
-  it("is false when the guarded update matched nothing", async () => {
+  it("reports the claimed persona", async () => {
+    const { db } = fakeDb({
+      data: [{ id: "n1", persona_id: "p-uuid" }],
+      error: null,
+    });
+    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toEqual({
+      status: "claimed",
+      personaId: "p-uuid",
+    });
+  });
+
+  it("distinguishes 'claimed with no persona' from 'lost'", async () => {
+    // THE reason this is a tagged union. Both are falsy-adjacent, and a
+    // nullable return would leave them told apart only by a caller checking
+    // !== null against two different nullable things.
+    const { db } = fakeDb({
+      data: [{ id: "n1", persona_id: null }],
+      error: null,
+    });
+    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toEqual({
+      status: "claimed",
+      personaId: null,
+    });
+  });
+
+  it("reports 'lost' on a zero-row claim", async () => {
     const { db } = fakeDb({ data: [], error: null });
-    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toBe(false);
+    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toEqual({
+      status: "lost",
+    });
   });
 });
 

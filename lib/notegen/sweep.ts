@@ -66,6 +66,19 @@ export interface ResolvedPersona {
   source: "note" | "row" | "fallback";
 }
 
+/** What the guarded claim reports back.
+ *
+ *  A TAGGED UNION, not a nullable boolean, and that is deliberate. "Claimed,
+ *  but the note carries no persona" and "lost the race" are both
+ *  falsy-adjacent; collapsing them into boolean | string | null would leave
+ *  them distinguishable only by a caller checking !== null against two
+ *  different nullable things. This track's history already includes a
+ *  data-loss bug caused by exactly one missing clause in this area — see
+ *  deleteGeneratedChunks, 2026-09-02. */
+export type ClaimResult =
+  | { status: "claimed"; personaId: string | null }
+  | { status: "lost" };
+
 export interface NotegenPorts {
   now(): number;
   log(message: string): void;
@@ -73,9 +86,10 @@ export interface NotegenPorts {
   listGeneratable(limit: number): Promise<GeneratableRow[]>;
   /** Still 'generating', with updated_at older than cutoffIso. */
   listStaleGenerating(cutoffIso: string, limit: number): Promise<string[]>;
-  /** THE claim. One statement, one implementation, two callers. True only if
-   *  this caller's UPDATE was the one that matched. */
-  claimForGeneration(noteId: string): Promise<boolean>;
+  /** THE claim. One statement, one implementation, two callers. It carries
+   *  persona_id out of its own RETURNING, so generation reads the value this
+   *  UPDATE row-locked rather than one a later write could change. */
+  claimForGeneration(noteId: string): Promise<ClaimResult>;
   /** The note's own persona_id first, then the neutral-analyst slug, then the
    *  fallback. Scoped by user_id throughout — never by name. See CLAUDE.md
    *  § Data and lib/notegen/resolve-persona.ts. */

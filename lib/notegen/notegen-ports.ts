@@ -151,16 +151,26 @@ export function createNotegenPorts(
       // The processing_status clause is load-bearing, not belt-and-braces: it
       // is what makes "cannot generate notes before a transcript exists" true
       // by construction rather than by caller discipline.
+      //
+      // persona_id RIDES OUT ON THE RETURNING, added 2026-09-02, and that is
+      // not a convenience. A second select after the claim could read a write
+      // that landed between the two, so the note would generate under a lens
+      // its owner had already moved away from. This value is the one on the
+      // row this statement locked, which is the only version of it that
+      // cannot change underneath the generation it feeds.
       const { data, error } = await db
         .from("notes")
         .update({ notegen_status: "generating" })
         .eq("id", noteId)
         .eq("processing_status", "completed")
         .is("notegen_status", null)
-        .select("id");
+        .select("id, persona_id");
 
       if (error) throw new Error(`notegen claim failed: ${error.message}`);
-      return (data?.length ?? 0) === 1;
+
+      const rows = (data ?? []) as { id: string; persona_id: string | null }[];
+      if (rows.length !== 1) return { status: "lost" };
+      return { status: "claimed", personaId: rows[0].persona_id };
     },
 
     resolvePersona: (userId, personaId) =>
