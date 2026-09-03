@@ -1,142 +1,78 @@
-# Runbook — executing the ask-your-notes chat plan
-
-Three fresh sessions, one per batch. Each starts at full context and ends on a
-green suite. Copy the prompt for the batch you are on, paste it as the first
-message of a NEW session opened in `C:\Projects\tekguyz-squid-ink`.
+# Runbook — resuming the ask-your-notes chat plan
 
 **Plan:** `docs/superpowers/plans/2026-09-03-ask-your-notes-chat.md`
 **Spec:** `docs/superpowers/specs/2026-09-03-ask-your-notes-chat-design.md`
+**Branch:** `feat/ask-your-notes-chat`
+
+Open a new session in `C:\Projects\tekguyz-squid-ink` and paste the prompt
+below as the first message. It verifies the claimed state itself before doing
+any work.
 
 ---
 
-## Before you start
-
-1. **Branch, not a worktree.** A worktree is one more path to remember across
-   three sessions, and nothing here runs in parallel, so it buys nothing.
-   Batch 1's prompt creates the branch. Batches 2 and 3 just continue on it.
-
-2. **Add `ANTHROPIC_API_KEY` to `.env.local` before batch 3.** Batch 3 is the
-   first thing that calls Claude. No `NEXT_PUBLIC_` prefix — Next.js ships
-   every such variable to the browser.
-
-3. **Have your Supabase project ref to hand.** Batches 1 and 3 run
-   `npx supabase db query --linked --project-ref <ref>`. The plan writes it as
-   `<ref>` on purpose; the session will ask, or read it from `.env.local`.
-
-4. **The `supabase` MCP server is not authorized** and cannot be authorized
-   from a non-interactive session. It is not needed — the CLI and the verify
-   scripts do everything. Ignore any prompt about it.
-
----
-
-## Batch 1 — database (Tasks 1–3)
-
-Deps, both SQL files, both verify scripts. Ends with real tables and a real
-function in the linked project.
+## The resume prompt
 
 ```
-Execute Tasks 1 through 3 of docs/superpowers/plans/2026-09-03-ask-your-notes-chat.md.
+Resume docs/superpowers/plans/2026-09-03-ask-your-notes-chat.md on branch feat/ask-your-notes-chat.
 
-Use the superpowers:executing-plans skill. Read the plan's header and its
-Global Constraints section first, then read the spec it names
-(docs/superpowers/specs/2026-09-03-ask-your-notes-chat-design.md) before
-touching anything.
+Use the superpowers:executing-plans skill.
 
-First: create and switch to a branch named feat/ask-your-notes-chat.
+STEP 0 — VERIFY, do not trust. A previous session claims Tasks 1, 2 and 4 are done and committed, and that Task 3's SQL is done but its verify script has never been run. Check that yourself before touching anything:
 
-Do only Tasks 1, 2 and 3. Stop after Task 3's commit and report back — do not
-start Task 4.
+  git branch --show-current          # expect feat/ask-your-notes-chat
+  git status --short                 # expect clean
+  git log --oneline -6
+  npm test && npm run typecheck      # expect green, with exactly 2 skipped
 
-Task 3 has two traps that the plan spells out and that will silently produce
-a working-looking but wrong function if you skip them: `set search_path = ''`
-makes `<=>` and `'english'::regconfig` unresolvable, so they must be written
-`operator(extensions.<=>)` and `'pg_catalog.english'::regconfig`. Task 3
-Step 5 proves the FTS index still matches with EXPLAIN — actually run it and
-paste the plan output, do not assume it.
+  ls lib/rag/query-embed.ts lib/chat 2>&1
+  npx supabase db query --linked --project-ref pbwvvakzbrimmdntqxxn "select proname, prosecdef from pg_proc where proname='search_note_chunks'"
+  npx supabase db query --linked --project-ref pbwvvakzbrimmdntqxxn "select count(*) from information_schema.tables where table_name='chat_messages'"
 
-Paste the full output of both verify scripts in your report. A claim that they
-passed is not enough.
+The 2 skipped tests are deliberate: project-conventions.test.ts skips two server-key guards until Task 8 creates app/api/chat/route.ts. They carry an "UNSKIP IN TASK 8" comment. Task 8 Step 10 unskips them.
+
+Report what you actually found before proceeding. If anything contradicts the claim above, stop and say so rather than working around it.
+
+STEP 1 — READ. Read the plan's header, its Global Constraints section, and its File Structure section in full. Every task implicitly includes Global Constraints, and it holds the version pins, the isStepCount-not-stepCountIs warning, the colour-token rule and the RLS rules. Then read the spec. Then read each task's own section as you reach it, including its Interfaces block, which is how you learn the names neighbouring tasks use.
+
+STEP 2 — FINISH TASK 3. Run:
+  VOYAGE_MIN_CALL_INTERVAL_MS=0 node scripts/verify-chat-search.mjs
+It has never been executed and may need fixing. It proves six things; all six must pass. Commit, then continue from Task 5.
+
+Then work Tasks 5 through 11 in order. Do not spawn subagents. Stop cleanly after any task's commit if you run low on context, and say which task you finished.
+
+Known corrections already applied to the plan, so do not re-derive them:
+  * `supabase db query` takes SQL as a positional argument. There is no --query flag.
+  * Modules under lib/rag/ must import through the "@/" alias, never a relative path. Node ESM refuses an extensionless relative specifier and the verify scripts' resolve hook only maps "@/".
 ```
 
 ---
 
-## Batch 2 — the pure modules (Tasks 4–7)
+## State as of the handoff
 
-Four `lib/` modules, all test-first. No database, no network, no UI. This is
-the batch most likely to finish comfortably.
+Verified by the session that wrote this, but verify it again — that is what
+Step 0 is for.
 
-```
-Execute Tasks 4 through 7 of docs/superpowers/plans/2026-09-03-ask-your-notes-chat.md.
+| Task | State |
+|---|---|
+| 1. Deps + key guards | committed `93a8467` |
+| 2. `chat_messages` + RLS proof | committed `08c9d52`, 5 proofs passed |
+| 3. `search_note_chunks` | SQL committed `a95dce5`; verify script committed `aec968b` but **never run** |
+| 4. `query-embed.ts` | committed `bb3763f`, 8 tests pass |
+| 5–11 | not started |
 
-Use the superpowers:executing-plans skill. Read the plan's header and its
-Global Constraints section first, then read the spec it names
-(docs/superpowers/specs/2026-09-03-ask-your-notes-chat-design.md).
+Live database objects confirmed present at handoff time: `public.chat_messages`
+with four RLS policies and two indexes; `public.search_note_chunks` with
+`prosecdef = false` and `search_path = ""`, EXECUTE granted to `authenticated`
+only. `EXPLAIN` confirmed `note_chunks_content_fts_idx` is used.
 
-You are on branch feat/ask-your-notes-chat. Tasks 1-3 are already done and
-committed — do not redo them.
+## Before Task 8
 
-Do only Tasks 4, 5, 6 and 7. Stop after Task 7's commit and report back.
-
-These are test-first tasks. Write each failing test, RUN it and confirm it
-fails for the stated reason, then implement. Do not write the implementation
-first and back-fill the test.
-
-Two things the tests exist to pin, so do not "simplify" them away: Voyage's
-input_type must be "query" and never "document", and the AI SDK step-loop
-helper is isStepCount, not stepCountIs.
-
-End with `npm test && npm run typecheck` green and paste the output.
-```
-
----
-
-## Batch 3 — route, UI, docs (Tasks 8–11)
-
-The biggest batch. If it runs out of room, it is safe to stop after Task 9 or
-Task 10 and start a fourth session for the rest — every task ends on a commit.
-
-```
-Execute Tasks 8 through 11 of docs/superpowers/plans/2026-09-03-ask-your-notes-chat.md.
-
-Use the superpowers:executing-plans skill. Read the plan's header and its
-Global Constraints section first, then read the spec it names
-(docs/superpowers/specs/2026-09-03-ask-your-notes-chat-design.md).
-
-You are on branch feat/ask-your-notes-chat. Tasks 1-7 are already done and
-committed — do not redo them.
-
-Task 8 Step 10 unskips two tests that Task 1 deliberately skipped. Do not
-forget it; the whole point of skipping them was that the guard could not be
-silently lost.
-
-Task 10 needs a real browser. Use the Browser pane tools (preview_start),
-never `npm run dev` in a shell. Screenshot the two citation behaviours — a
-transcript citation jumping to its timestamp, and a cross-note citation
-navigating to the other note.
-
-Task 11 Step 5 proves the two abuse ceilings with curl against the running
-route. Paste the actual HTTP status codes.
-
-Tasks 7, 8 and 9 of the DECISIONS/ROADMAP doc edits must be applied VERBATIM
-as the plan quotes them, only adjusting the date if it is no longer
-2026-09-03.
-
-If you run low on context, stop cleanly after any task's commit and say which
-task you finished. Do not rush the remainder.
-```
-
----
-
-## After batch 3
-
-Ask that session to run `superpowers:requesting-code-review`, then
-`superpowers:finishing-a-development-branch`.
+`ANTHROPIC_API_KEY` is **not** in `.env.local` yet. Task 8 is the first thing
+that needs it. No `NEXT_PUBLIC_` prefix.
 
 ## Still open, by instruction — not oversight
 
 - **Note auto-titling.** Cross-note citation chips render `notes.title`, which
-  is null for most rows, so they read "Untitled note". The feature works
-  without it; it is just weaker.
-- **Persona-aware filtering of search results.** Chunks carry `persona_id` and
-  nothing filters on it. Nobody has decided whether an active lens should
-  narrow cross-note retrieval.
+  is null for most rows, so they read "Untitled note".
+- **Persona-aware filtering of search results.** Nothing filters on
+  `persona_id`, and nobody has decided whether an active lens should.
