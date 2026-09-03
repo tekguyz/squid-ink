@@ -58,8 +58,26 @@ export interface ResolvedPersona {
   slug: string;
   name: string;
   depth: PersonaDepth;
-  source: "row" | "fallback";
+  /** Which branch resolved this. "note" means the note carried an explicit
+   *  persona_id — the lens its owner picked on Note Detail; "row" the
+   *  neutral-analyst slug lookup; "fallback" an account with no personas rows
+   *  at all. generate-note.ts prints it, so a build report can answer "which
+   *  path ran" with evidence rather than inference. */
+  source: "note" | "row" | "fallback";
 }
+
+/** What the guarded claim reports back.
+ *
+ *  A TAGGED UNION, not a nullable boolean, and that is deliberate. "Claimed,
+ *  but the note carries no persona" and "lost the race" are both
+ *  falsy-adjacent; collapsing them into boolean | string | null would leave
+ *  them distinguishable only by a caller checking !== null against two
+ *  different nullable things. This track's history already includes a
+ *  data-loss bug caused by exactly one missing clause in this area — see
+ *  deleteGeneratedChunks, 2026-09-02. */
+export type ClaimResult =
+  | { status: "claimed"; personaId: string | null }
+  | { status: "lost" };
 
 export interface NotegenPorts {
   now(): number;
@@ -68,12 +86,17 @@ export interface NotegenPorts {
   listGeneratable(limit: number): Promise<GeneratableRow[]>;
   /** Still 'generating', with updated_at older than cutoffIso. */
   listStaleGenerating(cutoffIso: string, limit: number): Promise<string[]>;
-  /** THE claim. One statement, one implementation, two callers. True only if
-   *  this caller's UPDATE was the one that matched. */
-  claimForGeneration(noteId: string): Promise<boolean>;
-  /** Scoped by user_id AND slug — never personas.id, never name. See
-   *  CLAUDE.md § Data. */
-  resolvePersona(userId: string): Promise<ResolvedPersona>;
+  /** THE claim. One statement, one implementation, two callers. It carries
+   *  persona_id out of its own RETURNING, so generation reads the value this
+   *  UPDATE row-locked rather than one a later write could change. */
+  claimForGeneration(noteId: string): Promise<ClaimResult>;
+  /** The note's own persona_id first, then the neutral-analyst slug, then the
+   *  fallback. Scoped by user_id throughout — never by name. See CLAUDE.md
+   *  § Data and lib/notegen/resolve-persona.ts. */
+  resolvePersona(
+    userId: string,
+    personaId: string | null,
+  ): Promise<ResolvedPersona>;
   generate: NoteGenerator;
   store: NotegenStore;
 }

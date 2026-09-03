@@ -47,6 +47,7 @@ const noteRow: NoteRow = {
   title: "Pilot pricing & rollout",
   processing_status: "completed",
   notegen_status: null,
+  persona_id: null,
   raw_transcript: "…",
   diarization_enabled: true,
   audio_duration_seconds: 2467,

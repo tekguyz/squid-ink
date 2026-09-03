@@ -26,7 +26,7 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
     log: vi.fn(),
     listGeneratable: vi.fn(async () => []),
     listStaleGenerating: vi.fn(async () => []),
-    claimForGeneration: vi.fn(async () => true),
+    claimForGeneration: vi.fn(async () => ({ status: "claimed" as const, personaId: null })),
     resolvePersona: vi.fn(async () => ({
       slug: "neutral-analyst",
       name: "Neutral Analyst",
@@ -49,18 +49,18 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
 describe("claimNoteForGeneration", () => {
   it("returns 'claimed' when the guarded update matched", async () => {
     const { ports: p } = ports();
-    expect(await claimNoteForGeneration(p, ROW)).toBe("claimed");
+    expect(await claimNoteForGeneration(p, ROW)).toEqual({ outcome: "claimed", personaId: null });
   });
 
   it("returns 'contended' when the guarded update matched nothing", async () => {
-    const { ports: p } = ports({ claimForGeneration: vi.fn(async () => false) });
-    expect(await claimNoteForGeneration(p, ROW)).toBe("contended");
+    const { ports: p } = ports({ claimForGeneration: vi.fn(async () => ({ status: "lost" as const })) });
+    expect(await claimNoteForGeneration(p, ROW)).toEqual({ outcome: "contended" });
   });
 
   it("spends no model call on a contended claim", async () => {
     // THE cost guarantee. Counted, not read off the code.
     const { ports: p, generate } = ports({
-      claimForGeneration: vi.fn(async () => false),
+      claimForGeneration: vi.fn(async () => ({ status: "lost" as const })),
     });
     await claimAndGenerate(p, ROW);
     expect(generate).not.toHaveBeenCalled();
@@ -72,15 +72,15 @@ describe("claimNoteForGeneration", () => {
       ...ROW,
       raw_transcript: "   \n\t ",
     });
-    expect(outcome).toBe("blank");
+    expect(outcome).toEqual({ outcome: "blank" });
     expect(p.store.failNotegen).toHaveBeenCalledWith("n1");
   });
 
   it("fails a claimed row whose transcript is null", async () => {
     const { ports: p } = ports();
-    expect(await claimNoteForGeneration(p, { ...ROW, raw_transcript: null })).toBe(
-      "blank",
-    );
+    expect(
+      await claimNoteForGeneration(p, { ...ROW, raw_transcript: null }),
+    ).toEqual({ outcome: "blank" });
   });
 
   it("spends no model call on a blank transcript", async () => {
@@ -92,7 +92,7 @@ describe("claimNoteForGeneration", () => {
   it("does not fail a row it never claimed", async () => {
     // Losing the race AND having a blank transcript must not write 'failed'
     // over the winner's 'generating'.
-    const { ports: p } = ports({ claimForGeneration: vi.fn(async () => false) });
+    const { ports: p } = ports({ claimForGeneration: vi.fn(async () => ({ status: "lost" as const })) });
     await claimNoteForGeneration(p, { ...ROW, raw_transcript: "" });
     expect(p.store.failNotegen).not.toHaveBeenCalled();
   });
@@ -101,7 +101,7 @@ describe("claimNoteForGeneration", () => {
 describe("generateClaimedNote", () => {
   it("makes exactly one model call for one note", async () => {
     const { ports: p, generate } = ports();
-    await generateClaimedNote(p, ROW);
+    await generateClaimedNote(p, ROW, null);
     expect(generate).toHaveBeenCalledTimes(1);
   });
 
@@ -114,7 +114,7 @@ describe("generateClaimedNote", () => {
         source: "row" as const,
       })),
     });
-    await generateClaimedNote(p, ROW);
+    await generateClaimedNote(p, ROW, null);
     expect(generate.mock.calls[0][0].plan.thinkingLevel).toBe("high");
     expect(generate.mock.calls[0][0].lens.slug).toBe("investor");
   });
@@ -130,7 +130,7 @@ describe("generateClaimedNote", () => {
         source: "fallback" as const,
       })),
     });
-    expect(await generateClaimedNote(p, ROW)).toBe("generated");
+    expect(await generateClaimedNote(p, ROW, null)).toBe("generated");
     expect(generate).toHaveBeenCalledTimes(1);
     expect(p.store.completeNotegen).toHaveBeenCalledWith("n1");
   });
@@ -141,7 +141,7 @@ describe("generateClaimedNote", () => {
         throw new Error("429 rate limited");
       }),
     });
-    expect(await generateClaimedNote(p, ROW)).toBe("failed");
+    expect(await generateClaimedNote(p, ROW, null)).toBe("failed");
     expect(p.store.failNotegen).toHaveBeenCalledWith("n1");
   });
 
@@ -151,7 +151,7 @@ describe("generateClaimedNote", () => {
         throw new Error("429 rate limited");
       }),
     });
-    await generateClaimedNote(p, ROW);
+    await generateClaimedNote(p, ROW, null);
     expect(p.log).toHaveBeenCalledWith(
       expect.stringContaining("429 rate limited"),
     );
@@ -160,7 +160,7 @@ describe("generateClaimedNote", () => {
   it("marks the row failed when the flip loses to the staleness sweep", async () => {
     const { ports: p } = ports();
     p.store.completeNotegen = vi.fn(async () => false);
-    expect(await generateClaimedNote(p, ROW)).toBe("failed");
+    expect(await generateClaimedNote(p, ROW, null)).toBe("failed");
   });
 
   it("marks the row failed when resolving a persona throws", async () => {
@@ -171,7 +171,7 @@ describe("generateClaimedNote", () => {
         throw new Error("permission denied for table personas");
       }),
     });
-    expect(await generateClaimedNote(p, ROW)).toBe("failed");
+    expect(await generateClaimedNote(p, ROW, null)).toBe("failed");
     expect(p.log).toHaveBeenCalledWith(
       expect.stringContaining("permission denied"),
     );
@@ -179,7 +179,7 @@ describe("generateClaimedNote", () => {
 
   it("names the resolution path in the log line", async () => {
     const { ports: p } = ports();
-    await generateClaimedNote(p, ROW);
+    await generateClaimedNote(p, ROW, null);
     expect(p.log).toHaveBeenCalledWith(expect.stringContaining("persona from row"));
   });
 });
@@ -191,8 +191,56 @@ describe("claimAndGenerate", () => {
   });
 
   it("short-circuits before resolving a persona when contended", async () => {
-    const { ports: p } = ports({ claimForGeneration: vi.fn(async () => false) });
+    const { ports: p } = ports({ claimForGeneration: vi.fn(async () => ({ status: "lost" as const })) });
     await claimAndGenerate(p, ROW);
     expect(p.resolvePersona).not.toHaveBeenCalled();
+  });
+});
+
+describe("the claimed persona reaches resolution", () => {
+  it("carries persona_id out of the claim", async () => {
+    const { ports: p } = ports({
+      claimForGeneration: vi.fn(async () => ({
+        status: "claimed" as const,
+        personaId: "p-uuid",
+      })),
+    });
+    expect(await claimNoteForGeneration(p, ROW)).toEqual({
+      outcome: "claimed",
+      personaId: "p-uuid",
+    });
+  });
+
+  it("hands that persona to resolvePersona, with the note's owner", async () => {
+    const { ports: p } = ports();
+    await generateClaimedNote(p, ROW, "p-uuid");
+    expect(p.resolvePersona).toHaveBeenCalledWith(ROW.user_id, "p-uuid");
+  });
+
+  it("passes null through unchanged for a note with no persona", async () => {
+    // Every note written before 2026-09-02. It must resolve exactly as it did.
+    const { ports: p } = ports();
+    await generateClaimedNote(p, ROW, null);
+    expect(p.resolvePersona).toHaveBeenCalledWith(ROW.user_id, null);
+  });
+
+  it("threads the claimed persona end to end through claimAndGenerate", async () => {
+    const { ports: p } = ports({
+      claimForGeneration: vi.fn(async () => ({
+        status: "claimed" as const,
+        personaId: "p-uuid",
+      })),
+    });
+    await claimAndGenerate(p, ROW);
+    expect(p.resolvePersona).toHaveBeenCalledWith(ROW.user_id, "p-uuid");
+  });
+
+  it("still spends no model call on a lost claim", async () => {
+    const { ports: p } = ports({
+      claimForGeneration: vi.fn(async () => ({ status: "lost" as const })),
+    });
+    expect(await claimAndGenerate(p, ROW)).toBe("contended");
+    expect(p.resolvePersona).not.toHaveBeenCalled();
+    expect(p.generate).not.toHaveBeenCalled();
   });
 });

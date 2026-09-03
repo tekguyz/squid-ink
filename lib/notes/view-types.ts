@@ -86,6 +86,16 @@ export interface Note {
   /** Where this note sits in the transcription pipeline. Read by the
    *  Transcribe button, which renders nothing at all once it is terminal. */
   processingStatus: ProcessingStatus;
+  /** Structured note generation's queue state. Read by the persona rail, which
+   *  stops being interactive once the lens is frozen — this being non-null is
+   *  half of that condition, and processingStatus leaving 'uploading' is the
+   *  other half. */
+  notegenStatus: NotegenStatus | null;
+  /** The SLUG of the lens this note generates under, or null when nothing has
+   *  been chosen. NEVER a uuid: every client-facing persona identifier in this
+   *  project is a slug, because a uuid is per-user and does not survive a
+   *  reseed. note-view-model.ts does the translation. */
+  personaId: string | null;
   /** The Storage key for the recording, `{user_id}/{note_id}`, or null when the
    *  note has no audio. Carried raw rather than formatted — it is the key the
    *  playback helper fetches with, not something to display. */

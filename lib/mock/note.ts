@@ -25,6 +25,11 @@ export const mockNote: Note = {
   // A finished note: the fixture renders a full transcript, so the Transcribe
   // button is deliberately absent from every component test that uses it.
   processingStatus: "completed",
+  // Generated, so the persona rail renders locked by default. A test that
+  // needs the selectable state overrides both this and processingStatus —
+  // the lock is either of them, not just this one.
+  notegenStatus: "completed",
+  personaId: DEFAULT_PERSONA_ID,
   // No object behind this fixture — it is a test fixture, not a recording. The
   // player renders nothing for a null path, which is what component tests want.
   audioStoragePath: null,

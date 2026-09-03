@@ -5,11 +5,8 @@ import {
   createNotegenStore,
   resolvePersonaFor,
 } from "@/lib/notegen/notegen-ports";
+import { resolvePersonaFor as fromItsOwnModule } from "@/lib/notegen/resolve-persona";
 import { generatedChunkRowsFor } from "@/lib/notegen/persist-result";
-import {
-  DEFAULT_PERSONA_FALLBACK,
-  DEFAULT_PERSONA_ID,
-} from "@/lib/notes/default-persona";
 
 /** Records the whole builder chain, so a test can assert WHICH columns were
  *  filtered on rather than only that a row came back. The guarded UPDATE is
@@ -59,68 +56,13 @@ function fakeDb(
   return { db, chain, tables };
 }
 
-describe("resolvePersonaFor", () => {
-  it("filters on user_id and slug, never on id and never on name", async () => {
-    const { db, chain } = fakeDb({
-      data: { slug: DEFAULT_PERSONA_ID, name: "Neutral Analyst", depth: "dense" },
-      error: null,
-    });
-
-    await resolvePersonaFor(db, "u1");
-
-    const eqs = chain.filter(([m]) => m === "eq").map(([, col, val]) => [col, val]);
-    expect(eqs).toEqual([
-      ["user_id", "u1"],
-      ["slug", DEFAULT_PERSONA_ID],
-    ]);
-    const columns = eqs.map(([c]) => c);
-    expect(columns).not.toContain("id");
-    expect(columns).not.toContain("name");
-  });
-
-  it("reads from personas", async () => {
-    const { db, tables } = fakeDb({
-      data: { slug: DEFAULT_PERSONA_ID, name: "Neutral Analyst", depth: "dense" },
-      error: null,
-    });
-    await resolvePersonaFor(db, "u1");
-    expect(tables).toEqual(["personas"]);
-  });
-
-  it("reports source 'row' when the account is provisioned", async () => {
-    const { db } = fakeDb({
-      data: { slug: DEFAULT_PERSONA_ID, name: "Neutral Analyst", depth: "brief" },
-      error: null,
-    });
-    expect(await resolvePersonaFor(db, "u1")).toEqual({
-      slug: DEFAULT_PERSONA_ID,
-      name: "Neutral Analyst",
-      depth: "brief",
-      source: "row",
-    });
-  });
-
-  it("falls back with source 'fallback' on zero rows", async () => {
-    // An account created before the 2026-08-31 provisioning trigger, and
-    // deliberately not backfilled.
-    const { db } = fakeDb({ data: null, error: null });
-    expect(await resolvePersonaFor(db, "u1")).toEqual({
-      slug: DEFAULT_PERSONA_FALLBACK.id,
-      name: DEFAULT_PERSONA_FALLBACK.name,
-      depth: DEFAULT_PERSONA_FALLBACK.depth,
-      source: "fallback",
-    });
-  });
-
-  it("throws on a real query error rather than silently falling back", async () => {
-    // permission denied is exactly what a missing service_role grant returns.
-    // Swallowing it into the fallback would hide the grant gap behind output
-    // that looks correct.
-    const { db } = fakeDb({
-      data: null,
-      error: { message: "permission denied for table personas" },
-    });
-    await expect(resolvePersonaFor(db, "u1")).rejects.toThrow(/permission denied/);
+describe("resolvePersonaFor's re-export", () => {
+  it("is the same function as resolve-persona.ts's", () => {
+    // Its own behaviour is covered in resolve-persona.test.ts, where the
+    // function now lives. This pins only the re-export, which exists so the
+    // 2026-09-02 move did not have to touch every importer — and which a tidy
+    // -up would otherwise delete without noticing anything broke here.
+    expect(resolvePersonaFor).toBe(fromItsOwnModule);
   });
 });
 
@@ -128,7 +70,10 @@ describe("claimForGeneration", () => {
   it("guards on BOTH processing_status and a null notegen_status", async () => {
     // The processing_status clause is what makes "cannot generate notes before
     // a transcript exists" true by construction. Losing it would be silent.
-    const { db, chain } = fakeDb();
+    const { db, chain } = fakeDb({
+      data: [{ id: "n1", persona_id: null }],
+      error: null,
+    });
     await createNotegenPorts(db, "key").claimForGeneration("n1");
 
     expect(chain).toContainEqual(["update", { notegen_status: "generating" }]);
@@ -137,14 +82,51 @@ describe("claimForGeneration", () => {
     expect(chain).toContainEqual(["is", "notegen_status", null]);
   });
 
-  it("is true only when exactly one row matched", async () => {
-    const { db } = fakeDb({ data: [{ id: "n1" }], error: null });
-    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toBe(true);
+  it("RETURNS persona_id from the claim itself, not a second select", async () => {
+    // The value generation uses must be the one on the row this UPDATE
+    // row-locked. A second select afterwards could read a write that landed
+    // in between, and the note would generate under a lens its owner had
+    // already moved away from — which is the whole thing the lock prevents.
+    const { db, chain, tables } = fakeDb({
+      data: [{ id: "n1", persona_id: "p-uuid" }],
+      error: null,
+    });
+    await createNotegenPorts(db, "key").claimForGeneration("n1");
+
+    expect(chain).toContainEqual(["select", "id, persona_id"]);
+    expect(tables).toEqual(["notes"]);
   });
 
-  it("is false when the guarded update matched nothing", async () => {
+  it("reports the claimed persona", async () => {
+    const { db } = fakeDb({
+      data: [{ id: "n1", persona_id: "p-uuid" }],
+      error: null,
+    });
+    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toEqual({
+      status: "claimed",
+      personaId: "p-uuid",
+    });
+  });
+
+  it("distinguishes 'claimed with no persona' from 'lost'", async () => {
+    // THE reason this is a tagged union. Both are falsy-adjacent, and a
+    // nullable return would leave them told apart only by a caller checking
+    // !== null against two different nullable things.
+    const { db } = fakeDb({
+      data: [{ id: "n1", persona_id: null }],
+      error: null,
+    });
+    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toEqual({
+      status: "claimed",
+      personaId: null,
+    });
+  });
+
+  it("reports 'lost' on a zero-row claim", async () => {
     const { db } = fakeDb({ data: [], error: null });
-    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toBe(false);
+    expect(await createNotegenPorts(db, "key").claimForGeneration("n1")).toEqual({
+      status: "lost",
+    });
   });
 });
 

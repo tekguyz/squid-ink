@@ -216,14 +216,39 @@ things worth carrying forward:
   `scripts/verify-notegen-pipeline.mjs`, which read `depth=dense` off the
   owner's row and generated at `thinking_level: 'medium'`.
 
-  **Two things this did NOT close, both still open, and neither is a defect.**
-  No UI control sets depth, so every persona still carries the `'dense'`
-  column default — Brief and Exhaustive are reachable today only by editing a
-  row by hand, and live verification therefore exercised Dense alone. And the
-  recorder still selects no persona at capture, so every note generates under
-  the Neutral Analyst / default lens; the other three framings in
-  `lib/notegen/lens-prompts.ts` are shipped and unit-tested but unexercised
-  end to end. Both belong to ROADMAP §5 / Core UX/UI.
+  **Two things this did NOT close. One has since closed; the other is still
+  open, and is not a defect.**
+
+  **Depth exposure — STILL OPEN.** No UI control sets depth, so every persona
+  still carries the `'dense'` column default. Brief and Exhaustive are
+  reachable today only by editing a row by hand, and live verification has
+  therefore exercised Dense alone. ROADMAP §5 / Core UX/UI. Nothing below
+  changes this: lens selection and depth selection are separate surfaces, and
+  shipping the first did not ship the second.
+
+  **Lens selection — CLOSED 2026-09-02, and not where this paragraph expected
+  it.** The sentence this replaces said "the recorder still selects no persona
+  at capture". The recorder still does not, and deliberately: capture stays one
+  click, because a picker in front of an ambient recorder is a reason not to
+  hit record. Selection moved to Note Detail instead, where the reader already
+  is and where there is time to choose.
+
+  `notes.persona_id` is a nullable uuid with a composite FK to
+  `personas (id, user_id)`. `app/notes/actions/persona.ts` writes it behind a
+  guarded UPDATE, and `lib/notegen/resolve-persona.ts` resolves it ahead of the
+  `neutral-analyst` slug. The claim in `lib/notegen/notegen-ports.ts` returns
+  `persona_id` from its own `RETURNING`, so generation reads the value its own
+  row lock froze rather than a later one.
+
+  So the other three framings in `lib/notegen/lens-prompts.ts` are no longer
+  "shipped and unit-tested but unexercised end to end". Proved live by
+  `scripts/verify-persona-selection.mjs`, which generated the same sales-call
+  transcript twice. Sales Coach: *"The rep immediately conceded a 15% discount
+  upon hearing the price objection without exploring the objection or defending
+  value."* Neutral Analyst on the identical input: *"The Rep offered a
+  potential 15% discount contingent on signing this quarter."* Second person
+  and critical against third person and reportorial — the lens is doing work,
+  which a row count could never have shown.
 
   **ACCEPTED, NOT PROVED: the `DEFAULT_PERSONA_FALLBACK` branch is
   unit-tested only.** Recorded 2026-09-02, deliberately, so that it does not
@@ -253,12 +278,25 @@ things worth carrying forward:
   - **`resolvePersonaFor` returning the fallback is cheap to prove today.**
     It takes a user id, not a note. Call it with that account's id and assert
     `source === "fallback"`.
-  - **Generation *through* the fallback is not**, because there is no note to
-    generate from. Proving that end to end needs a note created for that
-    account first, which is a deliberate act nobody has had reason to perform.
 
-  Until both are done the honest status is unit-tested and accepted, not
-  verified. Do not let the first close stand in for the second.
+    **DONE 2026-09-02**, as Proof 6 of `scripts/verify-persona-selection.mjs`.
+    It re-reads the persona count first — so this closing cannot survive the
+    account being provisioned later — then calls `resolvePersonaFor` with that
+    user id and gets `source=fallback`. It reads as `service_role`, which is
+    both the only way to reach across accounts and the way the cron genuinely
+    reaches this branch in production, so it is the real path rather than a
+    contrivance. The same proof also covers the new precedence: a `persona_id`
+    belonging to somebody else falls **through** to the same fallback rather
+    than throwing.
+
+  - **Generation *through* the fallback is still not proved**, because there
+    is no note to generate from. Proving that end to end needs a note created
+    for that account first, which is a deliberate act nobody has had reason to
+    perform. **Still open.**
+
+  One half is now verified and one is not. Do not let the first close stand in
+  for the second — the whole reason this entry was written was to stop exactly
+  that substitution.
 
   Same shape as the gap recorded further down this file for the shell's own
   use of that constant, and it should be closed at the same time.
@@ -1507,10 +1545,46 @@ persona timing under "needs the user". A decision written in one place and
 contradicted in another gets relitigated by whichever session reads the other
 one. It is not open.
 
-Still genuinely unbuilt, and separate from the above: persona **selection at
-capture time** in the recorder, and the persona/depth routing for `summary`,
-`takeaway` and `action_item` chunks. Neither is a question about attribution
-timing.
+**Persona SELECTION shipped 2026-09-02, and this paragraph no longer applies
+as written.** It used to read: "Still genuinely unbuilt, and separate from the
+above: persona **selection at capture time** in the recorder, and the
+persona/depth routing for `summary`, `takeaway` and `action_item` chunks."
+
+Both halves are now built, and the first shipped somewhere else than this
+sentence assumed.
+
+**Not at capture time, and not in the recorder.** A picker in front of an
+ambient recorder is a reason not to hit record, and the recorder being one
+click is the point of it. Selection lives on Note Detail, where the reader
+already is and where there is time to choose. A note is still created with
+`persona_id` null.
+
+`notes.persona_id` is a nullable uuid with a composite FK to
+`personas (id, user_id)` — composite for the reason `note_chunks.persona_id`
+is, since a foreign key is validated as the referenced table's owner and is
+not subject to RLS. The rail seeds it on mount as a real write, so the
+highlighted lens is never something the database does not hold, and the user's
+last choice is remembered in Auth user metadata as a **slug**.
+
+**Routing is the same claim, not a second one.** `resolvePersonaFor` in
+`lib/notegen/resolve-persona.ts` reads `notes.persona_id` first and falls back
+to the `neutral-analyst` slug, and the lens it returns supplies the framing for
+all three generated chunk types in one Gemini call — summary, takeaway and
+action item are not routed separately.
+
+**The lens locks once generation is committed to, which is what keeps
+regeneration rejected.** The condition is deliberately wider than
+`notegen_status IS NOT NULL`: pressing Transcribe leaves `notegen_status` null
+for the whole transcription, because generation only claims afterwards, so
+locking on that column alone would leave a minutes-long window in which the
+rail shows one lens and generation could still pick up another. Enforced by the
+guarded UPDATE in `app/notes/actions/persona.ts`, not by the disabled button —
+a Server Action is a public HTTP endpoint.
+
+Still open, and NOT closed by any of the above: **depth exposure.** No UI
+control sets `personas.depth`. See the depth-policy entry earlier in this file;
+the two are separate surfaces and shipping lens selection did not ship depth
+selection.
 
 Provenance: the quotation above was relayed by the owner on 2026-08-31, before
 `DECISIONS.md` was in the tree. It is now at `docs/DECISIONS.md` § Personas and

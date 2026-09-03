@@ -147,14 +147,43 @@ one fallback persona for a user with no rows live in
 client component and must not pull in the server Supabase client.
 
 **Which persona row a generation pipeline reads its config from — locked
-2026-09-02.** Structured note generation resolves a lens per note by querying
-`personas` scoped to the note's owner: `user_id = <note.user_id> and slug =
-'neutral-analyst'`, the slug being `DEFAULT_PERSONA_ID`. Slug, not `name`:
-`unique (user_id, slug)` is the constraint `personas.sql` declares and
-indexes, `name` carries neither, and that file's own header says slug is the
-key chosen to survive a reseed. Never match on `personas.id` — it is a
-per-user `gen_random_uuid()` while `DEFAULT_PERSONA_ID` is a slug string, so
-the comparison is a type error rather than a quiet miss.
+2026-09-02, amended the same day when per-note selection shipped.**
+`resolvePersonaFor` lives in `lib/notegen/resolve-persona.ts` (it moved out of
+`notegen-ports.ts`, which re-exports it) and resolves in three steps:
+
+1. **`notes.persona_id`, when the note carries one** — `id = <persona_id> and
+   user_id = <note.user_id>`. Scoped by **both**, the same composite ownership
+   `notes_persona_id_fkey` enforces, because neither a foreign key nor
+   `service_role` is subject to RLS. Reports `source: "note"`.
+2. **The slug**, when it does not, or when that id resolves to no row —
+   `user_id = <note.user_id> and slug = 'neutral-analyst'`, the slug being
+   `DEFAULT_PERSONA_ID`. Reports `source: "row"`.
+3. **`DEFAULT_PERSONA_FALLBACK`** on zero rows. Reports `source: "fallback"`.
+
+A set `persona_id` that resolves to nothing **falls through to step 2 rather
+than throwing** — a lens deleted between selection and generation is a real
+sequence, and refusing to generate over it is worse than generating under the
+default.
+
+Slug at step 2, not `name`: `unique (user_id, slug)` is the constraint
+`personas.sql` declares and indexes, `name` carries neither, and that file's
+own header says slug is the key chosen to survive a reseed. Never match
+`personas.id` against `DEFAULT_PERSONA_ID` — the former is a per-user
+`gen_random_uuid()` and the latter a slug string, so it is a type error rather
+than a quiet miss. Step 1 matches on `id` because it has a real uuid to match.
+
+**The client never sees a uuid.** `Persona.id` and `Note.personaId` are both
+slugs; `note-view-model.ts` translates one way and
+`app/notes/actions/persona.ts` the other. A uuid is per-user and does not
+survive a reseed.
+
+**`notes.persona_id`'s foreign key is declared in `personas.sql`, not
+`notes.sql`.** `config.toml` applies `notes.sql` first, so a reference to
+`public.personas` written there does not resolve on a fresh apply. The column
+stays with its table; only the constraint waits. It is composite —
+`(persona_id, user_id) references personas (id, user_id) on delete set null
+(persona_id)` — for the reason `note_chunks.persona_id` is, and a cross-tenant
+write was proved refused with `23503` on 2026-09-02.
 
 Zero rows means an account created before the 2026-08-31 provisioning trigger
 and deliberately not backfilled; it falls back to `DEFAULT_PERSONA_FALLBACK`.
@@ -383,7 +412,23 @@ The claim is one statement with **two** conditions:
 
     UPDATE notes SET notegen_status = 'generating'
     WHERE id = <id> AND processing_status = 'completed'
-      AND notegen_status IS NULL RETURNING id
+      AND notegen_status IS NULL RETURNING id, persona_id
+
+**`persona_id` rides out on that RETURNING — added 2026-09-02 — and it is not
+a convenience.** A second `select` after the claim could read a write that
+landed between the two, so the note would generate under a lens its owner had
+already moved away from. The returned value is the one on the row this
+statement row-locked, which is the only version that cannot change underneath
+the generation it feeds. Never replace it with a follow-up read.
+
+`claimForGeneration` therefore returns a **tagged union**, `ClaimResult`:
+`{ status: "claimed"; personaId: string | null } | { status: "lost" }`, and
+`claimNoteForGeneration` returns `ClaimResolution` in the same shape. Do not
+collapse either into a nullable boolean — "claimed with no persona" and "lost
+the race" are both falsy-adjacent, and a nullable return leaves them
+distinguishable only by a caller checking `!== null` against two different
+nullable things. This file's own history includes a data-loss bug from one
+missing clause in this area.
 
 The `processing_status` clause is load-bearing, not belt-and-braces. It is
 what makes "cannot generate notes before a transcript exists" true **by
@@ -456,6 +501,34 @@ the live models endpoint on 2026-09-02, never from samples:
   near 12,000 tokens. Context is not a constraint and no chunking path is owed.
 - **Text only.** This pipeline never fetches, re-sends or sees the audio.
 
+**Which lens a note generates under is chosen on Note Detail, and freezes
+wider than you would guess — shipped 2026-09-02.** `app/notes/actions/persona.ts`
+writes `notes.persona_id` behind
+
+    UPDATE notes SET persona_id = <uuid>
+    WHERE id = <id> AND processing_status IN ('local','uploading')
+      AND notegen_status IS NULL RETURNING id
+
+The `processing_status` clause is the load-bearing one. Pressing Transcribe
+moves the row to `'analyzing'` while `notegen_status` stays **null for the
+whole transcription**, because generation only claims afterwards inside
+`after()`. Guarding on `notegen_status` alone would leave a minutes-long window
+in which the rail shows one lens and generation picks up another. The rail's
+`disabled` attribute is UX; **this guard is the enforcement**, because a Server
+Action is a public HTTP endpoint. `seedNotePersona` adds `persona_id IS NULL`
+so a seed can never overwrite a real choice.
+
+Seeding on mount is a **real write, not a visual default** — the rail must
+never highlight a lens the database does not hold. A frozen note is never
+seeded: writing a lens onto one that already generated under a different lens
+would make the rail lie. The user's last choice is remembered as a **slug** in
+Auth user metadata (`updateUser({ data: { last_persona_id } })`), not a table;
+one preference field does not earn a schema addition. Only an explicit choice
+writes it — seeding does not.
+
+Regeneration stays rejected (`docs/DECISIONS.md` § Personas, 2026-08-30). The
+lock is what makes that true in the UI rather than merely unimplemented.
+
 Lens framings are a **static lookup keyed by slug** in
 `lib/notegen/lens-prompts.ts`, not a column — the same category as
 `components/note-detail/speaker-colors.ts`, not the same category as the
@@ -487,6 +560,13 @@ were a fixture standing in for this pipeline.
     node scripts/verify-notegen-pipeline.mjs   # no dev server needed:
                                                # five proofs, Gemini calls
                                                # counted, rows deleted as owner
+    node scripts/verify-persona-selection.mjs  # no dev server needed:
+                                               # six proofs — seeding, the
+                                               # guarded write, the frozen
+                                               # refusal, and the SAME
+                                               # transcript generated under
+                                               # two lenses so the framings
+                                               # can be read side by side
 
 ## Naming
 

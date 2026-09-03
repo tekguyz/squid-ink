@@ -157,11 +157,19 @@ export function buildNoteViewModel(
 
   const personas = toPersonas(personaRows, grouped.takeaway);
 
+  // uuid on the row, slug on the view model. An id matching no row the user
+  // owns yields null: RLS filtered it, or the lens was deleted, and rendering a
+  // lens the reader cannot see would be worse than showing the default.
+  const personaId =
+    personaRows.find((p) => p.id === row.persona_id)?.slug ?? null;
+
   return {
     id: row.id,
     title: row.title ?? "Untitled note",
     meta: formatMeta(row),
     processingStatus: row.processing_status,
+    notegenStatus: row.notegen_status,
+    personaId,
     audioStoragePath: row.audio_storage_path,
     turnCount: segments.length,
     duration: formatDuration(row.audio_duration_seconds),

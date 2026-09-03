@@ -12,6 +12,7 @@ const row: NoteRow = {
   title: "Pilot pricing & rollout",
   processing_status: "completed",
   notegen_status: null,
+  persona_id: null,
   raw_transcript: "…",
   diarization_enabled: true,
   audio_duration_seconds: 2467,
@@ -274,5 +275,62 @@ describe("audioStoragePath", () => {
 
   it("stays null when the note has no object — the player renders nothing", () => {
     expect(buildNoteViewModel(row, [], []).audioStoragePath).toBeNull();
+  });
+});
+
+describe("the note's selected lens", () => {
+  it("exposes the persona as a SLUG, never the uuid", () => {
+    // The client speaks slugs everywhere — Persona.id is a slug, the rail
+    // reports a slug, the remembered preference is a slug. A uuid is per-user
+    // and does not survive a reseed, which is why personas.sql chose slug as
+    // its key in the first place.
+    const note = buildNoteViewModel(
+      { ...row, persona_id: "id-sales-coach" },
+      [],
+      PERSONAS,
+    );
+    expect(note.personaId).toBe("sales-coach");
+  });
+
+  it("is null when the note carries no lens", () => {
+    // Every note written before 2026-09-02. There is no backfill, so this is
+    // the common case for a while yet.
+    const note = buildNoteViewModel({ ...row, persona_id: null }, [], PERSONAS);
+    expect(note.personaId).toBeNull();
+  });
+
+  it("is null when the uuid matches no row the user owns", () => {
+    // RLS filtered the row out, or the lens was deleted. Rendering a lens the
+    // reader cannot see would be worse than falling back to the default.
+    const note = buildNoteViewModel(
+      { ...row, persona_id: "id-of-somebody-elses-lens" },
+      [],
+      PERSONAS,
+    );
+    expect(note.personaId).toBeNull();
+  });
+
+  it("is null for an account with no personas at all", () => {
+    // The zero-row account. It renders DEFAULT_PERSONA_FALLBACK, and nothing
+    // should claim a lens was chosen.
+    const note = buildNoteViewModel({ ...row, persona_id: null }, [], []);
+    expect(note.personaId).toBeNull();
+  });
+});
+
+describe("notegenStatus", () => {
+  it("carries through for the rail's lock", () => {
+    expect(
+      buildNoteViewModel({ ...row, notegen_status: "completed" }, [], []).notegenStatus,
+    ).toBe("completed");
+    expect(
+      buildNoteViewModel({ ...row, notegen_status: "generating" }, [], []).notegenStatus,
+    ).toBe("generating");
+  });
+
+  it("is null while the note is not yet eligible", () => {
+    expect(
+      buildNoteViewModel({ ...row, notegen_status: null }, [], []).notegenStatus,
+    ).toBeNull();
   });
 });
