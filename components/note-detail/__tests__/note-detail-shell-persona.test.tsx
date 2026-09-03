@@ -15,6 +15,17 @@ vi.mock("@/app/notes/actions/persona", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
+// The shell renders ChatPanel now. None of these tests are about chat, so
+// useChat is stubbed rather than left to reach for a transport.
+vi.mock("@ai-sdk/react", () => ({
+  useChat: () => ({
+    messages: [],
+    sendMessage: vi.fn(),
+    status: "ready",
+    error: undefined,
+  }),
+}));
+
 /** The note detail shell renders the Transcribe button and the audio player,
  *  both of which reach for browser APIs and their own actions. Neither is
  *  under test here. */
@@ -41,14 +52,14 @@ describe("seeding the lens on mount", () => {
   it("seeds a fresh note that carries none", async () => {
     // A REAL write, not a visual default. The rail must never highlight a lens
     // the database does not actually hold.
-    render(<NoteDetailShell note={note(SELECTABLE)} />);
+    render(<NoteDetailShell note={note(SELECTABLE)} history={[]} />);
     await waitFor(() =>
       expect(seedNotePersona).toHaveBeenCalledWith(mockNote.id),
     );
   });
 
   it("does NOT seed a note that already has one", async () => {
-    render(<NoteDetailShell note={note({ ...SELECTABLE, personaId: "investor" })} />);
+    render(<NoteDetailShell note={note({ ...SELECTABLE, personaId: "investor" })} history={[]} />);
     await waitFor(() => expect(seedNotePersona).not.toHaveBeenCalled());
   });
 
@@ -57,6 +68,7 @@ describe("seeding the lens on mount", () => {
     // make the rail lie — the exact failure this feature exists to prevent.
     render(
       <NoteDetailShell
+        history={[]}
         note={note({
           personaId: null,
           notegenStatus: "completed",
@@ -72,6 +84,7 @@ describe("seeding the lens on mount", () => {
     // here would write a lens the generation about to run might not use.
     render(
       <NoteDetailShell
+        history={[]}
         note={note({
           personaId: null,
           notegenStatus: null,
@@ -83,7 +96,7 @@ describe("seeding the lens on mount", () => {
   });
 
   it("seeds only once, not once per effect run", async () => {
-    render(<NoteDetailShell note={note(SELECTABLE)} />);
+    render(<NoteDetailShell note={note(SELECTABLE)} history={[]} />);
     await waitFor(() => expect(seedNotePersona).toHaveBeenCalled());
     expect(seedNotePersona).toHaveBeenCalledTimes(1);
   });
@@ -92,7 +105,7 @@ describe("seeding the lens on mount", () => {
 describe("choosing a lens", () => {
   it("writes the choice through the action, by slug", async () => {
     render(
-      <NoteDetailShell note={note({ ...SELECTABLE, personaId: "neutral-analyst" })} />,
+      <NoteDetailShell note={note({ ...SELECTABLE, personaId: "neutral-analyst" })} history={[]} />,
     );
     await userEvent.click(screen.getByRole("tab", { name: "Investor" }));
     await waitFor(() =>
@@ -102,7 +115,7 @@ describe("choosing a lens", () => {
 
   it("shows the new lens immediately, before the server answers", async () => {
     render(
-      <NoteDetailShell note={note({ ...SELECTABLE, personaId: "neutral-analyst" })} />,
+      <NoteDetailShell note={note({ ...SELECTABLE, personaId: "neutral-analyst" })} history={[]} />,
     );
     await userEvent.click(screen.getByRole("tab", { name: "Investor" }));
     expect(screen.getByRole("tab", { name: "Investor" })).toHaveAttribute(
@@ -116,7 +129,7 @@ describe("choosing a lens", () => {
     // 'locked' answer means the write did not land.
     setNotePersona.mockResolvedValueOnce("locked" as never);
     render(
-      <NoteDetailShell note={note({ ...SELECTABLE, personaId: "neutral-analyst" })} />,
+      <NoteDetailShell note={note({ ...SELECTABLE, personaId: "neutral-analyst" })} history={[]} />,
     );
     await userEvent.click(screen.getByRole("tab", { name: "Investor" }));
     await waitFor(() =>
@@ -130,6 +143,7 @@ describe("choosing a lens", () => {
   it("cannot choose once the note is locked", async () => {
     render(
       <NoteDetailShell
+        history={[]}
         note={note({
           personaId: "neutral-analyst",
           notegenStatus: "completed",
@@ -144,7 +158,7 @@ describe("choosing a lens", () => {
 
 describe("which lens the rail highlights", () => {
   it("shows the note's own lens", () => {
-    render(<NoteDetailShell note={note({ ...SELECTABLE, personaId: "sales-coach" })} />);
+    render(<NoteDetailShell note={note({ ...SELECTABLE, personaId: "sales-coach" })} history={[]} />);
     expect(screen.getByRole("tab", { name: "Sales Coach" })).toHaveAttribute(
       "aria-selected",
       "true",
@@ -156,6 +170,7 @@ describe("which lens the rail highlights", () => {
     // Analyst is the truth about how it generated.
     render(
       <NoteDetailShell
+        history={[]}
         note={note({
           personaId: null,
           notegenStatus: "completed",
