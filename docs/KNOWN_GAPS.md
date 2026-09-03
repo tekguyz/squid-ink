@@ -1770,44 +1770,46 @@ spend the shared 300 s Vercel budget waiting, it would make the free tier look
 survivable when the real answer is a billing setting, and this project's
 standing rule is not to add mitigation speculatively.
 
-### The migration chain can no longer rebuild the database
+### The migration chain can no longer rebuild the database — CLOSED 2026-09-03
 
-**Opened 2026-09-03, found in code review of the embeddings pipeline.**
+**Opened 2026-09-03, closed the same day.**
 
 `supabase/schemas/*.sql` is the source of truth and the live project matches it.
-`supabase/migrations/` does **not**. Two pieces of applied DDL were never written
+`supabase/migrations/` did **not**. Two pieces of applied DDL were never written
 into the chain:
 
 - **`notes.persona_id`**, its composite foreign key and its index — shipped
-  2026-09-02 with per-note persona selection. Pre-existing; not this branch.
+  2026-09-02 with per-note persona selection.
 - **`note_chunks_pending_embedding_idx`**, the partial index — shipped
-  2026-09-03 with this branch.
+  2026-09-03 with the embeddings pipeline.
 
-Both were applied correctly, through `db query --file` on the schema file, which
-is the workflow CLAUDE.md § Declarative schema workflow mandates. What was
-skipped is that section's *last* step: "When the shape is final:
-`supabase migration new`, fill it with `cat` of the schema files in order,
-`migration repair --status applied`."
+Both were applied correctly, through `db query --file` on the schema file. What
+was skipped is § Declarative schema workflow's *last* step.
 
-**Nothing is broken today.** The live database is correct, the app runs against
-it, and `verify-rls.mjs` and the pipeline scripts all pass. The cost is entirely
-latent: a `db reset`, a fresh environment, or a rebuild from migrations produces
-a database missing both objects, and the drift is now silent because the last
-migration (`20260902053323`, 288 lines) is a **curated partial concat**, not the
-709-line verbatim concatenation of all five schema files that the first migration
-was. Nothing compares the two, so nothing fails loudly.
+**Closed by `20260903115017_reconcile_persona_id_and_embedding_index.sql`.** The
+drift was measured before anything was written: every column, index, constraint
+and policy in the live catalog was listed and checked against the concatenated
+chain, and the difference was exactly `notes.persona_id`, `notes_persona_id_fkey`,
+`notes_persona_id_idx` and `note_chunks_pending_embedding_idx` — nothing else.
 
-**Deliberately not fixed inside the embeddings branch.** Adding a migration for
-the index alone would leave `notes.persona_id` still missing, producing a chain
-that still cannot rebuild the database while *looking* reconciled — false
-comfort, which is worse than a recorded gap. The fix is one pass that catches
-both, and it belongs in its own change where the `git hash-object` check and the
-live catalog read-back can be the point rather than a footnote.
+The migration is the **verbatim concatenation of all five files in
+`config.toml`'s `schema_paths` order**, not a curated subset. That is the
+deliberate correction to `20260902053323`, whose partial concat is what made
+this drift silent: nothing compared it to anything. A full trailing snapshot
+restores the `git hash-object` check as a real test — the file below its
+22-line header must hash-equal `cat` of the five schema files, and did
+(`04dc4bfe7a82d9f99e9915ad1ca163358973852a`). Every statement in those files is
+idempotent, so the migration is a no-op against a matching database and a full
+build against a fresh one.
 
-**To close it:** one `supabase migration new reconcile_persona_id_and_embedding_index`,
-filled from the schema files in `config.toml` order, then
-`migration repair --status applied`, then `migration list --linked`, then read
-`pg_indexes` and `pg_constraint` back to confirm the live catalog is unchanged.
+**The live database was not touched.** It was already correct. `migration
+repair --status applied` recorded the file against history; `migration list
+--linked` shows all eight local and remote versions matching. The 75-object
+catalog listing was re-read afterwards and diffed against the pre-change
+listing: identical.
+
+**What keeps this closed:** the next migration is a full schema concat too, or
+the hash check has nothing to compare and the drift goes quiet again.
 
 ### The verification script cannot run unattended
 
