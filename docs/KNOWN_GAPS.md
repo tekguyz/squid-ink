@@ -1289,6 +1289,16 @@ Below is what it deliberately does **not** do.
 
 ### No Realtime push — status changes appear on next page load only
 
+**AMENDED 2026-09-03.** The symptom described below is closed; the gap in the
+title is not. `components/note-detail/use-transcription-poll.ts` shipped
+2026-09-01 — a **bounded poll**, 5 s interval with a 10-minute cap, watching one
+row on the page the reader is already looking at, which refreshes the server
+render when that note goes terminal. So a note that finishes while the page is
+open now updates itself. Realtime is still absent, and the deferral reasoning
+below still stands: a subscription is the right eventual shape, a poll of one
+row is not, and neither changes the fact that the wait is dominated by the cron
+schedule. What follows described the state before that poll existed.
+
 A note that finishes transcribing while the page is open keeps showing its old
 status until a navigation or a refresh. Supabase Realtime was explicitly out of
 scope for this track, and this is a deferral rather than an oversight.
@@ -1631,14 +1641,27 @@ learning to compare these documents mechanically.
 
 ### No structured note generation and no embeddings
 
-`summary`, `takeaway` and `action_item` chunks are a separate future track: they
-need their own persona/depth routing decision, which has not been made.
-`note_chunks.embedding` is written **`null` on purpose**; the hnsw index over that
-column exists and is empty. Nothing in this track populates either.
+**HALF RESOLVED 2026-09-02.** Structured note generation shipped
+(`lib/notegen/*`, merged `475728c`); the embeddings half below is unchanged and
+still open. Read the two halves separately — this section was written when
+neither existed.
 
-The practical consequence: a freshly transcribed note renders its transcript pane
-and nothing else. Existing takeaways and summaries on the seeded note came from
-seed data, not from the pipeline.
+**Note generation — closed.** The depth/persona routing decision this section
+said "has not been made" was made on 2026-09-01 (`docs/DECISIONS.md`
+§ "Structured note generation": one model, Gemini 3.7 Flash, depth as
+`thinking_level` plus a prompt scope) and implemented on 2026-09-02.
+`notegen_status` is its own queue on `notes`, claimed with the same one-statement
+guarded UPDATE as transcription, and it writes `summary`, `takeaway` and
+`action_item` chunks. Per-note lens selection followed the same day. So the
+stated consequence — "a freshly transcribed note renders its transcript pane and
+nothing else" — **no longer holds**, and the seeded note's hand-written
+takeaways are replaced by the pipeline's own on its first run, which is designed
+behaviour rather than a regression.
+
+**Embeddings — still open, unchanged.** `note_chunks.embedding` is written
+**`null` on purpose**, by both pipelines. The hnsw index over that column exists
+and is empty. Nothing populates it, and no retrieval path reads it; RAG remains
+a Core UX/UI item in `docs/ROADMAP.md` §4.
 
 ### The verification script cannot run unattended
 

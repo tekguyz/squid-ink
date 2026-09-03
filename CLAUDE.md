@@ -676,10 +676,16 @@ must read and write rows belonging to whichever user recorded them. The route
 refuses every request that does not carry `Authorization: Bearer $CRON_SECRET`
 before it touches the database or the Gemini API.
 
-Six **local-only** scripts also read it from the gitignored `.env.local` —
+**Nine local-only** scripts also read it from the gitignored `.env.local` —
 `verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
-`verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs` and
-`print-signin-link.mjs`. None ships. An earlier version of this section claimed
+`verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs`,
+`verify-manual-transcribe.mjs`, `verify-notegen-pipeline.mjs`,
+`verify-persona-selection.mjs` and `print-signin-link.mjs`. None ships.
+
+**Corrected 2026-09-03**, measured with the second grep below. This read "Six"
+and named six, having missed the four scripts added between 2026-09-01 and
+2026-09-02. The paragraph already said a new script moves this number; it did,
+four times, and nothing moved it. An earlier version of this section claimed
 "exactly one place, `scripts/verify-rls.mjs`", which was already wrong when
 written; the greps below are the check that settles it. Run them rather than
 trusting the counts here — a new script moves the second number.

@@ -26,8 +26,15 @@ create table if not exists public.notes (
   -- wired to this column.
   diarization_enabled boolean not null default true,
   audio_duration_seconds integer,
-  -- Placeholder for the deferred Storage bucket. No bucket, no policies and
-  -- no upload code ship with this column — see docs/KNOWN_GAPS.md.
+  -- The Storage key for the recording, `{user_id}/{note_id}` — two segments,
+  -- that order, no extension, because that is what the three policies in
+  -- storage_audio.sql check. Written by the recorder when the upload starts,
+  -- not when it finishes, because the path is deterministic.
+  --
+  -- Corrected 2026-09-03. This read "Placeholder for the deferred Storage
+  -- bucket. No bucket, no policies and no upload code ship with this column",
+  -- which was true the day it was written and stopped being true on
+  -- 2026-08-31, when the bucket, its policies and the upload path all shipped.
   audio_storage_path text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

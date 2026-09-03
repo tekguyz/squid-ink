@@ -89,6 +89,14 @@ a separate, still-open question (see Branding below).
   client-side caching or optimistic mutations across route boundaries are
   actually needed (e.g. ask-your-notes chat streaming). Don't reach for it
   by default on every fetch.
+- **What actually shipped is a poll, not Realtime — noted 2026-09-03.** The
+  decision above is unchanged and still the target; no Realtime subscription
+  exists anywhere in the tree. `components/note-detail/use-transcription-poll.ts`
+  (2026-09-01) is a **bounded** poll of ONE row — 5 s interval, 10-minute cap,
+  only on the note the reader has open — chosen because the latency is
+  dominated by the Vercel Hobby cron schedule, so a subscription would be
+  polishing the wrong end. Read the "not polling" line above as intent, not as a
+  description of the code. Reasoning in docs/KNOWN_GAPS.md § "No Realtime push".
 **Model / vendor split**
 - Not vendor-locked to Google/Gemini. Split by task, not ideology:
   - **Gemini 3.7 Flash / 3.5 Transcribe** — the high-volume, per-recording
@@ -225,11 +233,31 @@ a separate, still-open question (see Branding below).
   no depth value to preserve. `lib/notes/persona-presets.ts` is deleted, not
   repointed. `lib/mock/types.ts` is folded into `lib/notes/view-types.ts`
   and deleted; zero remaining importers.
+- **Per-note lens selection — SHIPPED 2026-09-02.** The rail on Note Detail
+  writes `notes.persona_id` behind a guard that freezes wider than expected:
+  `processing_status IN ('local','uploading') AND notegen_status IS NULL`. The
+  `processing_status` clause is the load-bearing one — pressing Transcribe
+  leaves `notegen_status` null for the whole transcription, because generation
+  only claims afterwards, so guarding on `notegen_status` alone would leave a
+  minutes-long window in which the rail shows one lens and generation picks up
+  another. The rail's `disabled` attribute is UX; the SQL guard is the
+  enforcement, because a Server Action is a public HTTP endpoint. Seeding on
+  mount is a real write, never a visual default, and never happens on a frozen
+  note. The last choice is remembered as a slug in Auth user metadata, not a
+  table. Regeneration stays rejected — the lock is what makes that true in the
+  UI rather than merely unimplemented.
 - **Persona identity is the slug, never the name and never the id —
-  resolved 2026-09-02.** A pipeline with no persona-selection surface still
-  needs a concrete row to read `depth` and lens framing from, so structured
-  note generation resolves one per note as `user_id = <note.user_id> and slug
-  = 'neutral-analyst'` (`DEFAULT_PERSONA_ID`). Slug because `personas.sql`
+  resolved 2026-09-02.** Written when no persona-selection surface existed, and
+  **amended 2026-09-03** now that one does: resolution takes `notes.persona_id`
+  first, scoped by **both** id and `user_id`, and only falls to the slug step
+  below when the note carries none or that id resolves to no row. A set
+  `persona_id` that resolves to nothing falls through rather than throwing — a
+  lens deleted between selection and generation is a real sequence. The slug
+  step is unchanged and is what the rest of this bullet describes. A pipeline
+  with no note-level lens still needs a concrete row to read `depth` and lens
+  framing from, so structured note generation resolves one as
+  `user_id = <note.user_id> and slug = 'neutral-analyst'`
+  (`DEFAULT_PERSONA_ID`). Slug because `personas.sql`
   declares and indexes `unique (user_id, slug)` and states in its own header
   that slug is the key chosen to survive a reseed; `name` is display text
   carrying no constraint and no index, so the custom-persona phase named above
@@ -244,11 +272,17 @@ a separate, still-open question (see Branding below).
   exception to the standing "let RLS supply it" rule, because `service_role`
   bypasses RLS and an unfiltered lookup can return another account's row.
   Convention recorded in CLAUDE.md § Data.
-- **Still open:** no `auth.users` trigger provisions personas for a new
-  account (fresh accounts get zero rows and fall back to one lens); deleting
-  a persona re-attributes its takeaways to the default persona rather than
-  orphaning them, and nothing deletes a persona yet. See ROADMAP.md §5 /
-  Core UX/UI for where this belongs.
+- **Provisioning — RESOLVED 2026-08-31.** A `security definer` trigger on
+  `auth.users` in `supabase/schemas/persona_provisioning.sql` inserts all four
+  rows for a new account, proven by `scripts/verify-persona-provisioning.mjs`.
+  Accounts predating it are deliberately not backfilled, which is why
+  `DEFAULT_PERSONA_FALLBACK` is still live code. This bullet read "Still open:
+  no `auth.users` trigger provisions personas for a new account" until
+  2026-09-03, contradicting the "Explicitly still open" section of this same
+  file, which had recorded it closed on 2026-08-31.
+- **Still open:** deleting a persona re-attributes its takeaways to the default
+  persona rather than orphaning them, and nothing deletes a persona yet. See
+  ROADMAP.md §5 / Core UX/UI for where this belongs.
 **Structured note generation** — resolved 2026-09-01, closes the depth-
 routing open item under Personas above and ROADMAP.md §5.
 - **No Gemini Pro anywhere in this rebuild.** Single model: Gemini 3.7 Flash
@@ -322,14 +356,15 @@ phase assignment for all of the above is in ROADMAP.md §8.
 - Supabase's built-in mailer is rate-limited and not production-grade; custom
   SMTP (Resend) is not configured. Fine for owner+1-friend scale, worth
   flagging before any real user volume.
-- **None of this is tracked in the repo.** No doc describes these Vercel or
-  Supabase dashboard settings. If either project is rebuilt, this config is
-  lost and has to be reconstructed from memory. Needs a home — either a
-  `docs/DEPLOYMENT.md` in-repo or a section here kept current — not decided
-  yet.
-- Supabase's built-in mailer is rate-limited and not production-grade;
-  custom SMTP (Resend) is not configured. Fine for owner+1-friend scale,
-  worth flagging before any real user volume.
+- **A tracked home for this config — RESOLVED 2026-08-31, `docs/DEPLOYMENT.md`.**
+  Corrected 2026-09-03. Two bullets here read "None of this is tracked in the
+  repo… Needs a home — either a `docs/DEPLOYMENT.md` in-repo or a section here
+  kept current — not decided yet", followed by a verbatim repeat of the SMTP
+  paragraph above. Both were written before that file existed, and both
+  contradicted the "Explicitly still open" section of this same file, which had
+  already recorded the question closed. Removed rather than marked, because
+  they described a decision that was pending and is not; the decision itself is
+  the bullet above this one.
  
 ## Rejected — 2026-08-30 feature-triage
  

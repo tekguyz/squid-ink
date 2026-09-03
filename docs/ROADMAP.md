@@ -3,7 +3,9 @@
 **Status:** Blueprint complete. Claude Design in progress — Recorder UI
 resolved (hybrid HUD + full-app). 2026-08-30 feature-triage backlog fully
 disposed: promoted into phases below, or rejected (see §7).
-**Last updated:** 2026-08-30
+**Last updated:** 2026-09-03 (header date corrected — it read 2026-08-30 while
+§5 and §8 already carried amendments dated 2026-09-01, and §4's schema snippet
+had been superseded; see the dated notes in those sections).
 
 ---
 
@@ -70,7 +72,13 @@ content flows through it (see DECISIONS.md "Data handling").
   speaker (from diarization) + timestamp — backs the fact-grounding /
   "cite the source span" requirement.
 
-**Schema:**
+**Schema** — design intent, **not the shipped table.** Noted 2026-09-03:
+`supabase/schemas/note_chunks.sql` is the source of truth and its own header
+says its columns are "tightened against the ROADMAP snippet". The shipped table
+adds a nullable `persona_id` whose foreign key is **composite** against
+`personas (id, user_id)`, and `note_id`/`user_id` are likewise tightened. Read
+the snippet below for the chunking intent, never for column shapes.
+
 ```sql
 create table note_chunks (
   id uuid primary key default gen_random_uuid(),
@@ -144,9 +152,16 @@ A **Persona** is one named preset bundling:
    Investor, Engineering Lead, Neutral Analyst).
 2. **Depth/goal** — Brief / Dense / Exhaustive, replaces the prior build's separate
    DepthToggle + GoalSelector. **Resolved 2026-09-01: single-model MVP, no
-   Gemini Pro anywhere** — Flash's `thinking_level` parameter (low/medium/
-   high) covers the reasoning-depth range Pro was reserved for at
-   materially lower cost. Depth varies **scope, not just length**:
+   Gemini Pro anywhere** — Flash's `thinking_level` parameter covers the
+   reasoning-depth range Pro was reserved for at materially lower cost.
+   **Corrected 2026-09-03:** the SDK union is
+   `"minimal" | "low" | "medium" | "high"`, four values, not the three this
+   line named; `lib/notegen/depth-policy.ts` maps Brief/Dense/Exhaustive to
+   low/medium/high and leaves `minimal` unused. The casing is load-bearing and
+   is recorded in CLAUDE.md § Note generation, not here — the lowercase union
+   belongs to the `interactions.create` surface this project calls, while the
+   SCREAMING_CASE `ThinkingLevel` enum belongs to `models.generateContent` and
+   is a 400 here. Depth varies **scope, not just length**:
    Exhaustive does more analytical work (cross-referencing, deeper
    action-item inference); Brief and Dense are narrower cuts of the same
    extraction, not shorter versions of Exhaustive.
