@@ -73,14 +73,21 @@ export function estimateTokens(text: string): number {
  *               text, and therefore the only kind that increments. */
 export type VoyageErrorKind = "fatal" | "transient" | "content";
 
+/** Plain fields assigned in the body, NOT constructor parameter properties.
+ *  scripts/verify-embeddings-pipeline.mjs imports this module through Node's
+ *  native type stripping, which is strip-only and rejects `readonly kind:` in
+ *  a parameter list with ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX. The verify scripts
+ *  import the shipped code precisely so a copy cannot drift from it, so the
+ *  shipped code has to stay loadable that way. */
 export class VoyageError extends Error {
-  constructor(
-    message: string,
-    readonly kind: VoyageErrorKind,
-    readonly status: number | null,
-  ) {
+  readonly kind: VoyageErrorKind;
+  readonly status: number | null;
+
+  constructor(message: string, kind: VoyageErrorKind, status: number | null) {
     super(message);
     this.name = "VoyageError";
+    this.kind = kind;
+    this.status = status;
   }
 }
 
