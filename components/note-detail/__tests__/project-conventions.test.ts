@@ -121,19 +121,44 @@ describe("project conventions", () => {
     ]);
   });
 
-  it("reads VOYAGE_API_KEY from exactly the two shipped triggers", () => {
-    // Server-only, exactly like the Gemini key. The embedding pipeline has two
-    // entry points and no third: the deferred half of the Transcribe action,
-    // and the cron route's third phase. If a client component ever reaches a
-    // module that reads this, the key ships to the browser — this is the guard
-    // that stops that, and lib/rag/* deliberately reads no env var at all.
+  // UNSKIP IN TASK 8, when app/api/chat/route.ts lands. Left skipped rather
+  // than deleted so the guard cannot be forgotten.
+  it.skip("reads VOYAGE_API_KEY from exactly the three shipped triggers", () => {
+    // Server-only, exactly like the Gemini key. Three entry points and no
+    // fourth: the deferred half of the Transcribe action, the cron route's
+    // third phase, and the chat route, which embeds the QUESTION at
+    // input_type "query". If a client component ever reaches a module that
+    // reads this, the key ships to the browser — this is the guard that stops
+    // that, and lib/rag/* deliberately reads no env var at all.
     const readers = sourceFiles().filter((f) =>
       read(f).includes("process.env.VOYAGE_API_KEY"),
     );
     expect(readers.sort()).toEqual([
+      path.join("app", "api", "chat", "route.ts"),
       path.join("app", "api", "cron", "transcribe", "route.ts"),
       path.join("app", "notes", "actions", "transcription.ts"),
     ]);
+  });
+
+  // UNSKIP IN TASK 8, when app/api/chat/route.ts lands. Left skipped rather
+  // than deleted so the guard cannot be forgotten.
+  it.skip("reads ANTHROPIC_API_KEY from exactly one shipped file", () => {
+    // The chat route is the only place that talks to Claude. Same reasoning as
+    // the Voyage guard: a second reader is how a server key finds its way into
+    // a client component's import graph.
+    const readers = sourceFiles().filter((f) =>
+      read(f).includes("process.env.ANTHROPIC_API_KEY"),
+    );
+    expect(readers).toEqual([path.join("app", "api", "chat", "route.ts")]);
+  });
+
+  it("never gives a server key a NEXT_PUBLIC_ prefix", () => {
+    // Next.js ships every NEXT_PUBLIC_ variable to the browser. This is cheap
+    // and catches the one-character version of a total key compromise.
+    const offenders = sourceFiles().filter((f) =>
+      /NEXT_PUBLIC_(ANTHROPIC|VOYAGE|SUPABASE_SECRET)/.test(read(f)),
+    );
+    expect(offenders).toEqual([]);
   });
 
   it("keeps VOYAGE_API_KEY out of every client component's import graph", () => {
@@ -146,6 +171,10 @@ describe("project conventions", () => {
     expect(clientFiles.filter((f) => read(f).includes("VOYAGE_API_KEY"))).toEqual(
       [],
     );
+
+    expect(
+      clientFiles.filter((f) => read(f).includes("ANTHROPIC_API_KEY")),
+    ).toEqual([]);
 
     const ragFiles = sourceFiles().filter((f) =>
       f.startsWith(path.join("lib", "rag")),
