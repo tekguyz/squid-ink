@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-03
+**Last updated:** 2026-09-04
 Update this line whenever this file changes — don't let it drift from reality.
 
 ## Stack
@@ -16,7 +16,8 @@ drive both themes without any component branching on theme.
 
 Exact pins, no `^` or `~` ranges. Verified against the live npm registry
 `latest` dist-tags (`npm view <pkg> dist-tags`) on 2026-08-30; `zustand`,
-`fake-indexeddb` and `@google/genai` on 2026-08-31.
+`fake-indexeddb` and `@google/genai` on 2026-08-31; `ai`, `@ai-sdk/anthropic`,
+`@ai-sdk/react` and `zod` on 2026-09-04, all four still `latest` that day.
 
 | Package | Version |
 |---|---|
@@ -38,6 +39,10 @@ Exact pins, no `^` or `~` ranges. Verified against the live npm registry
 | zustand | 5.0.15 |
 | fake-indexeddb | 6.2.5 |
 | @google/genai | 2.19.0 |
+| ai | 7.0.92 |
+| @ai-sdk/anthropic | 4.0.49 |
+| @ai-sdk/react | 4.0.95 |
+| zod | 4.5.4 |
 
 Built and verified on Node v24.18.0 / npm 11.16.0.
 

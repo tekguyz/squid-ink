@@ -1941,3 +1941,42 @@ Screenshot review against the shipped app, not the design file.
   Nobody has decided whether an active lens *should* narrow retrieval, and
   both answers are defensible: filtering makes the lens mean something in
   chat, not filtering keeps "ask all notes" literally true.
+
+## Two accessibility findings from the chat pack were left unfixed on purpose (recorded 2026-09-04)
+
+Both were raised by the web-design review pass on 2026-09-03 and both were
+declined in that commit's body for the reason `CLAUDE.md` gives about
+`border-rule-2`: they are app-wide patterns, and changing one component makes
+that component the odd one out rather than making the app better. They were
+argued in a commit message and nowhere else, which is the actual gap this
+entry closes — a decision that lives only in git history is a decision the
+next reader re-litigates.
+
+- **The chat input carries `outline-none` with no outline of its own.**
+  `components/note-detail/chat/chat-panel.tsx:201`. Measured 2026-09-04: it is
+  not a missing focus indicator. The wrapping form at line 187 carries
+  `focus-within:border-accent`, so focus is shown as a **colour change on a
+  1px border** rather than an outline. That is a weaker indicator than the
+  `focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent`
+  every button in the app uses, and it is the only place in the tree where the
+  two idioms disagree. There are three other `<input>` elements —
+  `action-items-table.tsx:26`, `audio-player.tsx:268`,
+  `app/login/login-form.tsx:47` — and none of them uses the wrapper idiom, so
+  "app-wide pattern" is the *button* pattern, not the input one. Deciding this
+  properly means picking one focus idiom for inputs and applying it to all
+  four, which is a token-level call, not a chat-panel call.
+
+- **`CitationChip`'s tap target is far under any minimum.**
+  `components/note-detail/citation-chip.tsx`. The filled variant is
+  `text-[10px]` with `px-[5px] py-px`, so the hit area is roughly 10px tall —
+  against the 24px WCAG 2.2 AA minimum and the 44px iOS guidance. It is a
+  timestamp set inline in prose, so growing the button grows the line box and
+  changes the typography of every takeaway, action item and chat answer that
+  carries one. The usual fix is an invisible expanded hit area
+  (`::before` with a negative inset) that does not affect layout; it was not
+  applied because the same chip renders in five places and nobody has looked
+  at what it does to overlapping chips on adjacent lines.
+
+Neither is a regression and neither blocks anything. They are recorded so the
+next person to touch focus styling or the citation chip finds the argument
+instead of re-deriving it.
