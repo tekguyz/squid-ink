@@ -43,11 +43,28 @@ Measured with:
 | `CRON_SECRET` | Secret | Production |
 | `VOYAGE_API_KEY` | Secret | Production |
 | `ANTHROPIC_API_KEY` | Secret | Production |
-| `ANTHROPIC_WORKSPACE_ID` | Config | Production |
+| `ANTHROPIC_WORKSPACE_ID` | Secret | Production |
 
 The first five rows were measured 2026-08-31. **`VOYAGE_API_KEY` was added and
 read back on 2026-09-03** with the same `vercel env ls`, when the embeddings
-pipeline shipped.
+pipeline shipped. **Both Anthropic rows were added on 2026-09-03 and read
+back with `vercel env ls production --scope tekguyz --project squid-ink` on
+2026-09-04**, which is also how the `ANTHROPIC_WORKSPACE_ID` row was
+corrected: it was written here as `Config` and Vercel holds it as `Secret`.
+Nothing behaves differently — the route reads `process.env` either way — but
+this table exists to be compared against the dashboard, and a row that does
+not match is a row that gets "fixed" in the wrong direction.
+
+Note that `vercel env ls` needs `--project squid-ink` on this machine. The
+repo carries no `.vercel` link, so the CLI cannot infer the project and exits
+with `Your codebase isn't linked to a project on Vercel` — which reads like a
+missing permission rather than a missing flag.
+
+**A changed environment variable does not reach a deployment that already
+exists.** Vercel injects them at build time, so adding a key and reloading the
+site changes nothing until the next deploy. The two Anthropic keys were added
+7h before the deploy that carries them; had the push come first, the keys
+would have been present in the dashboard and absent from the running function.
 
 **`ANTHROPIC_API_KEY` and `ANTHROPIC_WORKSPACE_ID` are required by
 `/api/chat` and must both be set before chat works in production.**
