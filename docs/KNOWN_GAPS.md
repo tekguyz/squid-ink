@@ -1980,3 +1980,43 @@ next reader re-litigates.
 Neither is a regression and neither blocks anything. They are recorded so the
 next person to touch focus styling or the citation chip finds the argument
 instead of re-deriving it.
+
+## A failed model call no longer strands the question, but it stops counting against the rate limit (recorded 2026-09-04)
+
+**Found in production, not in review.** An `ANTHROPIC_WORKSPACE_ID` that was
+present but not a valid workspace id gave `400 anthropic-workspace-id header
+must be a valid workspace ID` on every turn. Three questions were left in one
+thread with no replies, permanently: `app/api/chat/route.ts` persists the user
+turn at step 5, before the model call, and nothing deleted it. They were also
+re-sent to Claude as history on every later turn, so the cost did not stop when
+the errors did.
+
+**CLOSED 2026-09-04** by a rollback: `consumeStream`'s `onError` deletes the
+row whose id `insertUserMessage` now returns, guarded by an `answered` flag so
+a stream that dies after text arrived keeps its pair intact. Four tests in
+`route-gates.test.ts`, each confirmed to fail against the specific defect it
+describes rather than against a missing mock.
+
+**The gap this leaves, deliberately.** The insert stays ahead of the model
+call because **the rate limit counts rows in `chat_messages`** — a question
+that is not a row is a question that is not counted. Rolling the row back
+therefore un-counts it. A caller pointed at a broken model can retry without
+their own failures throttling them, which at single-owner scale is the right
+trade and at any other scale is not.
+
+The alternative was considered and rejected for now: keep the row, mark it
+failed with a new column, and render it greyed with a Retry control. That is
+better for the reader and keeps the limit honest, but it is a schema change, a
+route change and a UI state — a feature, not a fix, and it was not worth
+bolting onto an incident. Revisit it if chat ever has more than one user, or
+if a model outage ever produces a retry storm.
+
+**A source-grep test had to be widened to allow the fix.** `route.test.ts`
+asserted `/consumeStream\(\)/` — literally empty parens — so it went red the
+moment the call gained the rollback. It pinned punctuation rather than
+behaviour, which is the same failure mode as the `sendReasoning` test
+corrected on 2026-09-03: a test that forbids its own fix. Widened to
+`/consumeStream\(/`, with the counting left to `route-gates.test.ts`.
+
+**Not cleaned up:** the three orphaned rows from the live incident are still in
+`chat_messages`. The owner was asked and does not care; they are on a seed note.

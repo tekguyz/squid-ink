@@ -65,19 +65,41 @@ export function createChatPorts(supabase: SupabaseClient) {
       return count ?? 0;
     },
 
+    /** Returns the new row's id so the caller can undo this exact insert if
+     *  the model call then fails. See deleteMessage below. */
     async insertUserMessage(
       noteId: string,
       ownerId: string,
       content: string,
       scope: ChatScope,
-    ): Promise<void> {
-      const { error } = await supabase.from("chat_messages").insert({
-        note_id: noteId,
-        user_id: ownerId,
-        role: "user",
-        content,
-        scope,
-      });
+    ): Promise<string> {
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .insert({
+          note_id: noteId,
+          user_id: ownerId,
+          role: "user",
+          content,
+          scope,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+      return (data as { id: string }).id;
+    },
+
+    /** Removes one message by id. The ONLY caller is the route's rollback of
+     *  a user turn whose model call failed — see the comment there for why an
+     *  orphaned user turn is worth a delete rather than being left in place.
+     *
+     *  No user_id filter, per this file's header: RLS scopes the delete, and
+     *  chat_messages carries a per-operation delete policy for exactly this.
+     */
+    async deleteMessage(id: string): Promise<void> {
+      const { error } = await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
     },
 

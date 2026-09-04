@@ -42,7 +42,14 @@ describe("app/api/chat/route.ts invariants", () => {
     // onFinish fires when the stream ends. If the HTTP response is its
     // only reader, closing the tab mid-answer cancels it, the callback
     // never runs, and the thread ends on a user turn with no reply.
-    expect(SOURCE).toMatch(/consumeStream\(\)/);
+    //
+    // WIDENED 2026-09-04. This read /consumeStream\(\)/ — literally empty
+    // parens — so it went red the moment the call gained the onError
+    // rollback, which is a change in the same direction it exists to
+    // protect. It pinned the punctuation, not the behaviour. The behaviour
+    // is counted properly in route-gates.test.ts; this stays as the cheap
+    // check that the call has not been deleted outright.
+    expect(SOURCE).toMatch(/consumeStream\(/);
   });
 
   it("wraps the handler so a port error returns JSON, not HTML", () => {

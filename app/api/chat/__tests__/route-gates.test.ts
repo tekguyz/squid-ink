@@ -20,6 +20,7 @@ const ports = {
   countRecentUserMessages: vi.fn(),
   insertUserMessage: vi.fn(),
   insertAssistantMessage: vi.fn(),
+  deleteMessage: vi.fn(),
   readNoteContext: vi.fn(),
   searchRpc: vi.fn(),
 };
@@ -55,10 +56,22 @@ vi.mock("@/lib/rag/search-tool", () => ({
   },
 }));
 
+/** Captures what the route hands the SDK, so a test can fire the stream's
+ *  error path instead of asserting that a callback merely exists. */
+let consumeOptions: { onError?: (e: unknown) => void } | undefined;
+let streamOptions: { onFinish?: (e: unknown) => Promise<void> } | undefined;
+
 vi.mock("ai", () => ({
   streamText: (...args: unknown[]) => {
     streamText(...args);
-    return { stream: "stream-handle", consumeStream: () => Promise.resolve() };
+    streamOptions = args[0] as typeof streamOptions;
+    return {
+      stream: "stream-handle",
+      consumeStream: (opts?: { onError?: (e: unknown) => void }) => {
+        consumeOptions = opts;
+        return Promise.resolve();
+      },
+    };
   },
   isStepCount: () => () => true,
   toUIMessageStream: (opts: unknown) => opts,
@@ -101,7 +114,10 @@ beforeEach(() => {
       createdAt: "2026-09-03T00:00:00.000Z",
     },
   ]);
-  ports.insertUserMessage.mockResolvedValue(undefined);
+  ports.insertUserMessage.mockResolvedValue("msg-1");
+  ports.deleteMessage.mockResolvedValue(undefined);
+  consumeOptions = undefined;
+  streamOptions = undefined;
 });
 
 afterEach(() => {
@@ -252,5 +268,75 @@ describe("refusals that are not about cost", () => {
 
     expect(res.status).toBe(500);
     expect(streamText).not.toHaveBeenCalled();
+  });
+});
+
+/** The rollback for a model call that fails after the user's turn is already
+ *  a row. Added 2026-09-04, after a live 400 from a bad
+ *  anthropic-workspace-id left three questions in a thread with no replies
+ *  and nothing to remove them. */
+describe("a failed model call does not leave the question in the thread", () => {
+  it("deletes the user turn it just inserted", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await post({ noteId: "n1", scope: "this_note", text: "q" });
+
+    // The route must actually hand consumeStream a handler. Asserting the
+    // source mentions onError would pass on a handler that never runs.
+    expect(consumeOptions?.onError).toBeTypeOf("function");
+
+    consumeOptions!.onError!(new Error("400 bad workspace id"));
+    await Promise.resolve();
+
+    expect(ports.deleteMessage).toHaveBeenCalledTimes(1);
+    // By id, and by the id THIS request inserted — not the newest row, which
+    // a concurrent turn could have written.
+    expect(ports.deleteMessage).toHaveBeenCalledWith("msg-1");
+  });
+
+  it("keeps the question when the answer was persisted first", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await post({ noteId: "n1", scope: "this_note", text: "q" });
+
+    // A stream that dies AFTER text arrived reaches onFinish as well. The
+    // user turn must survive, or the thread keeps an assistant reply to a
+    // question that is no longer there.
+    await streamOptions!.onFinish!({
+      text: "an answer",
+      steps: [],
+      usage: undefined,
+    });
+    consumeOptions!.onError!(new Error("died late"));
+    await Promise.resolve();
+
+    expect(ports.deleteMessage).not.toHaveBeenCalled();
+  });
+
+  it("survives a rollback that itself fails", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    ports.deleteMessage.mockRejectedValue(new Error("pg down"));
+
+    await post({ noteId: "n1", scope: "this_note", text: "q" });
+    consumeOptions!.onError!(new Error("400"));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Logged, not thrown. An unhandled rejection here would take the function
+    // down after the response had already been sent.
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it("still persists the question before the model call", async () => {
+    await post({ noteId: "n1", scope: "this_note", text: "q" });
+
+    // The insert happens BEFORE the model call on purpose — the rate limit
+    // counts rows in chat_messages, so a question that is not a row is a
+    // question that is not counted. This pins the ordering the rollback could
+    // tempt someone to reverse. Order, not just occurrence: deferring the
+    // insert until after streamText would still call both.
+    expect(ports.insertUserMessage).toHaveBeenCalledTimes(1);
+    expect(streamText).toHaveBeenCalledTimes(1);
+    expect(
+      ports.insertUserMessage.mock.invocationCallOrder[0],
+    ).toBeLessThan(streamText.mock.invocationCallOrder[0]);
   });
 });

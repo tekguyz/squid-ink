@@ -788,6 +788,24 @@ compare) then 20 user messages per rolling 60 seconds (one `count` against
 embedding and any model call. **Do not add a rate-limit table** — the table
 this feature already creates answers the question.
 
+**The user's turn is persisted BEFORE the model call, and rolled back if that
+call fails — added 2026-09-04.** The ordering is not incidental: the rate
+limit above counts rows in `chat_messages`, so a question that is not a row is
+a question that is not counted. The cost is that a failed model call used to
+leave the question in the thread forever, re-sent as history on every later
+turn — found in production when a malformed `ANTHROPIC_WORKSPACE_ID` 400'd
+three turns in a row.
+
+`insertUserMessage` therefore returns the new row's id, and
+`consumeStream`'s `onError` deletes **that id**, never "the newest row" — a
+concurrent turn could have written one. The `answered` flag, set at the top of
+`onFinish`, is what stops the rollback firing on a stream that died after text
+arrived: deleting a question under a persisted answer trades one orphan for a
+worse one. **Do not move the insert after the model call** to avoid needing
+the rollback; that silently un-gates the rate limit. Four tests in
+`route-gates.test.ts` pin all of it, and the rate-limit consequence is recorded
+in `docs/KNOWN_GAPS.md`.
+
 **`note_chunks.embedding IS NULL` is still the embedding queue and nothing
 here touches it.** Chat is read-only against `note_chunks`.
 

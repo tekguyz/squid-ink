@@ -129,7 +129,12 @@ async function handle(req: Request) {
 
   // 5. Persist the user's turn, then read history back. The insert lands
   //    first so the newest message is part of the history we send.
-  await ports.insertUserMessage(noteId, user.id, text, scope);
+  const userMessageId = await ports.insertUserMessage(
+    noteId,
+    user.id,
+    text,
+    scope,
+  );
   const history = trimHistory(await ports.readHistory(noteId));
 
   // 6. Build this turn's context from THIS turn's scope. Nothing is carried.
@@ -184,6 +189,9 @@ async function handle(req: Request) {
     };
   }
 
+  // Flipped by onFinish. Read by the rollback in consumeStream's onError.
+  let answered = false;
+
   const result = streamText({
     model: anthropic(MODEL),
     system,
@@ -192,6 +200,11 @@ async function handle(req: Request) {
     providerOptions: { anthropic: { thinking: { type: "adaptive" } } },
     ...(tools ? { tools, stopWhen: isStepCount(5) } : {}),
     onFinish: async ({ text: answer, steps, usage }) => {
+      // Set BEFORE the insert is awaited. onError and onFinish can both fire
+      // when a stream dies after some text arrived, and the rollback below
+      // must not delete a question that did get answered.
+      answered = true;
+
       // One line, kept deliberately. The cache is invisible otherwise: the
       // breakpoint can stop hitting from a change nowhere near this file and
       // nothing would fail, only the bill would move. Read it in the Vercel
@@ -223,7 +236,35 @@ async function handle(req: Request) {
   // closing the tab mid-answer cancels the only reader, onFinish never runs,
   // and the thread is left ending on a user turn with no reply and no log
   // line. Fire-and-forget: the response below still streams normally.
-  void result.consumeStream();
+  //
+  // onError is the ROLLBACK. The user's turn is persisted at step 5, before
+  // this call, because the rate limit counts rows in chat_messages and a
+  // question that is not a row is a question that is not counted. The cost of
+  // that ordering is that a failed model call leaves a question in the thread
+  // with no reply, forever — nothing else deletes it, and it is re-sent as
+  // history on every later turn. Undoing the one insert we know the id of is
+  // the smallest fix that keeps the thread honest.
+  //
+  // The `answered` guard is what stops this deleting a question that DID get
+  // an answer: a stream that dies after some text arrived reaches onFinish
+  // too, and removing the user turn under a persisted assistant turn would
+  // trade one orphan for a worse one.
+  //
+  // Deliberately NOT re-counted against the rate limit. A caller hammering a
+  // broken model can now retry without being throttled by their own failures,
+  // which is the right trade at single-owner scale and is recorded in
+  // docs/KNOWN_GAPS.md.
+  void result.consumeStream({
+    onError: (error) => {
+      console.error("[chat] stream failed", error);
+      if (answered) return;
+      void ports.deleteMessage(userMessageId).catch((cleanupError) => {
+        // Best effort. The thread keeps a dangling question, which is the
+        // pre-2026-09-04 behaviour rather than a new failure mode.
+        console.error("[chat] failed to roll back the user turn", cleanupError);
+      });
+    },
+  });
 
   // sendReasoning DEFAULTS TO TRUE in ai 7.0.92 — read from
   // node_modules/ai/dist/index.js:7932, not from the docs, which describe it
