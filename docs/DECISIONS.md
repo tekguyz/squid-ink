@@ -392,6 +392,29 @@ webhooks, MCP bridge, real-time PII redaction, profile context box,
 share-preview/OG image, guest link controls, PWA, full brand identity
 (logo/icons — name is retained, see Branding above), real docs/copy. Full
 phase assignment for all of the above is in ROADMAP.md §8.
+**Note auto-titling** (locked 2026-09-05, shipped the same day)
+- **The title is derived from generated note content, as ONE MORE FIELD on
+  the structured note-generation call that already runs.** `title` sits
+  alongside `summary`, `takeaways` and `action_items` in the response schema,
+  required at every depth including Brief, because naming a note is not part
+  of the note's body.
+- **Rejected: a separate, dedicated model call.** It buys nothing the existing
+  call cannot produce, and this pipeline's whole cost discipline is built on
+  counting model calls — `scripts/verify-notegen-pipeline.mjs` counts them, and
+  the count did not move.
+- **Rejected: manual naming only.** ROADMAP §4's cross-note citation
+  requirement is that a chip says *which* meeting supports a claim. Leaving
+  that to the user means it does not happen, and every chip reads "Untitled
+  note".
+- **A hand-typed title is never overwritten, and `notes.title` being nullable
+  with no default is what enforces it.** The write is one statement guarded on
+  `is('title', null)`. "Untitled note" is a render-time fallback, never a
+  stored string, so null is an exact test for "nobody has named this".
+- **Notes already untitled are deliberately not backfilled** — same shape as
+  the persona-provisioning no-backfill decision. They are at
+  `notegen_status = 'completed'` and so are not eligible for the claim; see
+  `docs/KNOWN_GAPS.md` for what a backfill would cost.
+
 **Deployment** (ad hoc — happened during Prompt 3, not originally planned)
 - Live at `https://squid-ink.vercel.app` as of 2026-08-30. Sign-in confirmed
   working end-to-end post magic-link fix (see Auth above).
