@@ -1,6 +1,9 @@
 import type { DepthPlan } from "@/lib/notegen/depth-policy";
 import type { LensPrompt } from "@/lib/notegen/lens-prompts";
-import type { GeneratedNote } from "@/lib/notegen/persist-result";
+import {
+  normalizeTitle,
+  type GeneratedNote,
+} from "@/lib/notegen/persist-result";
 
 /** The ONLY module in this track that knows Gemini's wire format.
  *
@@ -79,6 +82,19 @@ export function systemPromptFor(lens: LensPrompt, plan: DepthPlan): string {
     "",
     lens.framing,
     "",
+    // AHEAD of the scope instruction, not after it. Brief's instruction opens
+    // "Extract only two things", and a title asked for after that reads as a
+    // contradiction of the sentence immediately above it. Naming the note is
+    // not part of the note's body, and the order is what says so.
+    "First, name the note. Return a title: a short, specific name for this " +
+      "conversation, under about ten words, in sentence case and with no " +
+      "trailing full stop. Name what the conversation was actually about — " +
+      "the project, the decision, the people — so it can be told apart from " +
+      "a list of other meetings at a glance. Do not write a generic label " +
+      'such as "Meeting notes" or "Team sync".',
+    "",
+    "Then produce the note body itself.",
+    "",
     SCOPE_INSTRUCTIONS[plan.scope],
     "",
     "Ground every statement in the transcript. Do not speculate about what " +
@@ -96,13 +112,21 @@ export function responseSchemaFor(plan: DepthPlan): Record<string, unknown> {
   // Brief produces no summary, so the field is absent from the schema rather
   // than present-but-nullable. A nullable field the prompt separately tells
   // the model to leave empty is two instructions that can disagree.
+  // title is on EVERY depth, including Brief. It is the note's name, not part
+  // of the note's body, so the summary/no-summary split above does not reach
+  // it — a brief note still has to be distinguishable in a citation chip.
   const properties: Record<string, unknown> = plan.wantsSummary
     ? {
+        title: { type: "string" },
         summary: { type: "string" },
         takeaways: stringArray,
         action_items: stringArray,
       }
-    : { takeaways: stringArray, action_items: stringArray };
+    : {
+        title: { type: "string" },
+        takeaways: stringArray,
+        action_items: stringArray,
+      };
 
   return { type: "object", properties, required: Object.keys(properties) };
 }
@@ -139,8 +163,15 @@ export function parseGeneratedNote(rawText: string): GeneratedNote {
   // A JSON `null` body parses fine and would then throw on property access.
   const record = (parsed ?? {}) as Record<string, unknown>;
   const summary = typeof record.summary === "string" ? record.summary : null;
+  // Normalised here AND again in persistGeneratedNote, deliberately. The rule
+  // is idempotent, and the second call is what covers a future non-Gemini
+  // NoteGenerator that never passed through this parser.
+  const title = normalizeTitle(
+    typeof record.title === "string" ? record.title : null,
+  );
 
   return {
+    title,
     summary,
     takeaways: stringsFrom(record.takeaways),
     actionItems: stringsFrom(record.action_items),

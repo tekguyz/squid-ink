@@ -544,6 +544,38 @@ deleted `persona-presets.ts`. An unrecognised slug falls back to neutral
 rather than throwing. Which persona row supplies `name` and `depth` is
 settled in § Data above; do not re-derive that rule here.
 
+**The note's TITLE is one more field on this same call — shipped 2026-09-05.**
+`title` sits alongside `summary`, `takeaways` and `action_items` in
+`responseSchemaFor`, and is `required` at **every** depth including Brief: a
+title names the note rather than forming part of its body, so the
+summary/no-summary split does not reach it. There is no second model call and
+there must never be one — `scripts/verify-notegen-pipeline.mjs` counts Gemini
+calls, and that count is the proof.
+
+The write is `setTitleIfUnset` in `notegen-ports.ts`, one statement:
+`update({ title }) ... eq('id', …) ... is('title', null)`. **`is('title',
+null)` IS the overwrite guard.** `notes.title` is `text`, nullable, with no
+default — "Untitled note" is a render-time fallback in
+`lib/notes/note-view-model.ts`, `lib/rag/search-tool.ts` and
+`components/note-detail/chat/parse-citations.ts`, never a stored string — so
+null is an exact test for "nobody has named this note" and a hand-typed title
+matches zero rows. Proved against the live database, not a fake: proof 6 of
+that script seeds a hand-typed title and reads it back unchanged.
+
+It sits with the chunks, before the `'completed'` flip, and **the staleness
+sweep is NOT a rollback for it** — the sweep flips `notegen_status` only and
+never nulls a title, so a run that titles a note and then loses
+`completeNotegen` leaves a `'failed'` note wearing that title, permanently.
+Accepted: a content-derived title beats "Untitled note" either way.
+
+A store error there is **logged and swallowed**, never thrown — failing a
+generation that actually succeeded, over a label, would send the row to the
+sweep for nothing. `persistGeneratedNote` therefore returns
+`{ title: "written" | "kept" | "none" }` and the log line prints it, because
+what the model returned and what the row carries are different facts.
+**Nothing backfills the notes that are already untitled** — see
+`docs/KNOWN_GAPS.md`.
+
 Generated chunks always write `persona_id: null` and `embedding: null`. The
 embedding stays null only until the embedding phase runs, which since
 2026-09-03 is the very next step in the same `after()` chain — § Embeddings
@@ -570,8 +602,11 @@ idempotency rather than cleanup. This is designed behaviour: those seed rows
 were a fixture standing in for this pipeline.
 
     node scripts/verify-notegen-pipeline.mjs   # no dev server needed:
-                                               # five proofs, Gemini calls
-                                               # counted, rows deleted as owner
+                                               # six proofs, Gemini calls
+                                               # counted, rows deleted as owner.
+                                               # Proof 1 reads back a generated
+                                               # title, proof 6 proves a
+                                               # hand-typed one survives.
     node scripts/verify-persona-selection.mjs  # no dev server needed:
                                                # six proofs — seeding, the
                                                # guarded write, the frozen

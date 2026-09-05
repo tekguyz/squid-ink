@@ -75,7 +75,9 @@ describe("parseAnswer — cross-note markers", () => {
     expect(runs[0].cite).toMatchObject({ label: "Pricing sync · Takeaway" });
   });
 
-  it("falls back to 'Untitled note' — auto-titling does not exist yet", () => {
+  it("falls back to 'Untitled note' for a note auto-titling never reached", () => {
+    // Auto-titling shipped 2026-09-05 and deliberately does not backfill, so
+    // this fallback stays live for every note generated before it.
     const { runs } = parseAnswer(
       "See [[cite:c1]].",
       [cite({ noteTitle: null })],

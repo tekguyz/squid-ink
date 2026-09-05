@@ -65,6 +65,34 @@ export function createNotegenStore(db: SupabaseClient): NotegenStore {
       if (error) throw new Error(`chunk insert failed: ${error.message}`);
     },
 
+    async setTitleIfUnset(noteId, title) {
+      // is("title", null) IS the null-guard, and it is the enforcement rather
+      // than a nicety. notes.title has no default, so null means "never named"
+      // — a title the user typed on Note Detail is non-null and this UPDATE
+      // matches zero rows against it. Postgres row-locks the matched row, so
+      // this is the same one-statement shape as the claim: no read-then-write
+      // window in which a rename could land between a check and a write.
+      //
+      // Deliberately NOT scoped on notegen_status. The caller only reaches
+      // here on a row it has already claimed, and a second status clause would
+      // be a second reason this write can silently not apply.
+      const { data, error } = await db
+        .from("notes")
+        .update({ title })
+        .eq("id", noteId)
+        .is("title", null)
+        .select("id");
+
+      if (error) {
+        // Logged, not thrown. A note that generated fine but kept the fallback
+        // title is a cosmetic loss; throwing here would fail the whole
+        // generation and send the row to the staleness sweep over a label.
+        console.error(`[notegen] could not title ${noteId}`, error.message);
+        return false;
+      }
+      return (data?.length ?? 0) === 1;
+    },
+
     async completeNotegen(noteId) {
       // Atomic, same shape as the claim: the eq on notegen_status is what
       // makes a lost race return zero rows instead of overwriting somebody

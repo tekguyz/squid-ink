@@ -18,7 +18,8 @@ export interface Citation {
   key: string;
   chunkId: string;
   noteId: string;
-  /** Null until note auto-titling exists. The chip renders "Untitled note". */
+  /** Null on a note written before auto-titling shipped (2026-09-05), which
+   *  nothing backfills. The chip renders "Untitled note" for those. */
   noteTitle: string | null;
   chunkType: string;
   /** "04:12", or null for a structured chunk that has no timestamp. */

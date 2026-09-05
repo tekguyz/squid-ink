@@ -23,6 +23,12 @@ import type { ChunkMetadata } from "@/lib/notes/types";
  *  pipeline; this is the pipeline arriving. */
 
 export interface GeneratedNote {
+  /** A short, content-derived name for the note, written to notes.title.
+   *
+   *  Null when the model returned nothing usable. It is generated as ONE MORE
+   *  FIELD on the same structured call that produces everything else here —
+   *  never a second, separately-billed model call. */
+  title: string | null;
   /** Null when the depth produced none — Brief asks for decisions and action
    *  items only. Not an empty string: absent and blank are different, and only
    *  one of them should reach the database as a row. */
@@ -52,12 +58,58 @@ export interface NotegenChunkInsert {
 export interface NotegenStore {
   deleteGeneratedChunks(noteId: string): Promise<void>;
   insertChunks(rows: NotegenChunkInsert[]): Promise<void>;
+  /** Writes notes.title ONLY where it is still null.
+   *
+   *  THE NULL-GUARD IS THE WHOLE POINT. notes.title is nullable with no
+   *  default — "Untitled note" is a render-time fallback in
+   *  lib/notes/note-view-model.ts, never a stored string — so "is null" is an
+   *  exact test for "nobody has named this note". A title the user typed is
+   *  non-null and this write matches zero rows against it.
+   *
+   *  FALSE MEANS THE WRITE DID NOT APPLY, AND IT MEANS TWO THINGS: the row
+   *  already carried a title, or the UPDATE errored and the implementation
+   *  logged it. They are deliberately not distinguished, because neither is a
+   *  reason to fail the generation that produced the title — a note with the
+   *  fallback name is a cosmetic loss, not a lost note. Do NOT widen this into
+   *  a tagged union until a caller exists that would branch on the difference;
+   *  the log line in generate-note.ts reports "kept" for both. */
+  setTitleIfUnset(noteId: string, title: string): Promise<boolean>;
   /** Atomic: flips 'generating' -> 'completed' only if the row is still
    *  'generating'. False means the staleness sweep took it first. */
   completeNotegen(noteId: string): Promise<boolean>;
   /** Atomic: flips 'generating' -> 'failed'. False means somebody else moved
    *  it. Terminal — there is no retry. */
   failNotegen(noteId: string): Promise<boolean>;
+}
+
+/** What actually happened to the title, so the function log can say it.
+ *
+ *  "written" means the guarded UPDATE matched; "kept" means it did not, which
+ *  covers both a title the user typed and a logged write error; "none" means
+ *  the model returned nothing usable. Reported because the model returning a
+ *  title and the row carrying one are different facts, and a log that only
+ *  knows the first would say the note was titled when it was not. */
+export interface PersistOutcome {
+  title: "written" | "kept" | "none";
+}
+
+/** A title is a label, not a sentence. The model is asked for something
+ *  short; this is the backstop for when it answers with a paragraph anyway,
+ *  because a citation chip has to stay readable. Blank collapses to null so
+ *  the fallback keeps rendering rather than a row holding an empty string. */
+export const MAX_TITLE_LENGTH = 120;
+
+export function normalizeTitle(value: string | null): string | null {
+  const trimmed = value?.replace(/\s+/g, " ").trim();
+  if (!trimmed) return null;
+  if (trimmed.length <= MAX_TITLE_LENGTH) return trimmed;
+
+  // Cut back to a word boundary when there is one, so a runaway answer does
+  // not land in a citation chip ending mid-word. Falls through to a hard slice
+  // for the pathological single-token case, which has no boundary to find.
+  const cut = trimmed.slice(0, MAX_TITLE_LENGTH);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd();
 }
 
 /** Two digits, matching ChunkMetadata.n's documented "01", "02", "03". */
@@ -126,13 +178,34 @@ export async function persistGeneratedNote(args: {
   noteId: string;
   userId: string;
   note: GeneratedNote;
-}): Promise<void> {
+}): Promise<PersistOutcome> {
   const { store, noteId, userId, note } = args;
 
   const rows = generatedChunkRowsFor({ noteId, userId, note });
 
   await store.deleteGeneratedChunks(noteId);
   if (rows.length > 0) await store.insertChunks(rows);
+
+  // Before the 'completed' flip, same position as the chunks — everything this
+  // run produces lands while the row is still ours.
+  //
+  // THE SWEEP IS NOT A ROLLBACK FOR THIS ONE, AND SAYING SO PLAINLY MATTERS.
+  // The staleness sweep only flips notegen_status to 'failed'; it does not
+  // null the title. So a run that titles a note and then loses completeNotegen
+  // leaves a permanently-'failed' note wearing this run's title, and there is
+  // no retry to correct it. That is accepted rather than overlooked: a
+  // content-derived title on a failed note still beats "Untitled note", and it
+  // is the same trade the chunks already make. The guard lives in the store,
+  // not here — one place decides whether the write applies.
+  const title = normalizeTitle(note.title);
+  // "kept" covers both a hand-typed title the guard refused and a logged write
+  // error. Neither fails the generation; see NotegenStore.setTitleIfUnset.
+  let titleOutcome: PersistOutcome["title"] = "none";
+  if (title) {
+    titleOutcome = (await store.setTitleIfUnset(noteId, title))
+      ? "written"
+      : "kept";
+  }
 
   // Zero rows still completes. A transcript with nothing decided in it is a
   // legitimate outcome, and leaving the row at 'generating' would hand it to
@@ -144,4 +217,6 @@ export async function persistGeneratedNote(args: {
       `note ${noteId} was no longer 'generating' when its notes were ready`,
     );
   }
+
+  return { title: titleOutcome };
 }

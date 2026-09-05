@@ -118,7 +118,7 @@ export async function generateClaimedNote(
       plan,
     });
 
-    await persistGeneratedNote({
+    const persisted = await persistGeneratedNote({
       store: ports.store,
       noteId: row.id,
       userId: row.user_id,
@@ -130,6 +130,11 @@ export async function generateClaimedNote(
     ports.log(
       `note ${row.id}: generated under ${lens.label} ` +
         `(${persona.depth}/${plan.thinkingLevel}, persona from ${persona.source}) — ` +
+        // What the ROW carries, not what the model returned. "kept" means the
+        // null-guard refused the write because the note was already named —
+        // the guarantee this pipeline owes, so the log has to be able to say
+        // it happened.
+        `title=${persisted.title}, ` +
         `summary=${note.summary ? "yes" : "no"}, ` +
         `${note.takeaways.length} takeaway(s), ` +
         `${note.actionItems.length} action item(s).`,

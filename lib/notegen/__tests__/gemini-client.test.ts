@@ -55,15 +55,23 @@ describe("systemPromptFor", () => {
 describe("responseSchemaFor", () => {
   it("omits summary entirely when the depth wants none", () => {
     const schema = responseSchemaFor(planForDepth("brief"));
+    // title survives the omission — it is the note's name, not part of its
+    // body, and a brief note still has to be nameable in a citation chip.
     expect(Object.keys(schema.properties as object)).toEqual([
+      "title",
       "takeaways",
       "action_items",
     ]);
   });
 
-  it("requires all three when the depth wants a summary", () => {
+  it("requires all four when the depth wants a summary", () => {
     const schema = responseSchemaFor(planForDepth("dense"));
-    expect(schema.required).toEqual(["summary", "takeaways", "action_items"]);
+    expect(schema.required).toEqual([
+      "title",
+      "summary",
+      "takeaways",
+      "action_items",
+    ]);
   });
 
   it("types both lists as arrays of strings", () => {
@@ -83,7 +91,7 @@ describe("parseGeneratedNote", () => {
       parseGeneratedNote(
         '{"summary":"S","takeaways":["a","b"],"action_items":["c"]}',
       ),
-    ).toEqual({ summary: "S", takeaways: ["a", "b"], actionItems: ["c"] });
+    ).toEqual({ title: null, summary: "S", takeaways: ["a", "b"], actionItems: ["c"] });
   });
 
   it("returns a null summary when the field is absent", () => {
@@ -123,9 +131,46 @@ describe("parseGeneratedNote", () => {
 
   it("survives a JSON null body without throwing on property access", () => {
     expect(parseGeneratedNote("null")).toEqual({
+      title: null,
       summary: null,
       takeaways: [],
       actionItems: [],
     });
+  });
+});
+
+describe("title in the structured output", () => {
+  it("asks for a title at every depth, including Brief", () => {
+    // A brief note still has to be distinguishable in a citation chip, so the
+    // summary/no-summary split does not reach the title.
+    for (const depth of ["brief", "dense"] as const) {
+      const schema = responseSchemaFor(planForDepth(depth)) as {
+        properties: Record<string, unknown>;
+        required: string[];
+      };
+      expect(schema.properties.title).toEqual({ type: "string" });
+      expect(schema.required).toContain("title");
+    }
+  });
+
+  it("parses and normalises the title out of the same response", () => {
+    // ONE call. The title is a field on the structured note, never a second
+    // model call.
+    expect(
+      parseGeneratedNote(
+        JSON.stringify({
+          title: "  Mapping   before billing ",
+          summary: "S",
+          takeaways: [],
+          action_items: [],
+        }),
+      ).title,
+    ).toBe("Mapping before billing");
+  });
+
+  it("returns a null title when the model omitted or blanked it", () => {
+    expect(parseGeneratedNote(JSON.stringify({ takeaways: [] })).title).toBe(null);
+    expect(parseGeneratedNote(JSON.stringify({ title: "  " })).title).toBe(null);
+    expect(parseGeneratedNote(JSON.stringify({ title: 7 })).title).toBe(null);
   });
 });

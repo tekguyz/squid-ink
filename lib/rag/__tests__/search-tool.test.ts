@@ -69,8 +69,9 @@ describe("searchNotes", () => {
   });
 
   it("tolerates a null title and a null ts_start", async () => {
-    // Note auto-titling does not exist, so most rows have a null title. A
-    // structured chunk has no timestamp at all.
+    // Auto-titling shipped 2026-09-05 and nothing backfills, so every note
+    // written before it still has a null title. A structured chunk has no
+    // timestamp at all.
     const p = ports([
       { ...row(1), note_title: null, ts_start: null, chunk_type: "takeaway" },
     ]);

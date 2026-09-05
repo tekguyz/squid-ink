@@ -168,13 +168,45 @@ describe("createNotegenStore", () => {
     const rows = generatedChunkRowsFor({
       noteId: "n1",
       userId: "u1",
-      note: { summary: "S", takeaways: ["t"], actionItems: ["a"] },
+      note: { title: "T", summary: "S", takeaways: ["t"], actionItems: ["a"] },
     });
     expect(rows.every((r) => r.persona_id === null)).toBe(true);
 
     const { db, chain } = fakeDb({ data: null, error: null });
     await createNotegenStore(db).deleteGeneratedChunks("n1");
     expect(chain).toContainEqual(["is", "persona_id", null]);
+  });
+
+  it("writes the title ONLY where notes.title is still null", async () => {
+    // THE NULL-GUARD. notes.title is nullable with no default — "Untitled
+    // note" is a render-time fallback, never a stored string — so is(null) is
+    // an exact test for "nobody has named this note". Without this clause a
+    // regeneration would overwrite a title the user typed.
+    const { db, chain, tables } = fakeDb();
+    await createNotegenStore(db).setTitleIfUnset("n1", "Mapping before billing");
+
+    expect(tables).toEqual(["notes"]);
+    expect(chain).toContainEqual(["update", { title: "Mapping before billing" }]);
+    expect(chain).toContainEqual(["eq", "id", "n1"]);
+    expect(chain).toContainEqual(["is", "title", null]);
+  });
+
+  it("reports false, and does not throw, when the row already had a title", async () => {
+    // A manually renamed note matches zero rows. Cosmetic, not a failure: the
+    // generation that produced the title still succeeded.
+    const { db } = fakeDb({ data: [], error: null });
+    expect(await createNotegenStore(db).setTitleIfUnset("n1", "T")).toBe(false);
+  });
+
+  it("logs and reports false on a write error, rather than throwing", async () => {
+    // Throwing would fail a generation that actually succeeded, and send the
+    // row to the staleness sweep over a label. Same reasoning as failNotegen.
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { db } = fakeDb({ data: null, error: { message: "boom" } });
+
+    expect(await createNotegenStore(db).setTitleIfUnset("n1", "T")).toBe(false);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   it("guards completeNotegen on 'generating' exactly", async () => {

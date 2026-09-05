@@ -32,6 +32,7 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
       source: "row" as const,
     })),
     generate: vi.fn(async () => ({
+      title: "T",
       summary: "S",
       takeaways: ["t"],
       actionItems: ["a"],
@@ -39,6 +40,7 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
     store: {
       deleteGeneratedChunks: vi.fn(async () => {}),
       insertChunks: vi.fn(async () => {}),
+      setTitleIfUnset: vi.fn(async () => true),
       completeNotegen: vi.fn(async () => true),
       failNotegen: vi.fn(async () => true),
     },

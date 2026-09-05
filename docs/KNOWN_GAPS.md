@@ -1979,20 +1979,44 @@ Screenshot review against the shipped app, not the design file.
   before it was trusted: restoring the toggle to its original `right-3
   bottom-3` turns 48 green into 40 green and 8 failures naming both colliding
   elements. See `CLAUDE.md` § Layout.
-- **Notes have no auto-titling.** Default is the literal string "Untitled
-  note," unset until manually renamed. Blocks ROADMAP §4's "ask all notes"
-  citation requirement (cite *which* meeting supports each claim) — a
-  citation naming "Untitled note" three times over is not a citation.
-  Needs a decision before cross-note chat ships: derive a title from
-  generated content, a dedicated call, or require manual naming.
+- **Notes have no auto-titling — RESOLVED 2026-09-05.** `notes.title` was
+  nullable with no default, unset until manually renamed, and every surface
+  rendered the literal "Untitled note". That blocked ROADMAP §4's "ask all
+  notes" citation requirement (cite *which* meeting supports each claim) — a
+  citation naming "Untitled note" three times over is not a citation. It had a
+  live consumer from 2026-09-03, when cross-note chat shipped without waiting
+  for it and its `[[cite:c<n>]]` chips all read the same.
 
-  **Still open, and it now has a live consumer — 2026-09-03.** Cross-note
-  chat shipped without waiting for this. A `[[cite:c<n>]]` chip renders
-  `notes.title` and falls back to the literal "Untitled note", so on an
-  untitled archive every cross-note citation reads the same and the reader
-  cannot tell the meetings apart. The feature works; the citations are
-  simply weaker than they should be. This was flagged up front in that
-  pack rather than discovered late.
+  **The decision taken was the cheapest of the three options that were open:
+  derive the title from generated content as ONE MORE FIELD on the structured
+  note-generation call that already runs.** Not a second call — `title` joins
+  `summary`, `takeaways` and `action_items` in `responseSchemaFor`, at every
+  depth including Brief, and the verify script's Gemini call counter is what
+  proves no second call appeared. Not manual-naming-only either.
+
+  `notes.title` is unchanged: still `title text`, nullable, no default. That
+  nullability is now load-bearing, because it is the whole overwrite guard —
+  `setTitleIfUnset` in `lib/notegen/notegen-ports.ts` is one statement,
+  `update({title}) ... eq(id) ... is('title', null)`, so a title the user
+  typed matches zero rows. "Untitled note" is still a render-time fallback in
+  three files and must stay: nothing backfills the notes that are already
+  untitled today.
+
+  Measured 2026-09-05 by `scripts/verify-notegen-pipeline.mjs`, which grew a
+  sixth proof for it. A note seeded with a null title came back as
+  "Sequencing of mapping work and billing migration"; a note seeded with a
+  hand-typed title generated normally and kept its own name; three Gemini
+  calls across all six proofs, unchanged.
+
+  **STILL OPEN, deliberately: nothing backfills.** Every note that generated
+  before 2026-09-05 keeps its null title and still renders the fallback. The
+  claim guard requires `notegen_status IS NULL`, and those rows are
+  `'completed'`, so they are not eligible and re-running the sweep does
+  nothing for them. Backfilling would mean clearing `notegen_status` on them —
+  which re-runs the full delete-then-insert of their chunks and spends a
+  Gemini call each — or a separate title-only pass. Neither was in scope. The
+  transcripts are on the rows, so no re-transcription would be needed either
+  way; this is a cost decision, not a blocked one.
 
 - **Cross-note search ignores `persona_id` — RESOLVED 2026-09-05, no code
   change.** `note_chunks` carries the lens that produced a chunk, and

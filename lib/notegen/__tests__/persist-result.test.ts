@@ -2,11 +2,14 @@ import { describe, it, expect, vi } from "vitest";
 import {
   generatedChunkRowsFor,
   persistGeneratedNote,
+  normalizeTitle,
+  MAX_TITLE_LENGTH,
   type GeneratedNote,
   type NotegenStore,
 } from "@/lib/notegen/persist-result";
 
 const NOTE: GeneratedNote = {
+  title: "Mapping before billing",
   summary: "They agreed to ship the mapping work first.",
   takeaways: ["Mapping ships first", "Billing slips a week"],
   actionItems: ["Dana to draft the sequencing plan"],
@@ -23,6 +26,10 @@ function storeSpy(overrides: Partial<NotegenStore> = {}) {
     }),
     completeNotegen: vi.fn(async () => {
       calls.push("complete");
+      return true;
+    }),
+    setTitleIfUnset: vi.fn(async () => {
+      calls.push("title");
       return true;
     }),
     failNotegen: vi.fn(async () => true),
@@ -96,7 +103,7 @@ describe("generatedChunkRowsFor", () => {
     const rows = generatedChunkRowsFor({
       noteId: "n1",
       userId: "u1",
-      note: { summary: "   ", takeaways: ["", "  ", "real"], actionItems: [] },
+      note: { title: null, summary: "   ", takeaways: ["", "  ", "real"], actionItems: [] },
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].content).toBe("real");
@@ -126,7 +133,7 @@ describe("persistGeneratedNote", () => {
       userId: "u1",
       note: NOTE,
     });
-    expect(calls).toEqual(["delete", "insert", "complete"]);
+    expect(calls).toEqual(["delete", "insert", "title", "complete"]);
   });
 
   it("still deletes and flips when the model produced nothing usable", async () => {
@@ -138,7 +145,7 @@ describe("persistGeneratedNote", () => {
       store,
       noteId: "n1",
       userId: "u1",
-      note: { summary: null, takeaways: [], actionItems: [] },
+      note: { title: null, summary: null, takeaways: [], actionItems: [] },
     });
     expect(calls).toEqual(["delete", "complete"]);
   });
@@ -148,5 +155,80 @@ describe("persistGeneratedNote", () => {
     await expect(
       persistGeneratedNote({ store, noteId: "n1", userId: "u1", note: NOTE }),
     ).rejects.toThrow(/no longer 'generating'/);
+  });
+});
+
+describe("title persistence", () => {
+  it("offers the generated title to the store before completing", async () => {
+    const { store } = storeSpy();
+    await persistGeneratedNote({
+      store,
+      noteId: "n1",
+      userId: "u1",
+      note: NOTE,
+    });
+    expect(store.setTitleIfUnset).toHaveBeenCalledWith(
+      "n1",
+      "Mapping before billing",
+    );
+  });
+
+  it("does not write a blank or missing title at all", async () => {
+    // Null is what keeps the "Untitled note" fallback rendering. An empty
+    // string in the column would render as an empty chip instead.
+    const { store } = storeSpy();
+    await persistGeneratedNote({
+      store,
+      noteId: "n1",
+      userId: "u1",
+      note: { ...NOTE, title: "   " },
+    });
+    expect(store.setTitleIfUnset).not.toHaveBeenCalled();
+  });
+
+  it("still completes when the note was already titled by hand", async () => {
+    // setTitleIfUnset returning false means the null-guard refused the write.
+    // That is the guard working, not a generation failure.
+    const { store } = storeSpy({
+      setTitleIfUnset: vi.fn(async () => false),
+    });
+    await expect(
+      persistGeneratedNote({ store, noteId: "n1", userId: "u1", note: NOTE }),
+    ).resolves.toEqual({ title: "kept" });
+    expect(store.completeNotegen).toHaveBeenCalledWith("n1");
+  });
+
+  it("reports what the ROW carries, not what the model returned", async () => {
+    // The distinction the function log depends on: a model that returned a
+    // title and a row that took one are different facts.
+    const { store } = storeSpy();
+    await expect(
+      persistGeneratedNote({ store, noteId: "n1", userId: "u1", note: NOTE }),
+    ).resolves.toEqual({ title: "written" });
+
+    await expect(
+      persistGeneratedNote({
+        store,
+        noteId: "n1",
+        userId: "u1",
+        note: { ...NOTE, title: null },
+      }),
+    ).resolves.toEqual({ title: "none" });
+  });
+
+  it("collapses whitespace and caps a runaway title", () => {
+    expect(normalizeTitle("  Mapping\n  before   billing ")).toBe(
+      "Mapping before billing",
+    );
+    // Cut back to a word boundary, so a chip never ends mid-word.
+    const long = normalizeTitle(`${"word ".repeat(60)}end`)!;
+    expect(long.length).toBeLessThanOrEqual(MAX_TITLE_LENGTH);
+    expect(long.endsWith("word")).toBe(true);
+
+    // One unbroken token has no boundary to find, so a hard slice is the only
+    // answer left.
+    expect(normalizeTitle("x".repeat(200))?.length).toBe(MAX_TITLE_LENGTH);
+    expect(normalizeTitle(null)).toBe(null);
+    expect(normalizeTitle("   ")).toBe(null);
   });
 });

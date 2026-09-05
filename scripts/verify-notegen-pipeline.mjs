@@ -22,11 +22,13 @@
  * the guard — the claim requires exactly that state, and a row in any other
  * state is what Proof 2 and Proof 5 exercise.
  *
- * Five proofs:
+ * Six proofs:
  *
  *   1. A completed note with a real transcript reaches
  *      notegen_status = 'completed' with real chunks behind it, for exactly
- *      one Gemini call.
+ *      one Gemini call — AND, seeded with a null title, comes back carrying a
+ *      real content-derived one. The call count is what proves the title was
+ *      one more field on that same call rather than a second billed call.
  *   2. A repeat claim on that same row is contended, and the counter does not
  *      move.
  *   3. Two concurrent claims on one fresh row yield exactly one winner, and
@@ -35,6 +37,9 @@
  *      DEFAULT_PERSONA_FALLBACK — and that the query was scoped by slug.
  *   5. A completed note with a whitespace transcript goes terminal without a
  *      Gemini call.
+ *   6. A note seeded with a hand-typed title generates normally and comes back
+ *      wearing that same title — the null-guard's guarantee, measured against
+ *      the live database rather than against a fake builder chain.
  *
  * Runs against the authenticated (RLS) client throughout, which is what the
  * Server Action uses. It needs NO dev server.
@@ -92,6 +97,9 @@ const { claimAndGenerate } = await import(
 );
 const { DEFAULT_PERSONA_ID } = await import(
   new URL("lib/notes/default-persona.ts", ROOT).href
+);
+const { MAX_TITLE_LENGTH } = await import(
+  new URL("lib/notegen/persist-result.ts", ROOT).href
 );
 
 // ---------------------------------------------------------------------------
@@ -202,6 +210,15 @@ async function statusOf(noteId) {
   return data?.notegen_status ?? null;
 }
 
+async function titleOf(noteId) {
+  const { data } = await owner
+    .from("notes")
+    .select("title")
+    .eq("id", noteId)
+    .maybeSingle();
+  return data?.title ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Proofs
 // ---------------------------------------------------------------------------
@@ -231,7 +248,10 @@ try {
   // ---- Proof 1 -------------------------------------------------------------
   console.log("\nProof 1 — a completed note generates, for one Gemini call");
   const before1 = geminiCalls;
-  const note1 = await seedNote("notegen proof 1", TRANSCRIPT);
+  // Seeded with NO title, deliberately. Every note here used to arrive already
+  // named, which meant the auto-titling write's null-guard matched zero rows
+  // and the write itself was never exercised against the live database.
+  const note1 = await seedNote(null, TRANSCRIPT);
   const outcome1 = await claimAndGenerate(ports, note1);
 
   check("outcome is 'generated'", outcome1 === "generated", `(${outcome1})`);
@@ -263,6 +283,22 @@ try {
   check(
     "no chunk content is blank",
     (chunks ?? []).every((c) => c.content.trim().length > 0),
+  );
+
+  // The title is ONE MORE FIELD on the call counted above — the count is the
+  // proof that no second, separately-billed call produced it.
+  const title1 = await titleOf(note1.id);
+  console.log(`  title: ${JSON.stringify(title1)}`);
+  check("the row now carries a real title", Boolean(title1?.trim()));
+  check(
+    "it is not the render-time fallback",
+    title1 !== "Untitled note",
+    `(${title1})`,
+  );
+  check(
+    `it is at most ${MAX_TITLE_LENGTH} characters`,
+    (title1?.length ?? 0) <= MAX_TITLE_LENGTH,
+    `(${title1?.length})`,
   );
 
   const byType = {};
@@ -321,7 +357,23 @@ try {
   );
   check("row reads notegen_status = 'failed'", (await statusOf(note3.id)) === "failed");
 
-  console.log(`\ntotal Gemini calls across all five proofs: ${geminiCalls}`);
+  // ---- Proof 6 -------------------------------------------------------------
+  console.log("\nProof 6 — a hand-typed title survives generation");
+  // THE GUARANTEE THIS TRACK OWES. notes.title is nullable with no default, so
+  // a non-null value can only have been typed by its owner, and the guarded
+  // UPDATE (`is('title', null)`) must match zero rows against it. Proved
+  // against the live database rather than against a fake builder chain.
+  const HAND_TYPED = "Named by hand, do not overwrite";
+  const note4 = await seedNote(HAND_TYPED, TRANSCRIPT);
+  const outcome6 = await claimAndGenerate(ports, note4);
+
+  check("the note still generated", outcome6 === "generated", `(${outcome6})`);
+  check("row reads notegen_status = 'completed'", (await statusOf(note4.id)) === "completed");
+  const title4 = await titleOf(note4.id);
+  console.log(`  title after generation: ${JSON.stringify(title4)}`);
+  check("the hand-typed title is unchanged", title4 === HAND_TYPED, `(${title4})`);
+
+  console.log(`\ntotal Gemini calls across all six proofs: ${geminiCalls}`);
 } finally {
   // As the OWNER, never the admin. This exercises the RLS delete path a real
   // user takes; note_chunks cascade on notes.id. Deleting as service_role
