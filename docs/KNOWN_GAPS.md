@@ -1697,49 +1697,86 @@ that is what the embeddings now exist for. Two things below it are worth
 reading before that work starts: the new "unembeddable chunk" gap immediately
 following, and the free-tier rate limit recorded with it.
 
-### An unembeddable chunk gives up silently, and nothing says so
+### An unembeddable chunk gives up silently — RESOLVED 2026-09-05
 
-**Opened 2026-09-03, with the embeddings pipeline.**
+**Opened 2026-09-03 with the embeddings pipeline, closed 2026-09-05** when
+cross-note retrieval gave a missing chunk a live consumer — the exact trigger
+this entry named.
 
-A chunk that fails to embed three times is left with `embedding` null
-permanently. `lib/rag/embed-note.ts` counts the attempts in
+**What it was.** A chunk that fails to embed three times is left with
+`embedding` null permanently. `lib/rag/embed-note.ts` counts the attempts in
 `note_chunks.metadata.embed_attempts` and the eligibility filter in
 `lib/rag/supabase-ports.ts` stops listing it at three, so it is never retried
-again — by the inline trigger or by the cron sweep.
+again — by the inline trigger or by the cron sweep. There is no error column at
+single-owner scale (§ Transcription made that choice and this pipeline follows
+it), so the only trace was one `[embed]` line in the Vercel function log at the
+moment the third attempt failed, plus `metadata.embed_error` on the row. The
+log rotates. Nobody was paged and the note rendered completely normally.
 
-**Nothing reports this.** There is no error column at single-owner scale
-(§ Transcription made that choice and this pipeline follows it), so the only
-trace is one `[embed]` line in the Vercel function log at the moment the third
-attempt fails, and `metadata.embed_error` on the row itself. The log rotates.
-Nobody is paged, no dashboard turns red, and the note renders completely
-normally — the chunk is simply invisible to a retrieval path that does not
-exist yet.
+**What closed it: option (a), the count in the cron route's JSON response.**
+The three honest options were (a) surface the count where the sweep report
+already is, (b) add the error column this project has twice decided not to add,
+and (c) accept it until retrieval ships. (c) was the accepted call while a
+missing chunk had no consumer; retrieval landing is what ended that.
+**(b) stays rejected** — this shipped without a schema change.
 
-The failure is therefore **silent and permanent**, and it will only be
-discovered when hybrid retrieval ships and somebody notices a specific
-takeaway is never returned. The cap itself is right: three attempts on a chunk
-that Voyage rejects for its content is enough, and retrying forever would spend
-real money on a text that will never embed. Transient failures — rate limits,
-5xx, network — deliberately do **not** increment the counter, so this only ever
-catches genuinely unembeddable content. That distinction was exercised for real
-on 2026-09-03, not just unit-tested; see the rate-limit note below.
+`app/api/cron/transcribe/route.ts` now runs the query this entry named, after
+all three phases, and folds the result into the body it already returns:
 
-**The measurement that would close it** is one query, which nothing runs today:
-
-```sql
-select id, note_id, metadata->>'embed_error' as reason
-from public.note_chunks
-where embedding is null and (metadata->>'embed_attempts')::int >= 3;
+```ts
+const { data, count } = await db
+  .from("note_chunks")
+  .select("id, note_id, reason:metadata->>embed_error", { count: "exact" })
+  .is("embedding", null)
+  .eq("metadata->>embed_attempts", String(MAX_EMBED_ATTEMPTS))
+  .order("created_at", { ascending: true })
+  .limit(50);
 ```
 
-The honest options are (a) surface that count in the cron route's JSON response
-so a failing run is visible where the sweep report already is, (b) add the
-error column this project has twice decided not to add, or (c) accept it until
-retrieval ships and the absence becomes visible on its own. **(c) is what is
-accepted today**, deliberately, because at one user with a handful of notes the
-query above is a thirty-second manual check and the pipeline has no
-observability budget of its own. Revisit at the same moment hybrid retrieval
-lands — that is when a missing chunk starts to cost an answer.
+- **Equality, not `>=`.** PostgREST reads `metadata->>embed_attempts` as TEXT,
+  so `gte.3` is a lexicographic comparison — right for one digit and quietly
+  wrong at ten. Same reasoning as the enumerated eligibility filter in
+  `lib/rag/supabase-ports.ts`, and exhaustive here because `withEmbedAttempt`
+  writes `Math.min(attempts, MAX_EMBED_ATTEMPTS)`, so no row can hold more
+  than the cap it was written under. **That is a property of the constant, not
+  of the data, and it holds in ONE direction.** Raising the cap is safe;
+  lowering it strands every row written at the old value — invisible to this
+  query and to the eligibility filter at the same time, which is precisely the
+  failure this entry exists to end. Lowering `MAX_EMBED_ATTEMPTS` therefore
+  needs a data pass over `metadata->>embed_attempts`, not a constant edit. The
+  filter itself was run against the live PostgREST endpoint on 2026-09-05: it
+  returns rows, not a 400.
+- **Counted exactly, listed in part.** `supabase/config.toml` sets
+  `max_rows = 1000`, so an unbounded select would plateau there and report a
+  ceiling as if it were a measurement — and because nothing ever retries a
+  capped chunk, the same array would be re-serialised into the log on every
+  daily run forever. `count: "exact"` is the honest number at any scale and
+  `limit(50)` bounds both the body and the log line to a sample worth reading.
+- **The key is ABSENT when nothing is stuck.** A healthy run's body is
+  byte-for-byte what it was before this shipped; the key appearing at all is
+  the signal. A `count: 0` on every run trains the reader to ignore it. When
+  chunks are stuck the body gains
+  `stuckChunks: { count, chunks: [{ id, note_id, reason }] }` — ids, not just a
+  number, so the rows can be gone and looked at.
+- **Read-only, and it cannot fail the run.** Nothing increments, resets or
+  clears `embed_attempts`, and nothing in `lib/rag/` was touched. A failure of
+  the count query is logged and swallowed **whether it is returned as a
+  PostgREST error or thrown by the fetch layer**: losing a report of real
+  transcription, generation and embedding work to a 500 over a count is the
+  worse outcome. Seven tests in
+  `app/api/cron/transcribe/__tests__/route.test.ts` pin all of it, including
+  the exact count surviving a bounded sample.
+
+**Live state on 2026-09-05: zero stuck chunks.** The query returns
+`count: 0` against the linked project, so this ships silent and will speak the
+first time a chunk genuinely gives up.
+
+**What is still NOT closed.** The cap is unchanged and correct — three attempts
+on a chunk Voyage rejects for its content is enough, and retrying forever spends
+real money on a text that will never embed. Transient failures still do not
+increment the counter. There is no retry path, no dashboard and no alert: the
+count is visible to whoever reads the cron response or the function log. That is
+the observability this project's scale earns.
 
 ### The Voyage account was on the unbilled tier: 3 RPM, not 2,000 — RESOLVED 2026-09-03
 

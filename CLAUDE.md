@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-04
+**Last updated:** 2026-09-05
 Update this line whenever this file changes — don't let it drift from reality.
 
 ## Stack
@@ -643,8 +643,12 @@ rejected requests aimed at the limit that just rejected it. On the unbilled
 note. A transient batch now defers
 whole, every member still eligible, counters untouched; a test pins the call
 count at one. Three charged attempts and the chunk is left null
-permanently — a real gap, recorded in `docs/KNOWN_GAPS.md` § "An unembeddable
-chunk gives up silently".
+permanently. **Nothing retries it, but since 2026-09-05 something reports it:**
+`app/api/cron/transcribe/route.ts` runs one read-only count after its three
+phases and adds `stuckChunks: { count, chunks }` to its JSON response — the key
+present ONLY when the count is above zero, so a healthy run's body is unchanged.
+See `docs/KNOWN_GAPS.md` § "An unembeddable chunk gives up silently", RESOLVED,
+for the filter's TEXT-typed equality and the direction the cap may move.
 
 Attempts live in `note_chunks.metadata`, **merged, never overwritten** — a
 `transcript_segment` row carries `speaker`, `ts_start`, `ts_end` and `seq` in

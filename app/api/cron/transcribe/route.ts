@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
 import { createNotegenPorts } from "@/lib/notegen/notegen-ports";
 import { notegenSweep } from "@/lib/notegen/sweep";
@@ -7,7 +7,11 @@ import { notegenSweep } from "@/lib/notegen/sweep";
 // redeclaring it is what keeps the two phases on ONE budget.
 import { RUN_BUDGET_MS, sweep } from "@/lib/transcription/sweep";
 import { createEmbeddingPorts } from "@/lib/rag/supabase-ports";
-import { embeddingSweep, type EmbedSweepReport } from "@/lib/rag/sweep";
+import {
+  MAX_EMBED_ATTEMPTS,
+  embeddingSweep,
+  type EmbedSweepReport,
+} from "@/lib/rag/sweep";
 
 /** The Vercel Cron entry point, and the ONE piece of application code that
  *  holds the Supabase secret key.
@@ -73,6 +77,77 @@ export const maxDuration = 300;
 export function isAuthorized(request: Request, secret: string | undefined) {
   if (!secret) return false;
   return request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
+/** A chunk that has spent every attempt and is left with `embedding` null
+ *  permanently. lib/rag/embed-note.ts clamps the counter with Math.min, so
+ *  "gave up" is exactly MAX_EMBED_ATTEMPTS and never more. */
+interface StuckChunk {
+  id: string;
+  note_id: string;
+  reason: string | null;
+}
+
+/** How many stuck rows the response carries. The COUNT is exact and separate;
+ *  this bounds the sample so neither the body nor the log line grows without
+ *  limit on a run that finds hundreds. Fifty is plenty to go and look. */
+const STUCK_CHUNK_SAMPLE = 50;
+
+/** THE ONE QUERY docs/KNOWN_GAPS.md § "An unembeddable chunk gives up
+ *  silently" named as the measurement that would close it. It is read-only:
+ *  nothing here increments, resets or clears embed_attempts, and no row is
+ *  written. The counting and eligibility logic in lib/rag/ is untouched.
+ *
+ *  EQUALITY, NOT >=. PostgREST reads `metadata->>embed_attempts` as TEXT, so
+ *  `gte.3` is a lexicographic comparison — right for one digit and quietly
+ *  wrong the moment the cap reaches ten. The same reasoning as the enumerated
+ *  eligibility filter in lib/rag/supabase-ports.ts.
+ *
+ *  Equality is exhaustive because `withEmbedAttempt` writes
+ *  `Math.min(attempts, MAX_EMBED_ATTEMPTS)` — no row can hold more than the
+ *  cap it was written under. That is a property of the CONSTANT, not of the
+ *  data, and it holds in one direction only: RAISING the cap is safe, LOWERING
+ *  it strands every row written at the old value, invisible to this query AND
+ *  to the eligibility filter at once. Lowering MAX_EMBED_ATTEMPTS therefore
+ *  needs a data pass over metadata->>embed_attempts, not just a constant edit.
+ *
+ *  NO .eq("user_id", ...). The standing rule holds: this runs as service_role
+ *  and crossing every tenant is the whole job.
+ *
+ *  COUNTED EXACTLY, LISTED IN PART. config.toml sets max_rows = 1000, so an
+ *  unbounded select would plateau there and report a ceiling as a measurement
+ *  — and since nothing retries a capped chunk, the same array would be
+ *  re-serialised into the log every daily run forever.
+ *
+ *  A failure here is logged and swallowed, THROWN OR RETURNED. This is
+ *  observability bolted onto a run that has already committed real work;
+ *  losing that report to a 500 over a count is the worse outcome, and that
+ *  must hold for a fetch-layer throw as much as a PostgREST error object. */
+async function listStuckChunks(
+  db: SupabaseClient,
+): Promise<{ count: number; chunks: StuckChunk[] }> {
+  const empty = { count: 0, chunks: [] };
+
+  try {
+    const { data, count, error } = await db
+      .from("note_chunks")
+      .select("id, note_id, reason:metadata->>embed_error", { count: "exact" })
+      .is("embedding", null)
+      .eq("metadata->>embed_attempts", String(MAX_EMBED_ATTEMPTS))
+      .order("created_at", { ascending: true })
+      .limit(STUCK_CHUNK_SAMPLE);
+
+    if (error) {
+      console.error(`[embed] stuck-chunk count failed: ${error.message}`);
+      return empty;
+    }
+    const chunks = (data ?? []) as StuckChunk[];
+    return { count: count ?? chunks.length, chunks };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[embed] stuck-chunk count failed: ${message}`);
+    return empty;
+  }
 }
 
 export async function GET(request: Request) {
@@ -148,7 +223,23 @@ export async function GET(request: Request) {
     }
     console.log(`[embed] ${JSON.stringify(embeddings)}`);
 
-    return Response.json({ ...report, notegen, embeddings });
+    // The stuck-chunk surfacing, added 2026-09-05. Read-only, and ABSENT
+    // from the body when nothing is stuck — the response shape a healthy run
+    // returns is unchanged, so the key appearing at all is the signal.
+    const stuck = await listStuckChunks(db);
+    if (stuck.count > 0) {
+      console.error(
+        `[embed] ${stuck.count} chunk(s) gave up after ` +
+          `${MAX_EMBED_ATTEMPTS} attempts: ${JSON.stringify(stuck.chunks)}`,
+      );
+    }
+
+    return Response.json({
+      ...report,
+      notegen,
+      embeddings,
+      ...(stuck.count > 0 ? { stuckChunks: stuck } : {}),
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`[transcribe] sweep aborted: ${message}`);
