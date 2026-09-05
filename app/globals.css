@@ -233,6 +233,55 @@
   }
 }
 
+/* Themed scroll affordance for the app's own scroll containers.
+   The OS default ships arrow buttons and a generic width, which is the one
+   visual element on Note Detail nobody chose.
+
+   BOTH engines are addressed on purpose, and they are not alternatives:
+   Firefox implements only `scrollbar-width` / `scrollbar-color` and ignores
+   the pseudo-elements; Chromium and WebKit implement both and let the
+   pseudo-elements win. A rule written for either one alone leaves the other
+   on the OS default. Colours are tokens, so this tracks the theme like every
+   other edge in the app. */
+@layer components {
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--faint) transparent;
+  }
+
+  .scroll-thin::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+
+  .scroll-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  /* The transparent border plus padding-box clip is what makes the thumb read
+     as thinner than its track without the track needing a width of its own. */
+  .scroll-thin::-webkit-scrollbar-thumb {
+    background: var(--faint);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 999px;
+  }
+
+  .scroll-thin::-webkit-scrollbar-thumb:hover {
+    background: var(--meta);
+    background-clip: padding-box;
+  }
+
+  /* The arrow buttons. Chromium still draws these on some platforms. */
+  .scroll-thin::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  .scroll-thin::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+}
+
 /* Removes the 300ms double-tap zoom delay on touch without disabling zoom. */
 @layer base {
   button,

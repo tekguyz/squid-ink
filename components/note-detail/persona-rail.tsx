@@ -1,5 +1,6 @@
 "use client";
 
+import { THEME_TOGGLE_LANE } from "@/components/theme-toggle";
 import type { Persona } from "@/lib/notes/view-types";
 
 export interface PersonaRailProps {
@@ -93,7 +94,14 @@ export function PersonaRail({
         ))}
       </div>
 
-      <div className="mt-auto border-t border-rule px-3 py-[11px] font-mono text-[9px] leading-[1.7] text-meta">
+      {/* The theme toggle is fixed in this corner, and the rule around the
+          Record HUD's corner applies here too: reserve a lane rather than let
+          two elements land on the same pixels by render order. The reserved
+          height is declared next to the toggle itself, not restated here. */}
+      <div
+        style={{ paddingBottom: THEME_TOGGLE_LANE }}
+        className="mt-auto border-t border-rule px-3 pt-[11px] font-mono text-[9px] leading-[1.7] text-meta"
+      >
         grounding
         <br />
         <span className="text-accent">{spansLinked} spans linked</span>

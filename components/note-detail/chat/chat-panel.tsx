@@ -124,7 +124,7 @@ export function ChatPanel({
     <div className="border-t border-rule bg-dock px-[26px] pt-3 pb-3.5">
       <div
         ref={listRef}
-        className="max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain"
+        className="scroll-thin max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain"
       >
         {/* Persisted turns first, then anything streaming in this session. */}
         {history.map((turn) => (

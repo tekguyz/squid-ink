@@ -136,7 +136,7 @@ export function NoteDetailShell({
             note is 'completed' or 'failed' — see transcribe-button.tsx. */}
         <TranscribeButton noteId={note.id} status={note.processingStatus} />
 
-        <div className="min-h-0 flex-1 overflow-auto px-[26px]">
+        <div className="scroll-thin min-h-0 flex-1 overflow-auto px-[26px]">
           <SummarySection
             runs={note.summary}
             activeSegmentId={activeSegmentId}

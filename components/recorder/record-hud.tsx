@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { HudLevelBars } from "@/components/recorder/hud-level-bars";
+import { HUD_SAFE_MARGIN } from "@/components/recorder/hud-safe-margin";
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
 import type { RecorderControls } from "@/lib/recorder/use-recorder";
@@ -12,7 +13,9 @@ import type { RecorderControls } from "@/lib/recorder/use-recorder";
  * Locked design, implemented not invented: layout, states and copy are taken
  * from the design file. Every colour is a token — `bg-live` and `--shadow-hud`
  * were added to app/globals.css in this track because 02b uses a red and a
- * shadow that had no token yet.
+ * shadow that had no token yet. The recording state reads entirely from
+ * `--live`, dot and level meter alike; see hud-level-bars.tsx for why the
+ * design's greens did not survive there.
  *
  * Not built here, deliberately (docs/KNOWN_GAPS.md):
  *   - 02b's expanded jot pane. It renders "rough notes", and no column or table
@@ -55,18 +58,30 @@ export function RecordHud({ controls }: { controls: RecorderControls }) {
   const elapsed = formatElapsed(elapsedMs);
 
   return (
-    <div className="pointer-events-none fixed right-6 bottom-6 z-50 flex flex-col items-end gap-[9px]">
+    <div
+      // The corner this HUD owns. The inset is the shared safe margin, not a
+      // spacing step chosen here — see hud-safe-margin.ts.
+      style={{ right: HUD_SAFE_MARGIN, bottom: HUD_SAFE_MARGIN }}
+      className="pointer-events-none fixed z-50 flex flex-col items-end gap-[9px]"
+    >
       {phase === "idle" ? (
         <button
           type="button"
           onClick={() => void controls.start()}
-          className={`${PILL} bg-pane border-rule gap-[11px] border px-[13px] py-[9px]`}
+          className={`${PILL} bg-pane border-rule group gap-[11px] border px-[13px] py-[9px]`}
         >
           <span aria-hidden="true" className="bg-accent h-[9px] w-[9px]" />
           <span className="font-header text-ink text-[13.5px] font-semibold">
             Record
           </span>
-          <span className="font-mono text-meta-4 pl-[2px] text-[9.5px]">⌘⇧R</span>
+          {/* The shortcut is a reminder, not part of the control's identity.
+              `hidden` rather than a faded span: an invisible flex child still
+              claims its gap, and the defect being fixed is the resting width.
+              ⌘⇧R stays wired either way — the key works whether or not the
+              label is on screen. */}
+          <span className="font-mono text-meta-4 hidden pl-[2px] text-[9.5px] group-hover:inline group-focus-visible:inline">
+            ⌘⇧R
+          </span>
         </button>
       ) : null}
 

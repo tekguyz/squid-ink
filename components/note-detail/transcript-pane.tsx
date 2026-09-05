@@ -48,7 +48,10 @@ export function TranscriptPane({
         />
       </div>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto pt-2 pb-5">
+      <div
+        ref={scrollRef}
+        className="scroll-thin min-h-0 flex-1 overflow-auto pt-2 pb-5"
+      >
         {note.segments.length === 0 ? (
           <TranscriptEmptyState note={note} />
         ) : (
