@@ -230,6 +230,7 @@ not re-derive them here.
 
 **Repo:** <clean / N uncommitted files> · <in sync with origin/main / N unpushed> · <prod deploy: Ready <age> / not checked>
 **Gates:** <build / tsc / test — real result, or "not run this session">
+**Docs changed this audit:** <file · file, or "none — every claim measured accurate">
 
 ### Shipped since last handoff
 - <one line per batch, with the measured figure that matters>
@@ -271,3 +272,9 @@ Rules for the block:
   design files are large and belong in the planning Project only when a chat is
   actually briefing a new surface — name the turn and paste that region, never
   the file.
+- **Say what job 1 changed, and never more than that.** The planning Project
+  decides whether to re-upload its attachments from the `Docs changed this
+  audit:` line, not from the presence of a handoff block. When job 1 changed
+  nothing, that line reads `none` and the attachments there are still current --
+  do not tell the user to re-upload. Telling them to re-upload on every handoff
+  trained the instruction to be ignored, which is worse than not having it.
