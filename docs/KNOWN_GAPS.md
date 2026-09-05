@@ -1943,18 +1943,42 @@ Screenshot review against the shipped app, not the design file.
   fixed per the 2026-08-30 entry above (rail 136px, transcript pane 404px,
   no responsive breakpoint in scope). Confirmed still true. Hide, resize, and
   detach are all undecided, not just unbuilt.
-- **Theme toggle and Record HUD both claim "fixed bottom-right" independently.**
-  `components/theme-toggle.tsx` was placed there at the user's request
-  (2026-08-30 entry, outside the design file). The Record HUD dock is
-  separately fixed bottom-right by design (drag/snap-to-corner was
-  considered and rejected — see "Not built from surface 02b" above). Neither
-  decision accounted for the other. Needs a real z-index/position
-  arbitration, not a coincidence of whichever renders last.
-- **No safe-margin exclusion zone defined around the Record HUD.** It's
-  persistent by design (ambient trigger), which means anything else that
-  could render in that corner needs to know to avoid it. No such rule
-  exists yet — the theme-toggle collision is the first instance, not
-  necessarily the last.
+- **Theme toggle and Record HUD both claim "fixed bottom-right"
+  independently — RESOLVED 2026-09-05.** `components/theme-toggle.tsx` was
+  placed there at the user's request (2026-08-30 entry, outside the design
+  file). The Record HUD dock is separately fixed bottom-right by design
+  (drag/snap-to-corner was considered and rejected — see "Not built from
+  surface 02b" above). Neither decision accounted for the other, and the
+  overlap was a coincidence of whichever rendered last.
+
+  Closed by the arbitration in commit `4a402ab`. The toggle moves to
+  bottom-**left**. That corner was not free either: it landed on the persona
+  rail's "grounding / N spans linked" footer — the identical defect one corner
+  over, introduced by the fix for the first one — so `persona-rail.tsx` now
+  reserves the lane from `THEME_TOGGLE_LANE`, exported beside the toggle and
+  derived from `HUD_SAFE_MARGIN`.
+
+- **No safe-margin exclusion zone defined around the Record HUD — RESOLVED
+  2026-09-05.** It's persistent by design (ambient trigger), which means
+  anything else that could render in that corner needs to know to avoid it.
+  No such rule existed, and the theme-toggle collision was the first instance.
+
+  `HUD_SAFE_MARGIN` in `components/recorder/hud-safe-margin.ts` is now the one
+  value governing clearance around the corner the HUD owns; the HUD and the
+  toggle both read it and neither states a pixel. It is applied as a plain
+  length through `style` rather than a Tailwind class, because Tailwind cannot
+  build a class name at runtime and a shared spacing step could only be shared
+  as a string both files paste into their own class list — which is the
+  duplication the constant removes.
+
+  **The enforcement is `scripts/verify-layout.mjs`, not the constant.** Every
+  other check in this repo is file-shaped, and jsdom has no layout engine, so
+  every rect in `npm test` is zeros. That script drives the installed Chrome
+  over the DevTools Protocol (no new dependency) and measures real boxes on two
+  routes at two widths in both themes — 48 assertions. It was proved to fail
+  before it was trusted: restoring the toggle to its original `right-3
+  bottom-3` turns 48 green into 40 green and 8 failures naming both colliding
+  elements. See `CLAUDE.md` § Layout.
 - **Notes have no auto-titling.** Default is the literal string "Untitled
   note," unset until manually renamed. Blocks ROADMAP §4's "ask all notes"
   citation requirement (cite *which* meeting supports each claim) — a
