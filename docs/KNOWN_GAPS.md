@@ -1933,14 +1933,20 @@ Screenshot review against the shipped app, not the design file.
   simply weaker than they should be. This was flagged up front in that
   pack rather than discovered late.
 
-- **Cross-note search ignores `persona_id`, by instruction — recorded
-  2026-09-03.** `note_chunks` carries the lens that produced a chunk, and
+- **Cross-note search ignores `persona_id` — RESOLVED 2026-09-05, no code
+  change.** `note_chunks` carries the lens that produced a chunk, and
   `search_note_chunks` does not filter on it, so an all-notes question can
-  return a Sales Coach takeaway while the rail shows Neutral Analyst. That
-  was explicitly out of scope for the chat pack rather than an oversight.
-  Nobody has decided whether an active lens *should* narrow retrieval, and
-  both answers are defensible: filtering makes the lens mean something in
-  chat, not filtering keeps "ask all notes" literally true.
+  return a Sales Coach takeaway while the rail shows Neutral Analyst. Recorded
+  2026-09-03 as undecided; decided 2026-09-05 that **it must stay unfiltered**,
+  and the entry is kept rather than deleted because the behaviour reads like an
+  oversight and will be re-litigated otherwise. Filtering would silently
+  exclude a correct answer just because it was generated under a different
+  persona's framing — a recall loss in a feature whose value is accuracy, and
+  invisible to the user, who cannot see what was withheld. The transparency a
+  filter would have bought is already there: the citation chip surfaces the
+  source persona label, so the reader can see which lens produced a chunk and
+  weigh it. Recall preserved, provenance visible. The unfiltered behaviour is
+  correct as-is; see `docs/DECISIONS.md` § Locked decisions, 2026-09-05.
 
 ## Two accessibility findings from the chat pack were left unfixed on purpose (recorded 2026-09-04)
 
