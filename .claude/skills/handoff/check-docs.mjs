@@ -172,6 +172,13 @@ const pkg = JSON.parse(read("package.json"));
     // "`--live` light-theme value is derived, not from the design" — 02b is
     // dark-only, so the light red follows the accent pattern instead.
     ["oklch(0.520 0.170 25)", "--live light, derived from 02b's dark 0.66"],
+    // "RESOLVED 2026-09-05 — framed controls sat at ~1.4:1 against the sheet".
+    // --control-edge was invented after the design lock to clear WCAG 1.4.11's
+    // 3:1, so no design file can contain it. Both values were chosen by
+    // measuring against every sheet a control sits on: 3.34:1 light worst case
+    // (rail/pane), 3.44:1 dark worst case (raised).
+    ["oklch(0.585 0.016 70)", "--control-edge light, computed for 3:1, post-lock"],
+    ["oklch(0.550 0.014 78)", "--control-edge dark, computed for 3:1, post-lock"],
   ]);
 
   const missing = designFiles.filter((f) => !has(f));
