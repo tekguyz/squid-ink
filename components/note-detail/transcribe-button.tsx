@@ -55,6 +55,16 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  *  in one pass — a single button with a heavier edge than everything around it
  *  is the worse outcome, which is why that entry forbade a lone fix.
  *
+ *  The HOVER edge is `accent`, not `tint-hover`, changed the same day.
+ *  MEASURED: `tint-hover` against the `tint` fill it sits on is **1.15:1**
+ *  light — the hover border was very nearly not drawn. `accent` is 5.28:1
+ *  there and is already this app's accent-family control edge, carrying the
+ *  selected state on `scope-toggle`, `persona-rail` and `transcript-segment`.
+ *  `--tint-hover` itself is unchanged: it is a FILL token elsewhere
+ *  (`citation-chip`, `cite-runs`) and darkening it would break the text on
+ *  those chips. Same split as `control-edge` vs `rule-2` — a boundary and a
+ *  surface are not the same job.
+ *
  *  No `disabled:` variants. The element is never natively disabled — see
  *  aria-disabled below — so the unavailable state is styled through
  *  `aria-disabled:`. `text-muted` rather than `text-meta`: meta measured
@@ -63,7 +73,7 @@ const BUTTON =
   "font-mono text-[9px] tracking-[0.06em] uppercase " +
   "flex items-center gap-[7px] border border-control-edge bg-raised text-notice " +
   "px-[9px] py-[5px] transition-colors cursor-pointer " +
-  "hover:border-tint-hover hover:bg-tint hover:text-accent-text " +
+  "hover:border-accent hover:bg-tint hover:text-accent-text " +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent " +
   "aria-disabled:cursor-default aria-disabled:text-muted " +
   "aria-disabled:hover:border-control-edge aria-disabled:hover:bg-raised " +

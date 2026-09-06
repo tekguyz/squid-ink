@@ -1370,15 +1370,34 @@ and are **not** controls; they stayed on `rule-2` deliberately.
 
 **Two things this did NOT fix, both left open on purpose:**
 
-- **`border-tint-hover` measures 1.40:1 light / 2.29:1 dark**, and it is the
+- ~~**`border-tint-hover` measures 1.40:1 light / 2.29:1 dark**, and it is the
   resting edge of `record-hud`'s Resume button as well as the hover edge of
-  the Transcribe and audio-player buttons. It is the accent family, not the
-  neutral hairline, and changing it is a separate decision about the accent
-  ramp rather than part of this sweep. The original reasoning still covers it:
-  Resume's label is `accent-text` and well clear of 4.5:1, so the label
-  identifies the control.
+  the Transcribe and audio-player buttons.~~ **Also fixed, 2026-09-05**, in a
+  follow-up commit — see the accent-ramp note below.
 - **Decorative frames are unchanged.** That was the point of choosing this
   option over raising `--rule-2` itself.
+
+**The accent-family control edge, same day.** `border-tint-hover` was the
+resting edge of `record-hud`'s Resume button and the hover edge of the
+Transcribe and audio-player buttons. Measured against the sheet each one
+actually sits on it was worse than the 1.40:1 first recorded: against the
+`tint` fill the two hover states apply at the same time it is **1.15:1
+light / 1.64:1 dark**, so the hover border was very nearly not drawn at all.
+
+All three moved to **`border-accent`** — **5.28:1** worst case light (against
+`tint`), **8.03:1** worst case dark. No new token: `accent` is already this
+app's accent-family control edge, carrying the selected state on
+`scope-toggle`, `persona-rail` and `transcript-segment`, so this is returning
+to the existing language rather than inventing a fifth green.
+
+**`--tint-hover` itself is unchanged, and must stay so.** It is a FILL token
+everywhere else — `citation-chip`'s hover and active states, `cite-runs`'
+hover — and darkening it to fix a border would put `accent-text` on a surface
+it no longer contrasts against. Same split as `control-edge` vs `rule-2`: a
+boundary and a surface are not the same job.
+
+`status-pill`'s `border-tint-hover` is **not** a control and was left alone,
+consistent with the `role="status"` pills keeping `rule-2`.
 
 Everything from here down is the original 2026-09-01 record, unedited.
 

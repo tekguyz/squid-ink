@@ -146,7 +146,7 @@ export function RecordHud({ controls }: { controls: RecorderControls }) {
           <button
             type="button"
             onClick={controls.resume}
-            className={`${MONO_ACTION} border-tint-hover text-accent-text border px-[9px] py-[5px]`}
+            className={`${MONO_ACTION} border-accent text-accent-text border px-[9px] py-[5px]`}
           >
             Resume
           </button>

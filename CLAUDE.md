@@ -91,8 +91,17 @@ emits a hex fallback beside the `oklch()`, and the fallback is what a browser
 without `lab()` renders.
 
 `record-hud`'s `role="status"` and `role="alert"` pills are not controls and
-keep `rule-2`. `border-tint-hover` is the accent family, measures 1.40:1
-light, and was left alone by this sweep — see the RESOLVED entry.
+keep `rule-2`.
+
+**The accent family splits the same way. `border-accent` is a control edge;
+`bg-tint-hover` is a fill; `border-tint-hover` is neither and is no longer
+used on a control.** Measured the same day: `tint-hover` against the `tint`
+fill it sits on is 1.15:1 light, so the hover border on the Transcribe and
+audio-player buttons was very nearly not drawn. All three accent-edged
+controls — those two plus `record-hud`'s Resume — now use `border-accent`, at
+5.28:1 worst case light and 8.03:1 dark. **Do not darken `--tint-hover` to
+"fix" a border**: it is the hover and active FILL under `citation-chip` and
+`cite-runs`, and `accent-text` sits on it.
 
 ## Type
 
