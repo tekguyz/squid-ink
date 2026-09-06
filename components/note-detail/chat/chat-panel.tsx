@@ -184,7 +184,7 @@ export function ChatPanel({
 
       <form
         onSubmit={submit}
-        className="mt-[11px] flex items-center gap-[9px] border border-rule bg-paper px-2.5 py-2 focus-within:border-accent"
+        className="mt-[11px] flex items-center gap-[9px] border border-control-edge bg-paper px-2.5 py-2 focus-within:border-accent"
       >
         <input
           type="text"

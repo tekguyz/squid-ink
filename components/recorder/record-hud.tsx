@@ -68,7 +68,7 @@ export function RecordHud({ controls }: { controls: RecorderControls }) {
         <button
           type="button"
           onClick={() => void controls.start()}
-          className={`${PILL} bg-pane border-rule group gap-[11px] border px-[13px] py-[9px]`}
+          className={`${PILL} bg-pane border-control-edge group gap-[11px] border px-[13px] py-[9px]`}
         >
           <span aria-hidden="true" className="bg-accent h-[9px] w-[9px]" />
           <span className="font-header text-ink text-[13.5px] font-semibold">
@@ -112,7 +112,7 @@ export function RecordHud({ controls }: { controls: RecorderControls }) {
             <button
               type="button"
               onClick={controls.pause}
-              className={`${MONO_ACTION} border-rule-2 text-notice border px-[8px] py-[5px]`}
+              className={`${MONO_ACTION} border-control-edge text-notice border px-[8px] py-[5px]`}
             >
               Pause
             </button>

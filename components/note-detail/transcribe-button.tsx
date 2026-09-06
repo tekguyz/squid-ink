@@ -47,9 +47,13 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  *  moved to `bg-raised` in the same pass — the two constants are identical by
  *  intent and must stay so.
  *
- *  The BORDER is knowingly left at `border-rule-2`, measuring 1.40:1 light /
- *  1.47:1 dark against the sheet. See docs/KNOWN_GAPS.md § "Framed controls
- *  sit at ~1.4:1" — an app-wide token decision, not a defect in this button.
+ *  The BORDER moved to `border-control-edge` on 2026-09-05 — the second of
+ *  the three ways out docs/KNOWN_GAPS.md § "Framed controls sit at ~1.4:1"
+ *  listed. It is the boundary token for interactive controls only; decorative
+ *  frames stay on `rule-2` at 1.40 / 1.47, because a control and a container
+ *  are not the same object. Applied to every neutral-edged control in the tree
+ *  in one pass — a single button with a heavier edge than everything around it
+ *  is the worse outcome, which is why that entry forbade a lone fix.
  *
  *  No `disabled:` variants. The element is never natively disabled — see
  *  aria-disabled below — so the unavailable state is styled through
@@ -57,12 +61,12 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  *  4.37:1 on dark paper, under the 4.5:1 the 9px type needs. */
 const BUTTON =
   "font-mono text-[9px] tracking-[0.06em] uppercase " +
-  "flex items-center gap-[7px] border border-rule-2 bg-raised text-notice " +
+  "flex items-center gap-[7px] border border-control-edge bg-raised text-notice " +
   "px-[9px] py-[5px] transition-colors cursor-pointer " +
   "hover:border-tint-hover hover:bg-tint hover:text-accent-text " +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent " +
   "aria-disabled:cursor-default aria-disabled:text-muted " +
-  "aria-disabled:hover:border-rule-2 aria-disabled:hover:bg-raised " +
+  "aria-disabled:hover:border-control-edge aria-disabled:hover:bg-raised " +
   "aria-disabled:hover:text-muted";
 
 const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";

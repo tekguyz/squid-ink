@@ -51,7 +51,7 @@ export function ThemeToggle() {
       // The HUD owns bottom-right; this used to sit in the same corner and the
       // two overlapped by coincidence of render order.
       style={{ left: HUD_SAFE_MARGIN, bottom: HUD_SAFE_MARGIN }}
-      className="fixed z-10 cursor-pointer border border-rule bg-raised px-2.5 py-1.5 font-mono text-[9px] tracking-[0.14em] uppercase text-meta hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+      className="fixed z-10 cursor-pointer border border-control-edge bg-raised px-2.5 py-1.5 font-mono text-[9px] tracking-[0.14em] uppercase text-meta hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
     >
       {theme === "dark" ? "Light" : "Dark"}
     </button>

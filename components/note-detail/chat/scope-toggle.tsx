@@ -71,7 +71,7 @@ export function ScopeToggle({
             "focus-visible:outline-accent " +
             (value === option.value
               ? "border-accent bg-tint text-accent-text"
-              : "border-rule text-meta hover:text-ink-2")
+              : "border-control-edge text-meta hover:text-ink-2")
           }
         >
           {option.label}

@@ -74,11 +74,25 @@ and `transcribe-button.tsx` both moved to `bg-raised`, which is what
 DESIGN.md § Components → Buttons specifies anyway. Two tokens looking distinct
 in light theme is not evidence they differ in dark; check both.
 
-**Do not "fix" `border-rule-2` on one component.** Every framed surface in the
-app draws its edge with it, at ~1.4:1 against the sheet. That number is
-recorded, argued and left open in `docs/KNOWN_GAPS.md` § "Framed controls sit
-at ~1.4:1" — raising it is an app-wide token decision, and a single button with
-a heavier edge than everything around it is the worse outcome.
+**`--control-edge` is the boundary of an INTERACTIVE control; `--rule-2` is
+the edge of a decorative frame. Do not use one for the other, and do not
+"fix" either on a single component.** The split shipped 2026-09-05 and was the
+second of the three options `docs/KNOWN_GAPS.md` § "Framed controls sit at
+~1.4:1" laid out — the entry is now RESOLVED and carries the measurements.
+`--control-edge` clears WCAG 1.4.11's 3:1 against **every sheet a control sits
+on**, worst case 3.34:1 light (`rail`/`pane`) and 3.44:1 dark (`raised`);
+`--rule-2` stays at ~1.4:1 on the insight cards, the status pills and the
+transcript pane, deliberately.
+
+Contrast is measured against the sheet a thing actually sits on, never against
+`paper` alone — `rail` and `raised` are the worst cases in the two themes and
+neither is `paper`. Verify against the **built** CSS, not the source: Tailwind
+emits a hex fallback beside the `oklch()`, and the fallback is what a browser
+without `lab()` renders.
+
+`record-hud`'s `role="status"` and `role="alert"` pills are not controls and
+keep `rule-2`. `border-tint-hover` is the accent family, measures 1.40:1
+light, and was left alone by this sweep — see the RESOLVED entry.
 
 ## Type
 

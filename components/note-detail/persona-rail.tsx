@@ -87,7 +87,7 @@ export function PersonaRail({
           <button
             key={action}
             type="button"
-            className="cursor-pointer border border-rule-2 bg-raised px-2 py-1.5 text-left text-[11.5px] leading-[1.35] text-ink-2 hover:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+            className="cursor-pointer border border-control-edge bg-raised px-2 py-1.5 text-left text-[11.5px] leading-[1.35] text-ink-2 hover:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
           >
             {action}
           </button>

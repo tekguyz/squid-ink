@@ -36,10 +36,14 @@ const TRANSPORT = "flex items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
  *  computed background was identical to the sheet behind it and the control
  *  had no fill at all. `raised` is the token DESIGN.md § Components → Buttons
  *  already specifies for this shape. transcribe-button.tsx sits on the same
- *  meta line and carries the identical constant — they move together. */
+ *  meta line and carries the identical constant — they move together.
+ *
+ *  `border-control-edge`, changed from `border-rule-2` on 2026-09-05 in the
+ *  app-wide control-boundary pass. transcribe-button.tsx carries the reasoning
+ *  in full; do not change one of these two constants without the other. */
 const BUTTON =
   "font-mono text-[9px] tracking-[0.06em] uppercase cursor-pointer " +
-  "flex items-center gap-[7px] border border-rule-2 bg-raised text-notice " +
+  "flex items-center gap-[7px] border border-control-edge bg-raised text-notice " +
   "px-[9px] py-[5px] transition-colors " +
   "hover:border-tint-hover hover:bg-tint hover:text-accent-text " +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent";

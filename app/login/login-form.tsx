@@ -52,12 +52,12 @@ export function LoginForm({ next }: { next: string }) {
         autoComplete="email"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
-        className="border border-rule bg-paper text-ink font-body px-3 py-2"
+        className="border border-control-edge bg-paper text-ink font-body px-3 py-2"
       />
       <button
         type="submit"
         disabled={state.status === "sending"}
-        className="border border-rule bg-accent text-on-accent font-body px-3 py-2 disabled:opacity-60"
+        className="border border-control-edge bg-accent text-on-accent font-body px-3 py-2 disabled:opacity-60"
       >
         {state.status === "sending" ? "Sending…" : "Send sign-in link"}
       </button>

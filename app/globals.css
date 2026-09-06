@@ -20,6 +20,7 @@
   --color-rule: var(--rule);
   --color-rule-2: var(--rule-2);
   --color-rule-3: var(--rule-3);
+  --color-control-edge: var(--control-edge);
 
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
@@ -75,6 +76,13 @@
   --rule: oklch(0.856 0.023 80);
   --rule-2: oklch(0.870 0.021 82);
   --rule-3: oklch(0.898 0.019 82);
+
+  /* The boundary of an INTERACTIVE control, and nothing else. Decorative
+     frames stay on --rule-2. MEASURED 2026-09-05 against every sheet a
+     control sits on: 3.34:1 light (worst case rail/pane), 3.44:1 dark (worst
+     case raised) -- clear of WCAG 1.4.11's 3:1. --rule-2 measures 1.40 / 1.47
+     and stays where it is; see docs/KNOWN_GAPS.md. */
+  --control-edge: oklch(0.585 0.016 70);
 
   --ink: oklch(0.226 0.022 62);
   --ink-2: oklch(0.300 0.021 62);
@@ -137,6 +145,13 @@
   --rule-2: oklch(0.32 0.016 50);
   --rule-3: oklch(0.27 0.015 48);
 
+  /* The boundary of an INTERACTIVE control, and nothing else. Decorative
+     frames stay on --rule-2. MEASURED 2026-09-05 against every sheet a
+     control sits on: 3.34:1 light (worst case rail/pane), 3.44:1 dark (worst
+     case raised) -- clear of WCAG 1.4.11's 3:1. --rule-2 measures 1.40 / 1.47
+     and stays where it is; see docs/KNOWN_GAPS.md. */
+  --control-edge: oklch(0.550 0.014 78);
+
   --ink: oklch(0.93 0.010 88);
   --ink-2: oklch(0.88 0.010 88);
   --ink-3: oklch(0.88 0.010 88);
@@ -192,6 +207,13 @@
     --rule: oklch(0.30 0.016 50);
     --rule-2: oklch(0.32 0.016 50);
     --rule-3: oklch(0.27 0.015 48);
+
+      /* The boundary of an INTERACTIVE control, and nothing else. Decorative
+       frames stay on --rule-2. MEASURED 2026-09-05 against every sheet a
+       control sits on: 3.34:1 light (worst case rail/pane), 3.44:1 dark (worst
+       case raised) -- clear of WCAG 1.4.11's 3:1. --rule-2 measures 1.40 / 1.47
+       and stays where it is; see docs/KNOWN_GAPS.md. */
+    --control-edge: oklch(0.550 0.014 78);
 
     --ink: oklch(0.93 0.010 88);
     --ink-2: oklch(0.88 0.010 88);

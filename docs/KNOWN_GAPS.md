@@ -1341,10 +1341,48 @@ Moving to Pro makes the schedule a one-line change in `vercel.json` and lets
 before changing either — `docs/DEPLOYMENT.md` holds the numbers and the command
 that produced them.
 
-### Framed controls sit at ~1.4:1 against the sheet (recorded 2026-09-01)
+### RESOLVED 2026-09-05 — framed controls sat at ~1.4:1 against the sheet (recorded 2026-09-01)
 
-**Open. Deliberately not fixed, because the fix is an app-wide token change and
-the owner has not been asked.**
+**Shipped: the second of the three ways out below — a boundary token for
+interactive controls only, `--control-edge`, applied to every neutral-edged
+control in the tree in one commit.** Decorative frames stay on `rule-2`, so
+the measurement table below still describes the insight cards, the status
+pills and the transcript pane, and is kept for that reason.
+
+`--control-edge` is `oklch(0.585 0.016 70)` light and `oklch(0.550 0.014 78)`
+dark. Both were chosen by computing the contrast against **every sheet a
+control sits on**, not just `paper`: the light value's worst case is
+`rail`/`pane` at **3.34:1** and the dark value's is `raised` at **3.44:1**.
+The same arithmetic reproduces the 1.40 / 1.47 recorded below for `rule-2`,
+which is what says the numbers are comparable.
+
+Swept in one pass, nine controls across eight files: `transcribe-button`,
+`audio-player`, `persona-rail`'s quick actions, `theme-toggle`,
+`record-hud`'s Record and Pause buttons, `chat/scope-toggle`'s unselected
+segment, `chat/chat-panel`'s composer, and both fields in
+`app/login/login-form.tsx`. The last three were **not** in the five-file list
+this entry named on 2026-09-01 — chat had not shipped, and the login form was
+missed — which is worth stating because the one-pass rule is what makes the
+change coherent, and a list written before the tree grew is not the tree.
+
+`record-hud`'s status and error pills carry `role="status"` / `role="alert"`
+and are **not** controls; they stayed on `rule-2` deliberately.
+
+**Two things this did NOT fix, both left open on purpose:**
+
+- **`border-tint-hover` measures 1.40:1 light / 2.29:1 dark**, and it is the
+  resting edge of `record-hud`'s Resume button as well as the hover edge of
+  the Transcribe and audio-player buttons. It is the accent family, not the
+  neutral hairline, and changing it is a separate decision about the accent
+  ramp rather than part of this sweep. The original reasoning still covers it:
+  Resume's label is `accent-text` and well clear of 4.5:1, so the label
+  identifies the control.
+- **Decorative frames are unchanged.** That was the point of choosing this
+  option over raising `--rule-2` itself.
+
+Everything from here down is the original 2026-09-01 record, unedited.
+
+---
 
 Every framed surface in this app draws its 1px edge with `rule-2`. Measured
 in-page on 2026-09-01, both themes, against the sheet behind it:
@@ -1371,7 +1409,8 @@ hairline as the only evidence a control was there at all. That half was fixed
 — `bg-canvas` → `bg-raised` in both `transcribe-button.tsx` and
 `audio-player.tsx` — and the edge was left alone.
 
-**Three ways out, none chosen, and the choice is the owner's:**
+**Three ways out, none chosen, and the choice is the owner's:** — the second
+was chosen on 2026-09-05; see the resolution above.
 
 - **Raise `--rule-2` itself** in `app/globals.css`. One edit, reaches every
   framed surface at once, and changes the look of the whole application — the
