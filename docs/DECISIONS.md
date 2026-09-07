@@ -1,7 +1,11 @@
 # Squid Ink: Decisions Log
  
-Working state as of 2026-09-05. Update this file as decisions change — don't
+Working state as of 2026-09-07. Update this file as decisions change — don't
 let it drift from reality.
+
+**Date corrected 2026-09-07.** This line read 2026-09-05 while the body carried
+the 2026-09-07 branding lock (§ Locked decisions → Branding), written into this
+file by the same commit that stamped `ROADMAP.md`'s header and missed this one.
 
 **Date corrected 2026-09-03.** This line read 2026-08-30 while the body already
 carried amendments dated 2026-09-01, 2026-09-02 and 2026-09-03 — including the
