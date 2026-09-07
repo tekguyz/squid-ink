@@ -2169,3 +2169,54 @@ corrected on 2026-09-03: a test that forbids its own fix. Widened to
 
 **Not cleaned up:** the three orphaned rows from the live incident are still in
 `chat_messages`. The owner was asked and does not care; they are on a seed note.
+
+## lib/notes/list-notes.ts — dead code found and removed (recorded 2026-09-06)
+
+Superseded by `lib/notes/get-dashboard-feed.ts` when the real Dashboard
+landed. Deleted; zero remaining imports confirmed via grep.
+
+## verify-layout.mjs false positive on clipped scroll content (recorded 2026-09-06)
+
+Discovered building the Dashboard (App Surface 01). The overlap probe
+measures raw bounding boxes and doesn't account for a scroll container
+clipping its own content — with ~11+ notes, a row scrolled out of view
+still reports as geometrically overlapping the HUD. False positive, not
+a real defect. A dashboard-side fix (`HUD_RESERVE` in
+`components/recorder/hud-safe-margin.ts`) prevents the *real* collision
+at that row count; the script's blind spot to clipping itself remains.
+
+**STILL OPEN.** Fix is one-line in the probe — skip elements outside
+the current scroll container's visible viewport. Not built; out of the
+dashboard's fence.
+
+## The dev server was started from a shell, and one verify-layout run failed unexplained (recorded 2026-09-07)
+
+`.claude/launch.json` already carried a working dev-server entry and was not
+used; `npm run dev` was started from a shell instead. Three consequences, all
+observed the same day: the process's stdout went to a scratch file that read
+back empty, stopping it meant finding `next dev` and its Turbopack child by
+pid through `Get-CimInstance`, and a restart raced the old process for port
+3000.
+
+**Fixed:** the launch.json entry is renamed from `note-detail` — a surface
+name, on a project-level server — to `dev`, and CLAUDE.md § Commands now says
+the shell line is for humans and the launch.json entry is the path for an
+agent.
+
+**NOT explained, and recorded as unexplained.** One `verify-layout.mjs` run in
+that session died at `Signed in, but the dashboard listed no note to measure`,
+immediately after `npm run build` had run against the same tree. It was first
+written up here as `next build` clobbering the running dev server's `.next`.
+**That was wrong and is retracted.** It was tested afterwards three times —
+build then verify warm, build then verify cold, and a plain warm run — and all
+three came back 48 passed, 0 failed with the server left running throughout. A
+`307` on `curl /` was read as breakage at the time and is not: curl carries no
+session cookie, so a redirect to `/login` is the correct answer.
+
+The likeliest remaining cause is the script's own sign-in leg, which mints a
+magic link and then asserts on the DOM; a page that answered before that
+session landed would show no note link and produce exactly this message. That
+is a hypothesis, not a measurement. **STILL OPEN.** If it recurs, the thing
+worth capturing is the page's URL and HTML at the moment the assertion fails —
+the message names the note, not the route, so it cannot currently tell
+"dashboard with no notes" from "still on /login".

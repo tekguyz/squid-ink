@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-05
+**Last updated:** 2026-09-07
 Update this line whenever this file changes — don't let it drift from reality.
 
 ## Stack
@@ -1085,7 +1085,16 @@ that needs a request through `proxy.ts` with a real session. Run both.
 
 ## Commands
 
-    npm run dev        # dev server
+**The dev server is started through `.claude/launch.json`, not through a
+shell.** The entry is named `dev` and it runs `npm run dev` on port 3000; an
+agent starts it with the preview tool and reads its output with the preview log
+tool. Started from a shell instead, the process is owned by whichever shell
+started it: its stdout goes to a scratch file nobody reads, stopping it means
+hunting `next dev` and its Turbopack child by pid, and a second start silently
+collides on port 3000. All three happened on 2026-09-07. The line below is what
+a human types; it is not the path for an agent.
+
+    npm run dev        # dev server — agents: use .claude/launch.json instead
     npm run build      # production build
     npm run typecheck  # tsc --noEmit
     npm test           # vitest run

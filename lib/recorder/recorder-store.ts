@@ -39,6 +39,20 @@ export interface RecorderState {
   mimeType: string | null;
   errorMessage: string | null;
 
+  /** How many times something outside the dock has asked for a recording to
+   *  begin. It is a counter rather than a boolean so two asks in a row are two
+   *  distinct values, and it is deliberately NOT part of CLEAN — a reset that
+   *  rewound it to 0 would let the next ask re-fire a request already served.
+   *
+   *  Only the dock reads it, and only to call the one `useRecorder` instance
+   *  it owns. That indirection is the whole point: `useRecorder` holds the
+   *  MediaRecorder, the capture graph and the device watcher in refs, so a
+   *  second component calling the hook would be a second recorder whose Pause
+   *  and Stop reach nothing. There is one recorder; this is how anything else
+   *  on screen asks it to start. */
+  startRequests: number;
+
+  requestRecording(): void;
   requestStart(noteId: string): void;
   confirmStart(mimeType: string): void;
   pause(): void;
@@ -52,8 +66,12 @@ export interface RecorderState {
   setLevel(level: number): void;
 }
 
+/** What a reset restores. `startRequests` is omitted on purpose — see its
+ *  comment above; it is state that must survive `discard()` and `finish()`. */
 type RecorderData = Omit<
   RecorderState,
+  | "startRequests"
+  | "requestRecording"
   | "requestStart"
   | "confirmStart"
   | "pause"
@@ -78,6 +96,17 @@ const CLEAN: RecorderData = {
 
 export const useRecorderStore = create<RecorderState>((set) => ({
   ...CLEAN,
+  startRequests: 0,
+
+  // Guarded like every other transition: asking to record while a recording is
+  // already running is a no-op, not a throw. The dock is mounted on every
+  // route, so a stray click arriving one tick late must not take the page down.
+  requestRecording: () =>
+    set((s) =>
+      s.phase === "idle" || s.phase === "error"
+        ? { startRequests: s.startRequests + 1 }
+        : s,
+    ),
 
   requestStart: (noteId) =>
     set((s) =>
