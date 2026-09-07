@@ -22,7 +22,7 @@ export function TranscriptPane({
     <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-pane">
       <div className="border-b border-rule px-[18px] pt-[15px] pb-[11px]">
         <div className="flex items-baseline gap-2">
-          <h2 className="font-header text-base font-semibold">Transcript</h2>
+          <h2 className="font-header text-[16px] leading-[24px] font-semibold">Transcript</h2>
           <span className="font-mono text-[9px] text-meta-2">
             {note.turnCount} TURNS
           </span>

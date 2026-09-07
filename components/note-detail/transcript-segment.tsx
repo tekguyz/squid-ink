@@ -26,7 +26,7 @@ export function TranscriptSegment({
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
           {showSpeakerLabels ? (
-            <span className={`text-xs ${SPEAKER_TEXT[segment.speaker.token]}`}>
+            <span className={`text-[12px] leading-[16px] ${SPEAKER_TEXT[segment.speaker.token]}`}>
               {segment.speaker.name}
             </span>
           ) : null}

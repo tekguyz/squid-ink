@@ -7,7 +7,7 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div>
       {label}
       <br />
-      <span className="text-sm text-ink-stat">{value}</span>
+      <span className="text-[14px] leading-[20px] text-ink-stat">{value}</span>
     </div>
   );
 }
@@ -23,7 +23,7 @@ export function SpeakerInsights({ stats }: { stats: SpeakerStat[] }) {
             className="border border-rule-2 bg-canvas px-[11px] py-2.5"
           >
             <div
-              className={`font-header text-sm font-semibold ${SPEAKER_TEXT[stat.speaker.token]}`}
+              className={`font-header text-[14px] leading-[20px] font-semibold ${SPEAKER_TEXT[stat.speaker.token]}`}
             >
               {stat.speaker.name}
             </div>

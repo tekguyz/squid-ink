@@ -58,7 +58,7 @@ export function PersonaRail({
               onClick={() => onSelect(persona.id)}
               className={[
                 "border-l-2 px-[11px] pt-2 pb-[9px] text-left",
-                "font-header text-sm font-semibold leading-[1.25]",
+                "font-header text-[14px] font-semibold leading-[1.25]",
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
                 locked ? "cursor-default" : "cursor-pointer",
                 selected
@@ -77,7 +77,7 @@ export function PersonaRail({
         })}
       </div>
 
-      <div className="cursor-pointer border-l-2 border-transparent px-[11px] pt-2 pb-[9px] font-header text-sm font-semibold text-placeholder">
+      <div className="cursor-pointer border-l-2 border-transparent px-[11px] pt-2 pb-[9px] font-header text-[14px] leading-[20px] font-semibold text-placeholder">
         + New lens
       </div>
 

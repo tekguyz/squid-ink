@@ -26,7 +26,7 @@ export function TakeawaysSection({
             <span className="w-4 flex-none font-header text-[15px] font-semibold text-accent">
               {takeaway.n}
             </span>
-            <span className="text-sm leading-[1.55] text-pretty">
+            <span className="text-[14px] leading-[1.55] text-pretty">
               {takeaway.text}
               <span className="ml-1.5 inline-block">
                 <CitationChip
