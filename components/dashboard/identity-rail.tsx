@@ -35,17 +35,31 @@ function initials(email: string | null): string {
 
 /** Not yet built. Rendered rather than hidden, and genuinely inert: disabled,
  *  no handler, no href. The copy names the state and nothing else — which
- *  phase each of these lands in is an open roadmap question. */
+ *  phase each of these lands in is an open roadmap question.
+ *
+ *  MEASURED 2026-09-07, composited. `text-faint` under `opacity-60` came in at
+ *  1.66:1 on `bg-rail` light and 1.88:1 dark. WCAG 1.4.3 exempts an inactive
+ *  control, so that was conformant — but five of this rail's six nav items are
+ *  disabled, and a nav whose entries sit under 2:1 does not read as "planned",
+ *  it reads as a rendering fault. `faint` was already measured too weak for
+ *  9px text in status-pill.tsx and replaced there; this reintroduced it and
+ *  then halved it.
+ *
+ *  The dimming now applies to the LABEL only, and the badge that explains the
+ *  state carries `muted` at full opacity — 4.78:1 light / 6.29:1 dark on
+ *  `bg-rail`, clearing AA. The item still reads as off; the word saying why is
+ *  legible. `title` is gone: browsers suppress pointer events on a disabled
+ *  element, so that tooltip provably never rendered, and the badge is the only
+ *  explanation a sighted user was ever going to get. */
 function PendingItem({ label }: { label: string }) {
   return (
     <button
       type="button"
       disabled
-      title="Not available yet"
-      className={`${NAV_ITEM} text-faint w-full cursor-not-allowed border-transparent text-left opacity-60`}
+      className={`${NAV_ITEM} text-faint w-full cursor-not-allowed border-transparent text-left`}
     >
-      {label}
-      <span className="font-mono text-faint ml-auto text-[8.5px] tracking-[0.14em] uppercase">
+      <span className="opacity-60">{label}</span>
+      <span className="font-mono text-muted ml-auto text-[8.5px] tracking-[0.14em] uppercase">
         Soon
       </span>
     </button>
@@ -85,13 +99,21 @@ export function IdentityRail({
       </div>
 
       <div className="flex flex-col gap-px px-[8px] pt-[10px] pb-[4px]">
-        <span
+        {/* A Link, not a span. `aria-current` on a bare span is not exposed as
+            a nav item, so a screen-reader user walking this landmark heard four
+            disabled buttons and some note links with no announced "you are
+            here". The count needs its own label too, or it is read as the tail
+            of the item's name. */}
+        <Link
+          href="/"
           aria-current="page"
-          className={`${NAV_ITEM} bg-raised border-accent text-ink`}
+          className={`${NAV_ITEM} bg-raised border-accent text-ink focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2`}
         >
           All notes
-          <span className={COUNT}>{totalNotes}</span>
-        </span>
+          <span className={COUNT} aria-label={`${totalNotes} notes`}>
+            {totalNotes}
+          </span>
+        </Link>
         <PendingItem label="Calendar" />
         <PendingItem label="Collections" />
         <PendingItem label="Sources" />
@@ -117,14 +139,19 @@ export function IdentityRail({
       </div>
 
       <div className="border-rule-3 mt-auto border-t px-[14px] py-[10px]">
+        {/* The `⌘,` hint is gone with the tooltip. Nothing binds that chord,
+            so it advertised a shortcut that did nothing — and it sat at the
+            same 1.66:1 the nav items did. "Soon" is the honest label and it is
+            the one the rest of this rail already uses. */}
         <button
           type="button"
           disabled
-          title="Not available yet"
-          className="font-body text-faint flex w-full cursor-not-allowed items-center gap-[8px] text-[12.5px] opacity-60"
+          className="font-body text-faint flex w-full cursor-not-allowed items-center gap-[8px] text-[12.5px]"
         >
-          Settings
-          <span className="font-mono text-faint ml-auto text-[9px]">⌘,</span>
+          <span className="opacity-60">Settings</span>
+          <span className="font-mono text-muted ml-auto text-[8.5px] tracking-[0.14em] uppercase">
+            Soon
+          </span>
         </button>
       </div>
     </nav>

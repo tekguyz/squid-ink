@@ -17,33 +17,72 @@ import { getDashboardFeed } from "@/lib/notes/get-dashboard-feed";
  * `new Date()` is read here rather than inside the grouping function, so the
  * bucket boundaries stay a pure function of their inputs and nothing in a
  * render path reads the clock.
+ *
+ * The grid is held at MIN_SURFACE_WIDTH and the page scrolls sideways under
+ * it — changed 2026-09-07 after a design critique. It used to simply squeeze:
+ * below 1280px the four-track rows crushed and the header's controls were cut
+ * off at the viewport edge with no way to reach them. This is an INTERIM fix
+ * and nothing more. No design exists for a narrow viewport — docs/DESIGN.md
+ * draws one surface, at one width — so inventing a stacked or collapsed layout
+ * here would be guessing at a design decision this file does not own. A real
+ * responsive pass is separate future work; until then the content is reachable
+ * rather than clipped, which is the whole claim being made.
+ *
+ * scripts/verify-layout.mjs measures 1440 and 1280 only, and its "no
+ * horizontal page overflow" assertion still holds at both: the minimum equals
+ * the narrower of the two. Add widths there when breakpoints actually ship.
  */
+
+/** The width the one drawn design assumes. Below this the page scrolls; it
+ *  does not reflow, because no reflowed design exists yet. */
+const MIN_SURFACE_WIDTH = 1280;
+export const metadata = { title: "All notes" };
+
 export default async function Dashboard() {
   const feed = await getDashboardFeed(new Date());
 
   return (
-    <div className="bg-canvas text-ink grid h-dvh grid-cols-[212px_minmax(0,1fr)]">
-      <IdentityRail
-        email={feed.email}
-        totalNotes={feed.totalNotes}
-        groups={feed.groups}
-      />
+    <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
+      <div
+        style={{ minWidth: MIN_SURFACE_WIDTH }}
+        className="bg-canvas text-ink grid h-full grid-cols-[212px_minmax(0,1fr)]"
+      >
+        <IdentityRail
+          email={feed.email}
+          totalNotes={feed.totalNotes}
+          groups={feed.groups}
+        />
 
-      {/* The bottom inset is the recorder HUD's corner, and it is on the column
+        {/* The bottom inset is the recorder HUD's corner, and it is on the column
           rather than on the scroll area inside it. Padding the scrolled content
           would only move the last row; the region itself has to end above the
           strip, or a row passes under the HUD at every other scroll position.
           The feed's right-hand count column shares the HUD's x range exactly,
-          measured 2026-09-07. */}
-      <main
-        style={{ paddingBottom: HUD_RESERVE }}
-        className="bg-paper flex min-h-0 min-w-0 flex-col overflow-hidden"
-      >
-        <DashboardHeader />
-        <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
-          <NoteFeed groups={feed.groups} />
-        </div>
-      </main>
+          measured 2026-09-07.
+
+          The strip is a footer rather than padding, added 2026-09-07 after a
+          design critique: the reserve mechanism is right, but 72px of the same
+          colour as the content — with the row rules and the scrollbar both
+          stopping short of the viewport edge — reads as the page being cut off
+          rather than as the list ending. Same reserved height, same guarantee,
+          but the space now says something. Its one line is left-aligned
+          deliberately: the HUD owns the right end of this exact band. */}
+        <main className="bg-paper flex min-h-0 min-w-0 flex-col overflow-hidden">
+          <DashboardHeader />
+          <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+            <NoteFeed groups={feed.groups} />
+          </div>
+          <footer
+            style={{ height: HUD_RESERVE }}
+            className="bg-canvas border-rule flex flex-none items-center border-t px-[24px]"
+          >
+            <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
+              End of feed · {feed.totalNotes}{" "}
+              {feed.totalNotes === 1 ? "note" : "notes"}
+            </p>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

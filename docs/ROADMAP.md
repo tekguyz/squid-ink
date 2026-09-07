@@ -3,23 +3,29 @@
 **Status:** Blueprint complete, and the §8 MVP chain is **built** — recorder,
 Gemini transcription, structured note generation, Voyage embeddings and Claude
 ask-your-notes chat all ship, on Supabase auth and Note Detail. Claude Design
-in progress — Recorder UI resolved (hybrid HUD + full-app); the ten surfaces in
-`design-reference/App Surfaces.dc.html` remain unbuilt. 2026-08-30
-feature-triage backlog fully disposed: promoted into phases below, or rejected
-(see §7).
+in progress — Recorder UI resolved (hybrid HUD + full-app). Two of the ten
+surfaces in `design-reference/App Surfaces.dc.html` are now built: **02b record
+HUD** (2026-08-31) and **01 Dashboard** (2026-09-07, replacing the `app/page.tsx`
+scaffold). Neither is finished to the drawing — 01 ships without the right-hand
+widget column, without search, without live-updating status and without a
+design below 1280px, all deliberately; `docs/KNOWN_GAPS.md` names each. The
+other eight surfaces remain unbuilt. 2026-08-30 feature-triage backlog fully
+disposed: promoted into phases below, or rejected (see §7).
 
 **This file is a PLAN, not a shipping log.** What is built is recorded in
 `CLAUDE.md`; what is deliberately not built is in `docs/KNOWN_GAPS.md`; what was
 decided or rejected is in `docs/DECISIONS.md`. A phase listed below is scope,
 and says nothing either way about whether it has shipped.
 
-**Last updated:** 2026-09-05 (status line rewritten — it read "Blueprint
-complete. Claude Design in progress" from before any code existed, which read
-as though nothing was built. The phases below are unchanged and were re-checked
-against the tree that day: nothing shipped since 2026-09-03 contradicts them.
-Header previously corrected 2026-09-03, when it read 2026-08-30 while §5 and §8
-already carried amendments dated 2026-09-01 and §4's schema snippet had been
-superseded; see the dated notes in those sections).
+**Last updated:** 2026-09-07 (status line amended — it said the ten surfaces
+"remain unbuilt", which was already false for 02b and became false again for
+01 Dashboard that day. The phases below are unchanged: a built surface is not a
+phase, and nothing in the Dashboard work moved scope. Previously rewritten
+2026-09-05, when the line read "Blueprint complete. Claude Design in progress"
+from before any code existed and so read as though nothing was built; header
+corrected 2026-09-03, when it read 2026-08-30 while §5 and §8 already carried
+amendments dated 2026-09-01 and §4's schema snippet had been superseded; see
+the dated notes in those sections).
 
 ---
 

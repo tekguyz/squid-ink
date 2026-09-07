@@ -28,6 +28,28 @@ deliberately left out, and three HUD states are invented rather than drawn. Both
 are recorded under the recorder section below. Do not read "02b is built" as
 "02b is finished".
 
+**Amended again 2026-09-07.** A second of the ten is now built: **01
+Dashboard**, replacing the throwaway `app/page.tsx` scaffold that stood from
+2026-08-31 to 2026-09-07. The remaining eight are still unbuilt and still out
+of scope. As with 02b, what shipped is not all of 01, and the deferrals are
+deliberate rather than forgotten:
+
+- **The right-hand widget column** — Next up, Open actions, Sources and a drop
+  target. Each needs a feature that does not exist (a calendar integration, a
+  cross-note action query, a source taxonomy, an import path). Four empty
+  widgets drawn to match a picture would be four claims this product cannot
+  keep, so the surface ships as two columns, not three.
+- **Search.** There is no search index. The header's field renders inert and
+  says "Soon" rather than looking live.
+- **Live-updating status.** The feed is server-rendered once per load. A note
+  moving from `'analyzing'` to `'completed'` while the page is open does not
+  redraw; a reload shows it. No subscription, no polling.
+- **Anything below 1280px.** The page now scrolls sideways rather than
+  clipping, which makes the content reachable. It is not a responsive design
+  and is not claimed as one — see the entry on it below.
+
+Do not read "01 is built" as "01 is finished".
+
 ## State management — Zustand not used here (recorded 2026-08-30)
 
 Zustand not invoked here — state is local to one component, no drawers/cross-route
@@ -2220,3 +2242,51 @@ is a hypothesis, not a measurement. **STILL OPEN.** If it recurs, the thing
 worth capturing is the page's URL and HTML at the moment the assertion fails —
 the message names the note, not the route, so it cannot currently tell
 "dashboard with no notes" from "still on /login".
+
+## Token gaps from Dashboard critique (recorded 2026-09-07)
+
+`--ink-disabled` (~3.0–3.5:1 on `rail`/`paper`) — today's only choices are
+`faint` (too weak) or `muted` (doesn't read as disabled).
+
+`--rule-strong` — `rule`/`rule-2`/`rule-3` measure 1.23–1.47:1, all textures,
+nothing reads as a structural boundary.
+
+`--live-tint` — `failed` is the state needing action and has no fill;
+`analyzing` has one.
+
+**STILL OPEN.** None needs a new hue. Design decision, not built here.
+
+## DESIGN.md type ramp incomplete (recorded 2026-09-07)
+
+Detector flags 10px/10.5px/22px as off-ramp; 12.5px and 15px are equally
+off-ramp and go unflagged (tolerance gap in the check itself). Addressed by
+the /impeccable document regen — see follow-up.
+
+## The Dashboard feed query has a cap, not a pager (recorded 2026-09-07)
+
+`lib/notes/get-dashboard-feed.ts` fetched every note on the account on every
+load of `/`, then shaped and grouped all of them. `FEED_LIMIT = 100` now bounds
+the note query, and `totalNotes` comes from PostgREST's exact count so the rail
+and the footer keep reporting the real size of the account.
+
+**STILL OPEN.** This is a bound, not pagination. Past 100 notes the older ones
+are simply not on the screen and there is no control that asks for them — no
+cursor, no "load older", and a rail that does not know about the days it did
+not fetch. The chunk query is still unbounded for the same RLS reason its own
+comment gives. Building the pager is future work.
+
+## The Dashboard scrolls sideways below 1280px (recorded 2026-09-07)
+
+The grid used to squeeze: under 1280px the four-track rows crushed and the
+header's controls were cut off at the viewport edge with no way to reach them.
+`app/page.tsx` now holds the grid at `MIN_SURFACE_WIDTH = 1280` inside a
+horizontal scroller.
+
+**STILL OPEN as a design gap.** This is an interim fix and is not a responsive
+layout. No design exists for a narrow viewport — DESIGN.md draws one surface at
+one width — so a stacked or collapsed layout would be invented, not
+implemented. The claim being made is only that the content is reachable instead
+of clipped. `scripts/verify-layout.mjs` still measures 1440 and 1280 only, and
+its horizontal-overflow assertion still holds at both because the minimum
+equals the narrower width. A real responsive pass is separate future work; add
+widths to that script when breakpoints actually ship.

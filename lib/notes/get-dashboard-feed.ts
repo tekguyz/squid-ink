@@ -5,7 +5,11 @@ import {
   type FeedNoteInput,
   type NoteCounts,
 } from "@/lib/notes/group-notes-by-day";
-import type { ChunkMetadata, ChunkType, ProcessingStatus } from "@/lib/notes/types";
+import type {
+  ChunkMetadata,
+  ChunkType,
+  ProcessingStatus,
+} from "@/lib/notes/types";
 
 /**
  * Everything the Dashboard renders, in two queries.
@@ -21,7 +25,24 @@ import type { ChunkMetadata, ChunkType, ProcessingStatus } from "@/lib/notes/typ
  * never one query per row: a feed of 128 notes would otherwise be 128 round
  * trips, which is the N+1 CLAUDE.md flags as the risk of showing per-row stats
  * at all.
+ *
+ * The note query is CAPPED at FEED_LIMIT and the cap is not pagination. Every
+ * note ever recorded was being fetched, shaped and grouped on every load of
+ * the root route, which is unbounded work for a screen that shows the most
+ * recent day first and is scrolled, not paged. A real feed pager — a cursor,
+ * a "load older" control, a rail that knows about the days it has not fetched
+ * — is deferred and is NOT built here; the cap is the bound that stops the
+ * query growing with the table until it is.
+ *
+ * `totalNotes` therefore comes from PostgREST's exact count rather than from
+ * the number of rows returned. The rail and the end-of-feed footer both print
+ * it, and after the cap bites the row count is the size of the page, not the
+ * size of the account.
  */
+
+/** Most recent notes fetched per load. See the note above: a bound, not a page
+ *  size, because nothing exists yet to ask for the next one. */
+const FEED_LIMIT = 100;
 
 /** The three generated chunk types. `transcript_segment` is excluded on
  *  purpose — a long recording has hundreds, none of them are counted here, and
@@ -77,7 +98,9 @@ function tally(rows: readonly ChunkQueryRow[]): Map<string, NoteCounts> {
     } else if (row.chunk_type === "takeaway") {
       entry.spans += 1;
     } else {
-      entry.spans += (row.metadata?.runs ?? []).filter((run) => run.cite).length;
+      entry.spans += (row.metadata?.runs ?? []).filter(
+        (run) => run.cite,
+      ).length;
     }
 
     counts.set(row.note_id, entry);
@@ -100,25 +123,35 @@ function previews(rows: readonly ChunkQueryRow[]): Map<string, string> {
 export async function getDashboardFeed(now: Date): Promise<DashboardFeed> {
   const supabase = await createClient();
 
-  const [{ data: notes, error: noteError }, { data: chunks, error: chunkError }, { data: auth }] =
-    await Promise.all([
-      supabase
-        .from("notes")
-        .select("id, title, created_at, processing_status, audio_duration_seconds")
-        .order("created_at", { ascending: false })
-        .returns<NoteQueryRow[]>(),
-      supabase
-        .from("note_chunks")
-        .select("note_id, chunk_type, content, metadata")
-        .in("chunk_type", GENERATED)
-        .returns<ChunkQueryRow[]>(),
-      // getUser, never getSession: the proxy revalidates the token on every
-      // request and this reads the same revalidated identity.
-      supabase.auth.getUser(),
-    ]);
+  const [
+    { data: notes, error: noteError, count: noteCount },
+    { data: chunks, error: chunkError },
+    { data: auth },
+  ] = await Promise.all([
+    supabase
+      .from("notes")
+      .select(
+        "id, title, created_at, processing_status, audio_duration_seconds",
+        {
+          count: "exact",
+        },
+      )
+      .order("created_at", { ascending: false })
+      .limit(FEED_LIMIT)
+      .returns<NoteQueryRow[]>(),
+    supabase
+      .from("note_chunks")
+      .select("note_id, chunk_type, content, metadata")
+      .in("chunk_type", GENERATED)
+      .returns<ChunkQueryRow[]>(),
+    // getUser, never getSession: the proxy revalidates the token on every
+    // request and this reads the same revalidated identity.
+    supabase.auth.getUser(),
+  ]);
 
   if (noteError) throw new Error(`Failed to load notes: ${noteError.message}`);
-  if (chunkError) throw new Error(`Failed to load note counts: ${chunkError.message}`);
+  if (chunkError)
+    throw new Error(`Failed to load note counts: ${chunkError.message}`);
 
   const rows = chunks ?? [];
   const preview = previews(rows);
@@ -134,7 +167,7 @@ export async function getDashboardFeed(now: Date): Promise<DashboardFeed> {
 
   return {
     email: auth?.user?.email ?? null,
-    totalNotes: inputs.length,
+    totalNotes: noteCount ?? inputs.length,
     groups: groupNotesByDay(inputs, tally(rows), now),
   };
 }

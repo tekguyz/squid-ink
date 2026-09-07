@@ -12,16 +12,34 @@ import type { FeedNote } from "@/lib/notes/group-notes-by-day";
  * column instead, which is the fact a feed row actually needs — an 'uploading'
  * or 'failed' note must not look finished.
  *
+ * That column is EMPTY on a finished note. StatusPill renders nothing for
+ * `'completed'` (see its own header for why), so the track holds its 148px and
+ * nothing else — the same "empty, not zeroed" rule the count column follows
+ * below, and for the same reason.
+ *
  * Presentational and server-rendered: no state, no effect, no client boundary.
+ *
+ * The count column is EMPTY, not zeroed, before generation runs — a note with
+ * neither an action nor a span has nothing to report, and "0 ACTIONS / 0
+ * SPANS" on every un-generated row is constant ink for a value that is usually
+ * zero and never actionable. The column keeps its 96px track either way, so
+ * the four-track alignment does not move.
+ *
+ * Neither line takes the accent. `accent` means "grounded in the source" and
+ * is the app's only hue; spending it on a passive tally put the greenest thing
+ * on a finished row on a number nobody acts on, competing with the Record
+ * button and the Transcribing pill for the same signal. Both dropped to
+ * `muted` on 2026-09-07 after a design critique.
  */
 
-const COUNT = "font-mono text-muted text-[9px] tracking-[0.06em] tabular-nums uppercase";
+const COUNT =
+  "font-mono text-muted text-[9px] tracking-[0.06em] tabular-nums uppercase";
 
 export function NoteRow({ note }: { note: FeedNote }) {
   return (
     <Link
       href={`/notes/${note.id}`}
-      className="border-rule-3 hover:bg-pane focus-visible:outline-accent grid grid-cols-[62px_minmax(0,1fr)_148px_96px] items-center gap-[14px] border-b px-[24px] py-[11px] focus-visible:outline-2 focus-visible:-outline-offset-2"
+      className="border-rule-3 hover:bg-pane focus-visible:outline-accent grid grid-cols-[62px_minmax(0,1fr)_148px_96px] items-center gap-[14px] border-b px-[24px] py-[11px] last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2"
     >
       <span className="font-mono text-meta-3 text-[10.5px] tabular-nums">
         {note.time}
@@ -49,9 +67,13 @@ export function NoteRow({ note }: { note: FeedNote }) {
       </span>
 
       <span className={`${COUNT} block text-right`}>
-        {note.actionCount} {note.actionCount === 1 ? "action" : "actions"}
-        <br />
-        <span className="text-accent-text">{note.spanCount} spans</span>
+        {note.actionCount === 0 && note.spanCount === 0 ? null : (
+          <>
+            {note.actionCount} {note.actionCount === 1 ? "action" : "actions"}
+            <br />
+            {note.spanCount} spans
+          </>
+        )}
       </span>
     </Link>
   );

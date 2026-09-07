@@ -16,11 +16,21 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  * marker is the same 9px filled square the recorder HUD, the audio player and
  * the Transcribe button use.
  *
- * Colour is a token, never a literal. Only two statuses earn a hue: 'failed'
+ * Colour is a token, never a literal. Only one status earns a hue: 'failed'
  * takes `live` (the recorder's red) because it is the one state that will not
- * change on its own, and 'completed' takes `accent`. The rest stay in the
- * neutral metadata ladder — a list where every row shouts is a list where
- * nothing does.
+ * change on its own. The rest stay in the neutral metadata ladder — a list
+ * where every row shouts is a list where nothing does.
+ *
+ * `'completed'` RENDERS NOTHING — decided 2026-09-07, after the design
+ * critique. A finished note is the resting state of this list, so a READY pill
+ * on almost every row is ink that carries no information: it marks the normal
+ * case and leaves the abnormal ones competing with it. Dropping it makes the
+ * column empty by default, so a pill anywhere in it means "this note needs
+ * something". Only the four unfinished states are drawn.
+ *
+ * `'local'` KEEPS its pill. It is not the healthy terminal state — the audio
+ * has not left the device — and it is exactly the case this component was
+ * built for: a note that must not look finished.
  */
 
 const PILL =
@@ -41,7 +51,7 @@ interface Look {
  *  both failed and both are replaced below. `muted` and `meta-3` clear it in
  *  both themes, and the states stay told apart by word and marker rather than
  *  by lightness — which is the restraint this component was after anyway. */
-const LOOKS: Record<ProcessingStatus, Look> = {
+const LOOKS: Record<Exclude<ProcessingStatus, "completed">, Look> = {
   local: {
     label: "Local",
     chrome: "border-rule-2 text-muted",
@@ -52,14 +62,15 @@ const LOOKS: Record<ProcessingStatus, Look> = {
     chrome: "border-rule-2 text-meta-3",
     marker: "bg-meta-3",
   },
+  /** `rule-2`, not `tint-hover`. Measured 2026-09-07: `tint-hover` against the
+   *  `tint` fill it sat on is 1.15:1 light, so this frame was very nearly not
+   *  drawn — the identical measurement CLAUDE.md § Colour already records for
+   *  the accent family. `border-accent` is that section's answer for a
+   *  CONTROL; a pill is not one, so it takes the decorative-frame token like
+   *  every other status here. Do not darken `--tint-hover` to fix a border. */
   analyzing: {
     label: "Transcribing",
-    chrome: "border-tint-hover bg-tint text-accent-text",
-    marker: "bg-accent",
-  },
-  completed: {
-    label: "Ready",
-    chrome: "border-rule-2 text-notice",
+    chrome: "border-rule-2 bg-tint text-accent-text",
     marker: "bg-accent",
   },
   failed: {
@@ -70,6 +81,8 @@ const LOOKS: Record<ProcessingStatus, Look> = {
 };
 
 export function StatusPill({ status }: { status: ProcessingStatus }) {
+  if (status === "completed") return null;
+
   const look = LOOKS[status];
 
   return (
