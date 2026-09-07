@@ -31,6 +31,18 @@ scratch-verify-transcription.wav
 # Dev server output redirected during live verification.
 dev-server.log
 
+# Everything the impeccable tool writes into its own folder — critique runs,
+# live-session state, caches. Written OUTSIDE the marked block below, which the
+# tool rewrites whenever it updates its own entries.
+#
+# `.impeccable/*` rather than `.impeccable/`: a directory pattern stops git
+# descending into the folder at all, and the two negations below would then
+# never be reached. config.json and design.json are the project's own settings
+# and are tracked on purpose.
+.impeccable/*
+!.impeccable/config.json
+!.impeccable/design.json
+
 # impeccable-live-ignore-start
 .impeccable/hook.cache.json
 .impeccable/hook.pending.json
