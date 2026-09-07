@@ -40,9 +40,9 @@ better personas system, better design, better docs/brand.
 The prior build is fully discarded. No data migration, no code audit, no
 legacy users (owner's second account + one friend only). The only carryover
 is the feature inventory and product philosophy (dense over noisy,
-truth-first, no AI fluff). App naming is unconfirmed as of 2026-08-30 —
-working name **Squid Ink** used internally; a prior note recorded
-"Crispy Bacon" as locked (2026-08-29), since reopened. Visual identity,
+truth-first, no AI fluff). The app name is **locked to Squid Ink**
+(2026-09-07); it was unconfirmed from 2026-08-30, when a prior lock on
+"Crispy Bacon" (2026-08-29) was reopened. Visual identity,
 logo/icon system, copy, and docs get a full redesign with zero carryover
 from the prior build regardless of what the app is ultimately named.
 
@@ -263,7 +263,7 @@ manual Transcribe-button trigger is unchanged.
 | Real-time PII redaction | **New** — regex pass before transcript reaches Gemini/Claude |
 | Profile context box | **New** — baseline role/team context, complements Personas |
 | PWA | **New** — installable, offline shell cache, job-completion push |
-| App name | **Unconfirmed** — naming reopened 2026-08-30; working name Squid Ink; no other prior-build branding carries over regardless |
+| App name | **Locked to Squid Ink**, 2026-09-07 — reopened 2026-08-30, confirmed now; no other prior-build branding carries over regardless |
 | Brand identity (logo, icons) | **New** — total redesign, no carryover from the prior build |
 | Docs / copy | **New** — none of the prior build's existed as a real deliverable |
 
@@ -374,11 +374,10 @@ flagged during 2026-08-30 feature triage:
 ## 9. Resolved items
 
 1. **Brand/name direction** — recorded 2026-08-29 as "Crispy Bacon retained,
-   naming only," then reopened by the owner 2026-08-30. **Unconfirmed as of
-   this update** — working name Squid Ink used internally. Visual identity,
-   logo/icon system, and all other brand assets remain a full redesign with
-   zero carryover from the prior build, independent of what the app is
-   ultimately named.
+   naming only," then reopened by the owner 2026-08-30, then **locked to
+   Squid Ink on 2026-09-07.** The name may now be used in user-facing copy
+   and in code. Visual identity, logo/icon system, and all other brand
+   assets remain a full redesign with zero carryover from the prior build.
 2. **Multi-tenancy** — resolved 2026-08-30. Staying single-owner/solo
    indefinitely; no organizations/workspace table. Any team-switcher-style
    UI in early Claude Design mockups is cosmetic scaffolding, not scope.

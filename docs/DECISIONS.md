@@ -32,11 +32,11 @@ a separate, still-open question (see Branding below).
 - No code audit of the prior build — it's being discarded, so auditing dead
   code is wasted effort. The useful artifact from it is the feature
   inventory (see below), not the code.
-- Branding: app name is **unconfirmed** (as of 2026-08-30). Working name
-  **Squid Ink** is used internally for code, repo, and this doc. A prior
-  note recorded the name as locked to "Crispy Bacon" (2026-08-29) — that
-  has since been reopened by the owner and should not be treated as
-  decided. Visual identity is 100% total redesign regardless of naming: no
+- Branding: app name is **locked to Squid Ink** (2026-09-07). It was
+  unconfirmed from 2026-08-30, when a prior lock on "Crispy Bacon"
+  (2026-08-29) was reopened by the owner; the working name has now been
+  confirmed as the public name. Squid Ink may appear in user-facing copy,
+  page titles and code. Visual identity is 100% total redesign regardless of naming: no
   carryover of the prior build's visual language ("Organic"
   cream/rust-orange/Newsreader), logo, icons, copy, or docs. Design starts
   fresh in Claude Design, no KB-doc import.
@@ -543,10 +543,11 @@ gates, in that order.
 ## Frontend engineering conventions (added 2026-08-30, trimmed 2026-08-30 to remove duplication with CLAUDE.md)
  
 - **Repo/package naming**: local folder `tekguyz-squid-ink`, npm package
-  name `squid-ink` — deliberately decoupled from the app's still-unconfirmed
-  public name (see Branding above) so a naming decision doesn't require a
-  code-wide rename. The public name, whatever it ends up being, only ever
-  appears as user-facing copy.
+  name `squid-ink` — these were deliberately decoupled from the app's
+  public name while it was unconfirmed. Since the 2026-09-07 lock they
+  agree: the public name is **Squid Ink** (see Branding above). The former
+  restriction that a name string must not appear anywhere in code no
+  longer applies.
 - **Styling / tokens**: Tailwind v4, CSS-first `@theme` block in
   `globals.css`. Every color in every component is a `var(--token-name)`
   reference — no inline `oklch()` literals. This is the code-side fix for

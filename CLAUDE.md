@@ -945,10 +945,14 @@ ever gains a `NEXT_PUBLIC_` prefix.
 
 ## Naming
 
-The application has no confirmed public name. **Do not put a name string —
-working or otherwise — anywhere in code.** User-facing copy stays generic
-("your notes", page titles with no brand). The only exception is the
-`package.json` `name` field.
+The application's public name is **Squid Ink**, locked 2026-09-07
+(`docs/DECISIONS.md` § Locked decisions → Branding, `docs/ROADMAP.md` § 9).
+It may appear in user-facing copy, page titles and code.
+
+This section previously read "The application has no confirmed public name.
+Do not put a name string — working or otherwise — anywhere in code", which
+was correct while naming was reopened between 2026-08-30 and the lock. That
+restriction no longer applies.
 
 ## Supabase
 

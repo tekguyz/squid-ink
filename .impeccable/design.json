@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-31T00:00:00.000Z",
-  "title": "Design System: Unconfirmed (working name \"Squid Ink\")",
+  "generatedAt": "2026-09-07T12:25:21.000Z",
+  "title": "Design System: Squid Ink",
   "extensions": {
     "colorMeta": {
       "accent": {
@@ -138,40 +138,91 @@
           "oklch(0.898 0.019 82)",
           "oklch(0.96 0.014 82)"
         ]
+      },
+      "control-edge": {
+        "role": "neutral",
+        "displayName": "Control Edge",
+        "canonical": "oklch(0.585 0.016 70)",
+        "tonalRamp": [
+          "oklch(0.20 0.016 70)",
+          "oklch(0.30 0.016 70)",
+          "oklch(0.40 0.016 70)",
+          "oklch(0.475 0.016 70)",
+          "oklch(0.550 0.014 78)",
+          "oklch(0.585 0.016 70)",
+          "oklch(0.75 0.014 74)",
+          "oklch(0.93 0.010 78)"
+        ]
       }
     },
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "The note title. Once per screen, never anywhere else."
+        "purpose": "The note title on Note Detail. Bitter 500 at 29px, once per screen."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "The Dashboard's 'All notes' heading. Bitter 600 at 22px, the only 22px in the product."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Pane headers such as \"Transcript\"."
+        "purpose": "Pane headers such as 'Transcript', and the empty feed's heading. Bitter 600 at 16px."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Lens tabs, speaker names in stat cards, the record pill word."
+        "purpose": "The note title on a feed row. Bitter 600 at 15px — larger than a lens tab because it is what gets scanned for."
+      },
+      "subtitle": {
+        "displayName": "Subtitle",
+        "purpose": "Persona-rail lens tabs and speaker names. Bitter 600 at 14px, set with text-sm."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Summary prose. The one paragraph read straight through, so the most generous line-height in the system."
+        "purpose": "Summary prose. Archivo 14.5px at 1.66, the most generous line-height in the system."
+      },
+      "body-row": {
+        "displayName": "Body Row",
+        "purpose": "Action-item rows and the record pill's word 'Record'. Archivo 13.5px."
       },
       "body-dense": {
         "displayName": "Body Dense",
-        "purpose": "Transcript utterances, chat exchange, action-item rows, quick actions."
+        "purpose": "Transcript segments, chat exchange, dashboard rail nav items. Archivo 13px at 1.56."
       },
-      "label": {
-        "displayName": "Label",
-        "purpose": "Section rules and rail group headings. Mono, uppercase, wide letterspacing."
+      "body-compact": {
+        "displayName": "Body Compact",
+        "purpose": "Feed row previews, rail jump links, the search placeholder. Archivo 12.5px — the smallest the grotesque may go."
       },
-      "meta": {
-        "displayName": "Meta",
-        "purpose": "Timestamps, turn counts, owner/due columns, citation chips, the grounding footer."
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "The transcript segment's speaker name. Archivo 12px."
+      },
+      "body-tight": {
+        "displayName": "Body Tight",
+        "purpose": "Persona-rail quick actions and the notice block. Archivo 11.5px at 1.35."
       },
       "numeral": {
         "displayName": "Numeral",
-        "purpose": "The recorder's elapsed clock. The only large monospace in the product."
+        "purpose": "The recorder's elapsed clock. Plex Mono 500 at 16px, the only large monospace."
+      },
+      "stamp": {
+        "displayName": "Stamp",
+        "purpose": "The feed row's time and duration column. Plex Mono 10.5px, tabular, not uppercase — a figure, not a label."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Operable mono controls (Record, Import audio, the in-flight readout) and citation chips. Plex Mono 500 at 10px / 0.06em uppercase."
+      },
+      "meta-2": {
+        "displayName": "Meta 2",
+        "purpose": "Speaker times, the feed footer, the record pill's shortcut hint. Plex Mono 9.5px / 0.14em."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Status pills, timestamps, counts, the theme toggle, the rail's account address. Plex Mono 9px / 0.14em uppercase."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Section rules, feed day headings, rail group headings, and the 'Soon' badge. Plex Mono 8.5px / 0.14–0.16em uppercase."
       }
     },
     "shadows": [
@@ -275,23 +326,77 @@
       "description": "A five-column task row with a bespoke 11px square checkbox and a bare citation timestamp.",
       "html": "<li class=\"ds-item\"><input class=\"ds-check\" id=\"ai1\" type=\"checkbox\" /><label class=\"ds-item-text\" for=\"ai1\">Confirm the storage path before Track 3 starts</label><span class=\"ds-item-meta\">Ana M.</span><span class=\"ds-item-meta\">Fri</span><button class=\"ds-cite-bare\">18:04</button></li>",
       "css": ".ds-item { display: grid; grid-template-columns: 18px 1fr 92px 70px 50px; align-items: center; gap: 11px; padding: 6px 0; border-bottom: 1px solid var(--rule-3); font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13.5px; color: var(--ink); list-style: none; } .ds-check { width: 11px; height: 11px; appearance: none; border: 1px solid var(--faint); border-radius: 0; cursor: pointer; } .ds-check:checked { background: var(--accent); border-color: var(--accent); } .ds-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; } .ds-item-text { cursor: pointer; } .ds-item-meta { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; font-variant-numeric: tabular-nums; color: var(--meta-3); } .ds-cite-bare { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; background: none; border: none; color: var(--accent-pressed); cursor: pointer; } .ds-cite-bare:hover { text-decoration: underline; }"
+    },
+    {
+      "name": "Header Record Button",
+      "kind": "button",
+      "refersTo": "button-record-header",
+      "description": "The dashboard header's primary action. Accent fill, square marker, replaced (never disabled) while a recording runs.",
+      "html": "<button class=\"ds-btn-record\" type=\"button\"><span class=\"ds-btn-record-mark\" aria-hidden=\"true\"></span>Record</button>",
+      "css": ".ds-btn-record { display: inline-flex; align-items: center; gap: 7px; background: var(--accent); color: var(--on-accent); font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 13px; border: none; border-radius: 0; cursor: pointer; } .ds-btn-record-mark { width: 9px; height: 9px; background: var(--on-accent); } .ds-btn-record:hover { background: var(--accent-pressed); } .ds-btn-record:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }"
+    },
+    {
+      "name": "Recording Readout",
+      "kind": "custom",
+      "refersTo": "readout-recording",
+      "description": "What replaces Record while a recording is in flight. Read-only role=status: the live dot, the phase, the elapsed clock, and a pointer to the one Stop.",
+      "html": "<div class=\"ds-readout\" role=\"status\"><span class=\"ds-readout-dot\" aria-hidden=\"true\"></span><span>Recording</span><span class=\"ds-readout-clock\">04:17</span><span class=\"ds-readout-div\" aria-hidden=\"true\"></span><span class=\"ds-readout-hint\">Stop in the recorder ↘</span></div>",
+      "css": ".ds-readout { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--control-edge); color: var(--ink-2); font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 11px; border-radius: 0; } .ds-readout-dot { width: 9px; height: 9px; border-radius: 9999px; background: var(--live); } .ds-readout-clock { color: var(--ink); font-variant-numeric: tabular-nums; } .ds-readout-div { width: 1px; height: 13px; background: var(--rule-2); } .ds-readout-hint { color: var(--muted); }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "pill-status",
+      "description": "Where a note sits in the pipeline, on one line of the feed. Square despite the name. Renders nothing at all for a completed note.",
+      "html": "<span class=\"ds-pill ds-pill-analyzing\"><span class=\"ds-pill-mark\" aria-hidden=\"true\"></span>Transcribing</span> <span class=\"ds-pill ds-pill-failed\"><span class=\"ds-pill-mark\" aria-hidden=\"true\"></span>Failed</span>",
+      "css": ".ds-pill { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--rule-2); padding: 2px 7px; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; border-radius: 0; } .ds-pill-mark { width: 9px; height: 9px; } .ds-pill-analyzing { background: var(--tint); color: var(--accent-text); } .ds-pill-analyzing .ds-pill-mark { background: var(--accent); } .ds-pill-failed { border-color: var(--live); color: var(--live); } .ds-pill-failed .ds-pill-mark { background: var(--live); }"
+    },
+    {
+      "name": "Feed Row",
+      "kind": "custom",
+      "refersTo": "row-note",
+      "description": "One note in the dashboard feed — a row, not a card. Four aligned tracks; the status and count tracks hold their width while empty.",
+      "html": "<a class=\"ds-row\" href=\"#\"><span class=\"ds-row-time\">09:30<br><span class=\"ds-row-dur\">41m</span></span><span class=\"ds-row-main\"><span class=\"ds-row-title\">Pricing review with Finance</span><span class=\"ds-row-preview\">Margin floor agreed at 38%; Ana to re-run the tiering model.</span></span><span></span><span class=\"ds-row-count\">3 actions<br>12 spans</span></a>",
+      "css": ".ds-row { display: grid; grid-template-columns: 62px minmax(0,1fr) 148px 96px; align-items: center; gap: 14px; padding: 11px 24px; border-bottom: 1px solid var(--rule-3); background: var(--paper); text-decoration: none; } .ds-row:hover { background: var(--pane); } .ds-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; } .ds-row-time { font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10.5px; color: var(--meta-3); font-variant-numeric: tabular-nums; } .ds-row-dur { color: var(--muted); } .ds-row-main { min-width: 0; } .ds-row-title { display: block; font-family: var(--font-bitter), Georgia, serif; font-size: 15px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-row-preview { display: block; margin-top: 3px; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-row-count { text-align: right; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Rail Nav Item",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "The identity rail's current item: a real link with aria-current, a 2px accent left border, and a count carrying its own label.",
+      "html": "<a class=\"ds-nav ds-nav-current\" href=\"#\" aria-current=\"page\">All notes<span class=\"ds-nav-count\" aria-label=\"128 notes\">128</span></a>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-left: 2px solid transparent; font-family: var(--font-archivo), system-ui, sans-serif; font-size: 13px; color: var(--ink-2); text-decoration: none; border-radius: 0; } .ds-nav:hover { background: var(--pane); } .ds-nav-current { background: var(--raised); border-left-color: var(--accent); color: var(--ink); } .ds-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; } .ds-nav-count { margin-left: auto; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 9.5px; color: var(--muted); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Pending Control",
+      "kind": "button",
+      "refersTo": "button-pending",
+      "description": "A planned-but-unbuilt control. rule-2 (not control-edge, it is not operable), the label dimmed, the badge explaining it at full strength.",
+      "html": "<button class=\"ds-pending\" type=\"button\" disabled><span class=\"ds-pending-label\">Import audio</span><span class=\"ds-pending-badge\">Soon</span></button>",
+      "css": ".ds-pending { display: flex; align-items: center; gap: 8px; border: 1px solid var(--rule-2); color: var(--faint); padding: 7px 11px; font-family: var(--font-plex-mono), ui-monospace, monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; background: transparent; border-radius: 0; cursor: not-allowed; } .ds-pending-label { opacity: 0.6; } .ds-pending-badge { margin-left: auto; font-size: 8.5px; letter-spacing: 0.14em; color: var(--muted); }"
     }
   ],
   "narrative": {
     "northStar": "The Press Sheet",
-    "overview": "This is a print desk rendered in a browser. The light theme is warm newsprint — an off-white cream at oklch(0.979 0.011 84) that never reaches paper-white — and the dark theme is the same sheet under a desk lamp, an espresso brown-black at oklch(0.185 0.014 48) that never reaches pure black. Both themes carry a low-chroma warm hue through every neutral, so the greys are never neutral greys; they are aged paper and roasted ink. One colour is allowed to be loud: a deep forest-green accent that reads as press ink on the light sheet and as fresh ink under the lamp.\n\nNothing is rounded, nothing floats, and nothing is decorated. Structure is carried entirely by hairline rules and by the flat tonal difference between six named surfaces. The type does the hierarchy work: a serif for anything with a name or a number in it, a grotesque for prose, and a monospace shrunk to 8.5px and letterspaced into small-caps slugs for every label, timestamp and count. Density is the point — this is a reading and scanning surface for someone who already sat through the meeting, not a landing page trying to explain itself.\n\nThe one place the system permits softness is the human: speaker avatars are the only circles in the product, and per-speaker hues (blue, green, amber) are the only colours outside the accent family. People get rounded corners. Nothing else does.",
+    "overview": "This is a print desk rendered in a browser. The light theme is warm newsprint —\nan off-white cream at oklch(0.979 0.011 84) that never reaches paper-white —\nand the dark theme is the same sheet under a desk lamp, an espresso brown-black\nat oklch(0.185 0.014 48) that never reaches pure black. Both themes carry a\nlow-chroma warm hue through every neutral, so the greys are never neutral greys;\nthey are aged paper and roasted ink. One colour is allowed to be loud: a deep\nforest-green accent that reads as press ink on the light sheet and as fresh ink\nunder the lamp.\n\nNothing is rounded, nothing floats, and nothing is decorated. Structure is\ncarried entirely by hairline rules and by the flat tonal difference between six\nnamed surfaces. The type does the hierarchy work: a serif for anything with a\nname or a number in it, a grotesque for prose, and a monospace shrunk to 8.5px\nand letterspaced into small-caps slugs for every label, timestamp and count.\nDensity is the point — this is a reading and scanning surface for someone who\nalready sat through the meeting, not a landing page trying to explain itself.\n\nThe system now covers two screens, and they are the same sheet at two\ndistances. The Dashboard is the contact sheet: a two-column shell over a\nday-grouped list of rows, four aligned tracks per row, no cards and no panels.\nNote Detail is the plate: a three-column reading surface with the note in\nthe middle and its source transcript beside it. The rails differ in width\n(212px against 136px) and in job, but the ink, the rules, the type ladder and\nthe square corners are identical across both.\n\nThe one place the system permits softness is the human: speaker avatars are the\nonly circles in the product, and per-speaker hues (blue, green, amber) are the\nonly colours outside the accent family. People get rounded corners, and so does\nthe live-recording dot. Nothing else does.",
     "keyCharacteristics": [
       "Warm-neutral duotone: newsprint cream (light) / espresso (dark), never white, never black",
-      "Zero border radius on every surface, control and container — circles only for people",
+      "Zero border radius on every surface, control and container — circles only for people and for \"live\"",
       "Hairline rules and flat tonal layering instead of shadows",
       "One accent hue (forest green), used sparingly and always meaning \"grounded in the source\"",
-      "Micro-typography: 8.5–10px letterspaced uppercase mono for all metadata",
-      "Odd-number spacing rhythm (5 / 7 / 9 / 11 / 13 / 18 / 26px), tuned by eye rather than to a 4px grid"
+      "Micro-typography: 8.5–10.5px letterspaced uppercase mono for all metadata",
+      "Odd-number spacing rhythm (5 / 7 / 9 / 11 / 13 / 14 / 18 / 24 / 26px), tuned by eye rather than to a 4px grid",
+      "Absence is a signal: a finished note shows no status pill and no counts, so anything in those tracks means \"this row needs something\""
     ],
     "rules": [
       {
         "name": "The One Ink Rule",
-        "body": "There is exactly one accent hue. A new colour is added only when a state genuinely cannot be expressed in green, warm neutral, or a speaker hue — which has happened once, for `live`. Do not introduce a blue for links, a red for destructive actions, or an amber for warnings; `notice` on `notice-bg` is the warning treatment.",
+        "body": "There is exactly one accent hue. A new colour is added only when a state genuinely cannot be expressed in green, warm neutral, or a speaker hue — which has happened once, for live. Do not introduce a blue for links, a red for destructive actions, or an amber for warnings; notice on notice-bg is the warning treatment. The accent is also not spent on passive data: a finished note's action and span counts sit in muted, because a tally nobody acts on must not compete with the Record button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Control Edge Rule",
+        "body": "control-edge is the boundary of an interactive control. rule-2 is the edge of a decorative frame — a status pill, an insight card, the transcript pane. Never swap one for the other, and never \"fix\" either on a single component. In the accent family the same split holds: border-accent is a control edge at 5.28:1 worst case light; tint-hover is a fill and measures 1.15:1 against the tint it sits on, so a border drawn in it is very nearly not drawn at all. Do not darken --tint-hover to fix a border — it is the hover fill under the citation chip and accent-text sits on it.",
         "section": "colors"
       },
       {
@@ -301,7 +406,12 @@
       },
       {
         "name": "The Never-White Rule",
-        "body": "No surface is #fff and no ink is #000. Light tops out at 0.979 lightness with 0.011 chroma; dark bottoms out at 0.185 with 0.014 chroma. The warm hue (62–88°) is carried through every neutral.",
+        "body": "No surface is #fff and no ink is #000. Light tops out at 0.979 lightness with 0.011 chroma; dark bottoms out at 0.185 with 0.014 chroma. The warm hue (46–88°) is carried through every neutral.",
+        "section": "colors"
+      },
+      {
+        "name": "The Measured-Against-Its-Sheet Rule",
+        "body": "Contrast is measured against the surface a thing actually sits on, never against paper alone — rail and raised are the worst cases in the two themes and neither is paper. Verify against the built CSS, not the source: Tailwind emits a hex fallback beside the oklch(), and the fallback is what a browser without lab() renders. Two tokens looking distinct in the light theme is not evidence they differ in dark; canvas and paper resolve to the same value under the lamp, which is why canvas is never a button fill.",
         "section": "colors"
       },
       {
@@ -316,35 +426,57 @@
       },
       {
         "name": "The Tabular Rule",
-        "body": "Any column of numbers — owner, due, talk time, filler counts — carries tabular-nums. Ragged numerals in a scannable column defeat the column.",
+        "body": "Any column of numbers — owner, due, talk time, filler counts, elapsed clocks, note tallies — carries tabular-nums. Ragged numerals in a scannable column defeat the column.",
+        "section": "typography"
+      },
+      {
+        "name": "The Legible-Even-When-Off Rule",
+        "body": "A disabled control may dim its label; it may never dim the badge that explains why it is off. Measured 2026-09-07: text-faint under opacity-60 composited to 1.66:1 on bg-rail, which is WCAG-exempt for an inactive control and still reads as a rendering fault when five of six nav items look that way. The opacity-60 therefore sits on the label alone, and the \"Soon\" badge carries muted at full strength — 4.78:1 light / 6.29:1 dark. Never put an explanation in a title attribute on a disabled element: browsers suppress its pointer events, so that tooltip never renders.",
         "section": "typography"
       },
       {
         "name": "The Flat Sheet Rule",
         "body": "Surfaces are flat. If two regions need separating, change the surface token or draw a hairline rule — never add a shadow. The HUD is the single exception because it is the only element genuinely outside the document plane.",
         "section": "elevation"
+      },
+      {
+        "name": "The Whitespace-Carries-The-Break Rule",
+        "body": "Because every rule token measures under 1.5:1 and is texture rather than information, a boundary that must be *seen* rather than read is carried by space. The feed's day heading takes 26px of leading space so it beats the 22px pitch of the rows it groups, and a row drops its bottom rule when it is last in a group. A hairline alone is not a section break.",
+        "section": "elevation"
       }
     ],
     "dos": [
       "Do resolve every colour through a var() into app/globals.css and use the generated Tailwind utilities (bg-paper, text-ink-2, border-rule).",
       "Do define every new token twice — once on :root, once on .dark and inside the @media (prefers-color-scheme: dark) { :root:not(.light) } block. Skipping the media block breaks system-preference users; skipping .dark breaks the toggle.",
+      "Do use border-control-edge for the boundary of anything operable and border-rule-2 for a decorative frame, and keep the two apart.",
       "Do keep radius at 0 for every surface and control.",
+      "Do use the 9px filled square as the state marker, and reserve the circle for a person's avatar and for \"live\".",
       "Do use mono, uppercase and ≥0.06em letterspacing for every label under 11px.",
       "Do express selection as a 2px left border plus a wash fill.",
-      "Do express focus as outline-2 outline-offset-1 outline-accent on focus-visible.",
+      "Do express focus as outline-2 outline-accent on focus-visible, offset 1 normally and -2 when flush to a container edge.",
       "Do carry tabular-nums on any column of figures.",
+      "Do leave a track empty rather than filling it with a zero or a normal-state label, and keep its width so the grid does not move.",
+      "Do keep the \"Soon\" badge on a disabled control at full muted, dimming only the label.",
+      "Do measure contrast against the surface a thing actually sits on, in both themes, against the built CSS.",
+      "Do keep 24px clear of the bottom-right corner and end bottom-anchored scroll regions 72px above it, reading both from the exported HUD constants.",
       "Do map runtime-varying colours through a static lookup table, because Tailwind cannot build class names at runtime.",
       "Do use text-pretty on the title, the summary, takeaways and transcript prose."
     ],
     "donts": [
       "Don't write oklch(), hex, rgb() or hsl() anywhere in components/ or lib/. A convention test fails the build if you do.",
+      "Don't use border-tint-hover on a control — it measures 1.15:1 against the tint it sits on. Use border-accent. And don't darken --tint-hover to make it work; it is the citation chip's hover fill.",
+      "Don't use bg-canvas as a control fill. In the dark theme it resolves to the same value as paper, so the control has no fill at all.",
       "Don't add a shadow. The HUD's --shadow-hud is the only one, and it is not available to other components.",
       "Don't add a border radius to anything that is not a person's avatar or the live-recording dot.",
       "Don't add a fourth typeface, or use Bitter for prose or Archivo for a label.",
-      "Don't introduce a second accent hue, a link blue, a destructive red, or a warning amber. Use accent, a speaker hue, or notice on notice-bg.",
+      "Don't introduce a second accent hue, a link blue, a destructive red, or a warning amber. Use accent, a speaker hue, live, or notice on notice-bg.",
+      "Don't spend the accent on a passive tally, a count, or anything the user cannot act on.",
       "Don't use pure white or pure black for any surface or ink.",
-      "Don't call Math.random() or Date.now() in a render path.",
-      "Don't put a product name — working or otherwise — in user-facing copy or application code. The name is an open decision; see Overview → Naming."
+      "Don't put an explanation in a title attribute on a disabled control — browsers suppress its pointer events and the tooltip never renders. Use a visible badge.",
+      "Don't show a control that looks live and does nothing, and don't grey out a control the user has just pressed without saying what happened instead.",
+      "Don't render a UI region for a capability that does not exist yet — the dashboard's two columns are two columns because the drawn third held four widgets with no backend behind them.",
+      "Don't rely on a hairline rule alone to carry a section break; every rule token is under 1.5:1 and is texture. Use space.",
+      "Don't call Math.random() or Date.now() in a render path."
     ]
   }
 }
