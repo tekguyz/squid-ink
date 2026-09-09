@@ -78,6 +78,21 @@ for (const required of ["CLAUDE.md", "package.json", "app/globals.css"]) {
 const claude = read("CLAUDE.md");
 const pkg = JSON.parse(read("package.json"));
 
+/** CLAUDE.md was split on 2026-09-09: five feature sections moved to
+ *  `.claude/rules/*.md` with `paths:` frontmatter so they load only when Claude
+ *  touches a matching file. The prose moved; the claims in it did not stop being
+ *  claims. Checks 2 and 3 scan the rules alongside CLAUDE.md so the split cost
+ *  no coverage. Check 1 deliberately does NOT — the pinned-version table has one
+ *  home, and a second table anywhere would be the drift it exists to catch. */
+const RULES_DIR = ".claude/rules";
+const ruleFiles = has(RULES_DIR)
+  ? readdirSync(path.join(ROOT, RULES_DIR)).filter((f) => f.endsWith(".md")).sort()
+  : [];
+const governing = [claude, ...ruleFiles.map((f) => read(`${RULES_DIR}/${f}`))].join("\n");
+const governingLabel = ruleFiles.length
+  ? `CLAUDE.md + ${ruleFiles.length} rule file(s)`
+  : "CLAUDE.md";
+
 /* 1 — the pinned-version table in CLAUDE.md against package.json ----------- */
 {
   const declared = new Map();
@@ -115,20 +130,20 @@ const pkg = JSON.parse(read("package.json"));
   }
 }
 
-/* 2 — every `npm run <script>` CLAUDE.md names actually exists ------------- */
+/* 2 — every `npm run <script>` the rules name actually exists -------------- */
 {
   const scripts = new Set(Object.keys(pkg.scripts ?? {}));
-  const named = new Set([...claude.matchAll(/npm run ([a-z][a-z0-9:-]*)/g)].map((m) => m[1]));
+  const named = new Set([...governing.matchAll(/npm run ([a-z][a-z0-9:-]*)/g)].map((m) => m[1]));
   for (const script of named) {
-    if (!scripts.has(script)) findings.push(`CLAUDE.md names \`npm run ${script}\`, which is not in package.json scripts`);
+    if (!scripts.has(script)) findings.push(`${governingLabel} names \`npm run ${script}\`, which is not in package.json scripts`);
   }
-  notes.push(`npm scripts: ${named.size} referenced, all resolve`);
+  notes.push(`npm scripts: ${named.size} referenced in ${governingLabel}, all resolve`);
 }
 
-/* 3 — every repo path CLAUDE.md names in backticks exists ------------------ */
+/* 3 — every repo path the rules name in backticks exists ------------------- */
 {
   const paths = new Set(
-    [...claude.matchAll(/`([a-zA-Z0-9_./[\]-]+\.(?:tsx?|css|mjs|json|md))`/g)].map((m) => m[1]),
+    [...governing.matchAll(/`([a-zA-Z0-9_./[\]-]+\.(?:tsx?|css|mjs|json|md))`/g)].map((m) => m[1]),
   );
   // CLAUDE.md names some files by basename alone (`diarization-policy.ts`,
   // `verify-rls.mjs`). Those are real files, just not at the repo root, so a
@@ -142,7 +157,7 @@ const pkg = JSON.parse(read("package.json"));
   //  - a file the prose names as DELETED. "the deleted `persona-presets.ts`"
   //    is a claim that it is gone; demanding it exist inverts the sentence.
   const deletedNames = new Set(
-    [...claude.matchAll(/deleted `([a-zA-Z0-9_./-]+)`/g)].map((m) => m[1]),
+    [...governing.matchAll(/deleted `([a-zA-Z0-9_./-]+)`/g)].map((m) => m[1]),
   );
   let checked = 0;
   for (const p of paths) {
@@ -150,9 +165,9 @@ const pkg = JSON.parse(read("package.json"));
     if (deletedNames.has(p)) continue;
     checked++;
     const found = p.includes("/") ? has(p) : basenameExists(p) || dependencyFileExists(p);
-    if (!found) findings.push(`CLAUDE.md names \`${p}\`, which does not exist`);
+    if (!found) findings.push(`${governingLabel} names \`${p}\`, which does not exist`);
   }
-  notes.push(`paths: ${checked} named in CLAUDE.md, all exist`);
+  notes.push(`paths: ${checked} named in ${governingLabel}, all exist`);
 }
 
 /* 4 — every colour in globals.css traces to a design file ----------------- */
