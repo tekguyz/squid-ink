@@ -21,6 +21,14 @@ const WAVEFORM = [
 export const mockNote: Note = {
   id: "pilot-pricing-rollout",
   title: "Pilot pricing & rollout",
+  // Untagged. A fixture that carried tags would make every component test
+  // that renders it depend on a feature it is not testing.
+  tags: [],
+  // Unfiled, for the same reason it is untagged: a fixture that sat in a
+  // collection would make every component test that renders it depend on a
+  // feature it is not testing.
+  collections: [],
+  collectionOptions: [],
   meta: "Wed 26 Aug 2026 · 41 min · Northwind Health",
   // A finished note: the fixture renders a full transcript, so the Transcribe
   // button is deliberately absent from every component test that uses it.

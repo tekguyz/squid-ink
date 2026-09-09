@@ -15,6 +15,7 @@ function note(overrides: Partial<FeedNoteInput> & { id: string }): FeedNoteInput
     processingStatus: "completed",
     durationSeconds: 2460,
     preview: null,
+    tags: [],
     ...overrides,
   };
 }

@@ -7,6 +7,8 @@ import type { ChatTurn } from "@/lib/chat/types";
 import { seedNotePersona, setNotePersona } from "@/app/notes/actions/persona";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { TagEntry } from "@/components/tags/tag-entry";
+import { CollectionPicker } from "@/components/collections/collection-picker";
 import { ActionItemsTable } from "./action-items-table";
 import { AudioPlayer } from "./audio-player";
 import { ChatPanel } from "./chat/chat-panel";
@@ -127,6 +129,20 @@ export function NoteDetailShell({
 
       <main className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule bg-paper">
         <NoteHeader meta={note.meta} title={note.title} />
+        {/* Directly under the title, because a tag is a fact about what the
+            note IS rather than about its recording — the transport and the
+            Transcribe button below are the recording's own facts. This is the
+            only place a tag is applied; the rail's chips only filter. */}
+        <TagEntry noteId={note.id} tags={note.tags} />
+        {/* Directly under the tags, because both answer "what is this note
+            filed under" and a reader looking for one is looking for the other.
+            This is the only place a note is filed into a collection — the
+            collections rail only navigates. */}
+        <CollectionPicker
+          noteId={note.id}
+          collections={note.collections}
+          options={note.collectionOptions}
+        />
         {/* Sits with the date/duration meta line, because that is where a
             reader looks for facts about the recording itself. Renders nothing
             when the note has no object. */}

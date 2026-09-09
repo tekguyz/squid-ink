@@ -38,8 +38,20 @@ import { getDashboardFeed } from "@/lib/notes/get-dashboard-feed";
 const MIN_SURFACE_WIDTH = 1280;
 export const metadata = { title: "All notes" };
 
-export default async function Dashboard() {
-  const feed = await getDashboardFeed(new Date());
+export default async function Dashboard({
+  searchParams,
+}: {
+  // A Promise in the App Router, and awaited rather than read synchronously.
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // `?tag=<slug>` is the whole filter. It lives in the URL so it survives a
+  // refresh and can be linked, and it is applied by the same server query that
+  // builds the unfiltered feed — there is no second path to disagree with.
+  const tag = (await searchParams).tag;
+  const feed = await getDashboardFeed(
+    new Date(),
+    typeof tag === "string" ? tag : null,
+  );
 
   return (
     <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
@@ -51,6 +63,8 @@ export default async function Dashboard() {
           email={feed.email}
           totalNotes={feed.totalNotes}
           groups={feed.groups}
+          tagChips={feed.tagChips}
+          activeTag={feed.activeTag}
         />
 
         {/* The bottom inset is the recorder HUD's corner, and it is on the column
@@ -77,8 +91,9 @@ export default async function Dashboard() {
             className="bg-canvas border-rule flex flex-none items-center border-t px-[24px]"
           >
             <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
-              End of feed · {feed.totalNotes}{" "}
-              {feed.totalNotes === 1 ? "note" : "notes"}
+              End of feed · {feed.shownNotes}{" "}
+              {feed.shownNotes === 1 ? "note" : "notes"}
+              {feed.activeTag ? ` · tagged ${feed.activeTag}` : ""}
             </p>
           </footer>
         </main>

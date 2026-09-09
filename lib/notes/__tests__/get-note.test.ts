@@ -5,10 +5,11 @@ const NOTE_ID = "11111111-1111-4111-8111-111111111111";
 
 type Result<T> = { data: T; error: { message: string } | null };
 
-/** Stubs the three query chains getNote builds:
+/** Stubs the query chains getNote builds:
  *    .from("notes").select(...).eq(...).maybeSingle()
  *    .from("note_chunks").select(...).eq(...).returns()
  *    .from("personas").select(...).order(...).returns()   — via getPersonas
+ *    .from("tags") / .from("note_tags")                   — via readNoteTags
  *  Every chain is thenable at the end, so awaiting any of them resolves. */
 const NO_PERSONAS: Result<PersonaRow[]> = { data: [], error: null };
 
@@ -18,8 +19,17 @@ function stubClient(
   personas: Result<PersonaRow[] | null> = NO_PERSONAS,
 ) {
   const from = vi.fn((table: string) => {
+    // The tag tables answer empty here. This fixture is about chunk shaping;
+    // the tag reads have their own tests in lib/notes/__tests__/tags.test.ts.
+    const empty: Result<never[]> = { data: [], error: null };
     const result =
-      table === "notes" ? notes : table === "personas" ? personas : chunks;
+      table === "notes"
+        ? notes
+        : table === "personas"
+          ? personas
+          : table === "tags" || table === "note_tags"
+            ? empty
+            : chunks;
     const chain: Record<string, unknown> = {
       select: () => chain,
       eq: () => chain,

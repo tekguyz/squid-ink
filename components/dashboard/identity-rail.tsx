@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { DayGroup } from "@/lib/notes/group-notes-by-day";
+import type { TagChip } from "@/lib/notes/tags";
+import { TagFilter } from "./tag-filter";
 
 /**
  * The dashboard's left rail, App Surfaces 01.
@@ -8,9 +10,10 @@ import type { DayGroup } from "@/lib/notes/group-notes-by-day";
  * "FINTORY · 3 MEMBERS" line are scaffolding from a multi-tenant product this
  * one is not — docs/ROADMAP.md §9 locks single-owner — and there is no
  * display-name column, so the signed-in address is the identity. Calendar,
- * Collections, Sources and Settings render disabled rather than hidden: each is
- * a real planned surface with no backend, and a nav that grows an item later is
- * worse than one that says what is coming.
+ * Sources and Settings render disabled rather than hidden: each is a real
+ * planned surface with no backend, and a nav that grows an item later is worse
+ * than one that says what is coming. Collections was one of them until
+ * 2026-09-09 and is now a link.
  *
  * Presentational and server-rendered: no state, no effect, no client boundary.
  */
@@ -70,10 +73,14 @@ export function IdentityRail({
   email,
   totalNotes,
   groups,
+  tagChips,
+  activeTag,
 }: {
   email: string | null;
   totalNotes: number;
   groups: DayGroup[];
+  tagChips: TagChip[];
+  activeTag: string | null;
 }) {
   const recent = groups.slice(0, RAIL_DAYS);
 
@@ -106,7 +113,7 @@ export function IdentityRail({
             of the item's name. */}
         <Link
           href="/"
-          aria-current="page"
+          aria-current={activeTag ? undefined : "page"}
           className={`${NAV_ITEM} bg-raised border-accent text-ink focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2`}
         >
           All notes
@@ -125,9 +132,26 @@ export function IdentityRail({
           Personas
         </Link>
         <PendingItem label="Calendar" />
-        <PendingItem label="Collections" />
+        {/* A real link since 2026-09-09: /collections ships with this change.
+            It carries no count — the "drop live counts until shipped" decision
+            was about this rail, and the counts live on the screen itself,
+            beside the collection each one belongs to. */}
+        <Link
+          href="/collections"
+          className={`${NAV_ITEM} text-ink-2 hover:bg-raised focus-visible:outline-accent border-transparent focus-visible:outline-2 focus-visible:-outline-offset-2`}
+        >
+          Collections
+        </Link>
         <PendingItem label="Sources" />
       </div>
+
+      {/* Directly under the nav, and above the recents, because it filters the
+          list the recents are drawn from. Collections is a separate system
+          with a screen of its own, linked above: a tag is a label on a note, a
+          collection is a place a note is filed. Filtering this feed by
+          collection is deliberately NOT a second control here — see
+          supabase/schemas/collections.sql. */}
+      <TagFilter chips={tagChips} activeTag={activeTag} />
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto pb-[10px]">
         {recent.map((group) => (

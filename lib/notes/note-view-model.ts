@@ -144,11 +144,16 @@ function countCitations(summary: CiteRun[], personas: Persona[], actionItems: Ac
  *
  *  Pure: no I/O, no clock, no randomness — so it is fully testable and safe
  *  to call in a render path. */
+/** Everything on a Note EXCEPT its tags and its collections. Stated in the
+ *  return type rather than left to a caller to remember: both live in their
+ *  own pairs of tables, are read by lib/notes/get-tags.ts and
+ *  lib/notes/get-collections.ts, and are attached in lib/notes/get-note.ts.
+ *  Nothing in this file — which shapes chunks — should have to know that. */
 export function buildNoteViewModel(
   row: NoteRow,
   chunks: ChunkRow[],
   personaRows: PersonaRow[],
-): Note {
+): Omit<Note, "tags" | "collections" | "collectionOptions"> {
   const grouped = partition(chunks);
 
   const segments = toSegments(grouped.transcript_segment);

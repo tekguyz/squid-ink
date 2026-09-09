@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StatusPill } from "@/components/dashboard/status-pill";
+import { TagBadge } from "@/components/tags/tag-badge";
 import type { FeedNote } from "@/lib/notes/group-notes-by-day";
 
 /**
@@ -58,6 +59,22 @@ export function NoteRow({ note }: { note: FeedNote }) {
         {note.preview ? (
           <span className="font-body text-muted mt-[3px] block truncate text-[12.5px]">
             {note.preview}
+          </span>
+        ) : null}
+        {/* Under the title, not in a track of their own. App Surfaces 07
+            right-aligns tags in a third column, but that column here is the
+            status pill's and a row already carries four tracks; a fifth would
+            crush the title on the 1280px the page is held at.
+
+            Not clickable, on purpose: this row is a Link, and an anchor inside
+            an anchor is invalid HTML that browsers unnest. The clickable copy
+            of every tag is in the rail — see components/dashboard/
+            tag-filter.tsx. */}
+        {note.tags.length > 0 ? (
+          <span className="mt-[5px] flex flex-wrap gap-[4px]">
+            {note.tags.map((tag) => (
+              <TagBadge key={tag.id} tag={tag} />
+            ))}
           </span>
         ) : null}
       </span>

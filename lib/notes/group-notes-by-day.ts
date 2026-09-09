@@ -1,4 +1,5 @@
 import type { ProcessingStatus } from "@/lib/notes/view-types";
+import type { NoteTag } from "@/lib/notes/tags";
 
 /**
  * Bucket the dashboard feed into day groups.
@@ -33,6 +34,10 @@ export interface FeedNoteInput {
   durationSeconds: number | null;
   /** First line of the generated summary, or null before one exists. */
   preview: string | null;
+  /** The tags on this note, already sorted. Empty for an untagged note — a
+   *  note with no tags and a note whose tags are still loading are not
+   *  different states here, because this function has no loading state. */
+  tags: NoteTag[];
 }
 
 /** Per-note chunk tallies, keyed by note id. A note with no generated chunks
@@ -55,6 +60,7 @@ export interface FeedNote {
   processingStatus: ProcessingStatus;
   actionCount: number;
   spanCount: number;
+  tags: NoteTag[];
 }
 
 export interface DayGroup {
@@ -135,6 +141,7 @@ export function groupNotesByDay(
       processingStatus: note.processingStatus,
       actionCount: tally?.actions ?? 0,
       spanCount: tally?.spans ?? 0,
+      tags: note.tags,
     });
   }
 

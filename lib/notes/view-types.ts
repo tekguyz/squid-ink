@@ -1,3 +1,6 @@
+import type { NoteCollection } from "@/lib/notes/collections";
+import type { NoteTag } from "@/lib/notes/tags";
+
 /** View types the Note Detail components consume. Shaped by
  *  lib/notes/note-view-model.ts from database rows. No colours live here —
  *  speakers carry a token name, and the token resolves in `app/globals.css`. */
@@ -89,6 +92,20 @@ export interface CiteRun {
 
 export interface Note {
   id: string;
+  /** What this note is filed under. Sorted by name, and empty for an untagged
+   *  note. Attached by lib/notes/get-note.ts rather than built in
+   *  note-view-model.ts: tags live in their own two tables and have nothing to
+   *  do with the chunk shaping that file exists for. */
+  tags: NoteTag[];
+  /** The collections this note is filed in, sorted by name. A LIST, because
+   *  the join is many-to-many: a note sits in as many collections as it was
+   *  filed into, and none of them is the primary one. Attached by
+   *  lib/notes/get-note.ts, for the same reason tags are. */
+  collections: NoteCollection[];
+  /** Every collection the account has, so the picker can offer them. Read from
+   *  the same index the memberships come from, which is why it costs no extra
+   *  query. */
+  collectionOptions: NoteCollection[];
   title: string;
   meta: string;
   /** Where this note sits in the transcription pipeline. Read by the

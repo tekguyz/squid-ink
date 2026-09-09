@@ -57,6 +57,17 @@
   --color-speaker-3: var(--speaker-3);
   --color-speaker-3-avatar: var(--speaker-3-avatar);
 
+  --color-tag-1: var(--tag-1);
+  --color-tag-1-fill: var(--tag-1-fill);
+  --color-tag-2: var(--tag-2);
+  --color-tag-2-fill: var(--tag-2-fill);
+  --color-tag-3: var(--tag-3);
+  --color-tag-3-fill: var(--tag-3-fill);
+  --color-tag-4: var(--tag-4);
+  --color-tag-4-fill: var(--tag-4-fill);
+  --color-tag-5: var(--tag-5);
+  --color-tag-5-fill: var(--tag-5-fill);
+
   --font-header: var(--font-bitter), Georgia, serif;
   --font-body: var(--font-archivo), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
@@ -127,6 +138,30 @@
   --speaker-2-avatar: oklch(0.90 0.04 155);
   --speaker-3: oklch(0.48 0.09 55);
   --speaker-3-avatar: oklch(0.90 0.04 60);
+
+  /* Tag badges. A FIXED rotation of five hues, not a colour picker: App
+     Surfaces 07 draws consistent hue-per-tag and no picker, and the rotation
+     is derived from the tag's slug so the same name keeps the same hue.
+     `--tag-N` is the label, `--tag-N-fill` the sheet it sits on.
+
+     DERIVED here, verbatim in .dark. App Surfaces 07 is a dark-only surface,
+     so the light values follow the pattern the speaker tokens already set —
+     a dark label on a pale wash of the same hue — rather than being lifted
+     from a drawing that does not contain them. MEASURED 2026-09-09 against
+     their own fill, which is the only sheet a badge label ever sits on:
+     6.08 / 5.78 / 5.88 / 5.98 / 8.08:1 light, 9.16 / 7.83 / 8.31 / 7.73 /
+     7.84:1 dark. All clear of WCAG 1.4.3's 4.5:1, which is the bar the 9px
+     mono the badge renders in has to meet. */
+  --tag-1: oklch(0.42 0.12 142);
+  --tag-1-fill: oklch(0.90 0.05 142);
+  --tag-2: oklch(0.44 0.10 252);
+  --tag-2-fill: oklch(0.90 0.04 252);
+  --tag-3: oklch(0.44 0.09 60);
+  --tag-3-fill: oklch(0.90 0.04 60);
+  --tag-4: oklch(0.44 0.10 320);
+  --tag-4-fill: oklch(0.90 0.04 320);
+  --tag-5: oklch(0.36 0.015 64);
+  --tag-5-fill: oklch(0.90 0.012 82);
 }
 
 /* --- Espresso (dark) — 3c + 3b ------------------------------------------- */
@@ -189,6 +224,19 @@
   --speaker-2-avatar: oklch(0.29 0.05 155);
   --speaker-3: oklch(0.80 0.08 60);
   --speaker-3-avatar: oklch(0.30 0.05 60);
+
+  /* All ten verbatim from App Surfaces 07's tag chips. See the light block
+     for why the light half is derived rather than lifted. */
+  --tag-1: oklch(0.86 0.15 142);
+  --tag-1-fill: oklch(0.30 0.06 140);
+  --tag-2: oklch(0.82 0.09 252);
+  --tag-2-fill: oklch(0.30 0.05 252);
+  --tag-3: oklch(0.84 0.08 60);
+  --tag-3-fill: oklch(0.30 0.05 60);
+  --tag-4: oklch(0.82 0.08 320);
+  --tag-4-fill: oklch(0.30 0.05 320);
+  --tag-5: oklch(0.80 0.012 84);
+  --tag-5-fill: oklch(0.28 0.015 50);
 }
 
 /* Same dark values, applied when the OS asks for dark and the user has not
@@ -252,6 +300,19 @@
     --speaker-2-avatar: oklch(0.29 0.05 155);
     --speaker-3: oklch(0.80 0.08 60);
     --speaker-3-avatar: oklch(0.30 0.05 60);
+
+    /* All ten verbatim from App Surfaces 07's tag chips. See the light block
+       for why the light half is derived rather than lifted. */
+    --tag-1: oklch(0.86 0.15 142);
+    --tag-1-fill: oklch(0.30 0.06 140);
+    --tag-2: oklch(0.82 0.09 252);
+    --tag-2-fill: oklch(0.30 0.05 252);
+    --tag-3: oklch(0.84 0.08 60);
+    --tag-3-fill: oklch(0.30 0.05 60);
+    --tag-4: oklch(0.82 0.08 320);
+    --tag-4-fill: oklch(0.30 0.05 320);
+    --tag-5: oklch(0.80 0.012 84);
+    --tag-5-fill: oklch(0.28 0.015 50);
   }
 }
 

@@ -446,7 +446,19 @@ async function main() {
     // why /personas was added here in the same change that added the screen.
     // It is a fixed string rather than a discovered href: the Personas rail
     // has one URL and no id in it, so there is nothing to rot.
-    const routes = ["/", noteHref, "/personas"];
+    // The collection detail route is DISCOVERED for the same reason the note
+    // is: a slug is user data, and a hardcoded one rots the day the fixture is
+    // reseeded. An account with no collections measures the index alone, which
+    // is the honest thing to do rather than failing on a missing fixture.
+    await goto(cdp, sessionId, `${ORIGIN}/collections`);
+    const collectionHref = await evaluate(
+      cdp,
+      sessionId,
+      `(() => { const a = document.querySelector('a[href^="/collections/"]'); return a && a.getAttribute("href"); })()`,
+    );
+
+    const routes = ["/", noteHref, "/personas", "/collections"];
+    if (collectionHref) routes.push(collectionHref);
 
     for (const width of WIDTHS) {
       await cdp.send(

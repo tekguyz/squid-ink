@@ -92,6 +92,28 @@ alter table public.notes
 alter table public.notes
   add column if not exists persona_id uuid;
 
+-- The target of note_tags' composite foreign key, and the same shape
+-- personas_id_user_id_key takes for note_chunks and notes.persona_id. A
+-- foreign key is validated as the referenced table's owner and is NOT subject
+-- to RLS, so a plain references notes (id) would let one user attach their
+-- own row to another user's note. Carrying user_id into the key makes the
+-- database refuse it.
+--
+-- Guarded rather than drop-then-add: note_tags_note_id_fkey depends on this
+-- constraint's index, so a plain drop fails with 2BP01 once that foreign key
+-- exists, and this file must stay re-appliable. Same guard personas.sql uses.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.notes'::regclass
+      and conname = 'notes_id_user_id_key'
+  ) then
+    alter table public.notes
+      add constraint notes_id_user_id_key unique (id, user_id);
+  end if;
+end $$;
+
 -- Serves feed ordering, and indexes the column every RLS policy below
 -- filters on. Postgres does not index foreign keys automatically.
 create index if not exists notes_user_id_created_at_idx

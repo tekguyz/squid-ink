@@ -1,5 +1,6 @@
 /**
- * Proves owner-only RLS on notes and note_chunks with two real auth users.
+ * Proves owner-only RLS on notes, note_chunks, personas, tags, note_tags,
+ * collections and note_collections with two real auth users.
  *
  * PROOF PATH A — real password-grant JWT, sent as an Authorization header.
  *
@@ -122,6 +123,38 @@ const QUERIES = [
     // simply empty for them, and the two are not the same proof.
     secondUserExpects: 1,
   },
+  {
+    // Same shape as personas, and for the same reason: the second user owns a
+    // tag of their own, so "zero rows" cannot be confused with "the table is
+    // empty".
+    table: "tags",
+    sql: "select id, slug, name, user_id from tags",
+    run: (c) => c.from("tags").select("id, slug, name, user_id"),
+    secondUserExpects: 1,
+  },
+  {
+    table: "note_tags",
+    sql: `select note_id, tag_id, user_id from note_tags where note_id = '${SEEDED_NOTE_ID}'`,
+    run: (c) =>
+      c.from("note_tags").select("note_id, tag_id, user_id").eq("note_id", SEEDED_NOTE_ID),
+  },
+  {
+    // Same shape as tags: the second user owns a collection of their own, so
+    // "zero rows" cannot be confused with "the table is empty".
+    table: "collections",
+    sql: "select id, slug, name, user_id from collections",
+    run: (c) => c.from("collections").select("id, slug, name, user_id"),
+    secondUserExpects: 1,
+  },
+  {
+    table: "note_collections",
+    sql: `select note_id, collection_id, user_id from note_collections where note_id = '${SEEDED_NOTE_ID}'`,
+    run: (c) =>
+      c
+        .from("note_collections")
+        .select("note_id, collection_id, user_id")
+        .eq("note_id", SEEDED_NOTE_ID),
+  },
 ];
 
 /** Give the second user one persona of their own, through their OWN client.
@@ -140,6 +173,128 @@ async function ensureIntruderPersona(user) {
   if (error && error.code !== "23505") {
     throw new Error(`second user could not insert their own persona: ${error.message}`);
   }
+}
+
+/** Give a user one tag of their own, through their OWN client, and — for the
+ *  owner — attach it to the seeded note. That turns the two tag proofs from
+ *  "the table is empty for them" into "the table is filtered for them", and
+ *  gives the cross-tenant probes below a real row to aim at. */
+async function ensureTag(user, slug, noteId) {
+  const { error } = await user.client
+    .from("tags")
+    .insert({ user_id: user.userId, slug, name: slug, color_token: "tag-1" });
+  // 23505 is unique (user_id, slug): the row is already there from an earlier
+  // run, which is exactly the state we want.
+  if (error && error.code !== "23505") {
+    throw new Error(`${user.email} could not insert their own tag: ${error.message}`);
+  }
+
+  const { data } = await user.client.from("tags").select("id").eq("slug", slug).maybeSingle();
+  if (!data) throw new Error(`${user.email}'s tag ${slug} did not read back`);
+
+  if (noteId) {
+    const { error: linkError } = await user.client
+      .from("note_tags")
+      .insert({ note_id: noteId, tag_id: data.id, user_id: user.userId });
+    // 23505 is the (note_id, tag_id) primary key — the tag is already applied.
+    // That IS the idempotence this feature claims, so it is a pass, not a skip.
+    if (linkError && linkError.code !== "23505") {
+      throw new Error(`${user.email} could not tag their own note: ${linkError.message}`);
+    }
+  }
+
+  return data.id;
+}
+
+/** note_tags' two composite foreign keys must refuse a row that reaches into
+ *  another tenant — either by pointing at their note or at their tag. Foreign
+ *  keys are validated as the referenced table's owner and are NOT subject to
+ *  RLS, so single-column references would allow both. 23503 is the violation. */
+async function crossTenantTagIsRefused(user, foreignNoteId, foreignTagId, ownTagId) {
+  const probes = [];
+
+  // Their note, my tag.
+  const theirNote = await user.client
+    .from("note_tags")
+    .insert({ note_id: foreignNoteId, tag_id: ownTagId, user_id: user.userId });
+  probes.push(["another user's NOTE", theirNote.error]);
+
+  // My note, their tag.
+  const noteId = "88888888-8888-4888-8888-888888888888";
+  await user.client
+    .from("notes")
+    .insert({ id: noteId, user_id: user.userId, title: "Tag RLS probe note" });
+  const theirTag = await user.client
+    .from("note_tags")
+    .insert({ note_id: noteId, tag_id: foreignTagId, user_id: user.userId });
+  probes.push(["another user's TAG", theirTag.error]);
+  await user.client.from("notes").delete().eq("id", noteId);
+
+  return probes;
+}
+
+/** Give a user one collection of their own, through their OWN client, and —
+ *  for the owner — file the seeded note into it. Same purpose as ensureTag:
+ *  it turns the two collection proofs from "the table is empty for them" into
+ *  "the table is filtered for them", and gives the cross-tenant probes below a
+ *  real row to aim at. */
+async function ensureCollection(user, slug, noteId) {
+  const { error } = await user.client
+    .from("collections")
+    .insert({ user_id: user.userId, slug, name: slug });
+  // 23505 is unique (user_id, slug): the row is already there from an earlier
+  // run, which is exactly the state we want.
+  if (error && error.code !== "23505") {
+    throw new Error(`${user.email} could not insert their own collection: ${error.message}`);
+  }
+
+  const { data } = await user.client
+    .from("collections")
+    .select("id")
+    .eq("slug", slug)
+    .maybeSingle();
+  if (!data) throw new Error(`${user.email}'s collection ${slug} did not read back`);
+
+  if (noteId) {
+    const { error: linkError } = await user.client
+      .from("note_collections")
+      .insert({ note_id: noteId, collection_id: data.id, user_id: user.userId });
+    // 23505 is the (note_id, collection_id) primary key — the note is already
+    // filed. That IS the idempotence this feature claims, so it is a pass.
+    if (linkError && linkError.code !== "23505") {
+      throw new Error(`${user.email} could not file their own note: ${linkError.message}`);
+    }
+  }
+
+  return data.id;
+}
+
+/** note_collections' two composite foreign keys must refuse a row that reaches
+ *  into another tenant — either by pointing at their note or at their
+ *  collection. Foreign keys are validated as the referenced table's owner and
+ *  are NOT subject to RLS, so single-column references would allow both. 23503
+ *  is the violation. */
+async function crossTenantFilingIsRefused(user, foreignNoteId, foreignCollectionId, ownCollectionId) {
+  const probes = [];
+
+  // Their note, my collection.
+  const theirNote = await user.client
+    .from("note_collections")
+    .insert({ note_id: foreignNoteId, collection_id: ownCollectionId, user_id: user.userId });
+  probes.push(["another user's NOTE", theirNote.error]);
+
+  // My note, their collection.
+  const noteId = "77777777-7777-4777-8777-777777777777";
+  await user.client
+    .from("notes")
+    .insert({ id: noteId, user_id: user.userId, title: "Collection RLS probe note" });
+  const theirCollection = await user.client
+    .from("note_collections")
+    .insert({ note_id: noteId, collection_id: foreignCollectionId, user_id: user.userId });
+  probes.push(["another user's COLLECTION", theirCollection.error]);
+  await user.client.from("notes").delete().eq("id", noteId);
+
+  return probes;
 }
 
 /** The composite foreign key on note_chunks must refuse a chunk that points
@@ -185,6 +340,10 @@ const intruder = await signIn(
 );
 
 await ensureIntruderPersona(intruder);
+const ownerTagId = await ensureTag(owner, "rls-probe-owner", SEEDED_NOTE_ID);
+const intruderTagId = await ensureTag(intruder, "rls-probe-intruder", null);
+const ownerCollectionId = await ensureCollection(owner, "rls-probe-owner", SEEDED_NOTE_ID);
+const intruderCollectionId = await ensureCollection(intruder, "rls-probe-intruder", null);
 
 console.log("proof path : A - real password-grant JWT via Authorization header");
 console.log("             (NOT session cookies through the proxy - see path B)");
@@ -246,6 +405,42 @@ if (!foreignPersonaId) {
   if (!probe.refused) {
     failed = true;
     console.log("             FAIL: a user attributed a chunk to another user's persona");
+  }
+}
+console.log("");
+
+// The same distinction the note_chunks probe above draws: RLS decides what a
+// user can READ, a foreign key decides what they can point AT.
+console.log("--- note_tags cross-tenant writes ---");
+for (const [what, error] of await crossTenantTagIsRefused(
+  intruder,
+  SEEDED_NOTE_ID,
+  ownerTagId,
+  intruderTagId,
+)) {
+  console.log(
+    `attempt: second user tags with ${what}  refused=${Boolean(error)}  code=${error?.code ?? null}`,
+  );
+  if (!error) {
+    failed = true;
+    console.log(`             FAIL: a user reached into ${what}`);
+  }
+}
+console.log("");
+
+console.log("--- note_collections cross-tenant writes ---");
+for (const [what, error] of await crossTenantFilingIsRefused(
+  intruder,
+  SEEDED_NOTE_ID,
+  ownerCollectionId,
+  intruderCollectionId,
+)) {
+  console.log(
+    `attempt: second user files with ${what}  refused=${Boolean(error)}  code=${error?.code ?? null}`,
+  );
+  if (!error) {
+    failed = true;
+    console.log(`             FAIL: a user reached into ${what}`);
   }
 }
 console.log("");
