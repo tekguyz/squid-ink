@@ -14,6 +14,30 @@ connector**, so it already has `CLAUDE.md`, `docs/KNOWN_GAPS.md`,
 was decided, what was rejected, and what needs a human. That is what this block
 is for, and it is the only thing this block should carry.
 
+## Which session to run this in
+
+**Run it in the session that did the work, whenever there was work.** A fresh
+session is cheaper — it starts with an empty context, which is why the reading
+budget below exists — but it can only read `git log`. It did not watch anything
+get decided, and it did not watch anything get rejected.
+
+That matters because "Rejections are load-bearing" under "Rules for the block"
+is not decoration: the rejections are what stop the planning Project
+re-proposing an option already ruled out, and a session that was not there
+cannot write them. On 2026-09-09 a same-session block carried four rejections;
+a fresh one would have carried none.
+
+So:
+
+- **Work happened in this chat** — a feature, a fix, a decision, an argument
+  settled: run it here. The **This session** section is the reason.
+- **No work happened, you just want the state** — a plain "where are we" before
+  opening the planning Project: a fresh session is fine and costs less.
+
+If you are running in a fresh session after work happened elsewhere, say so in
+the block: write "This session" as `no work in this session — state only`
+rather than leaving it blank or inventing content for it.
+
 ## The reading budget — this is the point of the skill
 
 This skill was split from `doc-audit` on 2026-09-09 because it was reading five

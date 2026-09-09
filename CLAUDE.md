@@ -427,6 +427,35 @@ a human types; it is not the path for an agent.
                                                    # (VOYAGE_API_KEY); paces itself, minutes
     node scripts/verify-layout.mjs                 # screen-level layout proof, needs
                                                    # `npm run dev` and .env.local
+    bash .claude/hooks/install.sh                  # once per machine — see below
+
+## Two machines, one repo
+
+**This repo is worked from two laptops. `git fetch` before trusting any git
+state, and never report a tree as current without one.** `origin/main` is a
+cached local ref: without a fetch, `git status -sb` says "in sync with
+origin/main" on the machine that has simply not looked, while the remote is
+many commits ahead. That is a confident, wrong, measured-looking claim, and it
+produced a bad handoff on 2026-09-09.
+
+`.claude/hooks/git-behind.sh` is the automation. It runs on `SessionStart`,
+fetches, and warns when HEAD is behind its upstream — naming the count, and
+adding a stop when the tree is dirty. It **warns only**: it never pulls and
+never touches the working tree, because a pull into uncommitted work is the
+one way this check could cause harm. Offline or with no upstream it exits
+silently rather than nagging.
+
+The hook is wired into `~/.claude/settings.json`, which is per-machine and
+which git does not carry, so **each laptop runs `bash .claude/hooks/install.sh`
+once**. The script it installs lives in this repo, so a later fix to the check
+reaches both machines by pull. The installer is idempotent and merges into
+existing settings rather than replacing them.
+
+`.gitattributes` pins `*.sh` to `eol=lf` for this reason and no other:
+`core.autocrlf` is true on these Windows machines, so without it the hook
+scripts check out with CRLF and bash fails at the shebang with
+`bad interpreter: /usr/bin/env bash^M`. The check that exists to warn a second
+machine would be the one thing that does not run there.
 
 ## Layout
 

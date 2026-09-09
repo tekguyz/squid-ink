@@ -2346,3 +2346,42 @@ of clipped. `scripts/verify-layout.mjs` still measures 1440 and 1280 only, and
 its horizontal-overflow assertion still holds at both because the minimum
 equals the narrower width. A real responsive pass is separate future work; add
 widths to that script when breakpoints actually ship.
+
+## Two frozen-copy defects, and the one class they share (recorded 2026-09-09)
+
+Two bugs shipped bad information to the user on the same run. Neither was in
+application code, and neither was caught by any check this repo owns.
+
+**One: the handoff skill restated rules instead of reading them.**
+`.claude/skills/handoff/SKILL.md` carried three claims that had outlived their
+sources — "the ten surfaces are none built and none in scope" while
+`docs/ROADMAP.md` said three were built and was stamped that morning; "the
+no-app-name rule", dead since the 2026-09-07 branding lock; and a hardcoded
+count of twelve checks in `scripts/check-docs.mjs`. The skill also *banned*
+reading `docs/ROADMAP.md` to protect its token budget, so the stale copy won
+every time and a shipped surface was reported to the user as scope creep.
+
+Fixed in `de9ed09`. The ban now carves out `sed -n '1,15p' docs/ROADMAP.md`
+(~200 tokens against the file's 5.9k) and the surface count must be quoted from
+there; the naming rule is read from `CLAUDE.md`, which loads every session
+anyway; the check count is gone.
+
+**Two: no `git fetch` before reporting git state.** `origin/main` is a cached
+local ref. This repo is worked from two laptops, so on the machine that did not
+do the work `git status -sb` reports "in sync with origin/main" while the
+remote is ahead. The skill reported exactly that. Fixed in the skill (fetch
+first, and behind / ahead / uncommitted are three states it must not merge) and
+automated in `7ccfb37` — see CLAUDE.md § "Two machines, one repo".
+
+**The shared class: a fact copied into a file that nobody re-checks.** This is
+the gap that stays open. `scripts/check-docs.mjs` validates the docs against
+the code, and it passed clean on both of the days these claims were false —
+because nothing validates the *skills* against the docs. A doc has a check; a
+skill does not. The rule written into both skills is to point at the source
+rather than restate it, and that rule is currently enforced by nobody.
+
+**STILL OPEN.** A twelfth check that greps `.claude/skills/` and
+`.claude/rules/` for restated counts and rule names would close it. Not built:
+the shape of "a restated fact" is not obviously greppable, and inventing a
+detector that mostly false-positives would be worse than the convention. Worth
+revisiting if a third instance of this class appears.
