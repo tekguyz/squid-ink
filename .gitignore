@@ -75,3 +75,8 @@ plugins/impeccable-live.client.ts
 app/plugins/impeccable-live.client.ts
 src/plugins/impeccable-live.client.ts
 # impeccable-live-ignore-end
+
+# Per-machine Claude Code state. The rest of .claude/ is shared config and
+# stays tracked; this one file records one machine's own permissions and
+# must not follow the repo between computers.
+.claude/settings.local.json
