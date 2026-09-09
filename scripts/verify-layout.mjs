@@ -442,7 +442,11 @@ async function main() {
     );
     if (!noteHref) throw new Error("Signed in, but the dashboard listed no note to measure");
 
-    const routes = ["/", noteHref];
+    // A route this script does not visit has no layout proof at all, which is
+    // why /personas was added here in the same change that added the screen.
+    // It is a fixed string rather than a discovered href: the Personas rail
+    // has one URL and no id in it, so there is nothing to rot.
+    const routes = ["/", noteHref, "/personas"];
 
     for (const width of WIDTHS) {
       await cdp.send(

@@ -50,6 +50,52 @@ deliberate rather than forgotten:
 
 Do not read "01 is built" as "01 is finished".
 
+**Amended again 2026-09-09.** A third of the ten is now built: **03 Personas**,
+at `/personas`, reached from a real link in the dashboard rail. The remaining
+seven are still unbuilt and still out of scope. As with 01 and 02b, what
+shipped is not all of 03, and the deferrals are deliberate:
+
+- **Every mutation.** Depth, Quick actions, `+ New persona`, `Duplicate` and
+  `Set as default` render `disabled`, each with a `title` naming the reason —
+  the same treatment 01's Search and Import audio get, and for the same
+  reason. Custom personas are Advanced-phase, ROADMAP §8.
+- **No delete surface anywhere.** `supabase/schemas/note_chunks.sql` warns
+  that deleting a persona must first decide what happens to the takeaways
+  attributed to it. That decision has not been made, so no control offers it.
+- **`Set as default` cannot work as drawn, and that is a decision rather
+  than a gap.** `docs/DECISIONS.md` § Personas settled "default persona:
+  neutral/dense" on 2026-08-30 and clarified on 2026-09-09 that this means one
+  fixed lens for everyone — the first row, Neutral Analyst, addressed by the
+  slug `DEFAULT_PERSONA_ID` in `lib/notes/default-persona.ts`. There is no
+  `is_default` column and no per-account setting, so the control has nothing
+  to write. It renders `disabled` with a `title` naming the reason, because it
+  is in the drawing and silence would be worse. Making it real is a schema
+  change — see that decision for the three things it would need. Do not file
+  this as unbuilt UI; it is unbuilt product.
+- **Four lenses, not the drawing's five.** `Interviewer` has no `personas`
+  row and no framing in `lib/notegen/lens-prompts.ts`. A fifth row on screen
+  would be a lens the generation pipeline cannot run.
+- **The drawing's row of five lens chips**, which is a second switcher beside
+  the rail that already switches. One chip carrying the slug replaces it.
+- **"re-run cost · free"** in the rail footer. There is no re-run:
+  `docs/DECISIONS.md` § Personas rejected regeneration on 2026-08-30. The
+  line reads "re-run · not offered".
+
+Nothing on this screen is invented data. The Lens paragraph is read from
+`lib/notegen/lens-prompts.ts` by slug, the depth and output-shape lines are
+derived from `lib/notegen/depth-policy.ts`, and "Preview on last note" shows a
+real takeaway off the account's most recent note — or one of two honest empty
+states, never the drawing's fixture sentence.
+
+`scripts/verify-layout.mjs` covers the route: **72 assertions, up from 48**. It
+was proved able to fail before it was trusted — the rail footer moved into the
+Record HUD's corner turns 72/0 into 64/8, naming both colliding elements. A
+first attempt, making the rail `fixed` and displacing it, stayed green: the
+rail left the flow, the pane collapsed beside it, and nothing actually
+overlapped. That break was discarded rather than reported as a proof.
+
+Do not read "03 is built" as "03 is finished".
+
 ## State management — Zustand not used here (recorded 2026-08-30)
 
 Zustand not invoked here — state is local to one component, no drawers/cross-route
@@ -243,12 +289,22 @@ things worth carrying forward:
   **Two things this did NOT close. One has since closed; the other is still
   open, and is not a defect.**
 
-  **Depth exposure — STILL OPEN.** No UI control sets depth, so every persona
-  still carries the `'dense'` column default. Brief and Exhaustive are
-  reachable today only by editing a row by hand, and live verification has
-  therefore exercised Dense alone. ROADMAP §5 / Core UX/UI. Nothing below
-  changes this: lens selection and depth selection are separate surfaces, and
-  shipping the first did not ship the second.
+  **Depth exposure — VISIBLE 2026-09-09, STILL NOT SETTABLE.** This read
+  "STILL OPEN — no UI control sets depth" until `/personas` shipped. Half of
+  that is now wrong. The screen shows each lens's depth: a three-segment
+  Brief/Dense/Exhaustive control with the row's own value marked
+  `aria-pressed`, and a line under it derived from `planForDepth` — scope,
+  summary-or-not, and thinking level. Every segment is `disabled`, and the
+  wrapper's `title` says the write is the next piece of work. So a reader can
+  now see that all four personas carry the `'dense'` column default, which was
+  previously visible only by reading a row by hand.
+
+  What is still owed is unchanged: Brief and Exhaustive are reachable only by
+  editing the column directly, and live verification has therefore exercised
+  Dense alone. ROADMAP §5 / Core UX/UI. Showing a value is not setting it, and
+  neither is showing a control that cannot write. Nothing below changes this:
+  lens selection and depth selection are separate surfaces, and shipping the
+  first did not ship the second.
 
   **Lens selection — CLOSED 2026-09-02, and not where this paragraph expected
   it.** The sentence this replaces said "the recorder still selects no persona

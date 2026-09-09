@@ -266,6 +266,30 @@ a separate, still-open question (see Branding below).
 - Default persona: neutral/dense, matching existing truth-first philosophy.
   MVP ships a handful of built-in personas only. User-authored custom
   personas are a later phase.
+
+  **Clarified 2026-09-09, because the Personas screen made the ambiguity
+  visible.** "Default persona" here means ONE FIXED LENS FOR EVERYONE, not a
+  per-account preference. It is the first row in rail order, Neutral Analyst,
+  and it is addressed in code by the slug string `DEFAULT_PERSONA_ID =
+  "neutral-analyst"` in `lib/notes/default-persona.ts`. There is no
+  `is_default` column on `public.personas`, no per-account setting, and no
+  write path that could move it. Nothing was lost or reversed — this was
+  always what the bullet meant, and the resolution three bullets down
+  (`slug = 'neutral-analyst'`, 2026-09-02) already depends on it being fixed.
+
+  **Consequence for the drawing.** `App Surfaces.dc.html` artboard `#personas`
+  puts a **Set as default** button in the pane header. That control belongs to
+  a product where the default is per-account, which this one is not. It ships
+  on `/personas` rendered `disabled`, with a `title` naming the reason, on the
+  same principle the Dashboard's Search and Import audio use: a planned-looking
+  control that says what it is beats a control that looks live and does
+  nothing. **Making it work is a schema change, not a UI change** — it needs an
+  `is_default` column (or a user-metadata field, the way `last_persona_id`
+  already is), a partial unique index so exactly one row per user carries it,
+  and a decision about what happens to `DEFAULT_PERSONA_FALLBACK` for accounts
+  with zero rows. None of that is decided and none of it is scheduled. Until it
+  is, the honest reading of that button is "not a setting", not "not built
+  yet".
 - Interactive action-item drawers (owner/due date/priority/notes) promoted
   into ROADMAP Core UX/UI — extends the existing `action_item` chunk type.
 - **Regeneration — considered and rejected, 2026-08-30.** Re-running

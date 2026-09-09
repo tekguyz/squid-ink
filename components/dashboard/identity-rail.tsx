@@ -114,6 +114,16 @@ export function IdentityRail({
             {totalNotes}
           </span>
         </Link>
+        {/* A real link, not a PendingItem: /personas ships with this change.
+            It sits directly under All notes because the lens a note generates
+            under is chosen on Note Detail, and this is where that list is
+            explained. */}
+        <Link
+          href="/personas"
+          className={`${NAV_ITEM} text-ink-2 hover:bg-raised focus-visible:outline-accent border-transparent focus-visible:outline-2 focus-visible:-outline-offset-2`}
+        >
+          Personas
+        </Link>
         <PendingItem label="Calendar" />
         <PendingItem label="Collections" />
         <PendingItem label="Sources" />
