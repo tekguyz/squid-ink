@@ -55,23 +55,26 @@ at `/personas`, reached from a real link in the dashboard rail. The remaining
 seven are still unbuilt and still out of scope. As with 01 and 02b, what
 shipped is not all of 03, and the deferrals are deliberate:
 
-- **Every mutation.** Depth, Quick actions, `+ New persona`, `Duplicate` and
-  `Set as default` render `disabled`, each with a `title` naming the reason —
-  the same treatment 01's Search and Import audio get, and for the same
-  reason. Custom personas are Advanced-phase, ROADMAP §8.
+- **Amended 2026-09-09, later the same day. Three mutations now ship.** Depth,
+  Quick actions and `Set as default` are live, through
+  `app/notes/actions/configure-persona.ts`. Depth validates the three-value
+  union before the database sees it, quick actions cap at 6 with the cap shown
+  on screen rather than discovered on the seventh, and removal is by text so a
+  stale client cannot delete its neighbour. No query filters on `user_id`; RLS
+  scopes all of it. `personas` still grants `service_role` SELECT only.
+- **`+ New persona` and `Duplicate` still render `disabled`**, each with a
+  `title` naming the reason — the same treatment 01's Search and Import audio
+  get. Custom personas are Advanced-phase, ROADMAP §8. Configuring the four
+  provisioned rows is a different job from authoring a fifth.
 - **No delete surface anywhere.** `supabase/schemas/note_chunks.sql` warns
   that deleting a persona must first decide what happens to the takeaways
   attributed to it. That decision has not been made, so no control offers it.
-- **`Set as default` cannot work as drawn, and that is a decision rather
-  than a gap.** `docs/DECISIONS.md` § Personas settled "default persona:
-  neutral/dense" on 2026-08-30 and clarified on 2026-09-09 that this means one
-  fixed lens for everyone — the first row, Neutral Analyst, addressed by the
-  slug `DEFAULT_PERSONA_ID` in `lib/notes/default-persona.ts`. There is no
-  `is_default` column and no per-account setting, so the control has nothing
-  to write. It renders `disabled` with a `title` naming the reason, because it
-  is in the drawing and silence would be worse. Making it real is a schema
-  change — see that decision for the three things it would need. Do not file
-  this as unbuilt UI; it is unbuilt product.
+- **`Set as default` was "unbuilt product" for a few hours and no longer is.**
+  This entry said the control had nothing to write and that making it real was
+  a schema change. `docs/DECISIONS.md` § Personas, amended the same day,
+  settled that it writes `last_persona_id` in Auth user metadata as a slug —
+  a field `seedNotePersona` had already read since 2026-09-02. No column, no
+  index. `DEFAULT_PERSONA_ID` is untouched and is still the fixed fallback.
 - **Four lenses, not the drawing's five.** `Interviewer` has no `personas`
   row and no framing in `lib/notegen/lens-prompts.ts`. A fifth row on screen
   would be a lens the generation pipeline cannot run.
@@ -289,22 +292,19 @@ things worth carrying forward:
   **Two things this did NOT close. One has since closed; the other is still
   open, and is not a defect.**
 
-  **Depth exposure — VISIBLE 2026-09-09, STILL NOT SETTABLE.** This read
-  "STILL OPEN — no UI control sets depth" until `/personas` shipped. Half of
-  that is now wrong. The screen shows each lens's depth: a three-segment
-  Brief/Dense/Exhaustive control with the row's own value marked
-  `aria-pressed`, and a line under it derived from `planForDepth` — scope,
-  summary-or-not, and thinking level. Every segment is `disabled`, and the
-  wrapper's `title` says the write is the next piece of work. So a reader can
-  now see that all four personas carry the `'dense'` column default, which was
-  previously visible only by reading a row by hand.
+  **Depth exposure — CLOSED 2026-09-09.** This read "VISIBLE, STILL NOT
+  SETTABLE" for a few hours. The segmented control now writes:
+  `setPersonaDepth` in `app/notes/actions/configure-persona.ts` validates the
+  slug and the three-value union, then updates the row under RLS. Proved live
+  the same day — `neutral-analyst` set to `exhaustive` from the screen, read
+  back off the row, and the Output shape chips moved to `cross-referenced`
+  with it.
 
-  What is still owed is unchanged: Brief and Exhaustive are reachable only by
-  editing the column directly, and live verification has therefore exercised
-  Dense alone. ROADMAP §5 / Core UX/UI. Showing a value is not setting it, and
-  neither is showing a control that cannot write. Nothing below changes this:
-  lens selection and depth selection are separate surfaces, and shipping the
-  first did not ship the second.
+  What is still owed is smaller than it was. Brief and Exhaustive are now
+  reachable without editing a column by hand, but live GENERATION has still
+  only ever run at Dense — `scripts/verify-notegen-pipeline.mjs` and
+  `scripts/verify-persona-selection.mjs` both exercise the column default.
+  Setting a value is not the same as having generated under it.
 
   **Lens selection — CLOSED 2026-09-02, and not where this paragraph expected
   it.** The sentence this replaces said "the recorder still selects no persona

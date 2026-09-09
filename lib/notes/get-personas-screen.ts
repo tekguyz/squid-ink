@@ -33,6 +33,18 @@ export interface PersonasScreen {
    *  in this project. A slug missing from this map has not run on that note,
    *  which the pane renders as a one-line empty state. */
   previews: Record<string, PersonaPreview>;
+  /** The lens a NEW note is seeded with — the `last_persona_id` slug in Auth
+   *  user metadata, which `seedNotePersona` reads and `setDefaultPersona`
+   *  writes. Always one of `personas`: a preference naming a lens the account
+   *  no longer owns falls back to DEFAULT_PERSONA_ID here for the same reason
+   *  seedNotePersona falls back to it there, so the header can never mark a
+   *  row default that no row is.
+   *
+   *  NOT DEFAULT_PERSONA_ID itself. That slug stays the fixed fallback — what
+   *  an account gets having expressed no preference, and what
+   *  lib/notegen/resolve-persona.ts matches at step 2. This field is the
+   *  preference sitting in front of it. */
+  defaultPersonaId: string;
 }
 
 interface LastNoteRow {
@@ -52,15 +64,20 @@ export async function getPersonasScreen(): Promise<PersonasScreen> {
 
   // Neither query filters on user_id. RLS supplies it, and a redundant filter
   // would mask an RLS failure rather than expose it.
-  const [personaRows, { data: notes, error: noteError }] = await Promise.all([
-    getPersonas(),
-    supabase
-      .from("notes")
-      .select("id,title")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .returns<LastNoteRow[]>(),
-  ]);
+  const [personaRows, { data: notes, error: noteError }, { data: auth }] =
+    await Promise.all([
+      getPersonas(),
+      supabase
+        .from("notes")
+        .select("id,title")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .returns<LastNoteRow[]>(),
+      // The remembered lens lives in Auth user metadata, not a table — one
+      // preference field does not earn a schema addition, and this rides the
+      // session the request already carries. Same field seedNotePersona reads.
+      supabase.auth.getUser(),
+    ]);
 
   if (noteError) throw new Error(`Failed to load last note: ${noteError.message}`);
 
@@ -78,9 +95,25 @@ export async function getPersonasScreen(): Promise<PersonasScreen> {
           actions: row.quick_actions,
         }));
 
+  // The remembered slug, but only if it still names a lens this account owns.
+  // A preference pointing at a renamed or removed lens falls back rather than
+  // marking nothing default, which is exactly what seedNotePersona does with
+  // the same value — the screen must not disagree with the write path.
+  const remembered = auth.user?.user_metadata?.last_persona_id;
+  const defaultPersonaId =
+    typeof remembered === "string" && personas.some((p) => p.id === remembered)
+      ? remembered
+      : DEFAULT_PERSONA_ID;
+
   const lastNote = notes?.[0] ?? null;
   if (!lastNote) {
-    return { personas, lastNoteId: null, lastNoteTitle: null, previews: {} };
+    return {
+      personas,
+      lastNoteId: null,
+      lastNoteTitle: null,
+      previews: {},
+      defaultPersonaId,
+    };
   }
 
   // Sequential, not parallel: the chunk query needs the note id, and this
@@ -126,5 +159,6 @@ export async function getPersonasScreen(): Promise<PersonasScreen> {
     lastNoteId: lastNote.id,
     lastNoteTitle: lastNote.title ?? UNTITLED,
     previews,
+    defaultPersonaId,
   };
 }

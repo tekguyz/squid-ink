@@ -136,6 +136,16 @@ Auth user metadata (`updateUser({ data: { last_persona_id } })`), not a table;
 one preference field does not earn a schema addition. Only an explicit choice
 writes it — seeding does not.
 
+**Two writers, one field — since 2026-09-09.** `setNotePersona` here, and
+`setDefaultPersona` in `app/notes/actions/configure-persona.ts`, which is
+`/personas`' "Set as default" button. The second exists because the preference
+was previously settable only as a side effect of picking a lens on a note.
+Both write a slug and both read back through `seedNotePersona`; neither touches
+`DEFAULT_PERSONA_ID`, which stays the fixed fallback and the slug
+`resolvePersonaFor` matches at step 2. `setDefaultPersona` reads the persona
+row first, so an unknown slug cannot be parked in metadata where every later
+seed would miss on it.
+
 Regeneration stays rejected (`docs/DECISIONS.md` § Personas, 2026-08-30). The
 lock is what makes that true in the UI rather than merely unimplemented.
 

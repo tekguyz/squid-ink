@@ -9,11 +9,12 @@ import { PersonaSwitcherRail } from "./persona-switcher-rail";
 /**
  * The Personas screen, App Surfaces 03.
  *
- * The only client state on the screen is which row the rail has selected, and
- * it is LOCAL — nothing here writes. Note Detail's rail seeds a real row on
- * mount because the lens shown there has to be the lens the note generates
- * under; this rail selects a thing to read about, so a write would be a
- * database round trip in exchange for nothing.
+ * The rail's selection is LOCAL and stays local. Note Detail's rail seeds a
+ * real row on mount because the lens shown there has to be the lens the note
+ * generates under; this rail selects a thing to CONFIGURE, so a write would be
+ * a database round trip in exchange for nothing. The writes on this screen all
+ * live in the pane, and all go through
+ * app/notes/actions/configure-persona.ts.
  *
  * Held at MIN_SURFACE_WIDTH and scrolled sideways below it, the same interim
  * treatment app/page.tsx documents: one design exists, at one width, and
@@ -46,9 +47,15 @@ export function PersonasShell({ screen }: { screen: PersonasScreen }) {
           selectedId={persona.id}
           onSelect={setSelectedId}
         />
+        {/* KEYED BY LENS on purpose. The pane now holds per-lens client state
+            — an optimistic depth and a half-typed quick action — and switching
+            rows must reset both. Without the key, a draft typed for Investor
+            would still be in the field under Sales Coach. */}
         <PersonaAnatomy
+          key={persona.id}
           persona={persona}
           preview={screen.previews[persona.id]}
+          defaultPersonaId={screen.defaultPersonaId}
           lastNoteId={screen.lastNoteId}
           lastNoteTitle={screen.lastNoteTitle}
         />

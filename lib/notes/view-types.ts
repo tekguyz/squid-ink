@@ -51,8 +51,16 @@ export interface SpeakerStat {
   fillers: string;
 }
 
-/** ROADMAP.md §5's Brief/Dense/Exhaustive. Carried on the type and the table;
- *  nothing consumes it yet — there is no model routing and no UI control. */
+/** ROADMAP.md §5's Brief/Dense/Exhaustive. Carried on the type and on the
+ *  `personas.depth` column.
+ *
+ *  CONSUMED, and settable. `lib/notegen/depth-policy.ts` has mapped it onto
+ *  Gemini's thinking_level and a prompt scope since 2026-09-02, and
+ *  `/personas` has written it since 2026-09-09 through
+ *  `app/notes/actions/configure-persona.ts`. The union is validated there
+ *  before the database sees it — the column's check constraint is the floor,
+ *  not the guard, because a Server Action is a public HTTP endpoint. The
+ *  runtime list and its predicate live in `lib/notes/persona-config.ts`. */
 export type PersonaDepth = "brief" | "dense" | "exhaustive";
 
 export interface Persona {

@@ -290,6 +290,24 @@ a separate, still-open question (see Branding below).
   with zero rows. None of that is decided and none of it is scheduled. Until it
   is, the honest reading of that button is "not a setting", not "not built
   yet".
+
+  **Reopened and settled 2026-09-09, later the same day.** The button now
+  works, and it did not need the schema the paragraph above prices. It writes
+  `last_persona_id` in Auth user metadata as a slug — the second option that
+  paragraph itself named — through
+  `app/notes/actions/configure-persona.ts`. No `is_default` column, no partial
+  unique index, and no decision owed about `DEFAULT_PERSONA_FALLBACK`, because
+  the field it writes is not a column and is not new: `seedNotePersona` has
+  read it on every note created since 2026-09-02, and until now the only thing
+  that wrote it was picking a lens on Note Detail.
+
+  What that means for the bullet above is unchanged. "Default persona:
+  neutral/dense" is still ONE FIXED LENS FOR EVERYONE, and `DEFAULT_PERSONA_ID`
+  is still the slug `resolvePersonaFor` matches at step 2 and the lens an
+  account with no preference gets. The button chooses what sits IN FRONT of
+  that fallback for one account's new notes; it cannot move the fallback.
+  Notes already written keep the lens they generated under — regeneration is
+  still rejected.
 - Interactive action-item drawers (owner/due date/priority/notes) promoted
   into ROADMAP Core UX/UI — extends the existing `action_item` chunk type.
 - **Regeneration — considered and rejected, 2026-08-30.** Re-running

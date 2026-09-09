@@ -1,26 +1,39 @@
 "use client";
 
+import { useOptimistic } from "react";
+import { setPersonaDepth } from "@/app/notes/actions/configure-persona";
 import { lensPromptFor } from "@/lib/notegen/lens-prompts";
 import { planForDepth } from "@/lib/notegen/depth-policy";
 import type { PersonaConfig, PersonaPreview } from "@/lib/notes/get-personas-screen";
 import type { PersonaDepth } from "@/lib/notes/view-types";
 import { NOT_YET } from "./persona-switcher-rail";
 import { PersonaPreviewCard } from "./persona-preview-card";
+import { DepthControl } from "./depth-control";
+import { QuickActionsEditor } from "./quick-actions-editor";
+import { DefaultLensButton } from "./default-lens-button";
+import { usePersonaWrite } from "./use-persona-write";
 
 /**
  * One persona's anatomy, App Surfaces 03's right-hand pane.
  *
- * READ-ONLY. Every control here renders and none of them writes — the
- * mutations are the next piece of work. They are rendered rather than hidden
- * for the reason components/dashboard/identity-rail.tsx gives about its own
- * unbuilt nav: a surface that grows a control later is worse than one that
- * says what is coming.
+ * WRITABLE since 2026-09-09: depth, quick actions and which lens new notes
+ * open on. `+ New persona` and `Duplicate` stay disabled, and no control
+ * deletes — creating and deleting a persona is the Advanced phase
+ * (docs/ROADMAP.md §8), and a delete surface is additionally blocked on the
+ * decision supabase/schemas/note_chunks.sql names. Configuring the four
+ * provisioned rows is a different job from authoring a fifth.
  *
  * Nothing on this screen is invented. The framing paragraph is read from
  * lib/notegen/lens-prompts.ts by slug — the same lookup the generator hands
  * Gemini — and the depth and output-shape lines are derived from
  * lib/notegen/depth-policy.ts. Copying either into a second file would let the
  * screen and the pipeline drift.
+ *
+ * THE OPTIMISTIC DEPTH LIVES HERE, not in depth-control.tsx, because two rows
+ * read it: the segmented control's own derived line, and Output shape below.
+ * Split across two owners they disagree for the length of a round trip, which
+ * on this screen means a line reading "no summary" beside a chip reading
+ * "summary ×1".
  */
 
 const ROW = "border-rule-2 grid grid-cols-[110px_minmax(0,1fr)] gap-[18px] border-b py-[16px]";
@@ -32,16 +45,10 @@ const DEAD_CONTROL =
   "border-rule-2 text-faint font-mono cursor-not-allowed border text-[10px] tracking-[0.06em] uppercase";
 const SOON = "font-mono text-muted text-[8.5px] tracking-[0.14em] uppercase";
 
-const DEPTHS: PersonaDepth[] = ["brief", "dense", "exhaustive"];
-
-/** Depth is display-only until the write ships. `title` sits on a wrapper
- *  because a disabled element receives no pointer events. */
-const DEPTH_PENDING =
-  "Depth is read-only on this screen for now — changing it is the next piece of work.";
-const ACTIONS_PENDING =
-  "Quick actions are read-only on this screen for now — editing them is the next piece of work.";
-const NO_DEFAULT_SWITCH =
-  "The default lens is the neutral-analyst slug and is not a per-account setting.";
+/** The reader's own words for what setPersonaDepth refuses. */
+const REFUSED = {
+  invalid: "That depth is not one of Brief, Dense or Exhaustive.",
+} as const;
 
 /** What the pipeline will actually return at this depth, said in the schema's
  *  own terms. Derived, never a written-down list. */
@@ -59,16 +66,19 @@ function outputShape(depth: PersonaDepth): string[] {
 export function PersonaAnatomy({
   persona,
   preview,
+  defaultPersonaId,
   lastNoteId,
   lastNoteTitle,
 }: {
   persona: PersonaConfig;
   preview: PersonaPreview | undefined;
+  defaultPersonaId: string;
   lastNoteId: string | null;
   lastNoteTitle: string | null;
 }) {
   const lens = lensPromptFor(persona.id);
-  const plan = planForDepth(persona.depth);
+  const depthWrite = usePersonaWrite(REFUSED);
+  const [depth, setDepth] = useOptimistic(persona.depth);
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
@@ -92,16 +102,10 @@ export function PersonaAnatomy({
               <span className={SOON}>Soon</span>
             </button>
           </span>
-          <span title={NO_DEFAULT_SWITCH}>
-            <button
-              type="button"
-              disabled
-              className={`${DEAD_CONTROL} flex items-center gap-[8px] px-[11px] py-[7px]`}
-            >
-              <span className="opacity-60">Set as default</span>
-              <span className={SOON}>Soon</span>
-            </button>
-          </span>
+          <DefaultLensButton
+            slug={persona.id}
+            defaultPersonaId={defaultPersonaId}
+          />
         </div>
       </header>
 
@@ -122,68 +126,29 @@ export function PersonaAnatomy({
 
         <div className={ROW}>
           <p className={ROW_LABEL}>Depth</p>
-          <div>
-            <span title={DEPTH_PENDING} className="inline-block">
-              <span
-                role="group"
-                aria-label="Depth"
-                className="border-rule-2 flex w-fit border"
-              >
-                {DEPTHS.map((depth) => (
-                  <button
-                    key={depth}
-                    type="button"
-                    disabled
-                    aria-pressed={depth === persona.depth}
-                    className={[
-                      "font-mono cursor-not-allowed px-[13px] py-[6px] text-[10px] capitalize",
-                      depth === persona.depth
-                        ? "bg-tint text-accent-text"
-                        : "text-faint",
-                    ].join(" ")}
-                  >
-                    {depth}
-                  </button>
-                ))}
-              </span>
-            </span>
-            <p className="font-mono text-meta mt-[8px] text-[9.5px] uppercase">
-              {persona.depth} · {plan.scope} ·{" "}
-              {plan.wantsSummary ? "summary included" : "no summary"} ·
-              thinking {plan.thinkingLevel}
-            </p>
-          </div>
+          <DepthControl
+            value={depth}
+            pending={depthWrite.pending}
+            message={depthWrite.message}
+            onSelect={(next) =>
+              depthWrite.run(async () => {
+                setDepth(next);
+                return setPersonaDepth(persona.id, next);
+              })
+            }
+          />
         </div>
 
         <div className={ROW}>
           <p className={ROW_LABEL}>Quick actions</p>
-          <div className="flex flex-col gap-[5px]">
-            {persona.actions.map((action) => (
-              <p
-                key={action}
-                className="bg-pane font-body text-ink-2 px-[10px] py-[8px] text-[13px]"
-              >
-                {action}
-              </p>
-            ))}
-            <span title={ACTIONS_PENDING}>
-              <button
-                type="button"
-                disabled
-                className={`${DEAD_CONTROL} flex w-full items-center gap-[8px] border-dashed px-[10px] py-[8px] text-left text-[9.5px]`}
-              >
-                <span className="opacity-60">+ Add quick action</span>
-                <span className={SOON}>Soon</span>
-              </button>
-            </span>
-          </div>
+          <QuickActionsEditor slug={persona.id} actions={persona.actions} />
         </div>
 
         <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-[18px] py-[16px]">
           <p className={ROW_LABEL}>Output shape</p>
           <div>
             <div className="flex flex-wrap gap-[6px]">
-              {outputShape(persona.depth).map((shape) => (
+              {outputShape(depth).map((shape) => (
                 <span key={shape} className={CHIP}>
                   {shape}
                 </span>
