@@ -1,0 +1,7 @@
+# Shell scripts must check out with LF endings on every machine.
+#
+# This repo is worked from Windows laptops where git's core.autocrlf is true.
+# Without this rule, .claude/hooks/*.sh checks out with CRLF and bash fails at
+# the shebang with "bad interpreter: /usr/bin/env bash^M" — so the very hook
+# meant to warn a second machine that it is behind would not run there.
+*.sh text eol=lf
