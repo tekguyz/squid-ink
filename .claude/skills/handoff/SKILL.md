@@ -55,7 +55,7 @@ claim in chat — as something to verify, not something to cite.
 ### Check 1 — the countable claims, every run, no exceptions
 
 ```bash
-node .claude/skills/handoff/check-docs.mjs
+node scripts/check-docs.mjs
 ```
 
 Repo-only. No browser, no dev server, no network. It measures twelve things:

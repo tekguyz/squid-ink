@@ -14,7 +14,7 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const findings = [];
 const notes = [];
 
@@ -320,7 +320,16 @@ const pkg = JSON.parse(read("package.json"));
     //
     // Single- and double-quoted only. Template literals are left intact
     // because `${process.env.SUPABASE_SECRET_KEY}` IS a read.
-    const scannable = src.replace(/'[^'\n]*'|"[^"\n]*"/g, '""');
+    //
+    // Line comments are stripped for the same reason, and AFTER strings so a
+    // "https:" prefix inside a string is never mistaken for a comment. This
+    // file moved from .claude/skills/handoff/ to scripts/ on 2026-09-08, which
+    // put it inside its own scan for the first time - and the comments above
+    // name the variable, so it reported itself as the breach. A name in a
+    // COMMENT is not a name READ, exactly as a name QUOTED is not.
+    const scannable = src
+      .replace(/'[^'\n]*'|"[^"\n]*"/g, '""')
+      .replace(/\/\/[^\n]*/g, "");
 
     for (const m of scannable.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
       if (SUPABASE_SECRET.test(m[1]) && !isAllowedSecretFile(rel)) {
