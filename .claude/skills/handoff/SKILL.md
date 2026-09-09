@@ -34,9 +34,18 @@ into `design-reference/Note Detail.dc.html` (33k) or `App Surfaces.dc.html`
   tokens. Check 4 in `check-docs.mjs` compares every `oklch()` in
   `app/globals.css` against the Note Detail file already; a script verifies that
   better than reading 1,814 lines.
-- **Never open `docs/DECISIONS.md`, `docs/ROADMAP.md` or `docs/DEPLOYMENT.md`.**
-  Cross-doc contradictions are `doc-audit`'s job, and check 11 and check 12 in
-  the script catch the mechanical half of it on every run.
+- **Never open `docs/DECISIONS.md` or `docs/DEPLOYMENT.md`, and open only the
+  first 15 lines of `docs/ROADMAP.md`.** Cross-doc contradictions are
+  `doc-audit`'s job, and check 11 and check 12 in the script catch the
+  mechanical half of it on every run. The one exception is the ROADMAP status
+  line, which names which surfaces are built:
+
+  ```bash
+  sed -n '1,15p' docs/ROADMAP.md
+  ```
+
+  That is ~200 tokens against the file's 5.9k, and it is the ONLY source for
+  the surface count. See the surface rule under "Rules for the block".
 - **For open work, grep the *headings*, not the bullets.** Use:
 
   ```bash
@@ -56,14 +65,27 @@ block; do not treat silence as clean.
 
 ## What to gather
 
-1. `node scripts/check-docs.mjs` — twelve countable claims across the docs,
+1. `node scripts/check-docs.mjs` — countable claims across the docs,
    `package.json`, `app/globals.css`, the SQL schemas and `vercel.json`.
    Exit `0` clean, `1` findings one per line, `2` could not read something.
-2. `git log --oneline -20` and, if the branch tracks a remote,
+2. **`git fetch origin` FIRST, before any other git command.** Then
+   `git log --oneline -20` and, if the branch tracks a remote,
    `git log origin/main --oneline -5`.
-3. `git status -sb` and `git diff --stat`. Work in the tree is **not** shipped —
-   say "uncommitted in the working tree" explicitly, never fold it into
-   "shipped". Pushed is still not deployed.
+
+   The fetch is not optional and it is not tidiness. `origin/main` is a
+   **cached local ref**, and without a fetch it holds whatever the last fetch
+   on THIS machine saw. The user works from two laptops against one repo. On
+   the laptop that did not do the work, `git status -sb` reports "in sync with
+   origin/main" while the remote is many commits ahead — a confident, wrong,
+   measured-looking claim, which is the worst kind this block can carry.
+3. `git status -sb` and `git diff --stat`, **after the fetch**. Report three
+   states separately and never merge them:
+   - **uncommitted in the working tree** — not shipped, say so explicitly;
+   - **ahead of origin** — committed here, not pushed, invisible to the other
+     laptop and to Vercel;
+   - **behind origin** — work exists that this machine has not pulled. Say
+     "behind origin/main by N commits — run `git pull` before working here",
+     and do NOT describe the tree as current. Pushed is still not deployed.
 4. `docs/KNOWN_GAPS.md` open sections, by the heading grep above.
 5. `CLAUDE.md` rules, from context.
 
@@ -106,7 +128,7 @@ docs; this is not the place to re-derive them.
 - <"Run `doc-audit`" if the script reported drift this run>
 
 ### Reserved — do not brief around these blind
-- <the locked token set, the three typefaces, the flat-components rule, the 400-line ceiling, the no-app-name rule, and the Supabase rules: publishable key only in app code, four per-operation RLS policies, never filter on user_id in application code>
+- <the locked token set, the three typefaces, the flat-components rule, the 400-line ceiling, the locked app name, and the Supabase rules: publishable key only in app code, four per-operation RLS policies, never filter on user_id in application code>
 ```
 
 ## Rules for the block
@@ -116,14 +138,26 @@ docs; this is not the place to re-derive them.
 - **Rejections are load-bearing.** The planning Project writes the next brief.
   Telling it what was considered and rejected is what stops it re-proposing
   that, and it is the highest-value part of the block.
-- **Name the reserved systems.** The token set, the three typefaces and the
-  no-app-name rule are the ones a new brief will trip over first.
-- **Nothing from `docs/ROADMAP.md`'s out-of-scope list is reported as open.**
-  The ten surfaces in `design-reference/App Surfaces.dc.html` (01 dashboard,
-  02 recorder, 02b record HUD, 03 personas, 04 auth, 05 onboarding, 06 settings,
-  07 collections, 08 share, 09 live assistant, 10 newsprint light) are **none
-  built and none in scope.** If the session touched anything resembling one, say
-  so loudly — it is scope creep, not progress.
+- **Name the reserved systems, quoting `CLAUDE.md` as it stands this session.**
+  The token set, the three typefaces and the naming rule are the ones a new
+  brief will trip over first. `CLAUDE.md` is already in context — read the rule
+  from it, do not restate it from this file. **Rules move.** The naming rule was
+  "no app name anywhere in code" until 2026-09-07 and is now "Squid Ink, locked";
+  this skill went on saying "the no-app-name rule" until 2026-09-09. A rule
+  copied into a skill is a rule that stops tracking its source.
+- **Read which surfaces are built off the ROADMAP status line, never off this
+  file.** `design-reference/App Surfaces.dc.html` holds ten surfaces (01
+  dashboard, 02 recorder, 02b record HUD, 03 personas, 04 auth, 05 onboarding,
+  06 settings, 07 collections, 08 share, 09 live assistant, 10 newsprint
+  light). **How many are built changes; the count does not live here.** Run the
+  `sed -n '1,15p' docs/ROADMAP.md` above and quote what it says. Report an
+  unbuilt surface as scope creep only when the session touched one the status
+  line does not list as built — and say so loudly then.
+
+  This bullet used to name a frozen count. It said "none built and none in
+  scope" on 2026-09-09, when three were built and the ROADMAP said so, and a
+  handoff reported a shipped surface as scope creep on the strength of it. A
+  number written into a skill is a number nobody re-checks.
 - **No hedging, no filler.** "Note Detail shipped, 20 tests passing" or "Note
   Detail is uncommitted" — never "Note Detail is essentially done".
 - **No attach-list.** The planning Project gets its files from the GitHub
