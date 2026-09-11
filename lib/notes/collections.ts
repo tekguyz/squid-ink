@@ -8,10 +8,12 @@
  * lib/notes/default-persona.ts: the collection picker on Note Detail is a
  * client component and must not pull in the server Supabase client.
  *
- * MANUAL ONLY. Nothing here matches, scores or infers a membership. App
- * Surfaces 07 draws auto-file rules on a collection; that is a rule engine
- * with its own table and its own decision, and it is deliberately absent —
- * not half-built behind a flag, and not implied by a field here.
+ * MANUAL ONLY, still. Nothing here matches, scores or infers a membership.
+ * App Surfaces 07 draws auto-file rules on a collection; those shipped
+ * 2026-09-11 with their own tables and their own engine in
+ * lib/collection-rules/. A membership written by a rule is the same row as one
+ * written by hand, which is why nothing in this shaping had to change — the
+ * rail cannot tell them apart and does not need to.
  */
 
 /** A collection as a component renders it. `id` is the SLUG, never the uuid —

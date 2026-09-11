@@ -110,8 +110,14 @@ describe("GET /api/cron/transcribe — stuck-chunk surfacing", () => {
       RUN_BUDGET_MS: 240_000,
       sweep: async () => ({ transcribed: 0 }),
     }));
+    // generatedNoteIds is what the auto-file phase iterates, added
+    // 2026-09-11. An empty list is the honest stand-in here: this suite is
+    // about the stuck-chunk body, so no note generated and no rule ran.
     vi.doMock("@/lib/notegen/sweep", () => ({
-      notegenSweep: async () => ({ generated: 0 }),
+      notegenSweep: async () => ({ generated: 0, generatedNoteIds: [] }),
+    }));
+    vi.doMock("@/lib/collection-rules/rule-ports", () => ({
+      createRulePorts: () => ({}),
     }));
     // NOT mocked away: the real MAX_EMBED_ATTEMPTS, so the filter assertion
     // below is against the shipped cap rather than against itself.
@@ -130,7 +136,8 @@ describe("GET /api/cron/transcribe — stuck-chunk surfacing", () => {
 
     expect(body).toEqual({
       transcribed: 0,
-      notegen: { generated: 0 },
+      notegen: { generated: 0, generatedNoteIds: [] },
+      rules: { evaluated: 0, filed: 0, needsReview: 0 },
       embeddings: { skipped: "VOYAGE_API_KEY is not set" },
     });
     expect("stuckChunks" in body).toBe(false);

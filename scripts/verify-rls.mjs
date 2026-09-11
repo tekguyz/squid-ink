@@ -1,6 +1,7 @@
 /**
  * Proves owner-only RLS on notes, note_chunks, personas, tags, note_tags,
- * collections and note_collections with two real auth users.
+ * collections, note_collections, collection_rules, collection_rule_conditions
+ * and collection_rule_matches with two real auth users.
  *
  * PROOF PATH A — real password-grant JWT, sent as an Authorization header.
  *
@@ -155,6 +156,35 @@ const QUERIES = [
         .select("note_id, collection_id, user_id")
         .eq("note_id", SEEDED_NOTE_ID),
   },
+  {
+    // Same shape as collections: the second user owns a rule of their own, so
+    // "zero rows" cannot be confused with "the table is empty".
+    table: "collection_rules",
+    sql: "select id, collection_id, user_id from collection_rules",
+    run: (c) => c.from("collection_rules").select("id, collection_id, user_id"),
+    secondUserExpects: 1,
+  },
+  {
+    table: "collection_rule_conditions",
+    sql: "select id, rule_id, kind, value, user_id from collection_rule_conditions",
+    run: (c) =>
+      c
+        .from("collection_rule_conditions")
+        .select("id, rule_id, kind, value, user_id"),
+    secondUserExpects: 1,
+  },
+  {
+    // Scoped to the seeded note, which only the owner has a match on. This is
+    // the table that decides WHICH NOTES GET FILED WHERE, so a leak here is a
+    // leak of one tenant's filing decisions into another's.
+    table: "collection_rule_matches",
+    sql: `select id, rule_id, note_id, disposition, user_id from collection_rule_matches where note_id = '${SEEDED_NOTE_ID}'`,
+    run: (c) =>
+      c
+        .from("collection_rule_matches")
+        .select("id, rule_id, note_id, disposition, user_id")
+        .eq("note_id", SEEDED_NOTE_ID),
+  },
 ];
 
 /** Give the second user one persona of their own, through their OWN client.
@@ -269,6 +299,109 @@ async function ensureCollection(user, slug, noteId) {
   return data.id;
 }
 
+/** Give a user one auto-file rule with one condition, through their OWN
+ *  client, and — for the owner — one match record against the seeded note.
+ *  Same purpose as ensureTag and ensureCollection: it turns the three rule
+ *  proofs from "the table is empty for them" into "the table is filtered for
+ *  them", and gives the cross-tenant probes below real rows to aim at. */
+async function ensureRule(user, collectionId, noteId) {
+  // No unique key on (user_id, collection_id) — a collection may carry several
+  // rules — so this reads first rather than leaning on a conflict.
+  let { data } = await user.client
+    .from("collection_rules")
+    .select("id")
+    .eq("collection_id", collectionId)
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) {
+    const inserted = await user.client
+      .from("collection_rules")
+      .insert({ user_id: user.userId, collection_id: collectionId })
+      .select("id")
+      .single();
+    if (inserted.error) {
+      throw new Error(`${user.email} could not insert their own rule: ${inserted.error.message}`);
+    }
+    data = inserted.data;
+  }
+
+  const condition = await user.client.from("collection_rule_conditions").insert({
+    user_id: user.userId,
+    rule_id: data.id,
+    kind: "attendee_email_domain",
+    value: "rls-probe.example",
+    position: 0,
+  });
+  // 23505 is unique (rule_id, kind, value) — already there from an earlier run.
+  if (condition.error && condition.error.code !== "23505") {
+    throw new Error(`${user.email} could not insert their own condition: ${condition.error.message}`);
+  }
+
+  if (noteId) {
+    const match = await user.client.from("collection_rule_matches").insert({
+      user_id: user.userId,
+      rule_id: data.id,
+      note_id: noteId,
+      collection_id: collectionId,
+      condition_kind: "attendee_email_domain",
+      disposition: "filed",
+    });
+    // 23505 is unique (rule_id, note_id) — the "runs once" guarantee. That IS
+    // the behaviour this feature claims, so it is a pass.
+    if (match.error && match.error.code !== "23505") {
+      throw new Error(`${user.email} could not record their own match: ${match.error.message}`);
+    }
+  }
+
+  return data.id;
+}
+
+/** The three composite foreign keys on the rule tables must refuse a row that
+ *  reaches into another tenant. Foreign keys are validated as the referenced
+ *  table's owner and are NOT subject to RLS, so single-column references would
+ *  allow every one of these. 23503 is the violation.
+ *
+ *  This is the probe that matters most for this feature: a rule the database
+ *  let point at another user's collection would file THEIR notes into YOUR
+ *  folder automatically, with no user action anywhere. */
+async function crossTenantRuleIsRefused(
+  user,
+  foreignCollectionId,
+  foreignRuleId,
+  foreignNoteId,
+  ownRuleId,
+  ownCollectionId,
+) {
+  const probes = [];
+
+  const theirCollection = await user.client
+    .from("collection_rules")
+    .insert({ user_id: user.userId, collection_id: foreignCollectionId });
+  probes.push(["another user's COLLECTION", theirCollection.error]);
+
+  const theirRule = await user.client.from("collection_rule_conditions").insert({
+    user_id: user.userId,
+    rule_id: foreignRuleId,
+    kind: "title_keyword",
+    value: "probe",
+    position: 0,
+  });
+  probes.push(["another user's RULE", theirRule.error]);
+
+  const theirNote = await user.client.from("collection_rule_matches").insert({
+    user_id: user.userId,
+    rule_id: ownRuleId,
+    note_id: foreignNoteId,
+    collection_id: ownCollectionId,
+    condition_kind: "title_keyword",
+    disposition: "filed",
+  });
+  probes.push(["another user's NOTE", theirNote.error]);
+
+  return probes;
+}
+
 /** note_collections' two composite foreign keys must refuse a row that reaches
  *  into another tenant — either by pointing at their note or at their
  *  collection. Foreign keys are validated as the referenced table's owner and
@@ -344,6 +477,8 @@ const ownerTagId = await ensureTag(owner, "rls-probe-owner", SEEDED_NOTE_ID);
 const intruderTagId = await ensureTag(intruder, "rls-probe-intruder", null);
 const ownerCollectionId = await ensureCollection(owner, "rls-probe-owner", SEEDED_NOTE_ID);
 const intruderCollectionId = await ensureCollection(intruder, "rls-probe-intruder", null);
+const ownerRuleId = await ensureRule(owner, ownerCollectionId, SEEDED_NOTE_ID);
+const intruderRuleId = await ensureRule(intruder, intruderCollectionId, null);
 
 console.log("proof path : A - real password-grant JWT via Authorization header");
 console.log("             (NOT session cookies through the proxy - see path B)");
@@ -437,6 +572,25 @@ for (const [what, error] of await crossTenantFilingIsRefused(
 )) {
   console.log(
     `attempt: second user files with ${what}  refused=${Boolean(error)}  code=${error?.code ?? null}`,
+  );
+  if (!error) {
+    failed = true;
+    console.log(`             FAIL: a user reached into ${what}`);
+  }
+}
+console.log("");
+
+console.log("--- collection rule cross-tenant writes ---");
+for (const [what, error] of await crossTenantRuleIsRefused(
+  intruder,
+  ownerCollectionId,
+  ownerRuleId,
+  SEEDED_NOTE_ID,
+  intruderRuleId,
+  intruderCollectionId,
+)) {
+  console.log(
+    `attempt: second user writes a rule row against ${what}  refused=${Boolean(error)}  code=${error?.code ?? null}`,
   );
   if (!error) {
     failed = true;

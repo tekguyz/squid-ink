@@ -1,5 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { createTranscriptionPorts } from "@/lib/transcription/supabase-ports";
+import { applyRulesToNote } from "@/lib/collection-rules/apply-rules";
+import { createRulePorts } from "@/lib/collection-rules/rule-ports";
 import { createNotegenPorts } from "@/lib/notegen/notegen-ports";
 import { notegenSweep } from "@/lib/notegen/sweep";
 // Read-only import. lib/transcription/sweep.ts owns processing_status and is
@@ -191,6 +193,47 @@ export async function GET(request: Request) {
     });
     console.log(`[notegen] ${JSON.stringify(notegen)}`);
 
+    // Phase two-and-a-half: auto-file rules, added 2026-09-11.
+    //
+    // CHAINED OFF GENERATION, NOT POLLED. It evaluates exactly the notes phase
+    // two just generated — notegen.generatedNoteIds — which is the same hook
+    // point app/notes/actions/transcription.ts uses inside its after() block.
+    // There is deliberately no second queue and no rules_status column: a note
+    // is evaluated once, when it becomes eligible, and unique (rule_id,
+    // note_id) is what holds the "once".
+    //
+    // AFTER generation because a title-keyword condition reads notes.title,
+    // which generation has just written.
+    //
+    // NO BUDGET CHECK, unlike the three real phases. This costs two reads and
+    // at most a handful of small writes per note, on at most MAX_NOTEGEN_PER_RUN
+    // notes, and no model call at all — there is nothing here for a clock to
+    // protect against.
+    //
+    // user_id is passed EXPLICITLY into createRulePorts' queries, because this
+    // client is service_role and bypasses RLS. That is the standing exception
+    // CLAUDE.md § Supabase → RLS rules names.
+    const rules = { evaluated: 0, filed: 0, needsReview: 0 };
+    for (const note of notegen.generatedNoteIds) {
+      try {
+        const applied = await applyRulesToNote(createRulePorts(db), {
+          noteId: note.id,
+          userId: note.userId,
+        });
+        rules.evaluated += 1;
+        rules.filed += applied.filed;
+        rules.needsReview += applied.needsReview;
+      } catch (error) {
+        // Its own boundary, per note. One user's broken rule must not throw
+        // away the report for a run that has already committed real
+        // transcription and generation work — the same reasoning the embed
+        // phase's catch below states.
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[rules] note ${note.id}: evaluation failed — ${message}`);
+      }
+    }
+    console.log(`[rules] ${JSON.stringify(rules)}`);
+
     // Phase three, on the remainder of the SAME budget. ONE clock, THREE
     // phases now — the route still reads a single startedAt and every phase is
     // handed the same deadline rather than starting its own. Embedding runs
@@ -237,6 +280,7 @@ export async function GET(request: Request) {
     return Response.json({
       ...report,
       notegen,
+      rules,
       embeddings,
       ...(stuck.count > 0 ? { stuckChunks: stuck } : {}),
     });

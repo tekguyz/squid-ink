@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeCollectionName } from "@/lib/notes/collections";
+import { fileNoteIntoCollection } from "@/lib/notes/file-note";
 
 /**
  * Making a collection, renaming it, deleting it, and filing a note in or out
@@ -25,9 +26,12 @@ import { normalizeCollectionName } from "@/lib/notes/collections";
  * collection_id)`. A read-then-write would leave a window in which two tabs
  * both see "absent" and both insert.
  *
- * MANUAL ONLY. Nothing here matches a rule, scores a note or files anything by
- * itself. Auto-file rules are a rule engine with their own table and their own
- * decision — see the foot of supabase/schemas/collections.sql.
+ * MANUAL ONLY, still. Nothing here matches a rule, scores a note or files
+ * anything by itself. Auto-file rules shipped 2026-09-11 as their own tables
+ * and their own decision — lib/collection-rules/ and
+ * app/notes/actions/collection-rules.ts — and they reach this file at exactly
+ * one point: they call the same lib/notes/file-note.ts write path
+ * addNoteToCollection does, rather than a second insert beside it.
  */
 
 export type CollectionWriteOutcome =
@@ -199,16 +203,16 @@ export async function addNoteToCollection(
   const collectionId = await collectionIdFor(supabase, normalized.slug);
   if (!collectionId) return "not-found";
 
-  const { error } = await supabase.from("note_collections").upsert(
-    { note_id: noteId, collection_id: collectionId, user_id: userId },
-    { onConflict: "note_id,collection_id", ignoreDuplicates: true },
-  );
-
-  // 23503 is the composite foreign key refusing a note this user does not own.
-  if (error) {
-    if (error.code === "23503") return "not-found";
-    throw new Error(`Failed to file the note: ${error.message}`);
-  }
+  // THE SHARED write path, extracted to lib/notes/file-note.ts on 2026-09-11
+  // so the auto-file rule engine could call this insert rather than write a
+  // second one beside it. The conflict clause and the 23503 handling moved
+  // with it, unchanged; two copies would be two places for them to drift.
+  const filed = await fileNoteIntoCollection(supabase, {
+    noteId,
+    collectionId,
+    userId,
+  });
+  if (filed === "not-found") return "not-found";
 
   revalidatePath(`/notes/${noteId}`);
   revalidatePath("/collections");

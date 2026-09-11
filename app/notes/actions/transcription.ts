@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
+import { applyRulesToNote } from "@/lib/collection-rules/apply-rules";
+import { createRulePorts } from "@/lib/collection-rules/rule-ports";
 import { createDeferredClient } from "@/lib/supabase/deferred-client";
 import { createClient } from "@/lib/supabase/server";
 import { claimAndGenerate } from "@/lib/notegen/generate-note";
@@ -64,6 +66,12 @@ export type TranscriptionTrigger =
  * carries straight into claimAndGenerate. The browser's answer is unchanged:
  * it still learns only whether the transcription claim landed, in
  * milliseconds, and note generation is entirely deferred behind it.
+ *
+ * AUTO-FILE RULES CHAIN AFTER THAT, added 2026-09-11, same client again. They
+ * run after generation because a title-keyword condition reads the title
+ * generation has just written. Their write surface is note_collections and
+ * collection_rule_matches — nothing in that phase can edit a note, re-run
+ * generation or delete anything.
  *
  * EMBEDDINGS CHAIN AFTER THAT, added 2026-09-03, on the same client again.
  * One call, once both chunk kinds exist. It takes no claim: the per-chunk
@@ -183,7 +191,40 @@ export async function triggerTranscription(
         generatable,
       );
 
-      // ---- Embeddings, the third and last deferred phase ------------------
+      // ---- Auto-file rules, added 2026-09-11 ------------------------------
+      //
+      // AFTER note generation, not before, and the ordering is load-bearing.
+      // A title-keyword condition reads notes.title, and notes.title is
+      // written by the generation above — setTitleIfUnset in
+      // notegen-ports.ts. Evaluating first would test every keyword rule
+      // against a null title and record a permanent "no match" that the
+      // "runs once" guarantee would never revisit.
+      //
+      // THE SAME deferred client again, never a second one, for the reason
+      // stated twice above.
+      //
+      // BEFORE embeddings, deliberately. The embed phase is the one that can
+      // be killed by the 300 s Hobby ceiling and has a standing cron backstop;
+      // rule evaluation has no backstop beyond the cron's own phase three, and
+      // it costs two reads and at most a handful of small writes. The cheap,
+      // unbacked step goes first.
+      //
+      // Its failures are CAUGHT and logged here rather than left to the outer
+      // catch, so a broken rule cannot cost the note its embeddings. Filing is
+      // the least important thing this chain does.
+      try {
+        const filed = await applyRulesToNote(createRulePorts(deferred), {
+          noteId,
+          userId: generatable.user_id,
+        });
+        console.log(`[rules] note ${noteId}: ${JSON.stringify(filed)}`);
+        if (filed.filed > 0) revalidatePath("/collections");
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        console.error(`[rules] note ${noteId}: evaluation threw — ${reason}`);
+      }
+
+      // ---- Embeddings, the fourth and last deferred phase ------------------
       //
       // ONE call covers BOTH kinds of chunk. By this point transcription has
       // written its transcript_segment rows and note generation has written

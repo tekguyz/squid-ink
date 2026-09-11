@@ -92,6 +92,24 @@ alter table public.notes
 alter table public.notes
   add column if not exists persona_id uuid;
 
+-- attendee_emails: who was on the call, as email addresses. Added 2026-09-11
+-- for auto-file rules, which match on the DOMAIN half of each address.
+--
+-- NOTHING POPULATES IT YET, and that is stated rather than hidden. This app
+-- has no calendar integration and no invite import, so every existing row is
+-- null and every new row is null until something writes one. The column ships
+-- now because the rule engine in lib/collection-rules/ reads it and a rule
+-- kind with nowhere to read from is worse than an empty column — see
+-- docs/KNOWN_GAPS.md.
+--
+-- text[], not a join table. An attendee is a string on a note, not an entity:
+-- nothing else in this app points at one, nothing renames one, and a join
+-- table would be three more objects and four more policies carrying no fact
+-- the array does not already carry. Nullable with no default: null means "we
+-- were never told", which is different from an empty array meaning "nobody".
+alter table public.notes
+  add column if not exists attendee_emails text[];
+
 -- The target of note_tags' composite foreign key, and the same shape
 -- personas_id_user_id_key takes for note_chunks and notes.persona_id. A
 -- foreign key is validated as the referenced table's owner and is NOT subject

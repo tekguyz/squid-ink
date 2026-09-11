@@ -2385,3 +2385,70 @@ rather than restate it, and that rule is currently enforced by nobody.
 the shape of "a restated fact" is not obviously greppable, and inventing a
 detector that mostly false-positives would be worse than the convention. Worth
 revisiting if a third instance of this class appears.
+
+### `notes.attendee_emails` has no writer (recorded 2026-09-11)
+
+Auto-file rules ship with two condition kinds. One of them,
+`attendee_email_domain`, reads `notes.attendee_emails` — a `text[]` column
+added the same day by `supabase/schemas/notes.sql`. **Nothing populates it.**
+This app has no calendar integration and no invite import, so every row is
+null, and in production today that condition kind matches nothing.
+
+The other kind, `title_keyword`, reads `notes.title`, which note generation
+writes, and works end to end.
+
+Why the column shipped anyway rather than the rule kind being dropped: the
+engine, the storage, the counters and the RLS are the expensive half and they
+are identical either way. A rule kind with nowhere to read from is a
+one-column gap; the same feature rebuilt later around a second condition type
+is a rewrite. `scripts/verify-rls.mjs` proves the tenancy of all three rule
+tables today, and the four tests in
+`lib/collection-rules/__tests__/` prove the matching, both against a
+hand-supplied array.
+
+**What closes it:** anything that writes the column. A calendar connection is
+the obvious one; a paste-the-invite field on the recorder is the cheap one.
+Until then, read the `matched` counter on a domain rule as "zero because
+nothing feeds it", never as "zero because nobody matched".
+
+**Not backfillable.** `note_chunks` carries speaker *names* from diarization,
+never addresses, so there is nothing on an existing note to derive a domain
+from.
+
+### The auto-file / needs-review split is an assumption, not a specification (recorded 2026-09-11)
+
+App Surfaces 07 prints three counts per rule — matched, needed review, false
+positives — so not every match is silently auto-filed. It does not say where
+the boundary sits. The call made on 2026-09-11, recorded here so it can be
+amended rather than dug out of a branch:
+
+| Condition kind | Disposition | Why |
+|---|---|---|
+| `attendee_email_domain` | `filed` | An address either ends in the domain or it does not. Exact equality, no near miss, so it is evidence strong enough to act on unattended. |
+| `title_keyword` | `needs_review` | A substring test over a sentence a model wrote. "planning" matches "Q3 planning offsite" and also "no planning needed". |
+
+It is one lookup — `DISPOSITION_BY_KIND` in
+`lib/collection-rules/rule-engine.ts` — not a condition scattered through the
+engine, so changing it is one edit that reaches every rule at once.
+
+**Open question, not a defect:** nobody has watched this run against real
+traffic. If the false-positive counter on domain rules stays at zero and the
+needs-review queue on keyword rules is never disagreed with, the keyword kind
+should probably move to `filed` as well. That is what the counters are for.
+
+### Auto-file rules have no UI (recorded 2026-09-11)
+
+The rule storage, the engine, the evaluation hook, the counters and the three
+judgement actions all ship. **No screen renders any of it.** A rule can only be
+created by calling `addRuleCondition` from `app/notes/actions/collection-rules.ts`,
+and a needs-review match can only be confirmed or rejected the same way.
+
+`lib/collection-rules/read-rules.ts` is the read a rule panel on
+`/collections/[slug]` would consume, and it returns exactly what App Surfaces
+07 draws: the clauses in WHEN / OR-WHEN order and the three trailing-30-day
+counts. It has no importer yet.
+
+Deliberate, not forgotten: the Phase C scope fence named rule storage, the
+evaluation step, the counters and the false-positive action, and did not name
+a screen. Building one unasked would have meant design decisions against
+`design-reference/` that the fence put out of bounds.

@@ -117,6 +117,17 @@ export interface NotegenReport {
   blank: number;
   /** An overlapping invocation claimed the row first. Not an error. */
   contended: number;
+  /** WHICH notes this tick generated, owner and all. Added 2026-09-11 so the
+   *  cron's auto-file phase can evaluate exactly the notes that just became
+   *  eligible, instead of polling for them — the rule engine is deliberately
+   *  a step chained off generation, not a second queue with its own status
+   *  column.
+   *
+   *  It is the ids, not a count, because "which" is the question the next
+   *  phase asks and a count cannot answer it. This does NOT make this file
+   *  own anything new: notegen_status is still the only column it writes, and
+   *  nothing here reads or writes a collection. */
+  generatedNoteIds: { id: string; userId: string }[];
 }
 
 /** Phase two of the cron run.
@@ -137,6 +148,7 @@ export async function notegenSweep(
     deferred: 0,
     blank: 0,
     contended: 0,
+    generatedNoteIds: [],
   };
 
   /** MODEL ATTEMPTS, which is what the cap must bound.
@@ -199,8 +211,10 @@ export async function notegenSweep(
 
     // Only a row that actually reached the model spends a slot.
     attempts += 1;
-    if (outcome === "generated") report.generated += 1;
-    else report.failed += 1;
+    if (outcome === "generated") {
+      report.generated += 1;
+      report.generatedNoteIds.push({ id: row.id, userId: row.user_id });
+    } else report.failed += 1;
   }
 
   // Never let a cap read as completeness — but only say "deferred" when work
