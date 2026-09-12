@@ -2386,6 +2386,27 @@ the shape of "a restated fact" is not obviously greppable, and inventing a
 detector that mostly false-positives would be worse than the convention. Worth
 revisiting if a third instance of this class appears.
 
+**Third instance, found 2026-09-12 — and it is in the doc-audit skill itself.**
+`.claude/skills/doc-audit/SKILL.md` § "Check 6 — scope fence" lists the ten App
+Surfaces and then states, in bold, "**None is built and none was in scope.**"
+Four are built. It says outright "That list is reproduced here so this check
+costs nothing; do not open the file to re-count it" — which is the frozen copy
+being defended in writing, one skill after `handoff` had the identical bullet
+removed on 2026-09-09. An audit run against that check reports every built
+surface as scope creep.
+
+The count is not the deep problem. **Both skills copied the same fact and only
+one was fixed**, because the fix was made where the symptom appeared rather
+than everywhere the fact was copied. That is the class, restated: a fact
+lives in `docs/ROADMAP.md`'s status line, and every copy of it decays
+independently.
+
+**Still open, and now worth building.** The trigger this entry named has been
+met. The cheap version is not a general "restated fact" detector — that was
+correctly judged un-greppable — but a narrow check that fails when a file under
+`.claude/` contains the phrase "of the ten surfaces", "none is built", or a
+literal surface count, since exactly one file is allowed to carry that number.
+
 ### `notes.attendee_emails` has no writer (recorded 2026-09-11)
 
 Auto-file rules ship with two condition kinds. One of them,
@@ -2452,3 +2473,62 @@ Deliberate, not forgotten: the Phase C scope fence named rule storage, the
 evaluation step, the counters and the false-positive action, and did not name
 a screen. Building one unasked would have meant design decisions against
 `design-reference/` that the fence put out of bounds.
+
+### Surface 07 Collections shipped undocumented (recorded 2026-09-12)
+
+`6269c0c` (2026-09-09) built `/collections` and `/collections/[slug]`, tags,
+tag badges, the dashboard tag filter and the Note Detail collection picker —
+**App Surfaces 07**. Nothing recorded it. `docs/ROADMAP.md`'s status line was
+amended that same day to add 03 Personas and did not mention 07, and no entry
+was added here. Found on 2026-09-12 by comparing `git log` against this file's
+newest dated entry, which is check 2 of the doc-audit skill.
+
+**RESOLVED 2026-09-12** in `docs/ROADMAP.md`: the status line now reads four of
+ten and names 07.
+
+What 07 ships, so the gap is not merely "it exists":
+
+- The **manual half only**. A note is filed by hand through the picker.
+- **Auto-file rules** (`6bafb83`, 2026-09-11) add storage, an evaluation step
+  chained off note generation, derived counters and the three judgement
+  actions — but **no screen renders any of it**. Recorded separately below.
+- Collections have **no colour**, unlike tags, and that is deliberate — see the
+  header of `supabase/schemas/collections.sql`.
+
+### The tag tokens make `check-docs.mjs` fail on every run (recorded 2026-09-12)
+
+Check 4 asserts that every `oklch()` in `app/globals.css` appears verbatim in
+`design-reference/Note Detail.dc.html`. Ten tag tokens landed in `6269c0c` that
+do not, and eight of them are unique enough to be reported:
+
+    --tag-1 --tag-1-fill --tag-2 --tag-3 --tag-4 --tag-4-fill --tag-5 --tag-5-fill
+
+**The code is right and the check is wrong.** App Surfaces 07 is a **dark-only**
+surface, so it contains no light values for these tokens to be lifted from. The
+light values were DERIVED from the pattern the speaker tokens already set — a
+dark label on a pale wash of the same hue — and the comment above them in
+`app/globals.css` records the contrast measurements taken on 2026-09-09:
+6.08 / 5.78 / 5.88 / 5.98 / 8.08:1 light and 9.16 / 7.83 / 8.31 / 7.73 / 7.84:1
+dark, all clear of WCAG 1.4.3's 4.5:1 for the 9px mono a badge renders in.
+
+Check 4's assumption — every colour in the stylesheet is a copy of a drawn
+value — was true when it was written and stopped being true the moment a
+dark-only surface needed a light theme.
+
+**Why this matters more than eight lines of noise:** `check-docs.mjs` now exits
+1 on a clean tree, every single run. A gate that always fails is a gate nobody
+reads, so a ninth finding — a real one — arrives invisible. This is the same
+failure mode the script exists to prevent.
+
+**STILL OPEN.** The fix is a code change, not a doc change, so this audit did
+not make it. Two options, neither taken yet:
+
+- **Exempt derived tokens by name** in check 4 — a short allowlist of prefixes
+  (`--tag-`) whose values are measured rather than drawn. Cheap, and it keeps
+  the check meaningful for the 64 tokens that ARE copies.
+- **Check the derived tokens against their own measurement instead** — assert
+  the recorded contrast ratios rather than the hex. Stronger, and considerably
+  more work.
+
+The first is recommended. Until one ships, read `check-docs.mjs` as "clean at
+eight findings", and treat any count above eight as the real signal.
