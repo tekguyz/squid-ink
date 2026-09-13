@@ -2495,7 +2495,7 @@ What 07 ships, so the gap is not merely "it exists":
 - Collections have **no colour**, unlike tags, and that is deliberate — see the
   header of `supabase/schemas/collections.sql`.
 
-### The tag tokens make `check-docs.mjs` fail on every run (recorded 2026-09-12)
+### RESOLVED 2026-09-13 — the tag tokens made `check-docs.mjs` fail on every run (recorded 2026-09-12)
 
 Check 4 asserts that every `oklch()` in `app/globals.css` appears verbatim in
 `design-reference/Note Detail.dc.html`. Ten tag tokens landed in `6269c0c` that
@@ -2520,15 +2520,31 @@ dark-only surface needed a light theme.
 reads, so a ninth finding — a real one — arrives invisible. This is the same
 failure mode the script exists to prevent.
 
-**STILL OPEN.** The fix is a code change, not a doc change, so this audit did
-not make it. Two options, neither taken yet:
+**RESOLVED 2026-09-13** by checking the derived tokens against their own
+measurement. The prefix allowlist that this entry first recommended was
+rejected: it would have been a fifth special case, and the next derived family
+would have needed a sixth.
 
-- **Exempt derived tokens by name** in check 4 — a short allowlist of prefixes
-  (`--tag-`) whose values are measured rather than drawn. Cheap, and it keeps
-  the check meaningful for the 64 tokens that ARE copies.
-- **Check the derived tokens against their own measurement instead** — assert
-  the recorded contrast ratios rather than the hex. Stronger, and considerably
-  more work.
+Check 4 now accepts a value a second way — a one-line annotation directly above
+the token:
 
-The first is recommended. Until one ships, read `check-docs.mjs` as "clean at
-eight findings", and treat any count above eight as the real signal.
+    /* DERIVED: 6.08:1 against --tag-1-fill, WCAG 1.4.3 */
+
+The check does **not** trust it. It recomputes the ratio from both `oklch()`
+values (OKLab → sRGB → WCAG relative luminance, the counterpart resolved in the
+same selector block) and fails, naming the token, if the annotation does not
+parse, names a criterion other than 1.4.3 (4.5:1) or 1.4.11 (3:1), states a
+ratio below that bar, or states a ratio the recomputation does not reproduce to
+0.01. It reproduced all ten recorded light ratios exactly. All ten
+`--tag-N` / `--tag-N-fill` light values carry the annotation.
+
+Proved to fail before it was trusted: `--tag-3` annotated 4.20:1 exits 1
+("below WCAG 1.4.3's 4.5:1"); annotated 7.00:1 exits 1 ("recomputed it is
+5.88:1"); the ratio removed exits 1 ("does not parse"); restored, exit 0. The
+verbatim path is unchanged — a hand-edited `--speaker-1` is reported
+identically by the old script and the new one.
+
+Not annotated, deliberately: `--live` light has no recorded ratio, so it stays
+on check 4's older `DERIVED` map; `--shadow-hud` light is a shadow with alpha,
+which no contrast criterion governs and check 4's pattern never matches.
+`--control-edge` stays on the map, per CLAUDE.md § Colour.

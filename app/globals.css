@@ -151,16 +151,30 @@
      their own fill, which is the only sheet a badge label ever sits on:
      6.08 / 5.78 / 5.88 / 5.98 / 8.08:1 light, 9.16 / 7.83 / 8.31 / 7.73 /
      7.84:1 dark. All clear of WCAG 1.4.3's 4.5:1, which is the bar the 9px
-     mono the badge renders in has to meet. */
+     mono the badge renders in has to meet.
+
+     Each light value carries a one-line DERIVED annotation. check-docs.mjs
+     check 4 recomputes the ratio from the two oklch() values and fails if it
+     does not match the annotation or does not clear the named criterion. */
+  /* DERIVED: 6.08:1 against --tag-1-fill, WCAG 1.4.3 */
   --tag-1: oklch(0.42 0.12 142);
+  /* DERIVED: 6.08:1 against --tag-1, WCAG 1.4.3 */
   --tag-1-fill: oklch(0.90 0.05 142);
+  /* DERIVED: 5.78:1 against --tag-2-fill, WCAG 1.4.3 */
   --tag-2: oklch(0.44 0.10 252);
+  /* DERIVED: 5.78:1 against --tag-2, WCAG 1.4.3 */
   --tag-2-fill: oklch(0.90 0.04 252);
+  /* DERIVED: 5.88:1 against --tag-3-fill, WCAG 1.4.3 */
   --tag-3: oklch(0.44 0.09 60);
+  /* DERIVED: 5.88:1 against --tag-3, WCAG 1.4.3 */
   --tag-3-fill: oklch(0.90 0.04 60);
+  /* DERIVED: 5.98:1 against --tag-4-fill, WCAG 1.4.3 */
   --tag-4: oklch(0.44 0.10 320);
+  /* DERIVED: 5.98:1 against --tag-4, WCAG 1.4.3 */
   --tag-4-fill: oklch(0.90 0.04 320);
+  /* DERIVED: 8.08:1 against --tag-5-fill, WCAG 1.4.3 */
   --tag-5: oklch(0.36 0.015 64);
+  /* DERIVED: 8.08:1 against --tag-5, WCAG 1.4.3 */
   --tag-5-fill: oklch(0.90 0.012 82);
 }
 

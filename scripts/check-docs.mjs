@@ -196,6 +196,106 @@ const governingLabel = ruleFiles.length
     ["oklch(0.550 0.014 78)", "--control-edge dark, computed for 3:1, post-lock"],
   ]);
 
+  // The second acceptance path: a token annotated in app/globals.css as
+  //
+  //   /* DERIVED: 6.08:1 against --tag-1-fill, WCAG 1.4.3 */
+  //   --tag-1: oklch(0.42 0.12 142);
+  //
+  // A value derived by flipping lightness is measured, not drawn, so it is
+  // held to its measurement instead of a drawing. The annotation is NOT
+  // trusted: the ratio is recomputed from both oklch() values (the counterpart
+  // resolved in the same selector block), and must match the stated ratio to
+  // 0.01 AND clear the criterion's bar. Anything malformed fails and names the
+  // token. Proven 2026-09-13 to reproduce all ten recorded tag ratios exactly.
+  const CRITERIA = new Map([["1.4.3", 4.5], ["1.4.11", 3]]);
+  const ANNOTATION = /^\/\*\s*DERIVED:\s*([0-9]+(?:\.[0-9]+)?):1 against (--[a-z0-9-]+), WCAG ([0-9.]+)\s*\*\/$/;
+  const DECL = /^(--[a-z0-9-]+):\s*([^;]+);/;
+  const OKLCH_PARTS = /^oklch\(([0-9.]+) ([0-9.]+) ([0-9.]+)\)$/;
+
+  // OKLab → linear sRGB (Ottosson), clamped to gamut, → WCAG relative luminance.
+  const luminance = (value) => {
+    const m = value.match(OKLCH_PARTS);
+    if (!m) return null;
+    const [L, C, H] = m.slice(1).map(Number);
+    const a = C * Math.cos((H * Math.PI) / 180);
+    const b = C * Math.sin((H * Math.PI) / 180);
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const mm = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    const clamp = (v) => Math.min(1, Math.max(0, v));
+    const r = clamp(4.0767416621 * l - 3.3077115913 * mm + 0.2309699292 * s);
+    const g = clamp(-1.2684380046 * l + 2.6097574011 * mm - 0.3413193965 * s);
+    const bl = clamp(-0.0041960863 * l - 0.7034186147 * mm + 1.707614701 * s);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+  };
+
+  const cssLines = read("app/globals.css").split("\n").map((l) => l.trim());
+  const blocks = [new Map()];
+  const stack = [0];
+  const declBlock = [];
+  for (let i = 0; i < cssLines.length; i++) {
+    const line = cssLines[i];
+    const decl = line.match(DECL);
+    if (decl) {
+      blocks[stack.at(-1)].set(decl[1], decl[2].trim());
+      declBlock[i] = stack.at(-1);
+    }
+    for (const ch of line.replace(/\/\*.*?\*\//g, "")) {
+      if (ch === "{") {
+        blocks.push(new Map());
+        stack.push(blocks.length - 1);
+      } else if (ch === "}" && stack.length > 1) stack.pop();
+    }
+  }
+
+  const annotated = new Set();
+  let derivedChecked = 0;
+  for (let i = 0; i < cssLines.length; i++) {
+    if (!cssLines[i].includes("DERIVED:")) continue;
+    const next = cssLines.slice(i + 1).findIndex((l) => l !== "");
+    const j = next === -1 ? -1 : i + 1 + next;
+    const decl = j === -1 ? null : cssLines[j].match(DECL);
+    if (!decl) {
+      findings.push(`app/globals.css:${i + 1} has a DERIVED annotation with no token declared directly below it`);
+      continue;
+    }
+    const [, token, value] = decl;
+    annotated.add(value.trim());
+    const where = `app/globals.css:${j + 1} ${token}`;
+    const m = cssLines[i].match(ANNOTATION);
+    if (!m) {
+      findings.push(`${where} is annotated DERIVED but the annotation does not parse — expected "/* DERIVED: <ratio>:1 against --<token>, WCAG <1.4.3|1.4.11> */"`);
+      continue;
+    }
+    const [, statedText, against, criterion] = m;
+    const stated = Number(statedText);
+    const bar = CRITERIA.get(criterion);
+    if (bar === undefined) {
+      findings.push(`${where} names WCAG ${criterion}; only 1.4.3 (4.5:1) and 1.4.11 (3:1) are recognised`);
+      continue;
+    }
+    if (stated < bar) {
+      findings.push(`${where} records ${stated}:1, below WCAG ${criterion}'s ${bar}:1 — the derivation does not clear its own bar`);
+      continue;
+    }
+    const other = blocks[declBlock[j]].get(against);
+    const [la, lb] = [luminance(value.trim()), other === undefined ? null : luminance(other)];
+    if (la === null || lb === null) {
+      findings.push(`${where}: cannot recompute against ${against} — both must be plain oklch(L C H) in the same selector block`);
+      continue;
+    }
+    const actual = (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    if (Math.abs(actual - stated) > 0.01) {
+      findings.push(`${where} records ${stated}:1 against ${against}; recomputed it is ${actual.toFixed(2)}:1`);
+      continue;
+    }
+    if (actual < bar) {
+      findings.push(`${where} recomputes to ${actual.toFixed(2)}:1, below WCAG ${criterion}'s ${bar}:1`);
+      continue;
+    }
+    derivedChecked++;
+  }
+
   const missing = designFiles.filter((f) => !has(f));
   if (missing.length) {
     findings.push(`${missing.join(", ")} missing — token provenance cannot be verified`);
@@ -207,6 +307,8 @@ const governingLabel = ruleFiles.length
     const gaps = has("docs/KNOWN_GAPS.md") ? read("docs/KNOWN_GAPS.md") : "";
     for (const value of shipped) {
       if (designValues.has(value)) continue;
+      // Annotated: already passed or already reported above, by token name.
+      if (annotated.has(value)) continue;
       if (DERIVED.has(value)) {
         if (!gaps.includes(value)) {
           findings.push(`app/globals.css uses ${value} (${DERIVED.get(value)}), which no design file contains and docs/KNOWN_GAPS.md no longer records`);
@@ -215,7 +317,7 @@ const governingLabel = ruleFiles.length
       }
       findings.push(`app/globals.css uses ${value}, which appears in neither design file — a token was hand-edited away from the locked design`);
     }
-    notes.push(`tokens: ${shipped.size} colours in globals.css, ${DERIVED.size} documented as derived, rest traceable to a design file`);
+    notes.push(`tokens: ${shipped.size} colours in globals.css, ${derivedChecked} DERIVED annotation(s) recomputed and clear, ${DERIVED.size} documented as derived, rest traceable to a design file`);
   }
 }
 
