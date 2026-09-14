@@ -543,6 +543,27 @@ KNOWN_GAPS.md collision recorded the same day)
 - **Rejected: a manual "promote to auto-file" action, for now.** Nobody
   has run a rule against real traffic yet. Revisit once the counters
   accumulate.
+
+**Next build priority** (decided 2026-09-14)
+- Order: (1) Onboarding surface (05), (2) citation-required toggle — pulled
+  from Settings UI for now rather than wired up, (3) Google Calendar OAuth,
+  (4) Dashboard search.
+- **Auto-file domain rule fix: a paste-the-invite field on the recorder, not
+  Calendar OAuth.** Parses attendee emails out of pasted invite text into
+  `notes.attendee_emails`, giving `attendee_email_domain` real data without
+  OAuth. Independent of Calendar OAuth above.
+- **09 Live assistant stays in scope, unbuilt.** Already locked under §
+  Live assistant speak/write, never part of the 2026-08-30 rejected list.
+- **10 Newsprint Light is not a fifth unbuilt surface.** It's the existing
+  light theme (Settings → Appearance) shown against the Dashboard for
+  token-parity proof, per `design-reference/App Surfaces.dc.html`'s own
+  "Nine surfaces" header. ROADMAP's "five remain unbuilt" count is off by
+  one — four real surfaces are left: 04 Auth, 05 Onboarding, 08 Share,
+  09 Live assistant.
+- **Onboarding step 1 ("Name this workspace") renamed to an account name,
+  not a workspace/org concept** — the drawing predates the single-owner,
+  no-workspace-layer lock (ROADMAP §1) and its copy doesn't match current
+  architecture.
  
 ## Rejected — 2026-08-30 feature-triage
  

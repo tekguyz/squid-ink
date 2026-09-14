@@ -15,7 +15,9 @@ widget column, without search, without live-updating status and without a design
 below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual half plus auto-file rules (2026-09-11) with a review panel (2026-09-14) — condition list, per-collection needs-review, Confirm/Reject — but no promote-to-auto-file control; 06 ships Google connect as a stub, a citation preference
 nothing reads yet, and empty states for Account, Sharing and Data & privacy.
 All deliberate; `docs/KNOWN_GAPS.md` names each. The
-other five surfaces remain unbuilt. 2026-08-30 feature-triage
+other four surfaces remain unbuilt — 04 Auth, 05 Onboarding, 08 Share and
+09 Live assistant; 10 Newsprint Light is the shipped light theme, not a
+surface (`docs/DECISIONS.md` § Next build priority). 2026-08-30 feature-triage
 backlog fully disposed: promoted into phases below, or rejected (see §7).
 
 **This file is a PLAN, not a shipping log.** What is built is recorded in
