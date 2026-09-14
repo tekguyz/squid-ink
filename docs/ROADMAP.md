@@ -12,9 +12,7 @@ the same day — depth, quick actions and the default lens), **07 Collections**
 same commit) and **06 Settings** (2026-09-13, `/settings` — Capture & audio,
 Connected apps and Appearance). None is finished to the drawing — 01 ships without the right-hand
 widget column, without search, without live-updating status and without a design
-below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual
-half only, and its auto-file rules (2026-09-11) have storage, an engine and
-counters but no screen; 06 ships Google connect as a stub, a citation preference
+below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual half plus auto-file rules (2026-09-11) with a review panel (2026-09-14) — condition list, per-collection needs-review, Confirm/Reject — but no promote-to-auto-file control; 06 ships Google connect as a stub, a citation preference
 nothing reads yet, and empty states for Account, Sharing and Data & privacy.
 All deliberate; `docs/KNOWN_GAPS.md` names each. The
 other five surfaces remain unbuilt. 2026-08-30 feature-triage
@@ -25,24 +23,26 @@ backlog fully disposed: promoted into phases below, or rejected (see §7).
 decided or rejected is in `docs/DECISIONS.md`. A phase listed below is scope,
 and says nothing either way about whether it has shipped.
 
-**Last updated:** 2026-09-13 (status line amended a FIFTH time: four of ten
-became five of ten when **06 Settings** shipped at `/settings`, counted in the
-same change that built it rather than found missing later. Previously amended
-2026-09-12, a FOURTH time, and the
-repetition is the finding: it said three of ten while **07 Collections** had
-shipped in `6269c0c` on 2026-09-09 — the same day as the previous amendment,
-which counted 03 and missed 07 in the same commit range. Auto-file rules
-(`6bafb83`, 2026-09-11) added to 07's line. Previously amended 2026-09-09 — it
-said two of ten while 03
-Personas had shipped that morning and become writable that afternoon. The
-phases below are unchanged: a built surface is not a phase. Previously amended
-2026-09-07, when the line said the ten surfaces "remain unbuilt", already false
-for 02b and false again for 01 Dashboard that day; rewritten 2026-09-05, when
-it read "Blueprint complete. Claude Design in progress" from before any code
-existed and so read as though nothing was built; header corrected 2026-09-03,
-when it read 2026-08-30 while §5 and §8 already carried amendments dated
-2026-09-01 and §4's schema snippet had been superseded; see the dated notes in
-those sections).
+**Last updated:** 2026-09-14 (status line amended a SIXTH time: the 07 clause
+dropped "but no screen" — auto-file rules got a review panel on
+`/collections/[slug]` the same day (see `docs/DECISIONS.md` § Auto-file rules
+UI). Previously amended 2026-09-13, a FIFTH time: four of ten became five of
+ten when **06 Settings** shipped at `/settings`, counted in the same change
+that built it rather than found missing later. Previously amended 2026-09-12,
+a FOURTH time, and the repetition is the finding: it said three of ten while
+**07 Collections** had shipped in `6269c0c` on 2026-09-09 — the same day as
+the previous amendment, which counted 03 and missed 07 in the same commit
+range. Auto-file rules (`6bafb83`, 2026-09-11) added to 07's line. Previously
+amended 2026-09-09 — it said two of ten while 03 Personas had shipped that
+morning and become writable that afternoon. The phases below are unchanged: a
+built surface is not a phase. Previously amended 2026-09-07, when the line
+said the ten surfaces "remain unbuilt", already false for 02b and false again
+for 01 Dashboard that day; rewritten 2026-09-05, when it read "Blueprint
+complete. Claude Design in progress" from before any code existed and so read
+as though nothing was built; header corrected 2026-09-03, when it read
+2026-08-30 while §5 and §8 already carried amendments dated 2026-09-01 and
+§4's schema snippet had been superseded; see the dated notes in those
+sections).
 
 ---
 
