@@ -526,6 +526,23 @@ KNOWN_GAPS.md collision recorded the same day)
 - **Rejected: an inline connect button on step 4.** Two OAuth entry
   points to the same provider is two places to keep token handling in
   sync for zero user benefit — Settings is already one click away.
+- **Built 2026-09-14 as three steps** — the workspace step is cut (see
+  Next build priority below); steps 2–4 are renumbered 1–3.
+- **"Has this account finished onboarding" is `onboarded_at` in Auth user
+  metadata, not a column** (decided 2026-09-14). The proxy already calls
+  `getUser()` on every request, which returns metadata, so the gate reads
+  the flag with no extra query; a `user_settings` column would add a table
+  read to every page load. The default lens step 2 sets is already metadata
+  (`last_persona_id`). This does not reverse § Settings' "preferences are a
+  table": a first-run flag is not a preference and is never shown on
+  /settings. A user can write their own metadata; the flag withholds only a
+  welcome screen, never data.
+- **A completed account that visits `/onboarding` is redirected to `/`**
+  (decided 2026-09-14). No design covers it, and there is nothing to redo:
+  every choice the flow makes is changeable on /personas and /settings.
+- **The Record HUD is hidden on `/onboarding`** (decided 2026-09-14), so a
+  second capture cannot open over step 1's microphone test.
+- **The gate skips `/api/*`**, so a fetch never gets an HTML redirect.
 
 **Auto-file rules UI** (decided 2026-09-14, when the panel shipped on
 `/collections/[slug]`)

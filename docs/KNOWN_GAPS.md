@@ -168,6 +168,49 @@ Onboarding (Surface 05).
 
 Do not read "06 is built" as "06 is finished".
 
+**Amended again 2026-09-14.** A sixth of the ten is now built: **05
+Onboarding**, at `/onboarding`. The remaining three — 04 Auth, 08 Share, 09
+Live assistant — are still unbuilt. It is a real first-run gate: the proxy
+(`lib/supabase/session.ts`) sends any signed-in page request from an account
+without `onboarded_at` in Auth user metadata to `/onboarding`, and sends an
+account that has it away from `/onboarding` to `/`. Where that flag lives and
+why is in `docs/DECISIONS.md` § Onboarding (Surface 05). Three steps ship —
+Allow audio capture, Pick a default persona, Connect calendar — and every
+absence below is deliberate:
+
+- **No "Name this workspace" step.** The drawing has four steps; its first is
+  multi-tenant template copy. Squid Ink is single-owner with no workspace
+  layer (`docs/ROADMAP.md` §1) and nothing reads or shows a workspace name.
+  The other three are renumbered 1–3.
+- **No real Google Calendar OAuth.** Step 3 has no Connect button of its own.
+  "Open Connected apps" finishes onboarding and lands on
+  `/settings#connected-apps`, 06's existing stub. Skip finishes onboarding and
+  lands on `/`. No skip state is kept.
+- **No persona create, duplicate or delete.** Step 2 picks one of the
+  account's existing rows and saves it through `setDefaultPersona`, the same
+  action /personas uses.
+- **System audio is not shown as "Granted".** The drawing says it is. A web
+  page cannot hold that grant — the share picker opens on every recording — so
+  the row says "Asked each recording". Only the microphone has an Allow button.
+- **The input test is the HUD's seven-bar meter, not the drawing's fifty
+  bars.** It reuses `HudLevelBars` and `readLevel`, so it is red, like the
+  recording meter, not the drawing's green.
+- **No design below 1280px.** Held at 1280 and scrolled sideways, the same
+  interim treatment as every other screen.
+- **The Record HUD is hidden on `/onboarding`** (`recorder-dock.tsx`), so a
+  second capture cannot open over the microphone test.
+
+**Verified 2026-09-14 in a browser against the hosted project**, as the
+`RLS_TEST_OWNER_EMAIL` account: sign-in landed on `/onboarding`; step 2 wrote
+`last_persona_id`; "Open Connected apps" wrote `onboarded_at` and landed on
+the Connected apps section; a direct visit to `/onboarding` then went to `/`.
+**Not verified in a browser:** the live microphone meter (the in-app browser
+blocks the microphone, so step 1 showed "Blocked"), and the Skip exit (covered
+by unit tests only). `verify-layout.mjs` does not measure `/onboarding`: its
+account is now onboarded, so the route redirects before it can be measured.
+
+Do not read "05 is built" as "05 is finished".
+
 ## State management — Zustand not used here (recorded 2026-08-30)
 
 Zustand not invoked here — state is local to one component, no drawers/cross-route

@@ -3,19 +3,23 @@
 **Status:** Blueprint complete, and the §8 MVP chain is **built** — recorder,
 Gemini transcription, structured note generation, Voyage embeddings and Claude
 ask-your-notes chat all ship, on Supabase auth and Note Detail. Claude Design
-in progress — Recorder UI resolved (hybrid HUD + full-app). Five of the ten
+in progress — Recorder UI resolved (hybrid HUD + full-app). Six of the ten
 surfaces in `design-reference/App Surfaces.dc.html` are now built: **02b record
 HUD** (2026-08-31), **01 Dashboard** (2026-09-07, replacing the `app/page.tsx`
 scaffold), **03 Personas** (2026-09-09, read-only that morning and writable
 the same day — depth, quick actions and the default lens), **07 Collections**
 (2026-09-09, `/collections` and `/collections/[slug]`, with tags shipping in the
-same commit) and **06 Settings** (2026-09-13, `/settings` — Capture & audio,
-Connected apps and Appearance). None is finished to the drawing — 01 ships without the right-hand
+same commit), **06 Settings** (2026-09-13, `/settings` — Capture & audio,
+Connected apps and Appearance) and **05 Onboarding** (2026-09-14,
+`/onboarding` — a first-run gate of three steps: audio, default persona,
+calendar). None is finished to the drawing — 01 ships without the right-hand
 widget column, without search, without live-updating status and without a design
 below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual half plus auto-file rules (2026-09-11) with a review panel (2026-09-14) — condition list, per-collection needs-review, Confirm/Reject — but no promote-to-auto-file control; 06 ships Google connect as a stub, a citation preference
-nothing reads yet, and empty states for Account, Sharing and Data & privacy.
+nothing reads yet, and empty states for Account, Sharing and Data & privacy;
+05 ships without the drawing's workspace step (cut: single-owner), without real
+calendar OAuth (step 3 opens 06's stub) and without persona create or delete.
 All deliberate; `docs/KNOWN_GAPS.md` names each. The
-other four surfaces remain unbuilt — 04 Auth, 05 Onboarding, 08 Share and
+other three surfaces remain unbuilt — 04 Auth, 08 Share and
 09 Live assistant; 10 Newsprint Light is the shipped light theme, not a
 surface (`docs/DECISIONS.md` § Next build priority). 2026-08-30 feature-triage
 backlog fully disposed: promoted into phases below, or rejected (see §7).
@@ -25,7 +29,10 @@ backlog fully disposed: promoted into phases below, or rejected (see §7).
 decided or rejected is in `docs/DECISIONS.md`. A phase listed below is scope,
 and says nothing either way about whether it has shipped.
 
-**Last updated:** 2026-09-14 (status line amended a SIXTH time: the 07 clause
+**Last updated:** 2026-09-14 (status line amended a SEVENTH time: six of ten,
+and four unbuilt became three, when **05 Onboarding** shipped at `/onboarding`,
+counted in the same change that built it. Previously amended 2026-09-14, a
+SIXTH time: the 07 clause
 dropped "but no screen" — auto-file rules got a review panel on
 `/collections/[slug]` the same day (see `docs/DECISIONS.md` § Auto-file rules
 UI). Previously amended 2026-09-13, a FIFTH time: four of ten became five of

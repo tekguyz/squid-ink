@@ -8,8 +8,13 @@ import { useRecorder } from "@/lib/recorder/use-recorder";
 
 /** Routes reachable without a session. Mirrors PUBLIC_PREFIXES in
  *  lib/supabase/session.ts — a HUD on the sign-in page would offer a recording
- *  that has nowhere to go. */
-const HIDDEN_PREFIXES = ["/login", "/auth"];
+ *  that has nowhere to go.
+ *
+ *  Plus /onboarding, added 2026-09-14. That route is a first-run gate that
+ *  runs its own microphone test, and a Record pill beside it would open a
+ *  second capture over the one being tested, before the account has reached
+ *  any screen a note could be opened from. */
+const HIDDEN_PREFIXES = ["/login", "/auth", "/onboarding"];
 
 /**
  * The client island mounted in the root layout.

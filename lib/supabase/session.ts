@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { hasOnboarded, ONBOARDING_PATH } from "@/lib/onboarding/onboarding-state";
 
 /** Routes that must stay reachable without a session.
  *
@@ -70,5 +71,32 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirect);
   }
 
+  // First-run gate, App Surfaces 05. Only for a signed-in PAGE request:
+  // /api routes answer machines and fetches, and a redirect there would hand a
+  // caller an HTML page where it expected JSON.
+  if (user && !isPublic && !pathname.startsWith("/api/")) {
+    const onboarded = hasOnboarded(user.user_metadata);
+    const onOnboarding =
+      pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`);
+
+    // A completed account that types /onboarding goes to the dashboard. There
+    // is nothing to redo: every choice the flow makes is changeable on
+    // /personas and /settings, which are where a returning account belongs.
+    if (onboarded === onOnboarding) {
+      const target = request.nextUrl.clone();
+      target.pathname = onboarded ? "/" : ONBOARDING_PATH;
+      target.search = "";
+      return redirectKeepingCookies(target, response);
+    }
+  }
+
   return response;
+}
+
+/** A redirect that still carries any session cookies rotated above. Building a
+ *  bare redirect would drop them — rule 2 in the comment on updateSession. */
+function redirectKeepingCookies(url: URL, from: NextResponse) {
+  const redirect = NextResponse.redirect(url);
+  for (const cookie of from.cookies.getAll()) redirect.cookies.set(cookie);
+  return redirect;
 }
