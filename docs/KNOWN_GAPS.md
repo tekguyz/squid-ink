@@ -209,8 +209,17 @@ step 1 showed "Blocked") and the Skip exit. **Both confirmed by the owner the
 same day** in a regular browser, on an account with zero persona rows: mic
 Allow turned to "Allowed", step 2 offered the one fallback lens and let the
 account through — the case the review fix in `persona-step.tsx` covers — and
-Skip landed on All notes. Whether the meter bars moved was not reported. `verify-layout.mjs` does not measure `/onboarding`: its
-account is now onboarded, so the route redirects before it can be measured.
+Skip landed on All notes.
+
+**Re-run by the owner the same day, after `a86fc75`**, on that same account
+once it held four persona rows: the meter bars moved, step 2 listed all four
+lenses, and both step 3 exits worked — Skip to All notes, "Open Connected
+apps" to the Connected apps section. The account had zero rows only because
+it predates the 2026-08-31 provisioning trigger; its four rows and a cleared
+`onboarded_at` were written by hand in the SQL Editor to re-test. Not a code
+defect, and no backfill ships for other pre-trigger accounts.
+`verify-layout.mjs` does not measure `/onboarding`: its account is now
+onboarded, so the route redirects before it can be measured.
 
 Do not read "05 is built" as "05 is finished".
 
