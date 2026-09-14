@@ -26,9 +26,9 @@ export type ConditionKind = "attendee_email_domain" | "title_keyword";
  *
  *  'filed'          the membership was written automatically.
  *  'needs_review'   matched, membership NOT written, waiting on a human.
- *  'false_positive' was 'filed', the user said it was wrong, the membership
- *                   has been removed. Only ever reached by the user's own
- *                   action, never by the engine. */
+ *  'false_positive' was 'filed' or 'needs_review', the user said it was
+ *                   wrong, the membership has been removed. Only ever reached
+ *                   by the user's own action, never by the engine. */
 export type MatchDisposition = "filed" | "needs_review" | "false_positive";
 
 /** What the engine can decide on its own. 'false_positive' is deliberately

@@ -7,6 +7,12 @@ import {
 import { readFeedNotes } from "@/lib/notes/read-feed-notes";
 import { readTagIndex } from "@/lib/notes/get-tags";
 import type { CollectionChip, NoteCollection } from "@/lib/notes/collections";
+import {
+  readCollectionRules,
+  readPendingMatches,
+  type CollectionRuleView,
+  type PendingMatchView,
+} from "@/lib/collection-rules/read-rules";
 
 /**
  * What the two Collections routes render.
@@ -34,6 +40,8 @@ export interface CollectionsIndex {
 
 export interface CollectionScreen extends CollectionsIndex {
   collection: NoteCollection;
+  /** null until the first condition is added. */
+  rule: CollectionRuleView | null;
   groups: DayGroup[];
   /** How many notes are IN the collection, which is not `groups`' row count
    *  once COLLECTION_LIMIT bites. */
@@ -64,11 +72,12 @@ export async function getCollectionScreen(
 ): Promise<CollectionScreen | null> {
   const supabase = await createClient();
 
-  // The rail's rows and this collection's membership are independent reads, so
-  // they are issued together rather than in sequence.
-  const [{ chips }, found] = await Promise.all([
+  // The rail's rows, this collection's membership and its rule are independent
+  // reads, so they are issued together rather than in sequence.
+  const [{ chips }, found, rule] = await Promise.all([
     readCollectionIndex(supabase),
     readCollectionBySlug(supabase, slug),
+    readRuleFor(slug, now),
   ]);
 
   if (!found) return null;
@@ -86,7 +95,51 @@ export async function getCollectionScreen(
   return {
     chips,
     collection: found.collection,
+    rule,
     groups: groupNotesByDay(feed.inputs, feed.counts, now),
     noteCount: found.noteIds.length,
   };
+}
+
+export interface CollectionReviewScreen extends CollectionsIndex {
+  collection: NoteCollection;
+  rule: CollectionRuleView | null;
+  pending: PendingMatchView[];
+}
+
+/**
+ * One collection's needs-review view: the rail, the rule panel, and every
+ * match waiting on a judgement. No feed read — this screen does not list the
+ * collection's notes.
+ */
+export async function getCollectionReviewScreen(
+  slug: string,
+  now: Date,
+): Promise<CollectionReviewScreen | null> {
+  const supabase = await createClient();
+
+  const [{ chips }, found, rules] = await Promise.all([
+    readCollectionIndex(supabase),
+    readCollectionBySlug(supabase, slug),
+    readCollectionRules(now),
+  ]);
+  if (!found) return null;
+
+  const mine = rules.filter((rule) => rule.collectionId === slug);
+  const pending = await readPendingMatches(mine.map((rule) => rule.id));
+
+  return { chips, collection: found.collection, rule: mine[0] ?? null, pending };
+}
+
+/**
+ * This collection's rule, through readCollectionRules — the one read path for
+ * rules. addRuleCondition keeps a collection to one rule (ensureRule reuses the
+ * oldest), so the first is the rule.
+ */
+async function readRuleFor(
+  slug: string,
+  now: Date,
+): Promise<CollectionRuleView | null> {
+  const rules = await readCollectionRules(now);
+  return rules.find((rule) => rule.collectionId === slug) ?? null;
 }

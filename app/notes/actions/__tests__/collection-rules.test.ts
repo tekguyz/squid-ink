@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   confirmRuleMatch,
   markRuleMatchFalsePositive,
+  rejectRuleMatch,
 } from "@/app/notes/actions/collection-rules";
 import { countMatches } from "@/lib/collection-rules/rule-engine";
 
@@ -149,6 +150,55 @@ describe("markRuleMatchFalsePositive", () => {
       now,
     );
     expect(after).toEqual({ matched: 1, neededReview: 0, falsePositives: 1 });
+  });
+});
+
+describe("rejectRuleMatch", () => {
+  it("is guarded on 'needs_review', flips to false_positive and un-files", async () => {
+    // Decided 2026-09-14: Reject is a real un-file, not a dismissed flag. A
+    // note filed by hand while its match waited must leave the collection too.
+    const outcome = await rejectRuleMatch("m1");
+
+    expect(outcome).toBe("written");
+    expect(chains.collection_rule_matches).toContainEqual([
+      "update",
+      { disposition: "false_positive" },
+    ]);
+    expect(chains.collection_rule_matches).toContainEqual([
+      "eq",
+      "disposition",
+      "needs_review",
+    ]);
+    expect(chains.note_collections).toContainEqual(["delete"]);
+    expect(chains.note_collections).toContainEqual(["eq", "note_id", "note-1"]);
+    expect(chains.note_collections).toContainEqual([
+      "eq",
+      "collection_id",
+      "col-1",
+    ]);
+  });
+
+  it("touches nothing when the guarded update claims no row", async () => {
+    state.matchResult = { data: null, error: null };
+
+    expect(await rejectRuleMatch("m1")).toBe("not-found");
+    expect(chains.note_collections).toEqual([]);
+  });
+
+  it("never deletes the match row, and moves it into the false-positive count", async () => {
+    await rejectRuleMatch("m1");
+    expect(
+      chains.collection_rule_matches.some(([verb]) => verb === "delete"),
+    ).toBe(false);
+
+    const now = new Date("2026-09-14T12:00:00.000Z");
+    const matchedAt = new Date(now.getTime() - 1000).toISOString();
+    expect(
+      countMatches([{ disposition: "needs_review", matchedAt }], now),
+    ).toEqual({ matched: 1, neededReview: 1, falsePositives: 0 });
+    expect(
+      countMatches([{ disposition: "false_positive", matchedAt }], now),
+    ).toEqual({ matched: 1, neededReview: 0, falsePositives: 1 });
   });
 });
 

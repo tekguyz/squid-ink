@@ -9,9 +9,9 @@ import {
 import { fileNoteIntoCollection } from "@/lib/notes/file-note";
 
 /**
- * Writing an auto-file rule, and the two judgements a human makes about what
- * one did: confirming a needs-review match, and marking an auto-filed one a
- * false positive.
+ * Writing an auto-file rule, and the judgements a human makes about what one
+ * did: confirming or rejecting a needs-review match, and marking an auto-filed
+ * one a false positive.
  *
  * Its own "use server". The directive is per module and app/notes/actions has
  * no shared entry point to put one in — the same reason recording.ts,
@@ -190,9 +190,8 @@ interface MatchRow {
  * `disposition = 'filed'`, and the membership is removed only if that update
  * actually claimed a row. The guard is what makes the action idempotent: a
  * double click, or two tabs, means the second update matches nothing and no
- * second delete is attempted. Flipping a 'needs_review' match is refused for
- * the same reason — it was never filed, so there is no membership to take
- * back and nothing to be wrong about.
+ * second delete is attempted. A 'needs_review' match is refused HERE — it is
+ * rejectRuleMatch's to judge, below, through the same two writes.
  *
  * THE MATCH ROW IS NOT DELETED. It is the audit record the false-positive
  * counter is derived from; deleting it would decrement the count it is
@@ -204,13 +203,43 @@ interface MatchRow {
 export async function markRuleMatchFalsePositive(
   matchId: string,
 ): Promise<RuleWriteOutcome> {
+  return unfileAsFalsePositive(matchId, "filed");
+}
+
+/**
+ * Reject a needs-review match: a false positive, and the note leaves the
+ * collection.
+ *
+ * Decided 2026-09-14 (docs/DECISIONS.md § Auto-file rules UI). A needs-review
+ * match wrote no membership, so the delete usually removes nothing — but a
+ * note filed by hand while it waited IS in the collection, and "Reject" that
+ * left it there would be a dismissed notification rather than an un-file. The
+ * false-positive count is only a trust signal if a rejected match is actually
+ * gone.
+ *
+ * Guarded on 'needs_review', so it is idempotent for the same reason the
+ * action above is, and a match already confirmed cannot be rejected through
+ * this door — that is markRuleMatchFalsePositive's judgement.
+ */
+export async function rejectRuleMatch(
+  matchId: string,
+): Promise<RuleWriteOutcome> {
+  return unfileAsFalsePositive(matchId, "needs_review");
+}
+
+/** Both false-positive judgements: flip the disposition out of `from`, and
+ *  remove the membership only if that guarded update claimed a row. */
+async function unfileAsFalsePositive(
+  matchId: string,
+  from: "filed" | "needs_review",
+): Promise<RuleWriteOutcome> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from("collection_rule_matches")
     .update({ disposition: "false_positive" })
     .eq("id", matchId)
-    .eq("disposition", "filed")
+    .eq("disposition", from)
     .select("id, note_id, collection_id, user_id")
     .maybeSingle<MatchRow>();
 

@@ -526,6 +526,23 @@ KNOWN_GAPS.md collision recorded the same day)
 - **Rejected: an inline connect button on step 4.** Two OAuth entry
   points to the same provider is two places to keep token handling in
   sync for zero user benefit — Settings is already one click away.
+
+**Auto-file rules UI** (decided 2026-09-14, when the panel shipped on
+`/collections/[slug]`)
+- **Needs-review surfaces per-collection**, drilled into from the `needed
+  review` count already drawn in the rail — not a dashboard-wide inbox,
+  not an inline note banner. App Surfaces 07 shows one review item over
+  30 days; a second surface for that volume isn't worth building or
+  maintaining at single-owner scale.
+- **Confirm keeps a match filed; Reject un-files it and counts as a false
+  positive.** This is what keeps the false-positive counter meaningful —
+  see `docs/KNOWN_GAPS.md` § "The auto-file / needs-review split is an
+  assumption, not a specification": a keyword rule is only a candidate
+  for promotion to `filed` if its false-positive count actually reflects
+  rejected matches.
+- **Rejected: a manual "promote to auto-file" action, for now.** Nobody
+  has run a rule against real traffic yet. Revisit once the counters
+  accumulate.
  
 ## Rejected — 2026-08-30 feature-triage
  

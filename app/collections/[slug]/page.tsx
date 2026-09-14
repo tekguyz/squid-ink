@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { CollectionManage } from "@/components/collections/collection-manage";
 import { CollectionsShell } from "@/components/collections/collections-shell";
+import { RulePanel } from "@/components/collections/rule-panel";
 import { NoteFeed } from "@/components/dashboard/note-feed";
 import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
 import { getCollectionScreen } from "@/lib/notes/get-collection-screen";
@@ -35,7 +36,11 @@ export default async function CollectionPage({
   if (!screen) notFound();
 
   return (
-    <CollectionsShell chips={screen.chips} activeSlug={screen.collection.id}>
+    <CollectionsShell
+      chips={screen.chips}
+      activeSlug={screen.collection.id}
+      aside={<RulePanel slug={screen.collection.id} rule={screen.rule} />}
+    >
       <header className="border-rule flex flex-col gap-[10px] border-b px-[24px] pt-[18px] pb-[14px]">
         <h1 className="font-header text-ink text-[18px] font-semibold">
           {screen.collection.name}

@@ -22,22 +22,33 @@ const MIN_SURFACE_WIDTH = 1280;
 export function CollectionsShell({
   chips,
   activeSlug,
+  aside,
   children,
 }: {
   chips: CollectionChip[];
   activeSlug: string | null;
+  /** The third column App Surfaces 07 draws — the auto-file rules panel. Only
+   *  a single collection has one; the index renders two columns. Two whole
+   *  class strings rather than an interpolated width, because Tailwind cannot
+   *  build a class name at runtime. */
+  aside?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
       <div
         style={{ minWidth: MIN_SURFACE_WIDTH }}
-        className="bg-canvas text-ink grid h-full grid-cols-[236px_minmax(0,1fr)]"
+        className={`bg-canvas text-ink grid h-full ${
+          aside
+            ? "grid-cols-[236px_minmax(0,1fr)_296px]"
+            : "grid-cols-[236px_minmax(0,1fr)]"
+        }`}
       >
         <CollectionsRail chips={chips} activeSlug={activeSlug} />
         <main className="bg-paper flex min-h-0 min-w-0 flex-col overflow-hidden">
           {children}
         </main>
+        {aside}
       </div>
     </div>
   );

@@ -2547,6 +2547,15 @@ evaluation step, the counters and the false-positive action, and did not name
 a screen. Building one unasked would have meant design decisions against
 `design-reference/` that the fence put out of bounds.
 
+**RESOLVED 2026-09-14.** The panel now ships on `/collections/[slug]`:
+the condition list (WHEN / OR WHEN, `+ ADD CONDITION`), the three
+trailing-30-day counts, and a per-collection needs-review view reachable
+from the `needed review` count. Confirm keeps a match filed; Reject
+un-files the note and counts as a false positive — decided so the
+false-positive counter stays a real trust signal rather than a number
+nobody can act on. No promote-to-auto-file control ships; that stays the
+open question recorded above, unmoved by this change.
+
 ### Surface 07 Collections shipped undocumented (recorded 2026-09-12)
 
 `6269c0c` (2026-09-09) built `/collections` and `/collections/[slug]`, tags,

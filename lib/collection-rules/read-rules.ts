@@ -28,6 +28,7 @@ import {
   type MatchDisposition,
   type RuleCounters,
 } from "@/lib/collection-rules/rule-engine";
+import { UNTITLED_NOTE } from "@/lib/notes/group-notes-by-day";
 
 /** One clause as a rule editor renders it. `id` is the uuid here and not a
  *  slug, because a condition has no slug and nothing routes on one — the
@@ -122,4 +123,65 @@ export async function readCollectionRules(
         .sort((a, b) => a.position - b.position),
       counters: countMatches(byRule.get(row.id) ?? [], now),
     }));
+}
+
+/** One match waiting on a human, as the needs-review view renders it. */
+export interface PendingMatchView {
+  /** The match's uuid — what confirm and reject take. Same reasoning as
+   *  RuleConditionView.id: a match is not an identity that survives a reseed. */
+  id: string;
+  noteId: string;
+  noteTitle: string;
+  conditionKind: ConditionKind;
+  /** Pre-formatted in UTC here, never in the client, so server and browser
+   *  render the same string — the reason lib/notes/group-notes-by-day.ts
+   *  gives for not using toLocaleDateString. */
+  matchedOn: string;
+}
+
+interface PendingRow {
+  id: string;
+  note_id: string;
+  condition_kind: ConditionKind;
+  matched_at: string;
+  notes: { title: string | null } | null;
+}
+
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+/**
+ * Every needs-review match on these rules, newest first.
+ *
+ * Takes rule ids from readCollectionRules rather than re-deriving which rules
+ * a collection has — one read decides that, and this one follows it.
+ *
+ * NOT WINDOWED. The "needed review" count is trailing-30-day, but a match that
+ * has waited 31 days still waits: dropping it from this list would leave it
+ * unreachable and the note unjudged forever.
+ */
+export async function readPendingMatches(
+  ruleIds: readonly string[],
+): Promise<PendingMatchView[]> {
+  if (ruleIds.length === 0) return [];
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("collection_rule_matches")
+    .select("id, note_id, condition_kind, matched_at, notes(title)")
+    .in("rule_id", [...ruleIds])
+    .eq("disposition", "needs_review")
+    .order("matched_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to read the pending matches: ${error.message}`);
+
+  return ((data ?? []) as unknown as PendingRow[]).map((row) => {
+    const at = new Date(row.matched_at);
+    return {
+      id: row.id,
+      noteId: row.note_id,
+      noteTitle: row.notes?.title ?? UNTITLED_NOTE,
+      conditionKind: row.condition_kind,
+      matchedOn: `${String(at.getUTCDate()).padStart(2, "0")} ${MONTHS[at.getUTCMonth()]}`,
+    };
+  });
 }
