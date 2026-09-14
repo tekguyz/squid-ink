@@ -204,9 +204,12 @@ absence below is deliberate:
 `RLS_TEST_OWNER_EMAIL` account: sign-in landed on `/onboarding`; step 2 wrote
 `last_persona_id`; "Open Connected apps" wrote `onboarded_at` and landed on
 the Connected apps section; a direct visit to `/onboarding` then went to `/`.
-**Not verified in a browser:** the live microphone meter (the in-app browser
-blocks the microphone, so step 1 showed "Blocked"), and the Skip exit (covered
-by unit tests only). `verify-layout.mjs` does not measure `/onboarding`: its
+**Not verified in the in-app browser:** the microphone (it blocks the mic, so
+step 1 showed "Blocked") and the Skip exit. **Both confirmed by the owner the
+same day** in a regular browser, on an account with zero persona rows: mic
+Allow turned to "Allowed", step 2 offered the one fallback lens and let the
+account through — the case the review fix in `persona-step.tsx` covers — and
+Skip landed on All notes. Whether the meter bars moved was not reported. `verify-layout.mjs` does not measure `/onboarding`: its
 account is now onboarded, so the route redirects before it can be measured.
 
 Do not read "05 is built" as "05 is finished".
