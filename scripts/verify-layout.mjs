@@ -457,7 +457,9 @@ async function main() {
       `(() => { const a = document.querySelector('a[href^="/collections/"]'); return a && a.getAttribute("href"); })()`,
     );
 
-    const routes = ["/", noteHref, "/personas", "/collections"];
+    // /settings added 2026-09-13 with the screen, as a fixed string for the
+    // same reason /personas is one: it has one URL and no id in it.
+    const routes = ["/", noteHref, "/personas", "/collections", "/settings"];
     if (collectionHref) routes.push(collectionHref);
 
     for (const width of WIDTHS) {

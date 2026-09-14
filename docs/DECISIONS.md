@@ -487,6 +487,32 @@ phase assignment for all of the above is in ROADMAP.md §8.
   already recorded the question closed. Removed rather than marked, because
   they described a decision that was pending and is not; the decision itself is
   the bullet above this one.
+
+**Settings** (decided 2026-09-13, when App Surfaces 06 shipped at `/settings`)
+- **One page, one continuous scroll, anchor navigation.** The left nav's items
+  link to section ids on the same page; they are not tabs and not routes.
+  Personas is the one exception and links to `/personas`, which already exists.
+- **Each section is its own component and owns its own draft and dirty
+  state** — `CaptureSection`, `ConnectedAppsSection`, `AppearanceSection` in
+  `components/settings/`. Not one flat form. A section reports a label and a
+  count to the footer through `components/settings/dirty-registry.tsx`, so the
+  bar can say *which* section has unsaved changes, and a section can later
+  become its own route by moving a component rather than rewriting one.
+- **Rejected: tabs, or one route per section.** Seven destinations, three of
+  them real, do not earn seven routes; and a flat form blob could only ever
+  say "you have changes".
+- **Preferences are a table, not Auth user metadata.** `public.user_settings`,
+  one row per user keyed by `user_id`, four per-operation RLS policies. The
+  2026-09-02 reasoning for `last_persona_id` — "one preference field does not
+  earn a schema addition" — does not carry over: this is the page every future
+  preference lands on, and a row is what `verify-rls.mjs` can prove.
+- **Theme is not in that table.** It stays per-browser in `localStorage`,
+  through `components/theme-toggle.tsx`'s `useTheme`, and applies instantly —
+  outside the Update/Discard bar.
+- **Google Calendar/Drive connect ships as a UI stub this phase.** Clickable,
+  full-fidelity, and answering "Not connected yet". Real OAuth, token storage
+  and refresh are deferred; they remain open under "Explicitly still open"
+  below.
  
 ## Rejected — 2026-08-30 feature-triage
  
@@ -522,9 +548,11 @@ phase assignment for all of the above is in ROADMAP.md §8.
 repo — it moved into the tree that day. Three of the five entries below had
 shipped. Kept in place with what closed them, rather than deleted.
 
-- **Google OAuth/Calendar connect flow** — still open. Nothing in `app/`,
-  `lib/` or `components/` references Google beyond `next/font/google` and the
-  `@google/genai` transcription client.
+- **Google OAuth/Calendar connect flow** — still open. No OAuth flow, token
+  or connections table exists. **Amended 2026-09-13:** this said nothing in
+  `app/`, `lib/` or `components/` referenced Google beyond `next/font/google`
+  and the `@google/genai` client; `/settings` now names Google Calendar and
+  Google Drive with stub Connect buttons. See § Settings above.
 - **Audio Storage** — **mostly RESOLVED 2026-08-31.** The bucket and its three
   policies are `supabase/schemas/storage_audio.sql`; upload code shipped with
   the recorder and is proven by `scripts/verify-recorder-upload.mjs`.

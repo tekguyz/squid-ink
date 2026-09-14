@@ -185,7 +185,55 @@ const QUERIES = [
         .select("id, rule_id, note_id, disposition, user_id")
         .eq("note_id", SEEDED_NOTE_ID),
   },
+  {
+    // One row per user, keyed by user_id. Both users save a row of their own
+    // (ensureUserSettings below), so the second user seeing exactly ONE row —
+    // their own — is "filtered", not "empty".
+    table: "user_settings",
+    sql: "select user_id, require_citations from user_settings",
+    run: (c) => c.from("user_settings").select("user_id, require_citations"),
+    secondUserExpects: 1,
+  },
 ];
+
+/** Save a preferences row through the user's OWN client, the way /settings
+ *  does: an upsert on the primary key. That exercises the insert and update
+ *  policies, and gives each user exactly one row to be filtered down to. */
+async function ensureUserSettings(user) {
+  const { error } = await user.client
+    .from("user_settings")
+    .upsert({ user_id: user.userId, require_citations: true }, { onConflict: "user_id" });
+  if (error) throw new Error(`${user.email} could not save their own settings: ${error.message}`);
+}
+
+/** user_settings is keyed by user_id, so the write-side attack is naming
+ *  somebody else's id. The insert policy's with check must refuse the insert,
+ *  and the update policy's using must match zero rows. The owner's row is read
+ *  back afterwards as the owner, because "no error" on an update is exactly
+ *  what a silently-successful cross-tenant write also looks like. */
+async function crossTenantSettingsAreRefused(user, owner) {
+  const inserted = await user.client
+    .from("user_settings")
+    .insert({ user_id: owner.userId, require_citations: false });
+
+  const updated = await user.client
+    .from("user_settings")
+    .update({ require_citations: false })
+    .eq("user_id", owner.userId)
+    .select("user_id");
+
+  const { data: ownerRow } = await owner.client
+    .from("user_settings")
+    .select("require_citations")
+    .maybeSingle();
+
+  return {
+    insertRefused: Boolean(inserted.error),
+    insertCode: inserted.error?.code ?? null,
+    updateRows: updated.data?.length ?? 0,
+    ownerStillTrue: ownerRow?.require_citations === true,
+  };
+}
 
 /** Give the second user one persona of their own, through their OWN client.
  *  That exercises the insert policy and turns the select proof from "the
@@ -479,6 +527,8 @@ const ownerCollectionId = await ensureCollection(owner, "rls-probe-owner", SEEDE
 const intruderCollectionId = await ensureCollection(intruder, "rls-probe-intruder", null);
 const ownerRuleId = await ensureRule(owner, ownerCollectionId, SEEDED_NOTE_ID);
 const intruderRuleId = await ensureRule(intruder, intruderCollectionId, null);
+await ensureUserSettings(owner);
+await ensureUserSettings(intruder);
 
 console.log("proof path : A - real password-grant JWT via Authorization header");
 console.log("             (NOT session cookies through the proxy - see path B)");
@@ -595,6 +645,21 @@ for (const [what, error] of await crossTenantRuleIsRefused(
   if (!error) {
     failed = true;
     console.log(`             FAIL: a user reached into ${what}`);
+  }
+}
+console.log("");
+
+console.log("--- user_settings cross-tenant writes ---");
+{
+  const probe = await crossTenantSettingsAreRefused(intruder, owner);
+  console.log(
+    `attempt: second user inserts a row naming the owner's user_id  refused=${probe.insertRefused}  code=${probe.insertCode}`,
+  );
+  console.log(`attempt: second user updates the owner's row  rows=${probe.updateRows}`);
+  console.log(`owner's row read back as owner  require_citations still true=${probe.ownerStillTrue}`);
+  if (!probe.insertRefused || probe.updateRows !== 0 || !probe.ownerStillTrue) {
+    failed = true;
+    console.log("             FAIL: a user wrote another user's settings");
   }
 }
 console.log("");

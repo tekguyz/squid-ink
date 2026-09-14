@@ -9,11 +9,11 @@ import { TagFilter } from "./tag-filter";
  * Two things in the mockup are deliberately absent. The team switcher and its
  * "FINTORY · 3 MEMBERS" line are scaffolding from a multi-tenant product this
  * one is not — docs/ROADMAP.md §9 locks single-owner — and there is no
- * display-name column, so the signed-in address is the identity. Calendar,
- * Sources and Settings render disabled rather than hidden: each is a real
- * planned surface with no backend, and a nav that grows an item later is worse
- * than one that says what is coming. Collections was one of them until
- * 2026-09-09 and is now a link.
+ * display-name column, so the signed-in address is the identity. Calendar and
+ * Sources render disabled rather than hidden: each is a real planned surface
+ * with no backend, and a nav that grows an item later is worse than one that
+ * says what is coming. Collections was one of them until 2026-09-09 and
+ * Settings until 2026-09-13; both are now links.
  *
  * Presentational and server-rendered: no state, no effect, no client boundary.
  */
@@ -173,20 +173,15 @@ export function IdentityRail({
       </div>
 
       <div className="border-rule-3 mt-auto border-t px-[14px] py-[10px]">
-        {/* The `⌘,` hint is gone with the tooltip. Nothing binds that chord,
-            so it advertised a shortcut that did nothing — and it sat at the
-            same 1.66:1 the nav items did. "Soon" is the honest label and it is
-            the one the rest of this rail already uses. */}
-        <button
-          type="button"
-          disabled
-          className="font-body text-faint flex w-full cursor-not-allowed items-center gap-[8px] text-[12.5px]"
+        {/* A real link since 2026-09-13: /settings ships with this change.
+            It was a disabled "Soon" button until then. The `⌘,` hint stays
+            gone — nothing binds that chord. */}
+        <Link
+          href="/settings"
+          className="font-body text-ink-2 hover:text-ink focus-visible:outline-accent flex w-full items-center gap-[8px] text-[12.5px] focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <span className="opacity-60">Settings</span>
-          <span className="font-mono text-muted ml-auto text-[8.5px] tracking-[0.14em] uppercase">
-            Soon
-          </span>
-        </button>
+          Settings
+        </Link>
       </div>
     </nav>
   );

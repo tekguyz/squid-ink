@@ -3,18 +3,21 @@
 **Status:** Blueprint complete, and the §8 MVP chain is **built** — recorder,
 Gemini transcription, structured note generation, Voyage embeddings and Claude
 ask-your-notes chat all ship, on Supabase auth and Note Detail. Claude Design
-in progress — Recorder UI resolved (hybrid HUD + full-app). Four of the ten
+in progress — Recorder UI resolved (hybrid HUD + full-app). Five of the ten
 surfaces in `design-reference/App Surfaces.dc.html` are now built: **02b record
 HUD** (2026-08-31), **01 Dashboard** (2026-09-07, replacing the `app/page.tsx`
 scaffold), **03 Personas** (2026-09-09, read-only that morning and writable
-the same day — depth, quick actions and the default lens) and **07 Collections**
+the same day — depth, quick actions and the default lens), **07 Collections**
 (2026-09-09, `/collections` and `/collections/[slug]`, with tags shipping in the
-same commit). None is finished to the drawing — 01 ships without the right-hand
+same commit) and **06 Settings** (2026-09-13, `/settings` — Capture & audio,
+Connected apps and Appearance). None is finished to the drawing — 01 ships without the right-hand
 widget column, without search, without live-updating status and without a design
 below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual
 half only, and its auto-file rules (2026-09-11) have storage, an engine and
-counters but no screen. All deliberate; `docs/KNOWN_GAPS.md` names each. The
-other six surfaces remain unbuilt. 2026-08-30 feature-triage
+counters but no screen; 06 ships Google connect as a stub, a citation preference
+nothing reads yet, and empty states for Account, Sharing and Data & privacy.
+All deliberate; `docs/KNOWN_GAPS.md` names each. The
+other five surfaces remain unbuilt. 2026-08-30 feature-triage
 backlog fully disposed: promoted into phases below, or rejected (see §7).
 
 **This file is a PLAN, not a shipping log.** What is built is recorded in
@@ -22,7 +25,10 @@ backlog fully disposed: promoted into phases below, or rejected (see §7).
 decided or rejected is in `docs/DECISIONS.md`. A phase listed below is scope,
 and says nothing either way about whether it has shipped.
 
-**Last updated:** 2026-09-12 (status line amended a FOURTH time, and the
+**Last updated:** 2026-09-13 (status line amended a FIFTH time: four of ten
+became five of ten when **06 Settings** shipped at `/settings`, counted in the
+same change that built it rather than found missing later. Previously amended
+2026-09-12, a FOURTH time, and the
 repetition is the finding: it said three of ten while **07 Collections** had
 shipped in `6269c0c` on 2026-09-09 — the same day as the previous amendment,
 which counted 03 and missed 07 in the same commit range. Auto-file rules

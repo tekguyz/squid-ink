@@ -99,6 +99,56 @@ overlapped. That break was discarded rather than reported as a proof.
 
 Do not read "03 is built" as "03 is finished".
 
+**Amended again 2026-09-13.** A fifth of the ten is now built: **06 Settings**,
+at `/settings`, reached from the dashboard rail's Settings link — a disabled
+"Soon" button until this change. (The fourth, 07 Collections, is recorded
+under "Surface 07 Collections shipped undocumented" below.) The remaining five
+are still unbuilt and still out of scope. As with 01, 02b and 03, what shipped
+is not all of 06, and every absence below is deliberate:
+
+- **No diarization control — locked, not a gap.** `docs/DECISIONS.md` §
+  Speaker diarization makes it automatic past ~28 minutes with "no manual
+  toggle needed". The drawing's switch is not rendered at all, not even
+  disabled.
+- **No "Meeting apps · detected locally" row.** Nothing in this repo detects a
+  local meeting app, so the drawing's ACTIVE badge beside Meet, Zoom and Teams
+  would be a claim with no code under it.
+- **No audio retention job, and so no "Keep local audio after structuring ·
+  deletes after 30 days" toggle.** Nothing deletes audio on a schedule.
+- **"Require a citation for every claim" is persisted, not chat-wired.** It
+  saves to `user_settings.require_citations`
+  (`supabase/schemas/user_settings.sql`) through
+  `app/notes/actions/settings.ts`, and **nothing reads it**. Grounding is
+  always on today; switching it off changes no answer, and the row's meta line
+  says so on screen. Wiring it into `lib/notegen` and the chat path is a
+  separate change.
+- **No real Google OAuth.** Google Calendar and Google Drive render
+  full-fidelity Connect buttons that answer "Not connected yet · Google connect
+  is not built". No OAuth flow, no token storage, no connections table.
+- **Account, Sharing and Data & privacy have no content.** Each is a nav anchor
+  to an honest empty state. Data & privacy carries no export or delete action,
+  not even a stub.
+- **No "Match system · switches at sunset" theme option.** Two cards ship,
+  Espresso Dark and Newsprint Light, and they write through the same `useTheme`
+  store `components/theme-toggle.tsx` uses, so the two can never disagree. The
+  boot script in `app/layout.tsx` reads `prefers-color-scheme` once; nothing
+  follows the OS continuously or switches by time of day.
+
+Three things ship that the drawing does not show. **"Log me out" is new code,
+not reused** — no sign-out flow existed anywhere in `app/`, `lib/` or
+`components/` before `app/notes/actions/session.ts`, which signs out this
+browser only (`scope: "local"`) so pressing it on one laptop does not sign the
+other one out. The **Update/Discard bar is left-aligned**, because the Record
+HUD owns the bottom-right corner that the drawing puts those buttons in. And
+an **"All notes" link** sits beside the address, because the drawing's rail has
+no way back.
+
+**Surface 05's step list names its own "Connect calendar" step**, which collides
+with 06's "connect happens here and only here". Not resolved by this change;
+whoever builds 05 has to settle it.
+
+Do not read "06 is built" as "06 is finished".
+
 ## State management — Zustand not used here (recorded 2026-08-30)
 
 Zustand not invoked here — state is local to one component, no drawers/cross-route
@@ -427,10 +477,14 @@ started**, or is a known incompleteness in what shipped.
 ### Deferred, no consumer exists yet
 
 - **Google OAuth, Drive, Calendar, Tasks — and any token-storage table.**
-  Nothing Google-related was built. No `google_connections` table, no provider
-  tokens stored, no connect flow. DECISIONS.md keeps Google as a separate
-  "Connect Calendar/Drive" action in settings, never tied to login, and no
-  surface consumes it yet. **Provider-token refresh behaviour is therefore
+  No `google_connections` table, no provider tokens stored, no OAuth flow.
+  **Amended 2026-09-13:** this read "Nothing Google-related was built", which
+  stopped being true when `/settings` shipped — its Connected apps section
+  (`components/settings/connected-apps-section.tsx`) names Google Calendar and
+  Google Drive and renders Connect buttons for both. They are a UI stub: a
+  press answers "Not connected yet" and nothing else happens. DECISIONS.md
+  keeps Google as a separate "Connect Calendar/Drive" action in settings, never
+  tied to login, and no surface consumes a connection yet. **Provider-token refresh behaviour is therefore
   unverified**: Supabase does not refresh Google provider tokens for you, so
   whoever builds this must handle refresh, expiry, and re-consent explicitly.
 

@@ -49,6 +49,7 @@
   --color-seg-wash: var(--seg-wash);
   --color-waveform: var(--waveform);
   --color-live: var(--live);
+  --color-danger: var(--danger);
 
   --color-speaker-1: var(--speaker-1);
   --color-speaker-1-avatar: var(--speaker-1-avatar);
@@ -74,7 +75,12 @@
 }
 
 /* --- Newsprint (light) — 3c ---------------------------------------------- */
-:root {
+/* `.light` beside `:root` since 2026-09-13, so a SUBTREE can wear the light
+   tokens inside a dark page — the Newsprint preview card on /settings. `.dark`
+   already worked on a subtree because it was never tied to :root. On <html>
+   this changes nothing: html.light already matched :root. */
+:root,
+.light {
   color-scheme: light;
 
   --paper: oklch(0.979 0.011 84);
@@ -128,6 +134,16 @@
      and the light accent is dark (0.452) — so 02b's dark 0.66 becomes 0.520
      here. Recorded in docs/KNOWN_GAPS.md as derived. */
   --live: oklch(0.520 0.170 25);
+  /* A destructive-sounding control — /settings' "Log me out". NOT --live,
+     although --live is the nearest existing value (same hue, 25): --live means
+     "recording right now", and a sign-out wearing the recording red would read
+     as a live indicator. One token, used for BOTH the text and the border —
+     App Surfaces 06 draws the border at 0.42 0.10 25, which measures 2.20:1 on
+     --rail dark and fails WCAG 1.4.11; the drawn text value clears it. The
+     dark value is verbatim from 06; this light one is derived, 06 being
+     dark-only. */
+  /* DERIVED: 5.14:1 against --rail, WCAG 1.4.3 */
+  --danger: oklch(0.50 0.15 25);
   /* HUD drop shadow. 02b uses one value for every pill; light theme needs a
      warmer, weaker shadow than the dark theme's near-black. */
   --shadow-hud: oklch(0.60 0.02 60 / 0.22);
@@ -231,6 +247,8 @@
   /* Both verbatim from App Surfaces 02b. */
   --live: oklch(0.66 0.19 25);
   --shadow-hud: oklch(0.10 0.01 46 / 0.6);
+  /* Verbatim from App Surfaces 06's "Log me out" text. 8.68:1 on --rail. */
+  --danger: oklch(0.76 0.12 25);
 
   --speaker-1: oklch(0.78 0.09 252);
   --speaker-1-avatar: oklch(0.30 0.05 252);
@@ -307,6 +325,8 @@
     /* Both verbatim from App Surfaces 02b. */
     --live: oklch(0.66 0.19 25);
     --shadow-hud: oklch(0.10 0.01 46 / 0.6);
+    /* Verbatim from App Surfaces 06's "Log me out" text. */
+    --danger: oklch(0.76 0.12 25);
 
     --speaker-1: oklch(0.78 0.09 252);
     --speaker-1-avatar: oklch(0.30 0.05 252);
