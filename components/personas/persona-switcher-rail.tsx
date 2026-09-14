@@ -1,5 +1,6 @@
 "use client";
 
+import { AppNav } from "@/components/app-nav";
 import type { PersonaConfig } from "@/lib/notes/get-personas-screen";
 
 /**
@@ -37,6 +38,8 @@ export function PersonaSwitcherRail({
 }) {
   return (
     <div className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r">
+      {/* The way back. Until 2026-09-13 this screen had none. */}
+      <AppNav current="personas" />
       <div className="border-rule-3 border-b px-[15px] pt-[15px] pb-[11px]">
         <h1 className="font-header text-ink text-[16px] font-semibold">
           Personas

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppNav } from "@/components/app-nav";
 import type { DayGroup } from "@/lib/notes/group-notes-by-day";
 import type { TagChip } from "@/lib/notes/tags";
 import { TagFilter } from "./tag-filter";
@@ -13,7 +14,8 @@ import { TagFilter } from "./tag-filter";
  * Sources render disabled rather than hidden: each is a real planned surface
  * with no backend, and a nav that grows an item later is worse than one that
  * says what is coming. Collections was one of them until 2026-09-09 and
- * Settings until 2026-09-13; both are now links.
+ * Settings until 2026-09-13; both are now links, and since 2026-09-13 the
+ * real links live in the shared components/app-nav.tsx.
  *
  * Presentational and server-rendered: no state, no effect, no client boundary.
  */
@@ -27,7 +29,6 @@ const NAV_ITEM =
   "flex items-center gap-[9px] border-l-2 px-[8px] py-[7px] text-[13px] font-body";
 const GROUP_HEADING =
   "font-mono text-muted px-[14px] text-[8.5px] tracking-[0.14em] uppercase";
-const COUNT = "font-mono text-muted ml-auto text-[9.5px] tabular-nums";
 
 /** Two letters from the address, because there is no name to take them from.
  *  Falls back to a filing mark rather than to an empty box. */
@@ -105,43 +106,12 @@ export function IdentityRail({
         </span>
       </div>
 
-      <div className="flex flex-col gap-px px-[8px] pt-[10px] pb-[4px]">
-        {/* A Link, not a span. `aria-current` on a bare span is not exposed as
-            a nav item, so a screen-reader user walking this landmark heard four
-            disabled buttons and some note links with no announced "you are
-            here". The count needs its own label too, or it is read as the tail
-            of the item's name. */}
-        <Link
-          href="/"
-          aria-current={activeTag ? undefined : "page"}
-          className={`${NAV_ITEM} bg-raised border-accent text-ink focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2`}
-        >
-          All notes
-          <span className={COUNT} aria-label={`${totalNotes} notes`}>
-            {totalNotes}
-          </span>
-        </Link>
-        {/* A real link, not a PendingItem: /personas ships with this change.
-            It sits directly under All notes because the lens a note generates
-            under is chosen on Note Detail, and this is where that list is
-            explained. */}
-        <Link
-          href="/personas"
-          className={`${NAV_ITEM} text-ink-2 hover:bg-raised focus-visible:outline-accent border-transparent focus-visible:outline-2 focus-visible:-outline-offset-2`}
-        >
-          Personas
-        </Link>
+      {/* The shared app nav, since 2026-09-13 — the same block every main
+          screen's rail now opens with. All notes is current only when no tag
+          filter narrows the feed. */}
+      <AppNav current={activeTag ? undefined : "notes"} notesCount={totalNotes} />
+      <div className="flex flex-col gap-px px-[8px] pt-[4px] pb-[4px]">
         <PendingItem label="Calendar" />
-        {/* A real link since 2026-09-09: /collections ships with this change.
-            It carries no count — the "drop live counts until shipped" decision
-            was about this rail, and the counts live on the screen itself,
-            beside the collection each one belongs to. */}
-        <Link
-          href="/collections"
-          className={`${NAV_ITEM} text-ink-2 hover:bg-raised focus-visible:outline-accent border-transparent focus-visible:outline-2 focus-visible:-outline-offset-2`}
-        >
-          Collections
-        </Link>
         <PendingItem label="Sources" />
       </div>
 
@@ -172,17 +142,6 @@ export function IdentityRail({
         ))}
       </div>
 
-      <div className="border-rule-3 mt-auto border-t px-[14px] py-[10px]">
-        {/* A real link since 2026-09-13: /settings ships with this change.
-            It was a disabled "Soon" button until then. The `⌘,` hint stays
-            gone — nothing binds that chord. */}
-        <Link
-          href="/settings"
-          className="font-body text-ink-2 hover:text-ink focus-visible:outline-accent flex w-full items-center gap-[8px] text-[12.5px] focus-visible:outline-2 focus-visible:outline-offset-2"
-        >
-          Settings
-        </Link>
-      </div>
     </nav>
   );
 }

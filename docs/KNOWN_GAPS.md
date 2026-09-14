@@ -130,7 +130,8 @@ is not all of 06, and every absence below is deliberate:
   not even a stub.
 - **No "Match system · switches at sunset" theme option.** Two cards ship,
   Espresso Dark and Newsprint Light, and they write through the same `useTheme`
-  store `components/theme-toggle.tsx` uses, so the two can never disagree. The
+  store `components/theme-toggle.tsx` holds, which reads the `<html>` class the
+  stylesheet paints from. The
   boot script in `app/layout.tsx` reads `prefers-color-scheme` once; nothing
   follows the OS continuously or switches by time of day.
 
@@ -140,8 +141,19 @@ not reused** — no sign-out flow existed anywhere in `app/`, `lib/` or
 browser only (`scope: "local"`) so pressing it on one laptop does not sign the
 other one out. The **Update/Discard bar is left-aligned**, because the Record
 HUD owns the bottom-right corner that the drawing puts those buttons in. And
-an **"All notes" link** sits beside the address, because the drawing's rail has
-no way back.
+the rail opens with the **shared app nav** — see the amendment below.
+
+**Amended the same day, 2026-09-13 — one app nav on every main screen, and
+the corner theme toggle removed.** `/personas` and `/notes/[id]` had no way
+back but the browser's Back button. `components/app-nav.tsx` (All notes,
+Personas, Collections, Settings) now opens the existing left rail on the
+Dashboard, Personas, Collections, Settings and Note Detail. It is a block
+inside each rail, not a new column, so no screen got narrower. The one-off
+"All notes" links on Collections and Settings are gone into it. The fixed
+`ThemeToggle` that sat bottom-left on Note Detail is removed — Settings →
+Appearance does the job — along with the lane the persona rail reserved for
+it; `components/theme-toggle.tsx` now holds only `useTheme` and `applyTheme`.
+`verify-layout.mjs` stays 144 passed, 0 failed.
 
 **Surface 05's step list names its own "Connect calendar" step**, which collides
 with 06's "connect happens here and only here". Not resolved by this change;

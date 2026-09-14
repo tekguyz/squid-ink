@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppNav } from "@/components/app-nav";
 import type { CollectionChip } from "@/lib/notes/collections";
 import { CollectionCreate } from "./collection-create";
 
@@ -40,21 +41,13 @@ export function CollectionsRail({
       aria-label="Collections"
       className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r"
     >
+      {/* The shared app nav, since 2026-09-13. It replaces this rail's own
+          one-off "All notes" link. */}
+      <AppNav current="collections" />
       <div className="border-rule-3 flex items-center border-b px-[14px] pt-[14px] pb-[12px]">
         <p className="font-header text-ink text-[14px] font-semibold">
           Collections
         </p>
-      </div>
-
-      <div className="flex flex-col gap-px px-[8px] pt-[10px]">
-        {/* Back to the feed. The Dashboard's own rail links here, so this rail
-            has to link back or the screen is a one-way door. */}
-        <Link
-          href="/"
-          className={`${ROW} text-ink-2 hover:bg-raised focus-visible:outline-accent border-transparent focus-visible:outline-2 focus-visible:-outline-offset-2`}
-        >
-          All notes
-        </Link>
       </div>
 
       <CollectionCreate />

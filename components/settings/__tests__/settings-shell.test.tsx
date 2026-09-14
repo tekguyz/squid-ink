@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsShell } from "../settings-shell";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { applyTheme } from "@/components/theme-toggle";
 import type { SettingsScreen } from "@/lib/settings/settings-types";
 
 /** The Server Actions, stubbed. What the action does with a payload is
@@ -44,7 +44,11 @@ describe("SettingsShell", () => {
     ]) {
       expect(nav).toHaveTextContent(label);
     }
-    expect(screen.getByRole("link", { name: "Personas" })).toHaveAttribute("href", "/personas");
+    // Twice since 2026-09-13: once in the shared app nav, once in this list.
+    // Both go to the same screen.
+    for (const link of screen.getAllByRole("link", { name: "Personas" })) {
+      expect(link).toHaveAttribute("href", "/personas");
+    }
     expect(screen.getByRole("link", { name: "Connected apps" })).toHaveAttribute(
       "href",
       "#connected-apps",
@@ -131,14 +135,9 @@ describe("SettingsShell", () => {
     expect(document.body).not.toHaveTextContent(/connected ·|revocable/i);
   });
 
-  it("applies a theme instantly, through the same store the corner toggle uses", async () => {
+  it("applies a theme instantly, and follows the <html> class it paints from", async () => {
     const user = userEvent.setup();
-    render(
-      <>
-        <SettingsShell screen={data} />
-        <ThemeToggle />
-      </>,
-    );
+    render(<SettingsShell screen={data} />);
 
     const espresso = screen.getByRole("button", { name: /Espresso Dark/ });
     const newsprint = screen.getByRole("button", { name: /Newsprint Light/ });
@@ -150,8 +149,8 @@ describe("SettingsShell", () => {
     // No Update needed for a theme.
     expect(screen.getByText("No unsaved changes")).toBeInTheDocument();
 
-    // The corner toggle flips it back, and the cards follow without a click.
-    await user.click(screen.getByRole("button", { name: "Switch to light theme" }));
+    // A theme change from anywhere else reaches the cards without a click.
+    act(() => applyTheme("light"));
     await waitFor(() => expect(newsprint).toHaveAttribute("aria-pressed", "true"));
     expect(espresso).toHaveAttribute("aria-pressed", "false");
   });

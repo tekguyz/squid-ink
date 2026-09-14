@@ -6,7 +6,6 @@ import type { Note } from "@/lib/notes/view-types";
 import type { ChatTurn } from "@/lib/chat/types";
 import { seedNotePersona, setNotePersona } from "@/app/notes/actions/persona";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { TagEntry } from "@/components/tags/tag-entry";
 import { CollectionPicker } from "@/components/collections/collection-picker";
 import { ActionItemsTable } from "./action-items-table";
@@ -188,8 +187,6 @@ export function NoteDetailShell({
         showSpeakerLabels
         scrollRef={scrollRef}
       />
-
-      <ThemeToggle />
     </div>
   );
 }

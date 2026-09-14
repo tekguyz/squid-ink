@@ -1,6 +1,6 @@
 "use client";
 
-import { THEME_TOGGLE_LANE } from "@/components/theme-toggle";
+import { AppNav } from "@/components/app-nav";
 import type { Persona } from "@/lib/notes/view-types";
 
 export interface PersonaRailProps {
@@ -41,8 +41,10 @@ export function PersonaRail({
   onSelect,
 }: PersonaRailProps) {
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden border-r border-rule bg-rail pt-3.5">
-      <div className={`px-3 pb-2.5 ${LABEL}`}>Lens</div>
+    <div className="flex min-h-0 flex-col overflow-hidden border-r border-rule bg-rail">
+      {/* The way back. Until 2026-09-13 a note page had none. */}
+      <AppNav />
+      <div className={`px-3 pt-3.5 pb-2.5 ${LABEL}`}>Lens</div>
 
       <div role="tablist" aria-label="Summary lens" className="flex flex-col">
         {personas.map((persona) => {
@@ -94,14 +96,10 @@ export function PersonaRail({
         ))}
       </div>
 
-      {/* The theme toggle is fixed in this corner, and the rule around the
-          Record HUD's corner applies here too: reserve a lane rather than let
-          two elements land on the same pixels by render order. The reserved
-          height is declared next to the toggle itself, not restated here. */}
-      <div
-        style={{ paddingBottom: THEME_TOGGLE_LANE }}
-        className="mt-auto border-t border-rule px-3 pt-[11px] font-mono text-[9px] leading-[1.7] text-meta"
-      >
+      {/* This footer used to reserve a lane for the corner theme toggle. The
+          toggle was removed on 2026-09-13 — Settings → Appearance replaced
+          it — so the corner is free and the footer ends like any other. */}
+      <div className="mt-auto border-t border-rule px-3 pt-[11px] pb-[11px] font-mono text-[9px] leading-[1.7] text-meta">
         grounding
         <br />
         <span className="text-accent">{spansLinked} spans linked</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AppNav } from "@/components/app-nav";
 import { signOut } from "@/app/notes/actions/session";
 
 /**
@@ -15,7 +16,8 @@ import { signOut } from "@/app/notes/actions/session";
  * org-style address stands in for a workspace this product rejects
  * indefinitely (docs/ROADMAP.md §7) — no org string, no switcher.
  *
- * "All notes" is not in the drawing. Without it the only way off this page is
+ * The shared components/app-nav.tsx opens the rail, as it does on every main
+ * screen. It is not in the drawing; without it the only way off this page is
  * the browser's back button.
  */
 
@@ -62,18 +64,13 @@ export function SettingsNav({
   return (
     <nav
       aria-label="Settings"
-      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r pt-[16px]"
+      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r"
     >
-      <div className="flex items-center gap-[8px] px-[14px] pb-[12px]">
-        <span className="font-mono text-meta-2 min-w-0 truncate text-[9px] uppercase">
+      <AppNav current="settings" />
+      <div className="px-[14px] pt-[14px] pb-[12px]">
+        <span className="font-mono text-meta-2 block truncate text-[9px] uppercase">
           {email ?? "Signed in"}
         </span>
-        <Link
-          href="/"
-          className="font-mono text-muted hover:text-ink focus-visible:outline-accent ml-auto flex-none text-[9px] uppercase focus-visible:outline-2"
-        >
-          All notes
-        </Link>
       </div>
 
       <div className="flex flex-col">
