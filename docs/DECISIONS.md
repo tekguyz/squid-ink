@@ -1,6 +1,6 @@
 # Squid Ink: Decisions Log
  
-Working state as of 2026-09-07. Update this file as decisions change — don't
+Working state as of 2026-09-14. Update this file as decisions change — don't
 let it drift from reality.
 
 **Date corrected 2026-09-07.** This line read 2026-09-05 while the body carried

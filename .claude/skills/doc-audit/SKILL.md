@@ -50,7 +50,7 @@ in none of them. Five files that are always accurate beat six that drift.
 The **design files are the source of truth for anything visual** —
 `design-reference/Note Detail.dc.html` (turn 3: `#3a` light, `#3b` dark, `#3c`
 locked tokens) and `design-reference/App Surfaces.dc.html` (ten further
-surfaces, none built). Turns 1 and 2 of the Note Detail file are history and
+surfaces; which are built is on the `docs/ROADMAP.md` status line). Turns 1 and 2 of the Note Detail file are history and
 must never be cited. `app/globals.css` is the source of truth for what the app
 actually paints; every value in it is a copy of a design-file value, which is
 exactly the shape that drifts silently. Check 1 covers it — **and covers it
@@ -86,9 +86,12 @@ Repo-only. No browser, no dev server, no network. It measures twelve things:
    a token was hand-edited away from the locked design — the exact defect the
    design side fixed before this build started.
 5. The eight locked accent values are still present, verbatim.
-6. No app-name string (`squid ink`, `crispy bacon`) in `app/`, `components/` or
-   `lib/`. The public name is unconfirmed; `package.json` is the only place a
-   name may appear.
+6. No `crispy bacon` — the design template's placeholder name — in `app/`,
+   `components/` or `lib/`. **Narrowed 2026-09-14:** it banned `squid ink` too
+   while the name was unconfirmed; `CLAUDE.md` § Naming locked Squid Ink on
+   2026-09-07 and the check went on flagging it until the onboarding screen
+   tripped it. Re-proved the same day: a probe file naming Crispy Bacon failed
+   the run, removing it passed.
 7. `app/layout.tsx` loads exactly Bitter, Archivo and IBM Plex Mono — no fourth
    face. The design file contains Newsreader, Zilla Slab and Libre Franklin in
    its earlier turns, which is how a wrong font gets in.
@@ -207,10 +210,15 @@ output. Skip this only when the audit makes no completeness claim at all.
 
 `design-reference/App Surfaces.dc.html` holds ten surfaces (01 dashboard,
 02 recorder, 02b record HUD, 03 personas, 04 auth, 05 onboarding, 06 settings,
-07 collections, 08 share, 09 live assistant, 10 newsprint light). **None is
-built and none was in scope.** That list is reproduced here so this check costs
-nothing; do not open the file to re-count it. If the session touched anything
-resembling one, say so loudly — it is scope creep, not progress.
+07 collections, 08 share, 09 live assistant, 10 newsprint light). **How many
+are built changes, and the count does not live here** — read it off the
+`docs/ROADMAP.md` status line (`sed -n '1,15p' docs/ROADMAP.md`). Do not open the
+design file to re-count. If the session touched a surface that status line does
+not list as built, say so loudly — it is scope creep, not progress.
+
+Corrected 2026-09-14. This read "None is built and none was in scope", frozen
+from 2026-08-30, while six were built. The `handoff` skill dropped the same
+frozen count on 2026-09-09; this copy was missed.
 
 ---
 

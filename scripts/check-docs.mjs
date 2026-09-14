@@ -336,9 +336,14 @@ const governingLabel = ruleFiles.length
   notes.push(`locked accents: ${LOCKED.length}/8 present`);
 }
 
-/* 6 — no app name in shipped code ----------------------------------------- */
+/* 6 — no template app name in shipped code --------------------------------- */
+// Narrowed 2026-09-14. This banned "Squid Ink" too while the name was
+// unconfirmed; CLAUDE.md § Naming locked it on 2026-09-07, and the check went
+// on flagging it for a week (first caught on the onboarding screen). What stays
+// banned is "Crispy Bacon", the design template's placeholder name — App
+// Surfaces 05 still draws it, which is exactly how it would get copied in.
 {
-  const BANNED = /squid.?ink|crispy.?bacon/i;
+  const BANNED = /crispy.?bacon/i;
   const sources = [];
   const walk = (dir) => {
     if (!existsSync(dir)) return;
@@ -353,10 +358,10 @@ const governingLabel = ruleFiles.length
 
   for (const file of sources) {
     if (BANNED.test(read(file))) {
-      findings.push(`${file.replace(/\\/g, "/")} contains an app-name string — the public name is unconfirmed and must not be hardcoded`);
+      findings.push(`${file.replace(/\\/g, "/")} contains "Crispy Bacon" — the design template's placeholder name; the app is Squid Ink (CLAUDE.md § Naming)`);
     }
   }
-  notes.push(`app name: ${sources.length} source files scanned, none names the app`);
+  notes.push(`app name: ${sources.length} source files scanned, no template placeholder name`);
 }
 
 /* 7 — exactly the three locked typefaces ----------------------------------- */
