@@ -159,6 +159,13 @@ it; `components/theme-toggle.tsx` now holds only `useTheme` and `applyTheme`.
 with 06's "connect happens here and only here". Not resolved by this change;
 whoever builds 05 has to settle it.
 
+**RESOLVED 2026-09-13.** Step 4 gets no independent connect action.
+Reaching it opens the same Settings → Connected Apps flow this section
+describes — one `Connect` trigger, one implementation, reused, not
+duplicated. "Skippable" means leaving step 4 unconnected and moving on,
+identical to never opening Settings at all. See `docs/DECISIONS.md` §
+Onboarding (Surface 05).
+
 Do not read "06 is built" as "06 is finished".
 
 ## State management — Zustand not used here (recorded 2026-08-30)

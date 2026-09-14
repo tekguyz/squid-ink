@@ -513,6 +513,19 @@ phase assignment for all of the above is in ROADMAP.md §8.
   full-fidelity, and answering "Not connected yet". Real OAuth, token storage
   and refresh are deferred; they remain open under "Explicitly still open"
   below.
+
+**Onboarding (Surface 05)** (decided 2026-09-13, resolving the
+KNOWN_GAPS.md collision recorded the same day)
+- **Step 4's "Connect calendar" has no independent action.** It opens the
+  same Settings → Connected Apps flow already shipped in `06 Settings` —
+  same `Connect` trigger, same eventual OAuth code path, not a second
+  implementation. This is what keeps Settings' own claim, "connect
+  happens here and only here," literally true once Surface 05 is built.
+- **"Skippable" means leaving it unconnected**, identical in effect to a
+  user who never opens Settings. No separate skip-state is tracked.
+- **Rejected: an inline connect button on step 4.** Two OAuth entry
+  points to the same provider is two places to keep token handling in
+  sync for zero user benefit — Settings is already one click away.
  
 ## Rejected — 2026-08-30 feature-triage
  
