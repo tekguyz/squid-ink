@@ -95,6 +95,12 @@ export function useMicTest(): MicTest {
     const analyser = context.createAnalyser();
     analyser.fftSize = 1024;
     context.createMediaStreamSource(stream).connect(analyser);
+    // Created after the permission prompt, the context can start "suspended"
+    // under the autoplay policy — the user's click that opened the prompt no
+    // longer counts. A suspended analyser reads silence, so the bars sit still
+    // while the mic is live. Owner saw exactly that on 2026-09-14; unconfirmed
+    // as the cause. resume() is a no-op on a running context.
+    if (context.state === "suspended") void context.resume();
 
     const id = setInterval(() => setLevel(readLevel(analyser)), TICK_MS);
     stopRef.current = () => {
