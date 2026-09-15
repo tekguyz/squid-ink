@@ -107,7 +107,10 @@ a separate, still-open question (see Branding below).
   the Supabase organization, at about 2 emails an hour. Without SMTP, no one
   but the owner could confirm an account. Values are in `docs/DEPLOYMENT.md`
   § Supabase → Mail.
-- **"Keep me signed in on this Mac"** controls cookie lifetime. Unchecked
+- **"Keep me signed in"** controls cookie lifetime. Surface 04 draws it as
+  "…on this Mac". The device name was dropped on 2026-09-14, because the owner
+  signs in from Windows and a label naming the wrong machine is wrong copy.
+  The UI pass keeps it device-neutral. Unchecked
   gives session cookies that die when the browser closes. Checked gives the
   library's 400-day cookies. This is a different axis from sign-out's
   `scope: "local"` (`app/notes/actions/session.ts`, reused, not duplicated).

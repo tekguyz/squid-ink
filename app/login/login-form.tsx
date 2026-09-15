@@ -54,7 +54,7 @@ export function LoginForm({ next }: { next: string }) {
       <label className="font-body text-ink-2 flex items-center gap-2">
         <input type="checkbox" name="remember" checked={remember}
           onChange={(e) => setRemember(e.target.checked)} />
-        Keep me signed in on this Mac
+        Keep me signed in
       </label>
       <button type="submit" disabled={pending} className={BUTTON}>
         {pending ? "Signing in…" : "Sign in"}

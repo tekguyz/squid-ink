@@ -1,7 +1,8 @@
 import type { CookieOptions } from "@supabase/ssr";
 
 /**
- * "Keep me signed in on this Mac" — App Surfaces 04.
+ * "Keep me signed in" — App Surfaces 04, which drew it as "…on this Mac".
+ * The owner uses Windows; the device name was dropped 2026-09-14.
  *
  * Unchecked means the session dies when the browser closes; checked means it
  * survives. That is a cookie LIFETIME, and it is a different axis from
