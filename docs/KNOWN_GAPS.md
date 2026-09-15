@@ -2501,6 +2501,14 @@ what ordinary apps do; a real design can replace it. **Measured:**
 1024 and 1440 were read the same day. The other screens are still one-width
 only and are not measured narrow.
 
+**Amended 2026-09-15 — no width scrolls sideways now, 1024–1280 included.**
+The title's 1280px was the old `MIN_SURFACE_WIDTH` floor, not a layout
+breakpoint, and it went with that constant. The only desktop/narrow switch is
+now Tailwind's `lg` at 1024px. From 1024 to 1279px the desktop layout renders
+with its feed track at `minmax(0,1fr)`, so it narrows and does not overflow.
+Both ends of that range, 1024 and 1280, pass `verify-layout.mjs`'s "no
+horizontal page overflow" check. Widths in between are not measured one by one.
+
 ## Narrow Dashboard layout has no design source (recorded 2026-09-15)
 
 The narrow/mobile Dashboard layout (stacked, `docs/DECISIONS.md` § Dashboard
