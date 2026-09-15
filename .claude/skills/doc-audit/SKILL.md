@@ -96,8 +96,10 @@ Repo-only. No browser, no dev server, no network. It measures twelve things:
    face. The design file contains Newsreader, Zilla Slab and Libre Franklin in
    its earlier turns, which is how a wrong font gets in.
 8. **Supabase key hygiene.** No `NEXT_PUBLIC_` variable whose name says `SECRET`
-   or `SERVICE_ROLE`; no source file outside the allowlist in the script (the
-   files `CLAUDE.md` § Supabase → Keys names) reading a secret key; no literal key committed anywhere in `app/`, `components/`,
+   or `SERVICE_ROLE`; no source file reading the Supabase secret key — as
+   `process.env.X` or a script's `env.X` — outside the allowlist, which the
+   script parses from `CLAUDE.md` § Supabase → Keys, and whose stated
+   "N local-only" count must match the scripts named beside it; no literal key committed anywhere in `app/`, `components/`,
    `lib/` or `scripts/`; `.env*` still ignored. The secret key bypasses RLS, so
    this is the one drift in the repo that is a breach rather than a blemish.
 9. **RLS shape in `supabase/schemas/*.sql`** — four per-operation policies per

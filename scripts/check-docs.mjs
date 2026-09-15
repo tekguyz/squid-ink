@@ -398,19 +398,45 @@ const governingLabel = ruleFiles.length
   };
   for (const dir of ["app", "components", "lib", "scripts"]) walk(path.join(ROOT, dir));
 
-  // AMENDED 2026-08-31. The secret key bypasses RLS, so where it may be read
-  // is a policy, and the policy changed: the cron route has no user session
-  // and therefore no RLS identity, so it must read it from the Vercel
-  // environment. Six local-only scripts read it from .env.local; none ships.
-  // Keep this list identical to CLAUDE.md > Supabase > Keys.
-  const ALLOWED_SECRET_FILES = new Set([
-    "app/api/cron/transcribe/route.ts",
-    "scripts/verify-rls.mjs",
-    "scripts/verify-storage-rls.mjs",
-    "scripts/verify-recorder-upload.mjs",
-    "scripts/verify-persona-provisioning.mjs",
-    "scripts/verify-transcription-pipeline.mjs",
-  ]);
+  // The secret key bypasses RLS, so where it may be read is a policy, and the
+  // policy lives in CLAUDE.md > Supabase > Keys. The allowlist is PARSED from
+  // that section, not kept by hand. Until 2026-09-15 it was a second list
+  // here: it named six files while CLAUDE.md named ten, and the check still
+  // printed "the 6 files CLAUDE.md allows" and passed.
+  //
+  // Two paragraphs carry the list. The one about "shipped application code"
+  // names the shipped file by path. The "local-only" one names scripts by
+  // bare basename, up to "None ships." — the correction note after that
+  // sentence names a DELETED script, which must not be allowed back in.
+  const ALLOWED_SECRET_FILES = new Set();
+  {
+    // core.autocrlf is true on these machines; normalise before matching lines.
+    const keys = claude.replace(/\r\n/g, "\n").match(/^### Keys\n([\s\S]*?)(?=^#{1,3} )/m)?.[1] ?? "";
+    const paragraphs = keys.split(/\n\s*\n/);
+    const shipped = paragraphs.find((p) => /shipped application code/.test(p)) ?? "";
+    const local = (paragraphs.find((p) => /local-only/.test(p)) ?? "").split("None ships.")[0];
+    for (const [, name] of shipped.matchAll(/`([\w./-]+\/[\w.-]+\.(?:tsx?|mjs|js))`/g)) {
+      ALLOWED_SECRET_FILES.add(name);
+    }
+    const scripts = [...local.matchAll(/`([\w.-]+\.(?:mjs|js))`/g)].map((m) => `scripts/${m[1]}`);
+    for (const s of scripts) ALLOWED_SECRET_FILES.add(s);
+
+    if (ALLOWED_SECRET_FILES.size === 0) {
+      findings.push("CLAUDE.md > Supabase > Keys names no file that may read the secret key — the allowlist could not be parsed");
+    }
+    // The prose states its own count ("Nine local-only"). A count that
+    // disagrees with the names beside it is the drift this section has had
+    // three times.
+    const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+    const stated = local.match(/\*\*(\w+) local-only\*\*/i)?.[1]?.toLowerCase();
+    const statedN = stated === undefined ? -1 : WORDS.indexOf(stated);
+    if (stated !== undefined && statedN !== scripts.length) {
+      findings.push(`CLAUDE.md > Supabase > Keys says "${stated} local-only" scripts but names ${scripts.length}`);
+    }
+    for (const f of ALLOWED_SECRET_FILES) {
+      if (!has(f)) findings.push(`CLAUDE.md > Supabase > Keys allows ${f} to read the secret key, but no such file exists`);
+    }
+  }
   // Tests for an allowed file exercise the same variable and are allowed too.
   const isAllowedSecretFile = (rel) =>
     ALLOWED_SECRET_FILES.has(rel) ||
@@ -452,7 +478,11 @@ const governingLabel = ruleFiles.length
       .replace(/'[^'\n]*'|"[^"\n]*"/g, '""')
       .replace(/\/\/[^\n]*/g, "");
 
-    for (const m of scannable.matchAll(/process\.env\.([A-Z0-9_]+)/g)) {
+    // `\benv\.` matches both forms a read takes here: `process.env.X` in app
+    // code, and `env.X` in every script under scripts/, which reads the key
+    // from a parsed .env.local. Until 2026-09-15 only the first was matched,
+    // so a new script reading the key was never flagged.
+    for (const m of scannable.matchAll(/\benv\.([A-Z0-9_]+)/g)) {
       if (SUPABASE_SECRET.test(m[1]) && !isAllowedSecretFile(rel)) {
         findings.push(
           `${rel} reads ${m[1]}; the Supabase secret key is confined to the ` +
