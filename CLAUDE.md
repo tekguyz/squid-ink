@@ -396,12 +396,15 @@ must read and write rows belonging to whichever user recorded them. The route
 refuses every request that does not carry `Authorization: Bearer $CRON_SECRET`
 before it touches the database or the Gemini API.
 
-**Eight local-only** scripts also read it from the gitignored `.env.local` —
+**Nine local-only** scripts also read it from the gitignored `.env.local` —
 `verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
 `verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs`,
-`verify-manual-transcribe.mjs`, `verify-notegen-pipeline.mjs` and
-`verify-persona-selection.mjs`. None ships. (Nine until 2026-09-14 — the ninth was the
-deleted `print-signin-link.mjs`, which went with magic-link sign-in.)
+`verify-manual-transcribe.mjs`, `verify-notegen-pipeline.mjs`,
+`verify-persona-selection.mjs` and `verify-chat-rls.mjs`. None ships.
+**Corrected 2026-09-14**, measured with the second grep below:
+`verify-chat-rls.mjs` had read the key since the chat pack and was never
+listed, and the deleted `print-signin-link.mjs` went with magic-link sign-in.
+The count stayed nine by coincidence, not because the list was right.
 
 **Corrected 2026-09-03**, measured with the second grep below. This read "Six"
 and named six, having missed the four scripts added between 2026-09-01 and
