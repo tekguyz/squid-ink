@@ -2501,6 +2501,13 @@ what ordinary apps do; a real design can replace it. **Measured:**
 1024 and 1440 were read the same day. The other screens are still one-width
 only and are not measured narrow.
 
+## Narrow Dashboard layout has no design source (recorded 2026-09-15)
+
+The narrow/mobile Dashboard layout (stacked, `docs/DECISIONS.md` § Dashboard
+narrow layout) is **not** derived from `design-reference/App Surfaces.dc.html`.
+No drawing for it exists. It follows common responsive practice, not the
+design file. **Do not cite `App Surfaces.dc.html` as its source.**
+
 ## Two frozen-copy defects, and the one class they share (recorded 2026-09-09)
 
 Two bugs shipped bad information to the user on the same run. Neither was in

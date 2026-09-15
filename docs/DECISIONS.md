@@ -640,6 +640,14 @@ KNOWN_GAPS.md collision recorded the same day)
   not a workspace/org concept** — the drawing predates the single-owner,
   no-workspace-layer lock (ROADMAP §1) and its copy doesn't match current
   architecture.
+
+**Dashboard narrow layout** (decided 2026-09-15)
+- **Stacked layout for the Dashboard's narrow breakpoints:** the rail sits
+  above the feed, rows fold below 768px, and the header wraps below 1024px.
+- **Rejected: a single tablet-width step,** and **rejected: keeping the
+  existing sideways scroll.**
+- **Desktop layout is unchanged.** No drawing covers the narrow layout — see
+  `docs/KNOWN_GAPS.md` § "Narrow Dashboard layout has no design source".
  
 ## Rejected — 2026-08-30 feature-triage
  
@@ -705,6 +713,12 @@ shipped. Kept in place with what closed them, rather than deleted.
   `docs/DEPLOYMENT.md`.
 - **Signup access model** — **added 2026-09-14; public signup closed the
   same day, the long-term model still open.** See § Auth.
+- **Demo mode** — **scoped 2026-09-15, not built, blocked.** Shape: sample
+  meetings only, no live recording, an AI chat cap of roughly 10 questions,
+  and everything else read-only. It stays blocked until a pricing/usage-cap
+  model exists — the same reason public signup closed on 2026-09-14 (§ Auth →
+  Signup access model). Open questions: `docs/KNOWN_GAPS.md` § "Public demo
+  mode".
 
 Everything else from the 2026-08-30 feature-triage backlog is disposed — see
 ROADMAP.md §8 for what was promoted and where, and "Rejected" above for what
