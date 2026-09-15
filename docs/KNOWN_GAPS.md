@@ -2780,7 +2780,11 @@ Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
   does not scan.
 - **The hosted templates can drift from the repo copies.** Nothing reads them
   back. See `docs/DEPLOYMENT.md` § Auth email.
-- **Signup access model is open.** `docs/DECISIONS.md` § Auth.
+- **Public signup is closed; the long-term model is open.** The owner turned
+  signup off on 2026-09-14 (measured: `422 signup_disabled`). The plumbing
+  `/login` still shows "Create an account", which now only ever answers "not
+  taking new accounts". The Auth UI pass should hide it or keep it, according
+  to `docs/DECISIONS.md` § Auth → Signup access model.
 - **Test accounts left on the hosted project:** `admin+pathc@tekguyz.com`
   (confirmed, onboarding not finished) and `auth-probe-unconfirmed@example.com`
   (never confirmed). Owner deletes them in the dashboard (Authentication →
@@ -2812,3 +2816,44 @@ server and browser clients. It retries only a 401 whose body carries
 error screen comes back after a sign-in, look for
 `[supabase] PGRST303 … retrying` in the Vercel log. Three failed retries
 means the lag outlasted about 5 s.
+
+## Public demo mode — not built, requested by the owner (recorded 2026-09-14)
+
+**An idea to plan, not a defect.** The owner's portfolio site shows live
+demos of their apps. The CRM's demo, `https://tekguyz-crm.vercel.app/demo`,
+puts a visitor inside a live, seeded, **read-only** copy with one click: no
+signup, no password, no email. The owner wants the same for Squid Ink,
+linked from the case study on their site. It should not be built now.
+
+Why it matters now: public signup was closed on 2026-09-14
+(`docs/DECISIONS.md` § Auth → Signup access model), so a demo is the only way
+a stranger could see the app.
+
+Limits discussed, **not decided**:
+
+- **Recording: recommend no live recording.** Each minute costs Gemini
+  money, and a demo would store strangers' audio. Instead, seed 3–4
+  ready-made sample meetings with transcripts, notes and takeaways. The Record
+  control shows a "not available in the demo" state.
+- **Chat ("ask your notes"): recommend allowing it, capped.** It is the
+  feature worth showing, and each question costs Claude money. The existing
+  cap is 20 messages a minute per user (`docs/DECISIONS.md`, chat abuse/cost
+  ceiling), which is too loose for anonymous visitors. Something like 10
+  questions per visitor is the order of magnitude discussed.
+- **Everything else read-only,** as the CRM demo is. There is nothing to save
+  and nothing to break.
+
+Questions a plan must answer, none investigated:
+
+- **Identity.** One shared demo account means visitors see each other's
+  chat, unless chat is not persisted in demo mode. Supabase anonymous sign-ins
+  give each visitor their own identity, but `enable_anonymous_sign_ins` is off
+  and new data would need seeding per visitor.
+- **Enforcing read-only.** It must be enforced at RLS or at the grants, not
+  only by hidden buttons, because a Server Action is a public endpoint.
+- **Signup is closed,** so demo entry cannot use `signUp`. It needs its own
+  sign-in path that does not reopen public signup.
+- **Seeding and reset** of the demo data, and whether it must stay unchanged
+  between visitors.
+- **The onboarding gate** (`lib/supabase/session.ts`) would send a fresh demo
+  identity to `/onboarding`, unless the demo account is marked onboarded.

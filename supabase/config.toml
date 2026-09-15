@@ -173,7 +173,9 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
-enable_signup = true
+# OFF on the hosted project since 2026-09-14 (owner, dashboard; measured
+# `422 signup_disabled`). Mirrored here. docs/DECISIONS.md § Auth → Signup access model.
+enable_signup = false
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts

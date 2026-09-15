@@ -238,6 +238,7 @@ where marked measured:
 
 | Setting | Value |
 |---|---|
+| Allow new users to sign up | **off**, set by the owner 2026-09-14. **Measured:** `signUp` → `422 signup_disabled`; existing accounts still sign in |
 | Confirm email | on. **Measured:** an unconfirmed account's password sign-in returns `400 email_not_confirmed` |
 | Email OTP expiration | `3600` s. This one setting governs links too. It must equal `lib/auth/email-link-policy.ts` |
 | Email OTP length | `6`. **Measured** 6 with `generateLink`; it was **8** before the owner changed it. Unused, since the app sends links |

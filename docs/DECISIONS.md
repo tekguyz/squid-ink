@@ -115,12 +115,22 @@ a separate, still-open question (see Branding below).
   library's 400-day cookies. This is a different axis from sign-out's
   `scope: "local"` (`app/notes/actions/session.ts`, reused, not duplicated).
   The rule and its reasons are in `lib/auth/session-persistence.ts`.
-- **Signup access model — OPEN, recorded 2026-09-14.** Signup is public,
-  with no invite code. That matches Surface 04 and is today's default. It is
-  **not** a locked decision. Anyone who can reach `/login` can create an
-  account and, now that SMTP is on, confirm it. Closing it later means
-  Supabase's "Allow new users to sign up" toggle, an invite code, or an
-  allowlist hook. Decide it before the app is shared beyond known users.
+- **Signup access model — public signup CLOSED 2026-09-14; the long-term
+  model is still OPEN.** The first version of this entry, written the same
+  day, recorded public signup with no invite code as the default. With SMTP
+  on, that let anyone who reached `/login` create and confirm an account, and
+  then spend the project's Gemini, Claude and Voyage keys. The owner switched
+  off Supabase's **"Allow new users to sign up"** that evening. Measured
+  afterwards: `signUp` → `422 signup_disabled` ("Signups not allowed for this
+  instance"), and an existing account still signs in. The app shows "Squid Ink
+  is not taking new accounts right now." (`lib/auth/auth-errors.ts`).
+  **Adding a person today** is a dashboard action: Authentication → Users →
+  Add user → Create new user, with auto-confirm. **Still to decide:** whether
+  signup ever reopens, and how, whether by invite code, an allowlist hook, or
+  invite-by-email. That also decides whether the Auth surface keeps a "Create
+  an account" link at all. The public demo idea (docs/KNOWN_GAPS.md §
+  "Public demo mode") is the owner's answer for letting strangers see the app
+  without an account.
 **Frontend + hosting**
 - Next.js + Vercel. Netlify is out. Root cause of the prior build's sync-processing
   failures was Netlify Functions' 10-second timeout (and no WebSocket
@@ -688,8 +698,8 @@ shipped. Kept in place with what closed them, rather than deleted.
   must be made before a delete button ships.
 - **A tracked home for the deployment config** — **RESOLVED 2026-08-31.**
   `docs/DEPLOYMENT.md`.
-- **Signup access model** — **open, added 2026-09-14.** Public signup with
-  no invite code is today's default, not a decision. See § Auth.
+- **Signup access model** — **added 2026-09-14; public signup closed the
+  same day, the long-term model still open.** See § Auth.
 
 Everything else from the 2026-08-30 feature-triage backlog is disposed — see
 ROADMAP.md §8 for what was promoted and where, and "Rejected" above for what
