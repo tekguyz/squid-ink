@@ -168,6 +168,11 @@ Onboarding (Surface 05).
 
 Do not read "06 is built" as "06 is finished".
 
+**Amended 2026-09-15.** A seventh is built: **04 Auth**, styled
+2026-09-14 in commit `0e1ce8c` (see § Auth — password and emailed links →
+"The Auth UI is plumbing — RESOLVED"). The remaining two are 08 Share and 09
+Live assistant. The paragraph below said three, and was right when written.
+
 **Amended again 2026-09-14.** A sixth of the ten is now built: **05
 Onboarding**, at `/onboarding`. The remaining three — 04 Auth, 08 Share, 09
 Live assistant — are still unbuilt. It is a real first-run gate: the proxy

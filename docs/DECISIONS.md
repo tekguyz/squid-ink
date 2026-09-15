@@ -1,6 +1,6 @@
 # Squid Ink: Decisions Log
  
-Working state as of 2026-09-14. Update this file as decisions change — don't
+Working state as of 2026-09-15. Update this file as decisions change — don't
 let it drift from reality.
 
 **Date corrected 2026-09-07.** This line read 2026-09-05 while the body carried
@@ -633,7 +633,9 @@ KNOWN_GAPS.md collision recorded the same day)
   token-parity proof, per `design-reference/App Surfaces.dc.html`'s own
   "Nine surfaces" header. ROADMAP's "five remain unbuilt" count is off by
   one — four real surfaces are left: 04 Auth, 05 Onboarding, 08 Share,
-  09 Live assistant.
+  09 Live assistant. **Status, 2026-09-15:** 05 and 04 both shipped
+  2026-09-14; two are left, 08 Share and 09 Live assistant. The decision
+  above is unchanged.
 - **Onboarding step 1 ("Name this workspace") renamed to an account name,
   not a workspace/org concept** — the drawing predates the single-owner,
   no-workspace-layer lock (ROADMAP §1) and its copy doesn't match current

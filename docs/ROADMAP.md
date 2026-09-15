@@ -3,24 +3,28 @@
 **Status:** Blueprint complete, and the §8 MVP chain is **built** — recorder,
 Gemini transcription, structured note generation, Voyage embeddings and Claude
 ask-your-notes chat all ship, on Supabase auth and Note Detail. Claude Design
-in progress — Recorder UI resolved (hybrid HUD + full-app). Six of the ten
+in progress — Recorder UI resolved (hybrid HUD + full-app). Seven of the ten
 surfaces in `design-reference/App Surfaces.dc.html` are now built: **02b record
 HUD** (2026-08-31), **01 Dashboard** (2026-09-07, replacing the `app/page.tsx`
 scaffold), **03 Personas** (2026-09-09, read-only that morning and writable
 the same day — depth, quick actions and the default lens), **07 Collections**
 (2026-09-09, `/collections` and `/collections/[slug]`, with tags shipping in the
 same commit), **06 Settings** (2026-09-13, `/settings` — Capture & audio,
-Connected apps and Appearance) and **05 Onboarding** (2026-09-14,
+Connected apps and Appearance), **05 Onboarding** (2026-09-14,
 `/onboarding` — a first-run gate of three steps: audio, default persona,
-calendar). None is finished to the drawing — 01 ships without the right-hand
+calendar) and **04 Auth** (2026-09-14, `/login`, `/login/new-password` and
+`/auth/confirm` in one shared sheet). None is finished to the drawing — 01 ships without the right-hand
 widget column, without search, without live-updating status and without a design
 below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual half plus auto-file rules (2026-09-11) with a review panel (2026-09-14) — condition list, per-collection needs-review, Confirm/Reject — but no promote-to-auto-file control; 06 ships Google connect as a stub, a citation preference
 nothing reads yet, and empty states for Account, Sharing and Data & privacy;
 05 ships without the drawing's workspace step (cut: single-owner), without real
-calendar OAuth (step 3 opens 06's stub) and without persona create or delete.
+calendar OAuth (step 3 opens 06's stub) and without persona create or delete;
+04 ships without the drawing's six-digit code entry (the app sends links),
+with 60-minute expiry copy instead of the drawing's 10, and with "Create an
+account" hidden while public signup is closed.
 All deliberate; `docs/KNOWN_GAPS.md` names each. The
-other three surfaces remain unbuilt — 04 Auth, 08 Share and
-09 Live assistant; 10 Newsprint Light is the shipped light theme, not a
+other two surfaces remain unbuilt — 08 Share and 09 Live assistant (04 Auth
+moved to built 2026-09-14, corrected 2026-09-15); 10 Newsprint Light is the shipped light theme, not a
 surface (`docs/DECISIONS.md` § Next build priority). 2026-08-30 feature-triage
 backlog fully disposed: promoted into phases below, or rejected (see §7).
 

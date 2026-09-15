@@ -77,12 +77,12 @@ Repo-only. No browser, no dev server, no network. It measures twelve things:
 1. **The pinned-version table in `CLAUDE.md` against `package.json`** — both
    directions, so a package added to one and not the other is a finding, and any
    `^`/`~` range is a finding on its own. This is the single most drift-prone
-   claim in the repo: fifteen versions copied by hand into a doc that nothing
-   updates.
+   claim in the repo: every version copied by hand into a doc that nothing
+   updates. The script prints the current count; do not write it here.
 2. Every `npm run <script>` `CLAUDE.md` names exists in `package.json`.
 3. Every repo path `CLAUDE.md` names in backticks exists on disk.
 4. **Every `oklch()` in `app/globals.css` appears verbatim in the Note Detail
-   design file.** All 64 did at handoff time. A value that stops matching means
+   design file**, or is annotated `DERIVED` and recomputed. A value that stops matching means
    a token was hand-edited away from the locked design — the exact defect the
    design side fixed before this build started.
 5. The eight locked accent values are still present, verbatim.
@@ -96,8 +96,8 @@ Repo-only. No browser, no dev server, no network. It measures twelve things:
    face. The design file contains Newsreader, Zilla Slab and Libre Franklin in
    its earlier turns, which is how a wrong font gets in.
 8. **Supabase key hygiene.** No `NEXT_PUBLIC_` variable whose name says `SECRET`
-   or `SERVICE_ROLE`; no source file outside `scripts/verify-rls.mjs` reading a
-   secret key; no literal key committed anywhere in `app/`, `components/`,
+   or `SERVICE_ROLE`; no source file outside the allowlist in the script (the
+   files `CLAUDE.md` § Supabase → Keys names) reading a secret key; no literal key committed anywhere in `app/`, `components/`,
    `lib/` or `scripts/`; `.env*` still ignored. The secret key bypasses RLS, so
    this is the one drift in the repo that is a breach rather than a blemish.
 9. **RLS shape in `supabase/schemas/*.sql`** — four per-operation policies per
