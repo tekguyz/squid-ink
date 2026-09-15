@@ -40,7 +40,10 @@ export function NoteRow({ note }: { note: FeedNote }) {
   return (
     <Link
       href={`/notes/${note.id}`}
-      className="border-rule-3 hover:bg-pane focus-visible:outline-accent grid grid-cols-[62px_minmax(0,1fr)_148px_96px] items-center gap-[14px] border-b px-[24px] py-[11px] last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2"
+      // Below md the four tracks fold to two: time, then everything else, with
+      // the status and the counts wrapping under the title. An empty status or
+      // count cell is hidden there, because a folded row has no column to hold.
+      className="border-rule-3 hover:bg-pane focus-visible:outline-accent grid grid-cols-[62px_minmax(0,1fr)_148px_96px] items-center gap-[14px] max-md:grid-cols-[52px_minmax(0,1fr)] max-md:items-start max-md:gap-x-[12px] max-md:gap-y-[6px] max-md:px-[16px] border-b px-[24px] py-[11px] last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2"
     >
       <span className="font-mono text-meta-3 text-[10.5px] tabular-nums">
         {note.time}
@@ -79,15 +82,16 @@ export function NoteRow({ note }: { note: FeedNote }) {
         ) : null}
       </span>
 
-      <span>
+      <span className="max-md:col-start-2 max-md:empty:hidden">
         <StatusPill status={note.processingStatus} />
       </span>
 
-      <span className={`${COUNT} block text-right`}>
+      <span className={`${COUNT} block text-right max-md:col-start-2 max-md:text-left max-md:empty:hidden`}>
         {note.actionCount === 0 && note.spanCount === 0 ? null : (
           <>
             {note.actionCount} {note.actionCount === 1 ? "action" : "actions"}
-            <br />
+            <br className="max-md:hidden" />
+            <span className="md:hidden"> · </span>
             {note.spanCount} spans
           </>
         )}

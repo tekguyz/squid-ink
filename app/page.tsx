@@ -18,24 +18,25 @@ import { getDashboardFeed } from "@/lib/notes/get-dashboard-feed";
  * bucket boundaries stay a pure function of their inputs and nothing in a
  * render path reads the clock.
  *
- * The grid is held at MIN_SURFACE_WIDTH and the page scrolls sideways under
- * it — changed 2026-09-07 after a design critique. It used to simply squeeze:
- * below 1280px the four-track rows crushed and the header's controls were cut
- * off at the viewport edge with no way to reach them. This is an INTERIM fix
- * and nothing more. No design exists for a narrow viewport — docs/DESIGN.md
- * draws one surface, at one width — so inventing a stacked or collapsed layout
- * here would be guessing at a design decision this file does not own. A real
- * responsive pass is separate future work; until then the content is reachable
- * rather than clipped, which is the whole claim being made.
+ * Narrow widths STACK — chosen by the owner 2026-09-15 over a sideways
+ * scroll. From 2026-09-07 the grid was held at 1280px and the page scrolled
+ * sideways under it. No drawing exists for a narrow viewport, so this layout is
+ * invented, not implemented, and it follows what ordinary apps do:
  *
- * scripts/verify-layout.mjs measures 1440 and 1280 only, and its "no
- * horizontal page overflow" assertion still holds at both: the minimum equals
- * the narrower of the two. Add widths there when breakpoints actually ship.
+ *  - lg (1024) and up: the drawn two columns, unchanged.
+ *  - below lg: the rail sits above the feed, reduced to the app nav and the
+ *    tag filter. The account line, the two "Soon" items and the recents drop
+ *    out — the recents repeat the feed directly underneath them.
+ *  - below md (768): each feed row folds to two tracks (note-row.tsx) and the
+ *    header wraps (dashboard-header.tsx).
+ *
+ * The page stays one viewport tall with the feed scrolling inside it, at every
+ * width, so the footer strip still reserves the recorder HUD's corner.
+ * Desktop classes are untouched; every narrow rule is a `max-lg:`/`max-md:`
+ * variant beside them. scripts/verify-layout.mjs measures "/" at 1024, 768 and
+ * 390 as well as 1440 and 1280.
  */
 
-/** The width the one drawn design assumes. Below this the page scrolls; it
- *  does not reflow, because no reflowed design exists yet. */
-const MIN_SURFACE_WIDTH = 1280;
 export const metadata = { title: "All notes" };
 
 export default async function Dashboard({
@@ -54,11 +55,8 @@ export default async function Dashboard({
   );
 
   return (
-    <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
-      <div
-        style={{ minWidth: MIN_SURFACE_WIDTH }}
-        className="bg-canvas text-ink grid h-full grid-cols-[212px_minmax(0,1fr)]"
-      >
+    <div className="h-dvh overflow-hidden">
+      <div className="bg-canvas text-ink grid h-full grid-cols-[212px_minmax(0,1fr)] max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]">
         <IdentityRail
           email={feed.email}
           totalNotes={feed.totalNotes}

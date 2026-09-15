@@ -92,6 +92,23 @@ describe("getNote", () => {
     await expect(getNote(NOTE_ID)).resolves.toBeNull();
   });
 
+  it.each(["anything", "123", `${NOTE_ID}x`, `{${NOTE_ID}}`])(
+    "returns null for the malformed id %s without querying",
+    async (id) => {
+      // Postgres throws `invalid input syntax for type uuid` on these, and that
+      // error used to crash the page instead of rendering a 404.
+      const stub = stubClient({ data: noteRow, error: null }, { data: [segment], error: null });
+      client.current = stub;
+      await expect(getNote(id)).resolves.toBeNull();
+      expect(stub.from).not.toHaveBeenCalled();
+    },
+  );
+
+  it("accepts an upper-case id", async () => {
+    client.current = stubClient({ data: noteRow, error: null }, { data: [segment], error: null });
+    await expect(getNote(NOTE_ID.toUpperCase())).resolves.not.toBeNull();
+  });
+
   it("returns null when the row belongs to someone else", async () => {
     // RLS filters the row out, so this is indistinguishable from not-found —
     // by design. getNote must not surface it as an error.

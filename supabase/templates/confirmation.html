@@ -1,4 +1,57 @@
-<h2>Confirm your email</h2>
-<p>Open this link to finish creating your Squid Ink account:</p>
-<p><a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email">Confirm my email</a></p>
-<p>The link expires in 60 minutes. If you did not sign up, ignore this email.</p>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
+<title>Confirm your email</title>
+<!--
+  Squid Ink brand, light theme ("Newsprint"). Email clients read neither CSS
+  variables nor, mostly, web fonts, so every colour is the sRGB value of a
+  light token in app/globals.css, converted from its oklch() on 2026-09-15:
+  canvas #f3ede2, paper #fcf8f0, rule #d8cebf, ink #241a11, ink-2 #362c23,
+  muted #6b6159, accent #006a17, on-accent #f0fced.
+  Fonts: Bitter / Archivo / IBM Plex Mono where the client loads them,
+  Georgia / Arial / Courier New where it does not.
+  The href must stay exactly {{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email
+  and the copy must say "60 minutes": lib/auth/__tests__/email-link-policy.test.ts.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500&family=Bitter:wght@600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+</head>
+<body style="margin:0; padding:0; background-color:#f3ede2;">
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">Finish creating your Squid Ink account. The link expires in 60 minutes.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f3ede2;">
+  <tr>
+    <td align="center" style="padding:40px 16px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px; background-color:#fcf8f0; border:1px solid #d8cebf;">
+        <tr>
+          <td style="padding:34px 32px 30px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td width="18" height="18" style="width:18px; height:18px; background-color:#006a17; font-size:0; line-height:0;">&nbsp;</td>
+                <td style="padding-left:8px; font-family:'Bitter', Georgia, serif; font-size:15px; font-weight:700; color:#241a11;">Squid Ink</td>
+              </tr>
+            </table>
+            <p style="margin:26px 0 8px 0; font-family:'IBM Plex Mono', 'Courier New', monospace; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#6b6159;">Account · Confirm</p>
+            <h1 style="margin:0; font-family:'Bitter', Georgia, serif; font-size:25px; line-height:1.2; font-weight:600; color:#241a11;">Confirm your email</h1>
+            <p style="margin:12px 0 0 0; font-family:'Archivo', Arial, Helvetica, sans-serif; font-size:14px; line-height:1.6; color:#362c23;">Open this link to finish creating your Squid Ink account.</p>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:24px;">
+              <tr>
+                <td align="center" bgcolor="#006a17" style="background-color:#006a17;">
+                  <a href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email" style="display:block; padding:13px 16px; font-family:'IBM Plex Mono', 'Courier New', monospace; font-size:12px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#f0fced; text-decoration:none;">Confirm my email</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:24px 0 0 0; font-family:'Archivo', Arial, Helvetica, sans-serif; font-size:13px; line-height:1.6; color:#6b6159;">The link expires in 60 minutes. If you did not sign up, ignore this email.</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 32px; border-top:1px solid #d8cebf; font-family:'IBM Plex Mono', 'Courier New', monospace; font-size:10px; line-height:1.7; letter-spacing:0.06em; text-transform:uppercase; color:#6b6159;">Squid Ink · Account email</td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

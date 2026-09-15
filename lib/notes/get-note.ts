@@ -3,6 +3,7 @@ import { buildNoteViewModel } from "./note-view-model";
 import { getPersonas } from "./get-personas";
 import { readNoteTags } from "./get-tags";
 import { readCollectionIndex } from "./get-collections";
+import { isNoteId } from "./note-id";
 import type { Note } from "@/lib/notes/view-types";
 import type { ChunkRow, NoteRow } from "./types";
 
@@ -15,6 +16,10 @@ import type { ChunkRow, NoteRow } from "./types";
  * exactly what an RLS-filtered empty result produces.
  */
 export async function getNote(id: string): Promise<Note | null> {
+  // The id comes from the URL. A malformed one is a note that does not exist,
+  // not a query for Postgres to refuse — that refusal used to crash the page.
+  if (!isNoteId(id)) return null;
+
   const supabase = await createClient();
 
   // Issued together, not in sequence. Neither query depends on the other's

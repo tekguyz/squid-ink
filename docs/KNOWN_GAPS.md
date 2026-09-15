@@ -2488,14 +2488,18 @@ header's controls were cut off at the viewport edge with no way to reach them.
 `app/page.tsx` now holds the grid at `MIN_SURFACE_WIDTH = 1280` inside a
 horizontal scroller.
 
-**STILL OPEN as a design gap.** This is an interim fix and is not a responsive
-layout. No design exists for a narrow viewport — DESIGN.md draws one surface at
-one width — so a stacked or collapsed layout would be invented, not
-implemented. The claim being made is only that the content is reachable instead
-of clipped. `scripts/verify-layout.mjs` still measures 1440 and 1280 only, and
-its horizontal-overflow assertion still holds at both because the minimum
-equals the narrower width. A real responsive pass is separate future work; add
-widths to that script when breakpoints actually ship.
+**RESOLVED 2026-09-15 — the Dashboard stacks.** The owner chose a stacked
+layout over the sideways scroll. `MIN_SURFACE_WIDTH` is gone. Below 1024px the
+rail sits above the feed, reduced to the app nav and the tag filter; below
+768px each row folds to two tracks and the header wraps. Every narrow rule is a
+`max-lg:`/`max-md:` variant, so the drawn desktop layout is unchanged.
+
+**Still invented, not implemented.** No narrow design exists, so this follows
+what ordinary apps do; a real design can replace it. **Measured:**
+`scripts/verify-layout.mjs` now measures `/` at 1024, 768 and 390 as well as
+1440 and 1280 — 180 passed, 0 failed, both themes. Screenshots at 390, 768,
+1024 and 1440 were read the same day. The other screens are still one-width
+only and are not measured narrow.
 
 ## Two frozen-copy defects, and the one class they share (recorded 2026-09-09)
 
@@ -2786,11 +2790,6 @@ Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
   flow, and the expiry copy reads `EMAIL_LINK_EXPIRY_MINUTES` (60). The form
   behaviour and the actions are unchanged. Checked in both themes in the
   browser.
-- **The emails are unbranded.** `supabase/templates/*.html` are bare HTML. The
-  owner wants them to carry the app's look. Email clients cannot read CSS
-  variables, so a branded template will need inline colour values. Those
-  belong to `supabase/templates/`, which the colour convention in CLAUDE.md
-  does not scan.
 - **The hosted templates can drift from the repo copies.** Nothing reads them
   back. See `docs/DEPLOYMENT.md` § Auth email.
 - **Public signup is closed; the long-term model is open.** The owner turned
@@ -2801,14 +2800,9 @@ Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
   by the owner's call: `SIGNUP_OPEN = false` in `app/login/login-form.tsx`
   stops rendering the link. `SignUpForm` and its action are kept, so reopening
   is that flag plus the dashboard switch.
-- **Test accounts left on the hosted project:** `admin+pathc@tekguyz.com`
-  (confirmed, onboarding not finished) and `auth-probe-unconfirmed@example.com`
-  (never confirmed). Owner deletes them in the dashboard (Authentication →
-  Users), the same as Path B's account was.
-- **`/notes/<not-a-uuid>` crashes the page** ("This page couldn't load") with
-  `invalid input syntax for type uuid` from `lib/notes/get-tags.ts:45`.
-  A malformed note URL should be a 404. This came from the Path C driver's
-  made-up `?next=` target and is unrelated to auth.
+- **Test accounts left on the hosted project — deleted 2026-09-15** by the
+  owner, as reported in session: `admin+pathc@tekguyz.com` and
+  `auth-probe-unconfirmed@example.com`. Not re-measured from here.
 
 ### PGRST303 "JWT issued at future" crashed a page after a password change (recorded 2026-09-14)
 
@@ -2881,3 +2875,14 @@ Squid Ink. Previous app had a $15–20/mo tier; nothing equivalent defined
 here. Blocks reopening public signup or shipping demo mode. Not urgent —
 zero public exposure currently (2 known users). Revisit before public
 signup or demo mode. (2026-09-14)
+
+## A 404 logs a React "script tag" error in dev (recorded 2026-09-15)
+
+Found while checking the new `app/not-found.tsx`. **Measured** over the DevTools
+Protocol on `npm run dev`: `/notes/anything` logs `Encountered a script tag
+while rendering React component`, and Next's dev badge shows "1 Issue". `/`
+logs nothing. The script is the theme boot in `app/layout.tsx`, a raw
+`<script dangerouslySetInnerHTML>` in `<head>`, not the 404 page. The page
+renders correctly in both themes, because the server HTML runs the script
+before React loads. Not fixed here: changing how the theme boots touches every
+page, and it is its own change. Not measured in a production build.

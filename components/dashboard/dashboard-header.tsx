@@ -71,7 +71,9 @@ export function DashboardHeader() {
   const busy = phase !== "idle" && phase !== "error";
 
   return (
-    <header className="border-rule flex items-center gap-[14px] border-b px-[24px] pt-[18px] pb-[13px]">
+    // Below md the header wraps: the dead search field drops to its own full
+    // line under the title and Record, and Import audio — dead too — goes.
+    <header className="border-rule flex items-center gap-[14px] border-b px-[24px] pt-[18px] pb-[13px] max-md:flex-wrap max-md:gap-y-[10px] max-md:px-[16px]">
       <h1 className="font-header text-ink flex-none text-[22px] font-semibold tracking-[-0.01em]">
         All notes
       </h1>
@@ -81,7 +83,7 @@ export function DashboardHeader() {
           to carry. The badge replaces it and says the true thing instead. */}
       <div
         aria-hidden
-        className={`${DISABLED_CONTROL} min-w-0 max-w-[320px] flex-1 gap-[8px] px-[10px] py-[6px]`}
+        className={`${DISABLED_CONTROL} min-w-0 max-w-[320px] flex-1 gap-[8px] px-[10px] py-[6px] max-md:order-last max-md:max-w-none max-md:basis-full`}
       >
         <span className="font-body truncate text-[12.5px] opacity-60">
           Search notes, speakers, sources
@@ -96,7 +98,7 @@ export function DashboardHeader() {
         <button
           type="button"
           disabled
-          className={`${DISABLED_CONTROL} ${MONO_ACTION} gap-[8px] px-[11px] py-[7px]`}
+          className={`${DISABLED_CONTROL} ${MONO_ACTION} gap-[8px] px-[11px] py-[7px] max-md:hidden`}
         >
           <span className="opacity-60">Import audio</span>
           <span className={SOON_BADGE}>Soon</span>

@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-14
+**Last updated:** 2026-09-15
 Update this line whenever this file changes — don't let it drift from reality.
 
 ## Stack
@@ -514,8 +514,11 @@ naming both colliding elements. A layout assertion nobody has watched fail is
 an assertion about a walk nobody watched — the same reasoning
 `project-conventions.test.ts` states about its own file walk.
 
-Widths are `1440` and `1280` only, because no responsive breakpoint work has
-shipped. Add widths when breakpoints do, not before. Next's dev-tools badge is
+Widths are `1440` and `1280` on every route. **`/` is also measured at `1024`,
+`768` and `390`**, because the Dashboard's stacked layout shipped 2026-09-15;
+`NARROW_WIDTHS` in the script lists which routes get narrow widths. No other
+screen has breakpoint work, so add a route there when its breakpoints ship, not
+before. Next's dev-tools badge is
 a real fixed element in the bottom-left corner and is excluded by name; it
 does not ship.
 

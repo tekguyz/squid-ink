@@ -88,9 +88,12 @@ export function IdentityRail({
   return (
     <nav
       aria-label="Notes"
-      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r"
+      // Below lg the rail sits ABOVE the feed (app/page.tsx), so its edge moves
+      // to the bottom and it is capped, scrolling itself, so a long tag list
+      // cannot push the feed off the screen.
+      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r scroll-thin max-lg:max-h-[40dvh] max-lg:overflow-y-auto max-lg:border-r-0 max-lg:border-b max-lg:pb-[12px]"
     >
-      <div className="border-rule-3 flex items-center gap-[9px] border-b px-[14px] pt-[14px] pb-[12px]">
+      <div className="border-rule-3 max-lg:hidden flex items-center gap-[9px] border-b px-[14px] pt-[14px] pb-[12px]">
         {/* Square, not a circle. Circles are for people's faces in a
             transcript; this is a filing mark for an account. */}
         <span
@@ -110,7 +113,7 @@ export function IdentityRail({
           screen's rail now opens with. All notes is current only when no tag
           filter narrows the feed. */}
       <AppNav current={activeTag ? undefined : "notes"} notesCount={totalNotes} />
-      <div className="flex flex-col gap-px px-[8px] pt-[4px] pb-[4px]">
+      <div className="flex flex-col gap-px px-[8px] pt-[4px] pb-[4px] max-lg:hidden">
         <PendingItem label="Calendar" />
         <PendingItem label="Sources" />
       </div>
@@ -123,7 +126,9 @@ export function IdentityRail({
           supabase/schemas/collections.sql. */}
       <TagFilter chips={tagChips} activeTag={activeTag} />
 
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto pb-[10px]">
+      {/* Hidden below lg: stacked, the feed is directly underneath and these
+          would be the same titles twice. */}
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto pb-[10px] max-lg:hidden">
         {recent.map((group) => (
           <div key={group.key}>
             <p className={`${GROUP_HEADING} pt-[16px] pb-[6px]`}>{group.label}</p>

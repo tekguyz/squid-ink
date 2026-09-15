@@ -45,11 +45,15 @@ import { createServerClient } from "@supabase/ssr";
 const ORIGIN = process.env.LAYOUT_ORIGIN ?? "http://localhost:3000";
 const VIEWPORT = { width: 1440, height: 900 };
 
-/** The only widths this app supports today. CLAUDE.md and the scope of the
- *  2026-09-05 layout pass both say there is no responsive breakpoint work yet,
- *  so a mobile width here would report failures nobody has agreed to own.
- *  Add widths when breakpoints ship, not before. */
+/** The widths every route supports. Most screens have no responsive
+ *  breakpoint work, so a narrow width there would report failures nobody has
+ *  agreed to own. Add widths when breakpoints ship, not before. */
 const WIDTHS = [1440, 1280];
+
+/** Narrow widths, measured only on the routes whose breakpoints have shipped.
+ *  "/" stacks below 1024 since 2026-09-15 (app/page.tsx): 1024 is the last
+ *  two-column width, 768 the last four-track row, 390 a phone. */
+const NARROW_WIDTHS = { "/": [1024, 768, 390] };
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
@@ -487,13 +491,17 @@ async function main() {
     const routes = ["/", noteHref, "/personas", "/collections", "/settings"];
     if (collectionHref) routes.push(collectionHref);
 
-    for (const width of WIDTHS) {
+    const narrow = [...new Set(Object.values(NARROW_WIDTHS).flat())];
+    for (const width of [...WIDTHS, ...narrow]) {
       await cdp.send(
         "Emulation.setDeviceMetricsOverride",
         { width, height: VIEWPORT.height, deviceScaleFactor: 1, mobile: false },
         sessionId,
       );
-      for (const route of routes) {
+      const atWidth = WIDTHS.includes(width)
+        ? routes
+        : routes.filter((route) => NARROW_WIDTHS[route]?.includes(width));
+      for (const route of atWidth) {
         await goto(cdp, sessionId, `${ORIGIN}${route}`);
         for (const theme of ["light", "dark"]) {
           // Both themes on every route. CLAUDE.md's own rule: two tokens
