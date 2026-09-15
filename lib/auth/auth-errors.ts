@@ -18,6 +18,7 @@ export type AuthFailure =
   | "email_send_limit"
   | "email_not_authorized"
   | "rate_limited"
+  | "signup_closed"
   | "unknown";
 
 const BY_CODE: Record<string, AuthFailure> = {
@@ -32,6 +33,9 @@ const BY_CODE: Record<string, AuthFailure> = {
   // docs/DECISIONS.md § Auth → Signup access model.
   email_address_not_authorized: "email_not_authorized",
   over_request_rate_limit: "rate_limited",
+  // "Allow new users to sign up" switched off in the dashboard — the lever
+  // for closing public signup, docs/DECISIONS.md § Auth → Signup access model.
+  signup_disabled: "signup_closed",
   validation_failed: "invalid_input",
   email_address_invalid: "invalid_input",
 };

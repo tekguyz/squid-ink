@@ -4,17 +4,20 @@ import { useState, useTransition } from "react";
 import { signUpWithPassword } from "@/app/auth/actions/sign-up";
 import { EMAIL_LINK_EXPIRY_MINUTES } from "@/lib/auth/email-link-policy";
 import { BUTTON, FAILURE_TEXT, FIELD, LINK } from "./failure-text";
+import { MISMATCH, PasswordFields } from "./password-fields";
 
 /** Plumbing for signup — see login-form.tsx. */
 export function SignUpForm({ onBack }: { onBack: () => void }) {
   const [sent, setSent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (password !== confirm) return setMessage(MISMATCH);
     setMessage(null);
     startTransition(async () => {
       const result = await signUpWithPassword({ email, password });
@@ -41,9 +44,7 @@ export function SignUpForm({ onBack }: { onBack: () => void }) {
       <label htmlFor="su-email" className="font-body text-ink-2">Email address</label>
       <input id="su-email" type="email" required autoComplete="email"
         value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
-      <label htmlFor="su-password" className="font-body text-ink-2">Password</label>
-      <input id="su-password" type="password" required autoComplete="new-password"
-        value={password} onChange={(e) => setPassword(e.target.value)} className={FIELD} />
+      <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
       <button type="submit" disabled={pending} className={BUTTON}>Create account</button>
       {message ? <p role="alert" className="font-body text-notice">{message}</p> : null}
       <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>

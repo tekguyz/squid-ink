@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { isSessionOnly, withPersistence } from "@/lib/auth/session-persistence";
+import { withClockSkewRetry } from "@/lib/supabase/clock-skew-retry";
 
 /** Server-side client for server components, server actions and route
  *  handlers. Importing next/headers makes this module server-only.
@@ -20,6 +21,8 @@ export async function createClient(options: { sessionOnly?: boolean } = {}) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      // PGRST303 right after a fresh token — lib/supabase/clock-skew-retry.ts.
+      global: { fetch: withClockSkewRetry() },
       cookies: {
         getAll() {
           return cookieStore.getAll();

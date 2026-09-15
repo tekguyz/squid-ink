@@ -14,6 +14,7 @@ export const FAILURE_TEXT: Record<AuthFailure, string> = {
   email_send_limit: "Too many emails were sent recently. Try again later.",
   email_not_authorized: "This address cannot receive email from Squid Ink yet.",
   rate_limited: "Too many attempts. Wait a few minutes and try again.",
+  signup_closed: "Squid Ink is not taking new accounts right now.",
   unknown: "Something went wrong. Try again.",
 };
 

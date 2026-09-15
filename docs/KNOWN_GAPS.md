@@ -2789,3 +2789,26 @@ Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
   `invalid input syntax for type uuid` from `lib/notes/get-tags.ts:45`.
   A malformed note URL should be a 404. This came from the Path C driver's
   made-up `?next=` target and is unrelated to auth.
+
+### PGRST303 "JWT issued at future" crashed a page after a password change (recorded 2026-09-14)
+
+**Mitigated, not cured.** On production at 22:40 on 2026-09-14,
+`POST /login/new-password` succeeded, and the `GET /onboarding` that followed
+threw `Failed to load last note: JWT issued at future` (digest `412395248`,
+from `vercel logs`). A reload a second later worked. The owner had seen the
+same "reload fixes it" pattern once before.
+
+**Cause: a Supabase platform bug.** PostgREST checks a brand-new token's
+`iat` against a cached clock that can lag behind the auth server
+([supabase discussion 48123](https://github.com/orgs/supabase/discussions/48123)).
+It is still open upstream, and Supabase's advice is to retry. It is
+intermittent: 8 fresh password sign-ins probed the same evening were all
+accepted.
+
+**Mitigation:** `lib/supabase/clock-skew-retry.ts` wraps `fetch` in the
+server and browser clients. It retries only a 401 whose body carries
+`PGRST303`, after 750, 1500 and 3000 ms, then gives up. It is not in
+`lib/supabase/deferred-client.ts`, whose token is never freshly minted. If the
+error screen comes back after a sign-in, look for
+`[supabase] PGRST303 … retrying` in the Vercel log. Three failed retries
+means the lag outlasted about 5 s.

@@ -1,5 +1,6 @@
 import { createBrowserClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
 import { isSessionOnly, withPersistence } from "@/lib/auth/session-persistence";
+import { withClockSkewRetry } from "@/lib/supabase/clock-skew-retry";
 
 /** Browser-side client. Publishable key only — never the secret key, which
  *  bypasses RLS and would be shipped to every visitor by NEXT_PUBLIC_.
@@ -14,6 +15,8 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
+      // PGRST303 right after a fresh token — lib/supabase/clock-skew-retry.ts.
+      global: { fetch: withClockSkewRetry() },
       cookies: {
         getAll() {
           return parseCookieHeader(document.cookie);
