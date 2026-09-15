@@ -3,10 +3,14 @@
 import { useState, useTransition } from "react";
 import { requestPasswordReset } from "@/app/auth/actions/recovery";
 import { EMAIL_LINK_EXPIRY_MINUTES } from "@/lib/auth/email-link-policy";
-import { BUTTON, FAILURE_TEXT, FIELD, LINK } from "./failure-text";
+import {
+  ADDRESS, AuthHeading, AuthNotice, FIELD, LABEL, LINK, PRIMARY, STACK,
+} from "@/components/auth/auth-sheet";
+import { FAILURE_TEXT } from "./failure-text";
 
-/** Plumbing for password reset — see login-form.tsx and the three steps in
- *  app/auth/actions/recovery.ts. */
+/** Password reset, the Auth surface's recovery state — see the three steps in
+ *  app/auth/actions/recovery.ts. "Check your email" is the drawing's; its code
+ *  boxes are not, because the email carries a link. */
 export function RecoveryForm({ onBack }: { onBack: () => void }) {
   const [sent, setSent] = useState(false);
   const [email, setEmail] = useState("");
@@ -25,25 +29,39 @@ export function RecoveryForm({ onBack }: { onBack: () => void }) {
 
   if (sent) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="font-body text-ink-2">
-          If {email} has an account, we sent it a reset link. It expires in{" "}
-          {EMAIL_LINK_EXPIRY_MINUTES} minutes.
-        </p>
-        <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
-      </div>
+      <>
+        <AuthHeading eyebrow="Password recovery" title="Check your email">
+          If <span className={ADDRESS}>{email}</span> has an account, we sent it a reset link.
+          It expires in {EMAIL_LINK_EXPIRY_MINUTES} minutes.
+        </AuthHeading>
+        <div className="mt-[18px]">
+          <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
+        </div>
+      </>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <h2 className="font-header text-ink">Reset your password</h2>
-      <label htmlFor="rc-email" className="font-body text-ink-2">Email address</label>
-      <input id="rc-email" type="email" required autoComplete="email"
-        value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
-      <button type="submit" disabled={pending} className={BUTTON}>Send reset link</button>
-      {message ? <p role="alert" className="font-body text-notice">{message}</p> : null}
-      <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
-    </form>
+    <>
+      <AuthHeading eyebrow="Password recovery" title="Reset your password">
+        We email you a link. Open it to choose a new password.
+      </AuthHeading>
+      <form onSubmit={onSubmit} className="flex flex-col">
+        <div className={STACK}>
+          <div>
+            <label htmlFor="rc-email" className={LABEL}>Email address</label>
+            <input id="rc-email" type="email" required autoComplete="email"
+              value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
+          </div>
+        </div>
+        <button type="submit" disabled={pending} className={PRIMARY}>
+          {pending ? "Sending…" : "Send reset link"}
+        </button>
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          {message ? <AuthNotice>{message}</AuthNotice> : null}
+          <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
+        </div>
+      </form>
+    </>
   );
 }

@@ -2767,12 +2767,20 @@ Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
 
 ### Open, found doing this
 
-- **The Auth UI is plumbing.** `app/login/*` and `app/auth/confirm/page.tsx`
-  are unstyled forms, so the actions could be reached and proven. The designed
-  Surface 04 replaces them. **Its drawing is now wrong in two places:** it has
-  six code boxes, but the app sends links, and it says "expires in 10
-  minutes", but links last 60. The UI pass builds "check your email" states,
-  not code entry.
+- **The Auth UI is plumbing — RESOLVED 2026-09-14.** Was: `app/login/*` and
+  `app/auth/confirm/page.tsx` were unstyled forms, so the actions could be
+  reached and proven, and the designed Surface 04 was to replace them. **Its
+  drawing is wrong in two places:** it has six code boxes, but the app sends
+  links, and it says "expires in 10 minutes", but links last 60.
+  **What changed:** `/login` (sign-in, recovery and "Check your email"
+  states), `/login/new-password` and `/auth/confirm` now render inside
+  `components/auth/auth-sheet.tsx` — one `paper` sheet on `canvas`, Bitter
+  titles, Plex Mono labels, `control-edge` fields, the `accent` primary and the
+  notice block for failures. Existing tokens only; none was added. Neither
+  stale part of the drawing was built: no code entry exists anywhere in the
+  flow, and the expiry copy reads `EMAIL_LINK_EXPIRY_MINUTES` (60). The form
+  behaviour and the actions are unchanged. Checked in both themes in the
+  browser.
 - **The emails are unbranded.** `supabase/templates/*.html` are bare HTML. The
   owner wants them to carry the app's look. Email clients cannot read CSS
   variables, so a branded template will need inline colour values. Those
@@ -2784,7 +2792,10 @@ Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
   signup off on 2026-09-14 (measured: `422 signup_disabled`). The plumbing
   `/login` still shows "Create an account", which now only ever answers "not
   taking new accounts". The Auth UI pass should hide it or keep it, according
-  to `docs/DECISIONS.md` § Auth → Signup access model.
+  to `docs/DECISIONS.md` § Auth → Signup access model. **Hidden 2026-09-14,**
+  by the owner's call: `SIGNUP_OPEN = false` in `app/login/login-form.tsx`
+  stops rendering the link. `SignUpForm` and its action are kept, so reopening
+  is that flag plus the dashboard switch.
 - **Test accounts left on the hosted project:** `admin+pathc@tekguyz.com`
   (confirmed, onboarding not finished) and `auth-probe-unconfirmed@example.com`
   (never confirmed). Owner deletes them in the dashboard (Authentication →
@@ -2857,3 +2868,11 @@ Questions a plan must answer, none investigated:
   between visitors.
 - **The onboarding gate** (`lib/supabase/session.ts`) would send a fresh demo
   identity to `/onboarding`, unless the demo account is marked onboarded.
+
+## Pricing / usage limits — not designed (recorded 2026-09-14)
+
+**Pricing / usage limits — not designed.** No plan or usage cap exists for
+Squid Ink. Previous app had a $15–20/mo tier; nothing equivalent defined
+here. Blocks reopening public signup or shipping demo mode. Not urgent —
+zero public exposure currently (2 known users). Revisit before public
+signup or demo mode. (2026-09-14)

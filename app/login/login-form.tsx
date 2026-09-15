@@ -3,21 +3,29 @@
 import { useState, useTransition } from "react";
 import { signInWithPassword } from "@/app/auth/actions/sign-in";
 import { resendConfirmationLink } from "@/app/auth/actions/sign-up";
-import { BUTTON, FAILURE_TEXT, FIELD, LINK } from "./failure-text";
+import {
+  AuthHeading, AuthNotice, CHECK_ROW, CHECKBOX, FIELD, LABEL, LINK, PRIMARY, STACK,
+} from "@/components/auth/auth-sheet";
+import { FAILURE_TEXT } from "./failure-text";
 import { RecoveryForm } from "./recovery-form";
 import { SignUpForm } from "./sign-up-form";
 
-/** Deliberately plain. The designed Auth surface is a separate UI pass (App
- *  Surfaces 04) — this is plumbing so the password and email-link actions in
- *  app/auth/actions/ have a way to be reached, and anything decorative here
- *  would only have to be undone. Existing tokens only, no new colour values. */
-export function LoginForm({ next }: { next: string }) {
+/** Whether /login offers "Create an account". Off because public signup is
+ *  closed until a pricing or usage-cap model exists (docs/DECISIONS.md § Auth).
+ *  Hidden, not deleted: SignUpForm and its action are intact, so reopening is
+ *  this one line plus the Supabase dashboard switch. */
+const SIGNUP_OPEN = false;
+
+/** Sign-in, the Auth surface's first state — App Surfaces 04, see
+ *  components/auth/auth-sheet.tsx. It swaps in the recovery and signup states
+ *  in place rather than routing, so the email typed here is not lost. */
+export function LoginForm({ next, notice }: { next: string; notice: string | null }) {
   const [mode, setMode] = useState<"sign-in" | "sign-up" | "recover">("sign-in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [unconfirmed, setUnconfirmed] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(notice);
   const [pending, startTransition] = useTransition();
 
   if (mode === "sign-up") return <SignUpForm onBack={() => setMode("sign-in")} />;
@@ -44,33 +52,46 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <label htmlFor="email" className="font-body text-ink-2">Email address</label>
-      <input id="email" name="email" type="email" required autoComplete="email"
-        value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
-      <label htmlFor="password" className="font-body text-ink-2">Password</label>
-      <input id="password" name="password" type="password" required autoComplete="current-password"
-        value={password} onChange={(e) => setPassword(e.target.value)} className={FIELD} />
-      <label className="font-body text-ink-2 flex items-center gap-2">
-        <input type="checkbox" name="remember" checked={remember}
-          onChange={(e) => setRemember(e.target.checked)} />
-        Keep me signed in
-      </label>
-      <button type="submit" disabled={pending} className={BUTTON}>
-        {pending ? "Signing in…" : "Sign in"}
-      </button>
-      {message ? <p role="alert" className="font-body text-notice">{message}</p> : null}
-      {unconfirmed ? (
-        <button type="button" onClick={onResend} disabled={pending} className={LINK}>
-          Send a new confirmation link
+    <>
+      <AuthHeading title="Sign in" />
+      <form onSubmit={onSubmit} className="flex flex-col">
+        <div className={STACK}>
+          <div>
+            <label htmlFor="email" className={LABEL}>Email address</label>
+            <input id="email" name="email" type="email" required autoComplete="email"
+              value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
+          </div>
+          <div>
+            <label htmlFor="password" className={LABEL}>Password</label>
+            <input id="password" name="password" type="password" required autoComplete="current-password"
+              value={password} onChange={(e) => setPassword(e.target.value)} className={FIELD} />
+          </div>
+          <label className={CHECK_ROW}>
+            <input type="checkbox" name="remember" checked={remember}
+              onChange={(e) => setRemember(e.target.checked)} className={CHECKBOX} />
+            Keep me signed in
+          </label>
+        </div>
+        <button type="submit" disabled={pending} className={PRIMARY}>
+          {pending ? "Signing in…" : "Sign in"}
         </button>
-      ) : null}
-      <button type="button" onClick={() => setMode("recover")} className={LINK}>
-        Forgot your password?
-      </button>
-      <button type="button" onClick={() => setMode("sign-up")} className={LINK}>
-        Create an account
-      </button>
-    </form>
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          {message ? <AuthNotice>{message}</AuthNotice> : null}
+          {unconfirmed ? (
+            <button type="button" onClick={onResend} disabled={pending} className={LINK}>
+              Send a new confirmation link
+            </button>
+          ) : null}
+          <button type="button" onClick={() => setMode("recover")} className={LINK}>
+            Forgot your password?
+          </button>
+          {SIGNUP_OPEN ? (
+            <button type="button" onClick={() => setMode("sign-up")} className={LINK}>
+              Create an account
+            </button>
+          ) : null}
+        </div>
+      </form>
+    </>
   );
 }

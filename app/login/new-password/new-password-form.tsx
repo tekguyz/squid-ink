@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { setNewPassword } from "@/app/auth/actions/recovery";
-import { BUTTON, FAILURE_TEXT } from "../failure-text";
+import { AuthNotice, PRIMARY, STACK } from "@/components/auth/auth-sheet";
+import { FAILURE_TEXT } from "../failure-text";
 import { MISMATCH, PasswordFields } from "../password-fields";
 
-/** Plumbing — see app/login/login-form.tsx. */
+/** The last step of a reset — see app/login/new-password/page.tsx. */
 export function NewPasswordForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -24,12 +25,14 @@ export function NewPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
-      <button type="submit" disabled={pending} className={BUTTON}>
+    <form onSubmit={onSubmit} className="flex flex-col">
+      <div className={STACK}>
+        <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
+      </div>
+      <button type="submit" disabled={pending} className={PRIMARY}>
         {pending ? "Saving…" : "Save password"}
       </button>
-      {message ? <p role="alert" className="font-body text-notice">{message}</p> : null}
+      {message ? <div className="mt-[14px]"><AuthNotice>{message}</AuthNotice></div> : null}
     </form>
   );
 }

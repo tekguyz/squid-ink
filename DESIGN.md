@@ -743,8 +743,9 @@ so the bar is 4.5:1, not 3:1. `faint` (2.93:1 light / 3.10:1 dark) and `meta`
 - **Placeholder:** `placeholder:text-placeholder`.
 - **Checkbox:** 11px square, `appearance-none`, 1px `faint` border,
   `checked:bg-accent checked:border-accent`.
-- **Login field:** 1px `control-edge` on `paper`, 12px × 8px padding.
-  Deliberately plain — the designed auth surface is a separate pass.
+- **Login field:** 1px `control-edge` on `paper`, 11px × 9px padding, 13.5px
+  Archivo, under a 9px mono uppercase `muted` label with 5px between. Classes
+  live in `components/auth/auth-sheet.tsx`.
 
 ### Navigation
 

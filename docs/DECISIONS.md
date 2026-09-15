@@ -131,6 +131,9 @@ a separate, still-open question (see Branding below).
   an account" link at all. The public demo idea (docs/KNOWN_GAPS.md §
   "Public demo mode") is the owner's answer for letting strangers see the app
   without an account.
+- **Signup stays closed until a pricing or usage-cap model exists.** No plan to
+  reopen public signup until TEKGUYZ has a paid tier or per-user usage
+  limits in place. (2026-09-14)
 **Frontend + hosting**
 - Next.js + Vercel. Netlify is out. Root cause of the prior build's sync-processing
   failures was Netlify Functions' 10-second timeout (and no WebSocket

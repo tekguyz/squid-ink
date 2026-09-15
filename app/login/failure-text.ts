@@ -1,7 +1,7 @@
 import type { AuthFailure } from "@/lib/auth/auth-errors";
 
-/** Plumbing copy for the unstyled forms on /login. The designed Auth surface
- *  (App Surfaces 04) replaces the forms and owns the final words. */
+/** Copy for every failure the forms on /login can show. The classes those
+ *  forms use live with the Auth surface in components/auth/auth-sheet.tsx. */
 export const FAILURE_TEXT: Record<AuthFailure, string> = {
   invalid_input: "Check the email address and password.",
   invalid_credentials: "That email and password do not match.",
@@ -17,8 +17,3 @@ export const FAILURE_TEXT: Record<AuthFailure, string> = {
   signup_closed: "Squid Ink is not taking new accounts right now.",
   unknown: "Something went wrong. Try again.",
 };
-
-export const FIELD = "border border-control-edge bg-paper text-ink font-body px-3 py-2";
-export const BUTTON =
-  "border border-control-edge bg-accent text-on-accent font-body px-3 py-2 disabled:opacity-60";
-export const LINK = "font-body text-ink-2 underline text-left";

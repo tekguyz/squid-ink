@@ -3,10 +3,15 @@
 import { useState, useTransition } from "react";
 import { signUpWithPassword } from "@/app/auth/actions/sign-up";
 import { EMAIL_LINK_EXPIRY_MINUTES } from "@/lib/auth/email-link-policy";
-import { BUTTON, FAILURE_TEXT, FIELD, LINK } from "./failure-text";
+import {
+  ADDRESS, AuthHeading, AuthNotice, FIELD, LABEL, LINK, PRIMARY, STACK,
+} from "@/components/auth/auth-sheet";
+import { FAILURE_TEXT } from "./failure-text";
 import { MISMATCH, PasswordFields } from "./password-fields";
 
-/** Plumbing for signup — see login-form.tsx. */
+/** Signup, the Auth surface's create-account state. Unreachable while
+ *  SIGNUP_OPEN in login-form.tsx is false; kept styled and working so that
+ *  reopening signup is a flag, not a rebuild. */
 export function SignUpForm({ onBack }: { onBack: () => void }) {
   const [sent, setSent] = useState(false);
   const [email, setEmail] = useState("");
@@ -28,26 +33,36 @@ export function SignUpForm({ onBack }: { onBack: () => void }) {
 
   if (sent) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="font-body text-ink-2">
-          We sent a confirmation link to {email}. It expires in {EMAIL_LINK_EXPIRY_MINUTES} minutes.
-          Open it, then sign in with your password.
-        </p>
-        <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
-      </div>
+      <>
+        <AuthHeading eyebrow="Create account" title="Check your email">
+          We sent a confirmation link to <span className={ADDRESS}>{email}</span>. It expires in{" "}
+          {EMAIL_LINK_EXPIRY_MINUTES} minutes. Open it, then sign in with your password.
+        </AuthHeading>
+        <div className="mt-[18px]">
+          <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
+        </div>
+      </>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
-      <h2 className="font-header text-ink">Create an account</h2>
-      <label htmlFor="su-email" className="font-body text-ink-2">Email address</label>
-      <input id="su-email" type="email" required autoComplete="email"
-        value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
-      <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
-      <button type="submit" disabled={pending} className={BUTTON}>Create account</button>
-      {message ? <p role="alert" className="font-body text-notice">{message}</p> : null}
-      <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
-    </form>
+    <>
+      <AuthHeading title="Create an account" />
+      <form onSubmit={onSubmit} className="flex flex-col">
+        <div className={STACK}>
+          <div>
+            <label htmlFor="su-email" className={LABEL}>Email address</label>
+            <input id="su-email" type="email" required autoComplete="email"
+              value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
+          </div>
+          <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
+        </div>
+        <button type="submit" disabled={pending} className={PRIMARY}>Create account</button>
+        <div className="mt-[14px] flex flex-col gap-[10px]">
+          {message ? <AuthNotice>{message}</AuthNotice> : null}
+          <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>
+        </div>
+      </form>
+    </>
   );
 }
