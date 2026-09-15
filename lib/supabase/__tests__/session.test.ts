@@ -36,9 +36,16 @@ describe("updateSession — signed-out redirects", () => {
     expect(res.headers.get("location")).toContain("/login");
   });
 
-  it("leaves /login and /auth alone, or sign-in is impossible", async () => {
+  it("leaves /login and the email-link landing alone, or sign-in is impossible", async () => {
     expect((await visit("/login")).status).toBe(200);
+    expect((await visit("/login/new-password")).status).toBe(200);
     expect((await visit("/auth/confirm")).status).toBe(200);
+  });
+
+  it("makes only /auth/confirm public, not everything under /auth", async () => {
+    // 2026-09-14. A public prefix is a hole waiting for the next file someone
+    // puts under it.
+    expect((await visit("/auth/anything-else")).status).toBe(307);
   });
 
   it("does NOT redirect the cron route", async () => {

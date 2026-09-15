@@ -831,6 +831,11 @@ started**, or is a known incompleteness in what shipped.
 
 - **`auth_leaked_password_protection` (WARN, security).** Supabase Auth can
   check passwords against HaveIBeenPwned; it is off on this project.
+  **Amended 2026-09-14: the premise below is gone.** Password sign-in shipped
+  that day. The owner's dashboard shows "Prevent use of leaked passwords" as
+  **Pro plan only**, so it cannot be switched on here. What exists instead is
+  a minimum length of 8 with lower case, upper case, a digit and a symbol, set
+  by the owner. Original text kept:
   **Accepted, for now.** The app has no password sign-in surface at all — auth
   is magic-link only, and the only passwords in existence belong to the two
   `@example.test` fixtures that `scripts/verify-rls.mjs` needs for its password
@@ -931,6 +936,11 @@ rather than accumulating them.
 
 ## Auth — verified 2026-08-30
 
+**Superseded 2026-09-14.** Everything below proves the magic-link sign-in
+that was retired that day. The identity path it measured no longer exists.
+The replacement run, "Path C", is under "Auth — password and emailed links
+(recorded 2026-09-14)" at the end of this file. Kept as history.
+
 **Path B of the RLS proof is proven end to end.** Not a synthetic session: a
 real magic link, emailed to a fresh `admin+pathb@tekguyz.com` account (auth
 user `7023f7cb-5a43-4580-88a0-4fe0c18072b6`), loaded in a browser that started
@@ -990,6 +1000,13 @@ Code that probes for a single guessed cookie name will be wrong.
 ## Magic-link tokens are spent by a GET, before any human clicks (recorded 2026-08-30)
 
 **RESOLVED 2026-09-01.** See the closing note below.
+
+**Moot for sign-in, 2026-09-14.** Magic-link sign-in is retired. The two
+emailed links that remain (account confirmation and password reset) are
+built so this failure class cannot occur. `/auth/confirm` verifies only on a
+button POST, and a scanner's GET renders the button and spends nothing.
+Measured 2026-09-14: opening the page did nothing, pressing the button
+confirmed, and a second press was refused.
 
 Observed in this session: the first link emailed to `admin+pathb@tekguyz.com`
 came back `otp_expired` on its very first fetch, having never been opened by a
@@ -2685,3 +2702,90 @@ Not annotated, deliberately: `--live` light has no recorded ratio, so it stays
 on check 4's older `DERIVED` map; `--shadow-hud` light is a shadow with alpha,
 which no contrast criterion governs and check 4's pattern never matches.
 `--control-edge` stays on the map, per CLAUDE.md § Colour.
+
+## Auth — password and emailed links (recorded 2026-09-14)
+
+Magic-link sign-in is retired. Sign-in is email + password. Email carries a
+link for two jobs only: confirming an account and resetting a password.
+Decisions and reasons: `docs/DECISIONS.md` § Auth. Hosted settings:
+`docs/DEPLOYMENT.md` § Supabase → Mail and → Auth email.
+
+### Path C — measured 2026-09-14, against `npm run dev` and the hosted project
+
+A real headless Chrome drove the real `/login` forms. It was a scratch CDP
+driver, not a committed script. Real email went through Resend to
+`admin+pathc@tekguyz.com`. The owner copied each link out of the inbox
+without opening it. Statuses are what Chrome's Network domain reported, and
+cookies are Chrome's own jar. `POST*` is a Server Action fetch. It answers
+`200` and carries its redirect in the RSC payload, so the next line is the
+page the browser ended on.
+
+**Password sign-in, box unchecked** (RLS fixture owner):
+- `GET /login?next=%2Fnotes%2Fanything` → 200, jar empty.
+- `POST* /login` → 200, landed on `/notes/anything`.
+- Jar: `sb-pbwvvakzbrimmdntqxxn-auth-token` (3149 chars, **SESSION**) and
+  `squid-session-only` (1, SESSION).
+- A fresh `GET /` → 200 through `proxy.ts`, no redirect.
+- **Browser closed and relaunched on the same profile:** jar empty, and
+  `GET /` ended on `/login?next=%2F`.
+
+**Password sign-in, box checked:** same flow. The token cookie was 3149 chars
+with **expires 2027-10-20**. After the relaunch it was still present, and
+`GET /` → 200 on `/`.
+
+**Signup:**
+- `POST* /login` → 200. "We sent a confirmation link to
+  admin+pathc@tekguyz.com. It expires in 60 minutes."
+- Password sign-in before confirming → stayed on `/login`, "Confirm your email
+  with the link we sent before you sign in." No auth-token cookie.
+- Confirmation link, fresh profile: `GET /auth/confirm?token_hash=pkce_…&type=email`
+  → 200, rendered only "Confirm my email", **jar empty**. The GET spent nothing.
+- Pressed it: `POST* /auth/confirm` → 200, landed on onboarding step 1, jar
+  `sb-…-auth-token` (2923 chars).
+- Same link again, pressed → `/login?error=link_invalid`.
+- Password sign-in after confirming (box unchecked) → signed in, 2961 chars,
+  SESSION, and gone after a browser relaunch.
+
+**Password reset:**
+- `POST* /login` (reset form) → 200. "If admin+pathc@tekguyz.com has an
+  account, we sent it a reset link."
+- Reset link, fresh profile: `GET` → 200, "Continue to reset your password",
+  jar empty.
+- Pressed it: `POST* /auth/confirm` → 200, landed on `/login/new-password`, jar
+  `sb-…-auth-token` (2986 chars).
+- `POST* /login/new-password` → 200, landed on onboarding.
+- Same link again → `/login?error=link_invalid`.
+- Old password → "That email and password do not match."
+- New password, box checked → signed in, 2890 chars, expires 2027-10-20,
+  survived a relaunch.
+
+**RLS under the new identity path:** `node scripts/verify-rls.mjs` → `PASS`.
+Every intruder read is `rows=0 error=null`, every cross-tenant write is refused
+(`23503` / `42501`), and every token decodes to `role=authenticated`.
+`node scripts/verify-layout.mjs`, now signing in by password → 144 passed,
+0 failed.
+
+### Open, found doing this
+
+- **The Auth UI is plumbing.** `app/login/*` and `app/auth/confirm/page.tsx`
+  are unstyled forms, so the actions could be reached and proven. The designed
+  Surface 04 replaces them. **Its drawing is now wrong in two places:** it has
+  six code boxes, but the app sends links, and it says "expires in 10
+  minutes", but links last 60. The UI pass builds "check your email" states,
+  not code entry.
+- **The emails are unbranded.** `supabase/templates/*.html` are bare HTML. The
+  owner wants them to carry the app's look. Email clients cannot read CSS
+  variables, so a branded template will need inline colour values. Those
+  belong to `supabase/templates/`, which the colour convention in CLAUDE.md
+  does not scan.
+- **The hosted templates can drift from the repo copies.** Nothing reads them
+  back. See `docs/DEPLOYMENT.md` § Auth email.
+- **Signup access model is open.** `docs/DECISIONS.md` § Auth.
+- **Test accounts left on the hosted project:** `admin+pathc@tekguyz.com`
+  (confirmed, onboarding not finished) and `auth-probe-unconfirmed@example.com`
+  (never confirmed). Owner deletes them in the dashboard (Authentication →
+  Users), the same as Path B's account was.
+- **`/notes/<not-a-uuid>` crashes the page** ("This page couldn't load") with
+  `invalid input syntax for type uuid` from `lib/notes/get-tags.ts:45`.
+  A malformed note URL should be a 404. This came from the Path C driver's
+  made-up `?next=` target and is unrelated to auth.

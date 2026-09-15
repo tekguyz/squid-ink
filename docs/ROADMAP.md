@@ -316,7 +316,8 @@ manual Transcribe-button trigger is unchanged.
 
 ## 8. Roadmap
 
-**MVP** — Next.js/Vercel/Supabase skeleton, auth (Supabase email/magic-link,
+**MVP** — Next.js/Vercel/Supabase skeleton, auth (Supabase email + password
+with emailed confirm/reset links since 2026-09-14; magic-link until then,
 Google OAuth as separate connect action), recorder → Gemini transcription
 (diarized by default under ~28 min, auto-fallback past that) → Gemini
 structured notes → pgvector index → Claude ask-your-notes chat, core

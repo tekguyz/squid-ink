@@ -59,7 +59,8 @@ a separate, still-open question (see Branding below).
   (a multi-tenant RLS bug leaks across owners; a solo-RLS bug is invisible),
   not the schema change itself.
 **Auth**
-- Supabase email/magic-link auth as primary identity. Google OAuth is a
+- **Superseded 2026-09-14 — see "Password + emailed links" below.** Supabase
+  email/magic-link auth as primary identity. Google OAuth is a
   separate "Connect Calendar/Drive" action in settings, not tied to login —
   removes the "unverified app" warning from the login flow entirely. Warning
   still appears once at connect-time (GCP consent screen in Testing status);
@@ -77,6 +78,46 @@ a separate, still-open question (see Branding below).
   for a session, keeps the `token_hash` path working too, and no longer
   reports an expired link as a missing token. **Confirmed live and working
   end-to-end by the owner post-fix**, on `https://squid-ink.vercel.app`.
+- **Password + emailed links — locked 2026-09-14.** Sign-in is email +
+  password and sends no email. Magic-link sign-in is retired, with no second
+  way in: nothing calls `signInWithOtp`, and
+  `lib/auth/__tests__/magic-link-retired.test.ts` fails if a call returns.
+  Email is used for exactly two things, both a **link**, not a code:
+  - **Confirming a new account.** The confirm-email gate is on. An
+    unconfirmed account's password sign-in is refused with
+    `email_not_confirmed`.
+  - **Resetting a password.** The link signs the account in and lands on
+    `/login/new-password`.
+
+  Both links open `/auth/confirm`, which verifies **only on a button POST**,
+  never on the GET. A mail scanner that fetches links spends nothing. The
+  templates build the link from `{{ .TokenHash }}`, so no PKCE cookie is
+  needed, and a link opened in another browser works (measured 2026-09-14).
+- **Codes were specified, then rejected by the owner, 2026-09-14.** The
+  prompt and Surface 04's drawing asked for 6-digit codes. Two measured facts
+  ended that. A code needs `{{ .Token }}` in the template. Supabase locks
+  template edits on free projects created after 2026-06-03 until custom SMTP
+  is on. The owner then chose the ordinary web flow, links, over matching the
+  drawing. **Surface 04's six digit boxes and its "expires in 10 minutes" copy
+  are now wrong, and the UI pass must not build them.** The link lifetime is
+  60 minutes (`lib/auth/email-link-policy.ts`).
+- **Custom SMTP through Resend — done 2026-09-14,** by the owner, through
+  Resend's Supabase integration. The prompt had deferred SMTP. It became
+  necessary, because Supabase's built-in mailer delivers only to members of
+  the Supabase organization, at about 2 emails an hour. Without SMTP, no one
+  but the owner could confirm an account. Values are in `docs/DEPLOYMENT.md`
+  § Supabase → Mail.
+- **"Keep me signed in on this Mac"** controls cookie lifetime. Unchecked
+  gives session cookies that die when the browser closes. Checked gives the
+  library's 400-day cookies. This is a different axis from sign-out's
+  `scope: "local"` (`app/notes/actions/session.ts`, reused, not duplicated).
+  The rule and its reasons are in `lib/auth/session-persistence.ts`.
+- **Signup access model — OPEN, recorded 2026-09-14.** Signup is public,
+  with no invite code. That matches Surface 04 and is today's default. It is
+  **not** a locked decision. Anyone who can reach `/login` can create an
+  account and, now that SMTP is on, confirm it. Closing it later means
+  Supabase's "Allow new users to sign up" toggle, an invite code, or an
+  allowlist hook. Decide it before the app is shared beyond known users.
 **Frontend + hosting**
 - Next.js + Vercel. Netlify is out. Root cause of the prior build's sync-processing
   failures was Netlify Functions' 10-second timeout (and no WebSocket
@@ -644,6 +685,8 @@ shipped. Kept in place with what closed them, rather than deleted.
   must be made before a delete button ships.
 - **A tracked home for the deployment config** — **RESOLVED 2026-08-31.**
   `docs/DEPLOYMENT.md`.
+- **Signup access model** — **open, added 2026-09-14.** Public signup with
+  no invite code is today's default, not a decision. See § Auth.
 
 Everything else from the 2026-08-30 feature-triage backlog is disposed — see
 ROADMAP.md §8 for what was promoted and where, and "Rejected" above for what

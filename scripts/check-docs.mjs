@@ -410,7 +410,6 @@ const governingLabel = ruleFiles.length
     "scripts/verify-recorder-upload.mjs",
     "scripts/verify-persona-provisioning.mjs",
     "scripts/verify-transcription-pipeline.mjs",
-    "scripts/print-signin-link.mjs",
   ]);
   // Tests for an allowed file exercise the same variable and are allowed too.
   const isAllowedSecretFile = (rel) =>

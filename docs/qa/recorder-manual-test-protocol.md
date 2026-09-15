@@ -14,15 +14,11 @@ Chrome 148 says nothing about Safari 18.
 
 ## Before you start
 
-1. Start the dev server and sign in:
-
-```bash
-node scripts/print-signin-link.mjs http://localhost:3000
-```
-
-   Open the printed URL. You should land on `/`, signed in, with the **Record**
-   pill docked bottom-right. Login is magic-link only, so this script is the
-   only way to get a fresh unspent link locally.
+1. Start the dev server and sign in at `http://localhost:3000/login` with
+   `RLS_TEST_OWNER_EMAIL` and `RLS_TEST_OWNER_PASSWORD` from `.env.local`.
+   You should land on `/`, signed in, with the **Record** pill docked
+   bottom-right. (Changed 2026-09-14: this step used `print-signin-link.mjs`,
+   deleted with magic-link sign-in.)
 
 2. Have ready: headphones with a microphone, and a browser tab that plays sound
    (any video with speech).
@@ -119,7 +115,7 @@ Chromium starts producing MP4.
 
 | # | Do this | Expect |
 |---|---|---|
-| C1 | Open the app in Safari. Sign in with a fresh link from `print-signin-link.mjs`. | The **Record** pill appears. |
+| C1 | Open the app in Safari. Sign in at `/login` with the fixture owner's password. | The **Record** pill appears. |
 | C2 | In Safari's Web Inspector console, run the snippet below. | Record the exact output. At least one `audio/mp4` entry should be `true`. Every `audio/webm` entry is expected to be `false`. |
 | C3 | If **every** entry is `false`. | The HUD should show "This browser cannot record audio." rather than crashing. That is `pickMimeType` returning null, handled. |
 | C4 | Click **Record**. | Safari prompts for screen/tab sharing, then the mic. **Safari's picker may not offer tab audio at all** — if so, record that fact; it is a Safari platform limit, not a bug in this code. |

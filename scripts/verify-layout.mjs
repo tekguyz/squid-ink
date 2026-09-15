@@ -40,7 +40,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 
 const ORIGIN = process.env.LAYOUT_ORIGIN ?? "http://localhost:3000";
 const VIEWPORT = { width: 1440, height: 900 };
@@ -307,27 +307,52 @@ const PROBE = `(() => {
 })()`;
 
 // ---------------------------------------------------------------------------
-// Sign-in. Reuses the generateLink path print-signin-link.mjs documents:
-// login is magic-link only, and an emailed link is spent by a GET before a
-// human clicks it, so the token has to be minted rather than mailed.
+// Sign-in. Password, as the fixture owner, with the PUBLISHABLE key — the
+// same credential verify-rls.mjs uses. Changed 2026-09-14 when magic-link
+// sign-in was retired; this used to mint a magic link with the secret key.
+//
+// The session is written by @supabase/ssr itself into a cookie jar, then
+// handed to Chrome, so the cookie names and chunking are the library's, never
+// guessed here. It does not drive the /login form: that form is plumbing the
+// designed Auth surface will replace, and a layout proof should not break on
+// a sign-in redesign.
 // ---------------------------------------------------------------------------
 
-async function signInUrl() {
+async function signIn(cdp, sessionId) {
   const env = Object.fromEntries(
     readFileSync(".env.local", "utf8")
       .split(/\r?\n/)
       .filter((l) => l && !l.startsWith("#") && l.includes("="))
       .map((l) => [l.slice(0, l.indexOf("=")), l.slice(l.indexOf("=") + 1)]),
   );
-  const admin = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SECRET_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "magiclink",
+  const jar = new Map();
+  const supabase = createServerClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    {
+      cookies: {
+        getAll: () => [...jar].map(([name, value]) => ({ name, value })),
+        setAll: (list) => {
+          for (const { name, value } of list) {
+            if (value) jar.set(name, value);
+            else jar.delete(name);
+          }
+        },
+      },
+    },
+  );
+  const { error } = await supabase.auth.signInWithPassword({
     email: env.RLS_TEST_OWNER_EMAIL,
+    password: env.RLS_TEST_OWNER_PASSWORD,
   });
   if (error) throw error;
-  return `${ORIGIN}/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink&next=%2F`;
+  if (jar.size === 0) throw new Error("Signed in, but @supabase/ssr wrote no cookies");
+
+  await cdp.send("Network.enable", {}, sessionId);
+  for (const [name, value] of jar) {
+    await cdp.send("Network.setCookie", { name, value, url: ORIGIN, path: "/", sameSite: "Lax" }, sessionId);
+  }
+  await goto(cdp, sessionId, `${ORIGIN}/`);
 }
 
 // ---------------------------------------------------------------------------
@@ -431,7 +456,7 @@ async function main() {
     await cdp.send("Page.enable", {}, sessionId);
     await cdp.send("Runtime.enable", {}, sessionId);
 
-    await goto(cdp, sessionId, await signInUrl());
+    await signIn(cdp, sessionId);
 
     // The dashboard names the routes worth measuring; hardcoding a note id
     // would rot the day the fixture is reseeded.

@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-09
+**Last updated:** 2026-09-14
 Update this line whenever this file changes — don't let it drift from reality.
 
 ## Stack
@@ -349,6 +349,29 @@ one blanket `for all`.
   the nullable column — `on delete set null (persona_id)`, Postgres 15 and
   later — or it would try to null `user_id` too.
 
+### Auth
+
+Email + password sign-in. Emailed **links**, not codes, for account
+confirmation and password reset only. Magic-link sign-in is retired
+(2026-09-14, `docs/DECISIONS.md` § Auth). Three rules the code alone does not
+make obvious:
+
+- **Every Supabase client writes cookies through `withPersistence`**
+  (`lib/auth/session-persistence.ts`): the server client, the proxy and the
+  browser client. A new client that uses the library's default cookie
+  handling turns an unchecked "Keep me signed in" into a 400-day session on
+  its first token refresh.
+- **`verifyOtp` is called in one place**, the POST behind `/auth/confirm`
+  (`app/auth/actions/email-link.ts`). Never verify on a GET.
+  `lib/auth/__tests__/magic-link-retired.test.ts` enforces both this and the
+  retirement.
+- **The hosted email templates and link lifetime are dashboard settings**,
+  mirrored in `supabase/templates/` and `config.toml` and never pushed.
+  `docs/DEPLOYMENT.md` § Auth email.
+
+Test sign-in locally with `RLS_TEST_OWNER_EMAIL` / `RLS_TEST_OWNER_PASSWORD`
+from `.env.local` at `/login`.
+
 ### Deployment
 
 `main` auto-deploys to Vercel (`tekguyz/squid-ink`, `https://squid-ink.vercel.app`).
@@ -373,11 +396,12 @@ must read and write rows belonging to whichever user recorded them. The route
 refuses every request that does not carry `Authorization: Bearer $CRON_SECRET`
 before it touches the database or the Gemini API.
 
-**Nine local-only** scripts also read it from the gitignored `.env.local` —
+**Eight local-only** scripts also read it from the gitignored `.env.local` —
 `verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
 `verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs`,
-`verify-manual-transcribe.mjs`, `verify-notegen-pipeline.mjs`,
-`verify-persona-selection.mjs` and `print-signin-link.mjs`. None ships.
+`verify-manual-transcribe.mjs`, `verify-notegen-pipeline.mjs` and
+`verify-persona-selection.mjs`. None ships. (Nine until 2026-09-14 — the ninth was the
+deleted `print-signin-link.mjs`, which went with magic-link sign-in.)
 
 **Corrected 2026-09-03**, measured with the second grep below. This read "Six"
 and named six, having missed the four scripts added between 2026-09-01 and
@@ -468,8 +492,9 @@ pixels.
 
 `scripts/verify-layout.mjs` is the check that is not. It drives the Chrome
 already installed over the DevTools Protocol — **no new dependency**, using
-Node's built-in `WebSocket` — signs in through the same `generateLink` path
-`print-signin-link.mjs` documents, and measures real boxes on `/` and a real
+Node's built-in `WebSocket` — signs in by password as the RLS fixture owner
+(`@supabase/ssr` writes the cookies, the script hands them to Chrome), and
+measures real boxes on `/` and a real
 note at 1440px and 1280px, in **both themes**, six assertions each:
 
 - no two fixed elements overlap,

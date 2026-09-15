@@ -210,23 +210,77 @@ and breaks this pattern again, silently.** If either name changes, re-measure.
 
 ### Mail
 
-Supabase's built-in mailer is rate-limited and not production-grade. Custom SMTP
-(Resend) is not configured. Fine at owner-plus-one-friend scale; revisit before
-any real user volume.
+**Custom SMTP through Resend — connected 2026-09-14** by the owner, with
+Resend's own Supabase integration (Resend → Settings → Integrations →
+Supabase). Read off the owner's screens that day:
+
+| | |
+|---|---|
+| Resend domain | `tekguyz.com`, verified, DNS at GoDaddy (already in use by other TEKGUYZ apps) |
+| Resend API key | "Supabase Integration", created by the integration |
+| Sender | `no-reply@tekguyz.com` |
+| Supabase project | Squid Ink |
+
+**Why it is not optional.** Supabase's built-in mailer delivers only to members
+of the Supabase organization, at about 2 emails an hour for the whole project.
+Without SMTP, nobody but the owner can confirm an account. Free projects
+created after 2026-06-03 also cannot edit email templates without it. This
+project was created 2026-08-30, and the dashboard showed "Set up custom SMTP to
+edit templates" until the integration ran.
+
+A delivered email is visible on Resend's **Emails** page. That is the quickest
+check that Supabase actually sent something.
+
+### Auth email
+
+Set by the owner in the dashboard on 2026-09-14, from screenshots, except
+where marked measured:
+
+| Setting | Value |
+|---|---|
+| Confirm email | on. **Measured:** an unconfirmed account's password sign-in returns `400 email_not_confirmed` |
+| Email OTP expiration | `3600` s. This one setting governs links too. It must equal `lib/auth/email-link-policy.ts` |
+| Email OTP length | `6`. **Measured** 6 with `generateLink`; it was **8** before the owner changed it. Unused, since the app sends links |
+| Minimum password length | `8` |
+| Password requirements | lower case, upper case, digits and symbols |
+| Prevent leaked passwords | off, and Pro-plan only |
+| Templates | "Confirm sign up" and "Reset password" pasted by the owner from `supabase/templates/confirmation.html` and `recovery.html` |
+
+**The hosted templates are pasted by hand, and nothing checks them.**
+`lib/auth/__tests__/email-link-policy.test.ts` checks the repo copies only. If
+someone edits a template in the dashboard, re-read it against the repo file.
+The one thing that must survive is the href,
+`{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email` (or
+`type=recovery`). `{{ .ConfirmationURL }}` would bring back both failures in
+the section below.
+
+`config.toml` mirrors these values for the local stack. This repo never runs
+`supabase config push`, because that pushes the whole file, including a local
+`site_url` of `http://127.0.0.1:3000`, over production.
 
 ## Signing in — rules that are not obvious
 
-- **One browser, start to finish.** PKCE writes the code verifier to a cookie in
-  the browser that called `signInWithOtp`. Requesting the link in one browser or
-  profile and opening it in another gives `400 pkce_code_verifier_not_found`,
-  which reads like a server fault and is not one.
-- `@supabase/ssr` 0.12.5 writes **several** verifier cookies under
-  `sb-<ref>-auth-token`: a per-flow slot per pending sign-in
-  (`-flow-<id>-code-verifier`), an index (`-flows-code-verifier`), and a fixed
-  key (`-code-verifier`). Code that probes one guessed name will find nothing.
-- A magic link is single-use and is spent by whoever issues the first `GET`. See
-  docs/KNOWN_GAPS.md, "Magic-link tokens are spent by a GET" — still one
-  unconfirmed sighting, deliberately not acted on.
+Rewritten 2026-09-14, when magic-link sign-in was retired for password sign-in
+plus emailed confirmation and reset links.
+
+- **An emailed link verifies on a button, not on opening.** `/auth/confirm`
+  renders a button; its POST calls `verifyOtp`. A mail scanner's GET spends
+  nothing. Opening a link and seeing only a button is the design, not a hang.
+- **Any browser works.** Links carry `token_hash`, not a PKCE `?code=`, so the
+  old "one browser, start to finish" rule no longer applies. Measured
+  2026-09-14: both links were requested in one Chrome profile and used in a
+  fresh one.
+- **The link's origin comes from the request.** A link asked for on
+  `localhost:3000` opens on `localhost:3000`. It is still filtered through the
+  redirect allowlist above, and a miss silently becomes the Site URL.
+- `signUp` and `resetPasswordForEmail` still write three `-code-verifier`
+  cookies under `sb-<ref>-auth-token` (159, 55 and 159 chars, 400-day
+  lifetime), because `@supabase/ssr` starts a PKCE flow regardless. The
+  token-hash links never read them. They are harmless leftovers, not a fault.
+- **"Keep me signed in" unchecked means session cookies.** Closing the browser
+  signs the user out. A browser set to "continue where you left off" restores
+  session cookies, so on such a browser the checkbox appears to do nothing.
+  That is the browser, not the app.
 
 ## Verifying this file
 

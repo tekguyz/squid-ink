@@ -56,8 +56,8 @@ describe("updateSession — first-run onboarding gate", () => {
     expect((await visit("/settings")).status).toBe(200);
   });
 
-  it("never gates /api, /login or /auth — a redirect there breaks a fetch or sign-in", async () => {
-    for (const path of ["/api/chat", "/api/cron/transcribe", "/login", "/auth/confirm"]) {
+  it("never gates /api, /login or /auth/confirm — a redirect there breaks a fetch or sign-in", async () => {
+    for (const path of ["/api/chat", "/api/cron/transcribe", "/login", "/login/new-password", "/auth/confirm"]) {
       const res = await visit(path);
       expect(res.status).toBe(200);
       expect(res.headers.get("location")).toBeNull();

@@ -1,10 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { hasOnboarded, ONBOARDING_PATH } from "@/lib/onboarding/onboarding-state";
+import { isSessionOnly, withPersistence } from "@/lib/auth/session-persistence";
 
 /** Routes that must stay reachable without a session.
  *
- *  /login and /auth: without them sign-in is impossible.
+ *  /login: without it sign-in is impossible. Its /login/new-password child is
+ *  where a verified reset link lands; that page's action checks the session
+ *  itself.
+ *
+ *  /auth/confirm: an emailed confirmation or reset link opens here with no
+ *  session. Named exactly, not the whole /auth prefix — until 2026-09-14 the
+ *  prefix was public, and a public prefix is a hole waiting for the next file
+ *  someone puts under it.
  *
  *  /api/cron: a Vercel Cron invocation carries no cookies, so it has no
  *  session and would be redirected to /login. Two reasons that is fatal rather
@@ -17,7 +25,7 @@ import { hasOnboarded, ONBOARDING_PATH } from "@/lib/onboarding/onboarding-state
  *  every request that does not carry `Authorization: Bearer $CRON_SECRET`.
  *  That bearer check is the route's authorization; a user session was never
  *  the right gate for a machine caller. */
-const PUBLIC_PREFIXES = ["/login", "/auth", "/api/cron"];
+const PUBLIC_PREFIXES = ["/login", "/auth/confirm", "/api/cron"];
 
 /**
  * Refreshes the auth session on every matched request and writes the rotated
@@ -33,6 +41,9 @@ const PUBLIC_PREFIXES = ["/login", "/auth", "/api/cron"];
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  // Read once, before any refresh: the marker is a session cookie, so if it is
+  // on the request the browser has not been closed since the choice was made.
+  const sessionOnly = isSessionOnly((name) => request.cookies.get(name)?.value);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,7 +59,7 @@ export async function updateSession(request: NextRequest) {
           }
           response = NextResponse.next({ request });
           for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
+            response.cookies.set(name, value, withPersistence(options, sessionOnly));
           }
         },
       },

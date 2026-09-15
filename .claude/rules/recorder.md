@@ -76,7 +76,8 @@ the only option, and a script that deletes as the admin will silently succeed
 while proving nothing about RLS.
 
     node scripts/verify-recorder-upload.mjs   # live upload + note row proof
-    node scripts/print-signin-link.mjs        # local sign-in link, magic-link only
+    # local sign-in: /login with RLS_TEST_OWNER_EMAIL / _PASSWORD from .env.local
+    # (print-signin-link.mjs was deleted 2026-09-14 with magic-link sign-in)
 
 Device handoff, real-world echo and Safari cannot be tested here. They have a
 runnable checklist: `docs/qa/recorder-manual-test-protocol.md`. Check the
