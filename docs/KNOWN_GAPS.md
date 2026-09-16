@@ -2906,6 +2906,39 @@ shared networks and CGNAT). Deferred: at current traffic (2 known users, no
 public link yet) the cost of picking wrong is zero. Decide before the demo
 link goes on tekguyz.com. (2026-09-15)
 
+**RESOLVED 2026-09-15, same day, and it is two keys rather than the one this
+entry asked to choose between.** Per IP was rejected outright: shared offices,
+schools and CGNAT mean one visitor's ten questions lock out the next person
+behind the same address, and the people most likely to share an address are
+exactly the audience the demo exists for. It would also mean storing visitor
+IPs, which is personal data the demo has no use for.
+
+- **Per visitor: 10 questions**, counted in `chat_messages` with no time
+  window, RLS-scoped to the caller (`countVisitorQuestions`). Identity is a
+  Supabase anonymous sign-in, enabled on the hosted project 2026-09-15, so the
+  key is a real auth identity rather than a cookie the browser owns. Clearing
+  cookies does earn a fresh ten, and that is accepted — see the global cap.
+- **Globally: 75 questions per calendar month**, across every visitor, via the
+  `security definer` function `public.demo_questions_this_month()`. This is the
+  cap that actually protects the card, and the one cookie-clearing cannot
+  escape, which is what lets the per-visitor cap be the resettable one.
+
+`MEASURED`, not chosen by taste. Sonnet 5 bills $2.00/MTok in, $10.00/MTok out,
+$2.50 cache write, $0.20 cache read; against the `cacheWrite=7483` figure in
+`.claude/rules/chat.md` a ten-question visit is ~$0.10, worst case ~$0.25 when
+the visitor out-waits the 5-minute cache TTL on every turn. 75/month is
+therefore $0.68 typical and $1.88 worst case against the owner's stated $1
+ceiling. Demo turns also run at `effort: "low"` because output is the dearest
+line on the bill. The owner's 300/day suggestion was rejected with the
+arithmetic: 9,000 questions a month is $90–$225.
+
+Both numbers live in `lib/chat/limits.ts`; the gates are in
+`app/api/chat/route.ts`, cheapest-first, and six tests in `route-gates.test.ts`
+pin them — including that the owner is charged neither cap and never has their
+effort lowered. **No rate-limit table was added**, per
+`.claude/rules/chat.md`: `chat_messages` already answers the question and a
+monthly ceiling is the same question over a longer window.
+
 ## A 404 logs a React "script tag" error in dev (recorded 2026-09-15)
 
 Found while checking the new `app/not-found.tsx`. **Measured** over the DevTools
@@ -2916,3 +2949,64 @@ logs nothing. The script is the theme boot in `app/layout.tsx`, a raw
 renders correctly in both themes, because the server HTML runs the script
 before React loads. Not fixed here: changing how the theme boots touches every
 page, and it is its own change. Not measured in a production build.
+
+## Importing audio recorded elsewhere — designed, disabled, unscheduled (recorded 2026-09-15)
+
+**Requested by the owner 2026-09-15**, from the previous app: they want to bring
+in audio captured somewhere else — a different microphone, other software, a
+phone note-taking app — and have it transcribed here. Today the only way audio
+enters Squid Ink is by recording it in the browser.
+
+**The control already exists and is deliberately dead.** `Import audio` renders
+`disabled` in `components/dashboard/dashboard-header.tsx:103`, and the comment
+at that file's head says why: "There is no search index and no import path; a
+control that looks live and does nothing is worse than one that says so." So
+this is not a missing idea, it is an unbuilt path behind a placed control — the
+same treatment `Search`, `+ New persona` and `Duplicate` get.
+
+**No phase owns it.** The only `Import` in `docs/ROADMAP.md` is line 289,
+`Import (links/text/Drive)`, which is about links, text and Drive — not audio
+files. Searching both planning docs for an audio-import plan returns nothing
+else. This entry is the first written record.
+
+**Most of the plumbing is already there, which is why this is small.** Measured
+2026-09-15:
+
+- `lib/recorder/codec.ts:21-25` already names the container set the pipeline
+  handles: `audio/webm;codecs=opus`, `audio/webm`, `audio/mp4;codecs=mp4a.40.2`,
+  `audio/mp4`, `audio/ogg;codecs=opus`. The recorder's own output is Opus, so
+  Opus is the best-tested path, not a new one.
+- `lib/recorder/upload-audio.ts` already uploads client-to-Storage at
+  `{user_id}/{note_id}`, which is the path the three policies in
+  `storage_audio.sql` check.
+- `lib/audio/mime-type.ts` already normalises a Storage object's media type
+  before Gemini sees it, and `.claude/rules/transcription.md` records that
+  getting this wrong is a 400 rather than a silent failure.
+- `triggerTranscription` in `app/notes/actions/transcription.ts` already
+  transcribes a single note on demand, with the atomic claim, so an imported
+  note needs no new trigger.
+
+**What is genuinely missing**, and none of it is decided:
+
+- A file picker, and the `notes` row an import writes. The recorder writes
+  `'uploading'` with a deterministic path before the bytes land; an import has
+  the bytes in hand first, so the order is not the same and the status the row
+  starts at is a real choice.
+- Validation the recorder never needed: a file the user chose has an arbitrary
+  duration, size and container. `diarization-policy.ts` already refuses past 60
+  minutes and drops diarization past 28, but nothing rejects a 3-hour upload
+  before it is stored, and `audio_duration_seconds` currently comes from the
+  recorder's elapsed clock — an imported file has no such clock and would need
+  decoding or a client-side probe.
+- Which formats to accept. MP3 is the obvious omission from the list above: it
+  is what a phone note app most often produces, and it is absent because the
+  recorder cannot emit it, not because Gemini cannot read it.
+- Whether an import counts against anything. There is no usage cap of any kind
+  (see Pricing / usage limits above), and an import path is the one way a user
+  could hand the pipeline an arbitrary number of billable minutes in one action.
+
+**Not urgent, and the reason is not "nobody wants it".** Public signup is closed
+permanently, so the population that could import is the owner and one or two
+friends. The cost of building it late is low; the cost of building it without
+the validation decisions above is a Gemini bill shaped like whatever file
+somebody dragged in.
