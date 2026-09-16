@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Run the repo's check script and git state, then print a paste-ready handoff block for the user's Claude.ai planning Project. Reads check-script output, never whole documents. Use when the user asks for a handoff, a status sync, "where are we", or says they are about to plan/spec/write a prompt in Claude.ai.
+description: Run the repo's check script and git state, then print a paste-ready handoff block for the user's Claude.ai planning Project, ending with 2-3 next-step candidates and one recommended pick. Reads check-script output, never whole documents. Use when the user asks for a handoff, a status sync, "where are we", "what's next", or says they are about to plan/spec/write a prompt in Claude.ai.
 ---
 
 # Handoff to the Claude.ai planning Project
@@ -126,7 +126,7 @@ claim something is done. Otherwise report them as not run.
 Output it as a fenced markdown block the user can copy whole. **Print it in the
 response; do not write it to a file** — it is a message, not an artifact.
 
-Keep it under roughly 400 words. The planning Project already has the synced
+Keep it under roughly 450 words. The planning Project already has the synced
 docs; this is not the place to re-derive them.
 
 ```markdown
@@ -146,6 +146,11 @@ docs; this is not the place to re-derive them.
 ### Open now
 - <what is genuinely open, from the KNOWN_GAPS.md heading grep — measured only>
 - <every check finding, one line each: which figure or token drifted and which file is wrong. Omit the line entirely when the script exits 0.>
+
+### Next — candidates, and the one I'd pick
+- <2-3 candidates max, each one line: what it is, and the measured reason it is ready — an unbuilt surface the status line names, or an open gap whose blocker just closed>
+- **Pick:** <one of them, with the reason in half a sentence — smallest scope, unblocks the most, or the owner already asked for it>
+- <"blocked on a decision, not on code — see below" when the pick needs the user first>
 
 ### Needs the user, not more code
 - <visual sign-off, a copy or naming decision, anything flagged as the owner's call>
@@ -182,6 +187,32 @@ docs; this is not the place to re-derive them.
   scope" on 2026-09-09, when three were built and the ROADMAP said so, and a
   handoff reported a shipped surface as scope creep on the strength of it. A
   number written into a skill is a number nobody re-checks.
+- **"Next" costs no extra reading, and that is the constraint that shapes it.**
+  Derive the candidates from what this run already gathered and nothing else:
+  the unbuilt surfaces the ROADMAP status line names, and the open headings the
+  `KNOWN_GAPS.md` grep returned. Opening a document to pick a next step is the
+  budget breach this skill exists to prevent. If the two sources already in hand
+  do not support a recommendation, write `no clear next — the planning Project
+  should choose` and stop; that is a valid answer, not a failure.
+
+  **Name candidates, never a roadmap.** Two or three, one pick, and no ordering
+  beyond the pick — the planning Project writes the brief, and a handoff that
+  hands it a sequenced plan is doing that Project's job with less context than
+  it has. A candidate must be ready *now*: an open gap whose blocker is still
+  open is not a candidate, it is a line in **Open now**.
+
+  **Never carry a candidate list forward, and never write one into this file.**
+  The pick is measured off this run's output, the same as every figure in the
+  block. The surface-count bullet above is what happens when a skill freezes
+  something that moves; a next-step list moves faster than a count does.
+- **Verify before recommending, when the claim is "already built".** A feature
+  can be shipped and hardened while a planning doc still reads as though it is
+  queued — on 2026-09-15 the chat feature had shipped on 2026-09-03, with two
+  verify scripts passing, while `docs/ROADMAP.md` §4 still described its
+  composer in the future tense. If a candidate looks like it might already
+  exist, run its verify script and grep for its entry point before putting it in
+  **Next**; recommending work that is already done is the most expensive
+  mistake this block can make.
 - **No hedging, no filler.** "Note Detail shipped, 20 tests passing" or "Note
   Detail is uncommitted" — never "Note Detail is essentially done".
 - **No attach-list.** The planning Project gets its files from the GitHub
