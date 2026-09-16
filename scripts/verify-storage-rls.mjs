@@ -27,8 +27,21 @@ import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "audio-recordings";
 const PROBE = "verify-storage-rls.bin";
+const ANON_PROBE = "anon-probe.bin";
 const FIRST = "first write";
 const SECOND = "second write, same path";
+
+/** Every object this script is allowed to create, by exact file name.
+ *
+ *  A fixture user's folder is NOT empty and must not be assumed to be. The
+ *  owner has carried a real 336KB recording at
+ *  {uid}/e6bb9163-4d68-42a3-b85b-9cf5f88f444b since 2026-09-01, written by
+ *  actually using the recorder. Counting rows under the prefix therefore
+ *  measured that recording as well as the probe, and reading data[0] read
+ *  whichever row Storage happened to return first. Every assertion below
+ *  names the probe it wrote and ignores everything else at the prefix. */
+const PROBE_NAMES = new Set([PROBE, ANON_PROBE]);
+const probesIn = (rows) => (rows ?? []).filter((o) => PROBE_NAMES.has(o.name));
 
 function loadEnv(path) {
   return Object.fromEntries(
@@ -131,7 +144,7 @@ const intruder = await signIn(
 
 const ownerPath = `${owner.userId}/${PROBE}`;
 const intruderPath = `${intruder.userId}/${PROBE}`;
-const anonPath = `${owner.userId}/anon-probe.bin`;
+const anonPath = `${owner.userId}/${ANON_PROBE}`;
 
 console.log("proof path : A - real password-grant JWT via Authorization header");
 console.log("             (NOT session cookies through the proxy - see path B)");
@@ -184,15 +197,18 @@ try {
   // storage.objects itself, and reading it as the OWNER means the select
   // policy has to admit the updated row for this to return anything at all.
   //
-  // Two things are asserted: still ONE object (replaced in place, not a
-  // second row alongside the first), and its recorded size is SECOND's, not
-  // FIRST's. The two strings are deliberately different lengths.
+  // Two things are asserted: still ONE object AT THE PROBE'S OWN NAME
+  // (replaced in place, not a second row alongside the first), and its
+  // recorded size is SECOND's, not FIRST's. The two strings are deliberately
+  // different lengths. Other objects at the prefix are the owner's real
+  // recordings and are none of this script's business -- see PROBE_NAMES.
   const ownerList = await owner.client.storage.from(BUCKET).list(owner.userId);
-  const probeRow = ownerList.data?.find((o) => o.name === PROBE);
+  const probeRows = (ownerList.data ?? []).filter((o) => o.name === PROBE);
+  const probeRow = probeRows[0];
   check(
-    "still exactly one object at that prefix",
-    (ownerList.data?.length ?? 0) === 1,
-    `rows=${ownerList.data?.length ?? 0} error=${JSON.stringify(ownerList.error?.message ?? null)}`,
+    "exactly one object at the probe's own name",
+    probeRows.length === 1,
+    `rows=${probeRows.length} error=${JSON.stringify(ownerList.error?.message ?? null)}`,
   );
   check(
     "overwrite actually took (row size is the second body)",
@@ -252,10 +268,12 @@ try {
     // the two: the admin sees the object, the caller must see nothing.
     const adminList = await admin.storage.from(BUCKET).list(foreignPrefix);
     const actorList = await actor.client.storage.from(BUCKET).list(foreignPrefix);
+    const foreignName = foreignPath.slice(foreignPrefix.length + 1);
+    const adminRows = (adminList.data ?? []).filter((o) => o.name === foreignName);
     check(
-      "the object really is there (admin sees it)",
-      (adminList.data?.length ?? 0) === 1,
-      `admin rows=${adminList.data?.length ?? 0}`,
+      "the probe object really is there (admin sees it)",
+      adminRows.length === 1,
+      `admin rows=${adminRows.length} of ${adminList.data?.length ?? 0} at the prefix`,
     );
     check(
       "LIST returns empty, not permission-denied",
@@ -270,9 +288,9 @@ try {
     // regardless of what is actually stored.
     const expectedBody = foreignPath === ownerPath ? SECOND : FIRST;
     check(
-      "the object's contents are untouched",
-      adminList.data?.[0]?.metadata?.size === expectedBody.length,
-      `size=${adminList.data?.[0]?.metadata?.size} expected=${expectedBody.length} ("intrusion" would be ${"intrusion".length})`,
+      "the probe object's contents are untouched",
+      adminRows[0]?.metadata?.size === expectedBody.length,
+      `size=${adminRows[0]?.metadata?.size} expected=${expectedBody.length} ("intrusion" would be ${"intrusion".length})`,
     );
     console.log("");
   }
@@ -315,10 +333,13 @@ try {
     `  removed ${removed?.length ?? 0} object(s)  error=${JSON.stringify(removeError?.message ?? null)}`,
   );
 
+  // Counts only the names this script writes. A fixture folder holding a real
+  // recording is not a leftover, and deleting one to make this read zero
+  // would be the script destroying the user's data to pass its own check.
   let leftovers = 0;
   for (const prefix of [owner.userId, intruder.userId]) {
     const { data } = await admin.storage.from(BUCKET).list(prefix);
-    leftovers += data?.length ?? 0;
+    leftovers += probesIn(data).length;
   }
   check("bucket has no leftover probe objects", leftovers === 0, `leftovers=${leftovers}`);
   console.log("");
