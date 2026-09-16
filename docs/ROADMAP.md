@@ -163,6 +163,15 @@ architecture change (RLS already permits it); the work is a scope toggle in
 the query and including note title/date in returned chunk metadata so
 multi-note answers can cite *which* meeting supports each claim.
 
+**Both modes shipped 2026-09-03; the sentence above is scope, and its
+present tense no longer describes the code.** The composer is
+`components/note-detail/chat/`, its placeholder switches between "Ask this
+note…" and "Ask all notes…" off a This note / All notes toggle
+(`chat/scope-toggle.tsx`), and cross-note answers carry the note title and
+date so they cite which meeting supports each claim. Proved by
+`scripts/verify-chat-search.mjs` and `scripts/verify-chat-rls.mjs`, both PASS
+on 2026-09-15. See `.claude/rules/chat.md`.
+
 **Single-note vs cross-note retrieval, added 2026-09-03 — supersedes the "single-note and cross-note" RAG framing above.** Single-note chat skips retrieval entirely: raw transcript + generated notes go directly into context with a 5-minute `cache_control` breakpoint. Cross-note chat is the only consumer of hybrid RRF search, implemented as a non-`SECURITY DEFINER` Postgres function (`search_note_chunks`) so RLS on `note_chunks`/`notes` does the owner-scoping. Candidate pool: `WHERE created_at > now() - interval '90 days' ORDER BY created_at DESC LIMIT 25` — one clause, naturally yields whichever bound is smaller. Result cap: 25 chunks post-RRF, always.
 
 **New table: `chat_messages`.**
