@@ -3010,3 +3010,61 @@ permanently, so the population that could import is the owner and one or two
 friends. The cost of building it late is low; the cost of building it without
 the validation decisions above is a Gemini bill shaped like whatever file
 somebody dragged in.
+
+## Takeaway and action-item citations are dead on every generated note (recorded 2026-09-15)
+
+**Spotted by the owner**, who noticed every takeaway chip on a real note reads
+`00:00`. It is not a timestamp. It is the fallback for a field nothing ever
+writes.
+
+**Root cause, measured 2026-09-15:** `lib/notegen/` never writes `segment_id`
+or `ts_start` onto a chunk. `grep -rn "segment_id\|ts_start" lib/notegen/`
+returns **nothing**. The view model expects both and falls back silently —
+`lib/notes/note-view-model.ts:70-71` for takeaways and `:123-124` for action
+items, each `?? "00:00"` and `?? 0`.
+
+So the chip renders, shows `00:00`, and **does nothing when clicked**.
+`handleCitationSelect` sets `activeSegmentId` to `0`, the effect at
+`components/note-detail/note-detail-shell.tsx:106` looks for `[data-seg="0"]`,
+segments are numbered from 1, `querySelector` returns null and the effect
+returns early. No scroll, no error, no feedback. A button that looks live and
+does nothing — which is precisely what `dashboard-header.tsx` refuses to ship
+for Search and Import audio, and it shipped here by accident rather than by
+choice.
+
+**The split is exact, and it is the giveaway.** Counted across the live
+database:
+
+| Note | Created | Takeaways | With a real `ts_start` |
+|---|---|---|---|
+| Pilot pricing & rollout | 2026-08-26 | 14 | 9 |
+| Pilot pricing & rollout | 2026-08-26 | 13 | 9 |
+| every note since | 2026-09-01 → | 30 | **0** |
+
+The only rows carrying real values (`"03:31"` / segment 8, `"04:48"` / segment
+10, `"00:58"` / segment 3) came from the **hand-authored mock fixtures** written
+before the pipeline existed. Of 60 takeaway chunks, 42 have neither field, and
+all 42 are pipeline output. Action items are worse: 12 rows, **0** with either.
+
+That is the shape of a view model written against `lib/mock/note.ts` and never
+re-checked against what the generator actually produces. The fallbacks made the
+mock render; they made the real thing lie.
+
+**Chat citations are unaffected and DO work.** `[[cite:t<seq>]]` resolves
+against real transcript segments through `lib/chat/citations.ts`, on a different
+path entirely, and `.claude/rules/chat.md` records how. So "citations work" is
+true of the chat surface and false of the takeaway and action-item surfaces —
+two different mechanisms that look identical on screen.
+
+**Not fixed here, and the choice was the owner's.** Three options were put and
+the first was taken: record it now, fix it later. The other two were making
+`lib/notegen` attribute each takeaway to the segment it came from (a prompt and
+metadata change, plus tests, re-opening a pipeline that currently works), and
+hiding the chip when `segment_id` is absent (minutes, honest, but it removes the
+citation affordance from every generated note).
+
+**Consequence for demo mode, recorded 2026-09-15 while it was being built.**
+Takeaway citations were assumed to be a strong thing to show a visitor. On a
+generated note they are not: the chips are inert. Whatever seeds the demo will
+either carry this defect or have to work around it, and the demo's citation
+story rests on chat until this is fixed.

@@ -31,6 +31,13 @@ scratch-verify-transcription.wav
 # Dev server output redirected during live verification.
 dev-server.log
 
+# Intermediate state handed between the two stages of
+# scripts/author-demo-fixture.mjs. It holds a real transcript and a real note
+# id, and the authored OUTPUT is a committed fixture under lib/demo/ — this
+# directory is the working copy on the way there, never the artefact. The whole
+# directory, not a named file, because stage 1 is re-run per clip.
+scratch/
+
 # Everything the impeccable tool writes into its own folder — critique runs,
 # live-session state, caches. Written OUTSIDE the marked block below, which the
 # tool rewrites whenever it updates its own entries.
