@@ -52,6 +52,16 @@ create policy chat_messages_select_own on public.chat_messages
   for select to authenticated
   using ((select auth.uid()) = user_id);
 
+-- This is the ONE write in the whole schema that an anonymous (demo) session
+-- is still allowed to make, and the omission of `not public.is_anon_session()`
+-- here is deliberate rather than an oversight: asking a question is the feature
+-- the demo exists to show. Every other write policy in every other file
+-- carries that clause. UPDATE and DELETE below carry it too — a visitor may
+-- add to their thread and may not rewrite or erase it.
+--
+-- What bounds the cost is not this policy but two counts in
+-- app/api/chat/route.ts: the per-visitor cap, and the global monthly cap that
+-- demo_questions_this_month() below answers.
 drop policy if exists chat_messages_insert_own on public.chat_messages;
 create policy chat_messages_insert_own on public.chat_messages
   for insert to authenticated
@@ -61,13 +71,22 @@ create policy chat_messages_insert_own on public.chat_messages
 drop policy if exists chat_messages_update_own on public.chat_messages;
 create policy chat_messages_update_own on public.chat_messages
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists chat_messages_delete_own on public.chat_messages;
 create policy chat_messages_delete_own on public.chat_messages
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Revoke first, then grant, so this file is the sole authority on
 -- privileges. The project defaults hand anon and authenticated TRUNCATE,
@@ -83,3 +102,46 @@ grant select, insert, update, delete on public.chat_messages to authenticated;
 -- write happens inside a request that carries the user's session. If that
 -- ever changes, add the grant deliberately and say why — do not copy the
 -- other two files' grant block in by reflex.
+
+-- The GLOBAL demo cap's one query: every question asked this calendar month by
+-- any anonymous visitor, across all of them.
+--
+-- security definer, and that is not a shortcut. Every policy above scopes this
+-- table to the caller, so a demo visitor counting rows sees only their own —
+-- which is exactly the number the PER-VISITOR cap wants and exactly the wrong
+-- one for a shared ceiling. Counting across visitors has to step outside RLS,
+-- and a definer function is the narrowest way to do it: it returns one integer
+-- and exposes no rows to anybody.
+--
+-- NOT a new table. .claude/rules/chat.md forbids a rate-limit table on the
+-- grounds that chat_messages already answers the question; a monthly ceiling is
+-- that same question over a longer window, so it gets the same answer.
+--
+-- Scoped three ways, each load-bearing:
+--   u.is_anonymous          the owner's own questions must never be charged to
+--                           the demo's budget
+--   c.role = 'user'         an assistant row is an answer, not a question
+--   date_trunc('month')     the budget resets on the 1st, in UTC
+--
+-- search_path is empty, so both tables are schema-qualified. date_trunc, now
+-- and count need no qualification: pg_catalog is searched implicitly whatever
+-- search_path says.
+create or replace function public.demo_questions_this_month()
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select count(*)::integer
+  from public.chat_messages c
+  join auth.users u on u.id = c.user_id
+  where u.is_anonymous
+    and c.role = 'user'
+    and c.created_at >= date_trunc('month', now());
+$$;
+
+-- A definer function is reachable by whoever holds EXECUTE, so the grant is the
+-- whole access control. anon gets nothing, matching the table above.
+revoke all on function public.demo_questions_this_month() from public, anon;
+grant execute on function public.demo_questions_this_month() to authenticated;

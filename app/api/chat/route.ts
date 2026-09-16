@@ -25,6 +25,9 @@ import {
   trimHistory,
   MAX_MESSAGE_CHARS,
   MAX_MESSAGES_PER_WINDOW,
+  DEMO_MAX_QUESTIONS_PER_VISITOR,
+  DEMO_MAX_QUESTIONS_PER_MONTH,
+  DEMO_EFFORT,
 } from "@/lib/chat/limits";
 import {
   buildTranscriptBlock,
@@ -103,6 +106,39 @@ async function handle(req: Request) {
     );
   }
 
+  // 3b. DEMO MODE's two extra ceilings. A real account pays neither.
+  //
+  //     `is_anonymous` is a JWT claim, so this reads the SAME claim that
+  //     public.is_anon_session() reads inside every write policy. App code and
+  //     database therefore agree on who is a demo visitor by construction, not
+  //     by two definitions kept in step by hand.
+  //
+  //     Sequential, not Promise.all, and cheapest-first like every gate above:
+  //     the per-visitor count is one indexed count against rows RLS already
+  //     scopes, while the monthly figure is an RPC into a security definer
+  //     function that scans every visitor's rows. A visitor who has used their
+  //     ten questions must not pay for the second query.
+  const isDemo = user.is_anonymous === true;
+  if (isDemo) {
+    const askedByVisitor = await ports.countVisitorQuestions();
+    if (askedByVisitor >= DEMO_MAX_QUESTIONS_PER_VISITOR) {
+      return bad(
+        429,
+        `The demo allows ${DEMO_MAX_QUESTIONS_PER_VISITOR} questions per visitor, ` +
+          "and you have used them all. Everything else on the page still works.",
+      );
+    }
+
+    const askedThisMonth = await ports.countDemoQuestionsThisMonth();
+    if (askedThisMonth >= DEMO_MAX_QUESTIONS_PER_MONTH) {
+      return bad(
+        429,
+        "The demo has answered all the questions it can this month. " +
+          "It resets on the 1st — everything else on the page still works.",
+      );
+    }
+  }
+
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   if (!anthropicKey) return bad(500, "Chat is not configured.");
 
@@ -123,9 +159,20 @@ async function handle(req: Request) {
   //    the caller does not own, so this doubles as the ownership check — and
   //    doing it first means a bad note id cannot burn a rate-limit slot or
   //    leave an orphaned row behind.
+  //    BOTH scopes are checked, which they were not until 2026-09-15. The
+  //    all_notes path never reads the note row, so it never proved ownership,
+  //    and the note_id foreign key does not prove it either — a foreign key is
+  //    validated as the referenced table's owner and is not subject to RLS. So
+  //    a caller could name somebody else's note, have the insert land under
+  //    their own user_id, and get a model call out of it. See
+  //    ports.noteBelongsToCaller. The same 404 either way: whether a note
+  //    exists is not a demo visitor's business.
   const noteContext =
     scope === "this_note" ? await ports.readNoteContext(noteId) : null;
   if (scope === "this_note" && !noteContext) return bad(404, "Note not found.");
+  if (scope === "all_notes" && !(await ports.noteBelongsToCaller(noteId))) {
+    return bad(404, "Note not found.");
+  }
 
   // 5. Persist the user's turn, then read history back. The insert lands
   //    first so the newest message is part of the history we send.
@@ -197,7 +244,21 @@ async function handle(req: Request) {
     system,
     messages,
     // Sonnet 5 removed budget_tokens and answers 400 if it is sent.
-    providerOptions: { anthropic: { thinking: { type: "adaptive" } } },
+    //
+    // Demo answers are generated at low effort. Output is the dearest line on
+    // the bill ($10/MTok against $2 in), so this is the one lever that cuts
+    // demo cost without touching the model — a demo on Haiku would be cheaper
+    // still and would stop showing what the app actually answers like. The
+    // owner's own chat is unaffected: the key is spread in only when isDemo.
+    // `effort` is a first-class provider option in @ai-sdk/anthropic 4.0.49 —
+    // read from node_modules/@ai-sdk/anthropic/dist/index.d.ts:267, not from
+    // the docs.
+    providerOptions: {
+      anthropic: {
+        thinking: { type: "adaptive" },
+        ...(isDemo ? { effort: DEMO_EFFORT } : {}),
+      },
+    },
     ...(tools ? { tools, stopWhen: isStepCount(5) } : {}),
     onFinish: async ({ text: answer, steps, usage }) => {
       // Set BEFORE the insert is awaited. onError and onFinish can both fire
@@ -209,8 +270,11 @@ async function handle(req: Request) {
       // breakpoint can stop hitting from a change nowhere near this file and
       // nothing would fail, only the bill would move. Read it in the Vercel
       // function log, the same place transcription failures are read.
+      // demo= is here so the monthly spend can be attributed without joining
+      // anything: the demo's budget is $1 and the log is the only place the
+      // two halves of the bill are separable.
       console.log(
-        `[chat] scope=${scope} in=${usage?.inputTokens ?? "?"} ` +
+        `[chat] scope=${scope} demo=${isDemo} in=${usage?.inputTokens ?? "?"} ` +
           `cacheRead=${usage?.inputTokenDetails?.cacheReadTokens ?? 0} ` +
           `cacheWrite=${usage?.inputTokenDetails?.cacheWriteTokens ?? 0} ` +
           `out=${usage?.outputTokens ?? "?"}`,

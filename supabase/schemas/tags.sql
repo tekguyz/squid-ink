@@ -108,19 +108,31 @@ create policy tags_select_own on public.tags
 drop policy if exists tags_insert_own on public.tags;
 create policy tags_insert_own on public.tags
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Without with check, a user could rewrite user_id and hand the row away.
 drop policy if exists tags_update_own on public.tags;
 create policy tags_update_own on public.tags
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists tags_delete_own on public.tags;
 create policy tags_delete_own on public.tags
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_tags_select_own on public.note_tags;
 create policy note_tags_select_own on public.note_tags
@@ -130,18 +142,30 @@ create policy note_tags_select_own on public.note_tags
 drop policy if exists note_tags_insert_own on public.note_tags;
 create policy note_tags_insert_own on public.note_tags
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_tags_update_own on public.note_tags;
 create policy note_tags_update_own on public.note_tags
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_tags_delete_own on public.note_tags;
 create policy note_tags_delete_own on public.note_tags
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Grants are separate from RLS. Revoke first, then grant, so this file is the
 -- sole authority on privileges: the project defaults hand anon and

@@ -65,6 +65,64 @@ export function createChatPorts(supabase: SupabaseClient) {
       return count ?? 0;
     },
 
+    /** Whether the caller owns this note. RLS answers it — no user_id filter.
+     *
+     *  Exists for the all_notes path, which has no other reason to read the
+     *  note row and therefore had no ownership check at all until 2026-09-15.
+     *  A foreign key is validated as the REFERENCED table's owner and is not
+     *  subject to RLS, so `note_id references notes (id)` happily accepted a
+     *  note belonging to somebody else: the insert landed under the caller's
+     *  own user_id and the model call then ran. The answer was useless — the
+     *  search is RLS-scoped, so it found only the caller's own chunks — but it
+     *  was not free, and "costs money, returns nothing" is the shape of a bill
+     *  nobody notices.
+     *
+     *  Low risk while signup was closed and the app had two accounts. Enabling
+     *  anonymous sign-ins for demo mode is what made it reachable by anyone
+     *  holding the publishable key, which ships in the browser bundle. */
+    async noteBelongsToCaller(noteId: string): Promise<boolean> {
+      const { data, error } = await supabase
+        .from("notes")
+        .select("id")
+        .eq("id", noteId)
+        .maybeSingle();
+      if (error) throw error;
+      return data !== null;
+    },
+
+    /** DEMO MODE, per visitor: every question this anonymous session has ever
+     *  asked, with no time window. RLS scopes it to the caller, so this is the
+     *  visitor's own count and nobody else's — no user_id filter, same as the
+     *  rate limit above.
+     *
+     *  Deliberately unbounded in time where countRecentUserMessages is a
+     *  rolling minute: a demo allowance is a budget for the visit, not a speed
+     *  limit. Waiting does not earn more questions. */
+    async countVisitorQuestions(): Promise<number> {
+      const { count, error } = await supabase
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "user");
+      if (error) throw error;
+      return count ?? 0;
+    },
+
+    /** DEMO MODE, globally: every question asked this calendar month by any
+     *  anonymous visitor.
+     *
+     *  An RPC rather than a query, and that is forced rather than chosen. The
+     *  select policy on chat_messages scopes the table to the caller, so a
+     *  visitor counting rows here would only ever see their own — the number
+     *  countVisitorQuestions already has. Counting across visitors has to leave
+     *  RLS behind, which is what the security definer function does. It returns
+     *  one integer and exposes no rows. See supabase/schemas/chat_messages.sql.
+     */
+    async countDemoQuestionsThisMonth(): Promise<number> {
+      const { data, error } = await supabase.rpc("demo_questions_this_month");
+      if (error) throw error;
+      return (data as number | null) ?? 0;
+    },
+
     /** Returns the new row's id so the caller can undo this exact insert if
      *  the model call then fails. See deleteMessage below. */
     async insertUserMessage(

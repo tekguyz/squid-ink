@@ -118,20 +118,32 @@ create policy collections_select_own on public.collections
 drop policy if exists collections_insert_own on public.collections;
 create policy collections_insert_own on public.collections
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Rename goes through this policy, so it needs both clauses. Without
 -- with check, a user could rewrite user_id and hand the collection away.
 drop policy if exists collections_update_own on public.collections;
 create policy collections_update_own on public.collections
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collections_delete_own on public.collections;
 create policy collections_delete_own on public.collections
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_collections_select_own on public.note_collections;
 create policy note_collections_select_own on public.note_collections
@@ -141,18 +153,30 @@ create policy note_collections_select_own on public.note_collections
 drop policy if exists note_collections_insert_own on public.note_collections;
 create policy note_collections_insert_own on public.note_collections
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_collections_update_own on public.note_collections;
 create policy note_collections_update_own on public.note_collections
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_collections_delete_own on public.note_collections;
 create policy note_collections_delete_own on public.note_collections
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Grants are separate from RLS. Revoke first, then grant, so this file is the
 -- sole authority on privileges: the project defaults hand anon and

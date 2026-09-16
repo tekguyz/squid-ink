@@ -56,20 +56,32 @@ create policy user_settings_select_own on public.user_settings
 drop policy if exists user_settings_insert_own on public.user_settings;
 create policy user_settings_insert_own on public.user_settings
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Both clauses. Without with check a user could rewrite user_id and hand their
 -- preferences row to another account.
 drop policy if exists user_settings_update_own on public.user_settings;
 create policy user_settings_update_own on public.user_settings
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists user_settings_delete_own on public.user_settings;
 create policy user_settings_delete_own on public.user_settings
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Grants are separate from RLS. Revoke first so this file is the sole
 -- authority on privileges: the project defaults hand anon and authenticated

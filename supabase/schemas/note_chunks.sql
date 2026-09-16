@@ -144,19 +144,31 @@ create policy note_chunks_select_own on public.note_chunks
 drop policy if exists note_chunks_insert_own on public.note_chunks;
 create policy note_chunks_insert_own on public.note_chunks
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Without with check, a user could rewrite user_id and hand the row away.
 drop policy if exists note_chunks_update_own on public.note_chunks;
 create policy note_chunks_update_own on public.note_chunks
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists note_chunks_delete_own on public.note_chunks;
 create policy note_chunks_delete_own on public.note_chunks
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Revoke first, then grant, so this file is the sole authority on
 -- privileges. The project defaults hand anon and authenticated TRUNCATE,

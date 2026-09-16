@@ -155,6 +155,37 @@ create trigger notes_set_updated_at
   before update on public.notes
   for each row execute function public.set_updated_at();
 
+-- Whether the CALLER signed in anonymously. This is demo mode's write block,
+-- and it is the reason every write policy in this schema carries a second
+-- clause.
+--
+-- Supabase gives an anonymous sign-in the `authenticated` role, not a role of
+-- its own. The dashboard says so when the setting is enabled, and it is not a
+-- footnote: `to authenticated` cannot tell a demo visitor from the owner, so
+-- without this function a stranger holds the owner's own INSERT rights. They
+-- could not READ another account's rows — every select policy is still scoped
+-- by user_id, and an anonymous visitor's auth.uid() matches none of them — but
+-- they could create notes, upload audio and trigger transcription and note
+-- generation, which spends real money on Gemini and Claude.
+--
+-- Read from the JWT, not from auth.users, so it costs no table read. coalesce
+-- because a token minted before anonymous sign-ins were enabled carries no
+-- such claim: a null there must mean "not anonymous", never "unknown, so
+-- allow".
+--
+-- It lives in notes.sql because config.toml applies this file first and the
+-- write policies in every later schema file call it. set_updated_at() above
+-- is here for the same reason.
+create or replace function public.is_anon_session()
+returns boolean
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false);
+$$;
+
 alter table public.notes enable row level security;
 
 -- Four per-operation policies, not one blanket rule.
@@ -163,6 +194,12 @@ alter table public.notes enable row level security;
 -- query instead of once per row. `to authenticated` alone would be
 -- authentication without authorization, so every policy also carries an
 -- ownership predicate.
+--
+-- The three WRITE policies carry a second predicate as well:
+-- `not public.is_anon_session()`, demo mode's write block. See the function
+-- above for why `to authenticated` is not enough on its own. SELECT does not
+-- carry it — a demo visitor reads their own seeded copies, and ownership
+-- already scopes that to rows nobody else can see.
 
 drop policy if exists notes_select_own on public.notes;
 create policy notes_select_own on public.notes
@@ -172,20 +209,32 @@ create policy notes_select_own on public.notes
 drop policy if exists notes_insert_own on public.notes;
 create policy notes_insert_own on public.notes
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- UPDATE needs both clauses. Without with check, a user could rewrite
 -- user_id and hand their own row to somebody else.
 drop policy if exists notes_update_own on public.notes;
 create policy notes_update_own on public.notes
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists notes_delete_own on public.notes;
 create policy notes_delete_own on public.notes
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- The project was created with "Automatically expose new tables" off, so
 -- Data API access is granted explicitly. This is separate from RLS: grants

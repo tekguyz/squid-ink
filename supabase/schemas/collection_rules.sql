@@ -191,18 +191,30 @@ create policy collection_rules_select_own on public.collection_rules
 drop policy if exists collection_rules_insert_own on public.collection_rules;
 create policy collection_rules_insert_own on public.collection_rules
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rules_update_own on public.collection_rules;
 create policy collection_rules_update_own on public.collection_rules
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rules_delete_own on public.collection_rules;
 create policy collection_rules_delete_own on public.collection_rules
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rule_conditions_select_own
   on public.collection_rule_conditions;
@@ -216,22 +228,34 @@ drop policy if exists collection_rule_conditions_insert_own
 create policy collection_rule_conditions_insert_own
   on public.collection_rule_conditions
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rule_conditions_update_own
   on public.collection_rule_conditions;
 create policy collection_rule_conditions_update_own
   on public.collection_rule_conditions
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rule_conditions_delete_own
   on public.collection_rule_conditions;
 create policy collection_rule_conditions_delete_own
   on public.collection_rule_conditions
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rule_matches_select_own
   on public.collection_rule_matches;
@@ -245,7 +269,10 @@ drop policy if exists collection_rule_matches_insert_own
 create policy collection_rule_matches_insert_own
   on public.collection_rule_matches
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Marking a false positive is an UPDATE of disposition, so this one carries
 -- real traffic. Both clauses: without with check a user could rewrite user_id
@@ -255,15 +282,24 @@ drop policy if exists collection_rule_matches_update_own
 create policy collection_rule_matches_update_own
   on public.collection_rule_matches
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 drop policy if exists collection_rule_matches_delete_own
   on public.collection_rule_matches;
 create policy collection_rule_matches_delete_own
   on public.collection_rule_matches
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Grants are separate from RLS. Revoke first, then grant, so this file is the
 -- sole authority on privileges: the project defaults hand anon and

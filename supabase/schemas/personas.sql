@@ -82,14 +82,23 @@ create policy personas_select_own on public.personas
 drop policy if exists personas_insert_own on public.personas;
 create policy personas_insert_own on public.personas
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Without with check, a user could rewrite user_id and hand the row away.
 drop policy if exists personas_update_own on public.personas;
 create policy personas_update_own on public.personas
   for update to authenticated
-  using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  )
+  with check (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- This policy permits a delete; nothing in the app performs one yet. See the
 -- guard rail above note_chunks_persona_id_fkey in note_chunks.sql — deleting a
@@ -99,7 +108,10 @@ create policy personas_update_own on public.personas
 drop policy if exists personas_delete_own on public.personas;
 create policy personas_delete_own on public.personas
   for delete to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    and not public.is_anon_session()
+  );
 
 -- Revoke first, then grant, so this file is the sole authority on
 -- privileges. The project defaults hand anon and authenticated TRUNCATE,

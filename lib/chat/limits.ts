@@ -19,6 +19,40 @@ export const MAX_MESSAGE_CHARS = 4000;
 export const MAX_MESSAGES_PER_WINDOW = 20;
 export const RATE_WINDOW_MS = 60_000;
 
+/** DEMO MODE's two extra ceilings. Neither applies to a real account.
+ *
+ *  The threat model here is the opposite of the one in this file's header. A
+ *  demo visitor IS an anonymous stranger — that door is deliberately open —
+ *  so these are cost ceilings against ordinary use, not against an attack.
+ *
+ *  The numbers come from measurement, not taste. Sonnet 5 bills $2.00/MTok in,
+ *  $10.00/MTok out, $2.50 cache write, $0.20 cache read. A seeded demo note
+ *  gave cacheWrite=7483 (.claude/rules/chat.md), so a ten-question visit costs
+ *  about $0.10: one cache write, nine cache reads, the history growing behind
+ *  the breakpoint, and roughly 4,000 output tokens. Worst case is ~$0.25, when
+ *  the visitor pauses longer than the 5-minute cache TTL between every single
+ *  question and every turn re-pays the write.
+ *
+ *  The owner's ceiling for the whole feature is $1/month, so:
+ */
+
+/** Per visitor, for the life of their demo session. Ten is enough to ask real
+ *  questions of three seeded notes in both scopes. */
+export const DEMO_MAX_QUESTIONS_PER_VISITOR = 10;
+
+/** Across EVERY demo visitor, per calendar month. This is the number that
+ *  actually protects the card, and it is the one a visitor cannot escape by
+ *  clearing cookies — which is why the per-visitor cap above is allowed to be
+ *  the resettable one. 75 x $0.025 worst case is $1.88; 75 x $0.009 typical is
+ *  $0.68. Raise it in this one place if the demo link ever gets busy. */
+export const DEMO_MAX_QUESTIONS_PER_MONTH = 75;
+
+/** Demo answers are generated at low effort. Output is the most expensive line
+ *  on the bill at $10/MTok, and a shorter, more direct answer is arguably the
+ *  better demo anyway. The owner's own chat is untouched — this is read only on
+ *  the anonymous path. */
+export const DEMO_EFFORT = "low" as const;
+
 /** How much conversation Claude sees. FULL history stays in chat_messages for
  *  display regardless of what is sent. */
 export const MAX_HISTORY_TURNS = 20;

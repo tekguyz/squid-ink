@@ -22,10 +22,16 @@ const ports = {
   insertAssistantMessage: vi.fn(),
   deleteMessage: vi.fn(),
   readNoteContext: vi.fn(),
+  noteBelongsToCaller: vi.fn(),
+  countVisitorQuestions: vi.fn(),
+  countDemoQuestionsThisMonth: vi.fn(),
   searchRpc: vi.fn(),
 };
 
-let user: { id: string } | null = { id: "user-1" };
+// is_anonymous is what both the route's demo gates and the database's write
+// policies key on, so the fake user carries it. Default false: the owner's path
+// is the one most of these tests exercise.
+let user: { id: string; is_anonymous?: boolean } | null = { id: "user-1" };
 
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
@@ -104,6 +110,9 @@ beforeEach(() => {
   process.env.VOYAGE_API_KEY = "voyage-key";
   ports.countRecentUserMessages.mockResolvedValue(0);
   ports.readNoteContext.mockResolvedValue(NOTE);
+  ports.noteBelongsToCaller.mockResolvedValue(true);
+  ports.countVisitorQuestions.mockResolvedValue(0);
+  ports.countDemoQuestionsThisMonth.mockResolvedValue(0);
   ports.readHistory.mockResolvedValue([
     {
       id: "h1",
@@ -251,6 +260,84 @@ describe("refusals that are not about cost", () => {
     expect(ports.insertUserMessage).not.toHaveBeenCalled();
     expect(streamText).not.toHaveBeenCalled();
   });
+
+  it("404s an all-notes turn naming a note the caller does not own", async () => {
+    // The all-notes path reads no transcript, so before 2026-09-15 it proved
+    // ownership nowhere: note_id's foreign key is validated as the referenced
+    // table's owner and is NOT subject to RLS, so a caller could name anybody's
+    // note, have the insert land under their own user_id, and get a model call
+    // out of it. Anonymous sign-ins made that reachable by any stranger.
+    ports.noteBelongsToCaller.mockResolvedValue(false);
+    const res = await post({ noteId: "someone-elses", scope: "all_notes", text: "q" });
+
+    expect(res.status).toBe(404);
+    expect(ports.insertUserMessage).not.toHaveBeenCalled();
+    expect(streamText).not.toHaveBeenCalled();
+  });
+});
+
+describe("demo mode's two ceilings", () => {
+  const demoPost = (over: Partial<Record<string, number>> = {}) => {
+    user = { id: "visitor-1", is_anonymous: true };
+    if (over.visitor !== undefined) {
+      ports.countVisitorQuestions.mockResolvedValue(over.visitor);
+    }
+    if (over.month !== undefined) {
+      ports.countDemoQuestionsThisMonth.mockResolvedValue(over.month);
+    }
+    return post({ noteId: "n1", scope: "this_note", text: "q" });
+  };
+
+  it("refuses a visitor who has used their ten questions, before any spend", async () => {
+    const res = await demoPost({ visitor: 10 });
+
+    expect(res.status).toBe(429);
+    expect(ports.insertUserMessage).not.toHaveBeenCalled();
+    expect(streamText).not.toHaveBeenCalled();
+  });
+
+  it("does not run the monthly query when the visitor cap already bit", async () => {
+    // Cheapest-first, the same ordering every gate above follows: the monthly
+    // figure is an RPC that scans every visitor's rows, and a visitor who is
+    // already out of questions must not pay for it.
+    await demoPost({ visitor: 10 });
+
+    expect(ports.countDemoQuestionsThisMonth).not.toHaveBeenCalled();
+  });
+
+  it("refuses everyone once the month's global budget is gone", async () => {
+    const res = await demoPost({ visitor: 0, month: 75 });
+
+    expect(res.status).toBe(429);
+    expect(streamText).not.toHaveBeenCalled();
+  });
+
+  it("generates demo answers at low effort", async () => {
+    await demoPost({ visitor: 0, month: 0 });
+
+    const arg = streamText.mock.calls[0][0] as {
+      providerOptions?: { anthropic?: Record<string, unknown> };
+    };
+    expect(arg.providerOptions?.anthropic?.effort).toBe("low");
+  });
+
+  it("charges the owner neither cap, and never lowers their effort", async () => {
+    // user stays the default non-anonymous owner. Both counts are left at 0 so
+    // that a regression which ran them anyway would still pass on status —
+    // the assertion is that they are not consulted at all.
+    await post({ noteId: "n1", scope: "this_note", text: "q" });
+
+    expect(ports.countVisitorQuestions).not.toHaveBeenCalled();
+    expect(ports.countDemoQuestionsThisMonth).not.toHaveBeenCalled();
+
+    const arg = streamText.mock.calls[0][0] as {
+      providerOptions?: { anthropic?: Record<string, unknown> };
+    };
+    expect(arg.providerOptions?.anthropic?.effort).toBeUndefined();
+  });
+});
+
+describe("more refusals that are not about cost", () => {
 
   it("returns JSON, not HTML, when a port throws", async () => {
     ports.countRecentUserMessages.mockRejectedValue(new Error("pg down"));

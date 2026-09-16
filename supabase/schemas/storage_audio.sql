@@ -94,12 +94,20 @@ create policy audio_recordings_select_own on storage.objects
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
 
+-- The two write policies also refuse an anonymous (demo) session. An upload is
+-- the most expensive thing a stranger could reach: the object itself costs
+-- storage, and a stored recording is what the transcription sweep picks up, so
+-- an unguarded insert here spends Gemini money on audio nobody asked for.
+-- SELECT is not guarded — a demo visitor plays the sample recording that the
+-- demo copied into their own folder, which the ownership predicate already
+-- scopes to them.
 drop policy if exists audio_recordings_insert_own on storage.objects;
 create policy audio_recordings_insert_own on storage.objects
   for insert to authenticated
   with check (
     bucket_id = 'audio-recordings'
     and (storage.foldername(name))[1] = (select auth.uid())::text
+    and not public.is_anon_session()
   );
 
 -- UPDATE needs both clauses. using decides which rows may be replaced; without
@@ -111,8 +119,10 @@ create policy audio_recordings_update_own on storage.objects
   using (
     bucket_id = 'audio-recordings'
     and (storage.foldername(name))[1] = (select auth.uid())::text
+    and not public.is_anon_session()
   )
   with check (
     bucket_id = 'audio-recordings'
     and (storage.foldername(name))[1] = (select auth.uid())::text
+    and not public.is_anon_session()
   );
