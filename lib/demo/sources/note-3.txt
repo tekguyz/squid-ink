@@ -1,0 +1,35 @@
+[00:00] Marcus: So I listened through the first four recordings this weekend. I want to talk about what's working and what isn't.
+[00:08] Priya: Go on.
+[00:09] Marcus: The transcription is better than I expected. Word accuracy is genuinely good, even with the room mic.
+[00:17] Dana: That's the PZM?
+[00:19] Marcus: That's the PZM on the table, yes. Speech comes through cleanly.
+[00:24] Priya: So what isn't working?
+[00:26] Marcus: Speaker separation. When two people overlap, and they overlap constantly, the labels smear. You get one person's sentence attributed to the other.
+[00:37] Dana: How often?
+[00:39] Marcus: I counted on one recording. Roughly one in six turns had the wrong speaker.
+[00:45] Priya: That's high.
+[00:47] Marcus: It's high enough that you can't trust a quote without listening back.
+[00:52] Dana: Is it worse with four people than with three?
+[00:56] Marcus: Noticeably. With three it was maybe one in twelve.
+[01:01] Priya: That argues against the four-person sessions we just scheduled.
+[01:06] Marcus: It argues for them, actually. If four is where it breaks, four is what we need recordings of.
+[01:13] Dana: We need the data to be usable though.
+[01:16] Marcus: We need both. Use three-person sessions when we want clean transcripts, four when we want hard cases.
+[01:24] Priya: Can we improve it on our side, or is it the model?
+[01:28] Marcus: Partly the room. The PZM picks up everything including the chairs. A second mic would help separate positions.
+[01:37] Dana: Do we have a second mic?
+[01:39] Priya: There's one in the cupboard. I don't know what state it's in.
+[01:43] Dana: I'll check it before Monday.
+[01:46] Marcus: The other thing is the timestamps. They're accurate, which matters more than I gave it credit for.
+[01:53] Priya: Because you can jump straight to the moment.
+[01:56] Marcus: Exactly. When the label is wrong I can click the timestamp and hear who actually said it in two seconds. That turns a broken transcript into a usable one.
+[02:06] Dana: So the timestamps rescue the diarization.
+[02:09] Marcus: They rescue it enough. I wouldn't ship it to someone else on that basis, but for our own work it's fine.
+[02:17] Priya: What about the summaries?
+[02:19] Marcus: Surprisingly good. It picked out the free lunch decision and the disk space thing without being told they mattered.
+[02:27] Dana: Did it get anything wrong?
+[02:29] Marcus: It flattened a disagreement. Two people argued about compensation and the summary said we decided not to pay. Which is what we decided, but it read as though it was uncontroversial.
+[02:41] Priya: That's the kind of thing that matters in a record.
+[02:44] Marcus: It is. I don't have a fix, I'm just noting it.
+[02:48] Dana: Worth writing down somewhere.
+[02:50] Marcus: Agreed. Let's keep a list of what the summaries miss. Not to fix now, just so we know.

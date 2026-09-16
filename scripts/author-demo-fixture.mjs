@@ -37,7 +37,6 @@ import { pathToFileURL } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 
 const BUCKET = "audio-recordings";
-const STATE = "scratch-demo-fixture-state.json";
 
 /** Decimal places kept on each embedding component. See the comment at the
  *  fixture's `embedding` field for the measurement behind the number. */
@@ -64,15 +63,24 @@ function arg(name, fallback = null) {
 }
 
 const audioPath = arg("audio");
+const transcriptPath = arg("transcript");
 const title = arg("title", "Demo recording");
+const out = arg("out", "demo-note-1");
 const confirmed = process.argv.includes("--confirm");
 
-if (!audioPath) {
+if (!confirmed && !audioPath && !transcriptPath) {
   console.error(
-    "usage: node scripts/author-demo-fixture.mjs --audio <path> [--title \"...\"]",
+    "usage:\n" +
+      "  stage 1, from audio : --audio <path> --duration <seconds> --out <name>\n" +
+      "  stage 1, from text  : --transcript <path> --out <name>\n" +
+      "  stage 2             : --confirm --out <name>\n",
   );
   process.exit(2);
 }
+
+/** One state file per note, so authoring a second one cannot silently
+ *  overwrite the first one's half-finished state. */
+const statePath = () => resolve("scratch", `${out}.state.json`);
 
 // ---------------------------------------------------------------------------
 // Loading the shipped TypeScript
@@ -146,7 +154,7 @@ console.log(`signed in as ${env.RLS_TEST_OWNER_EMAIL}  user=${userId}`);
 // ---------------------------------------------------------------------------
 
 if (confirmed) {
-  const state = JSON.parse(readFileSync(resolve("scratch", STATE), "utf8"));
+  const state = JSON.parse(readFileSync(statePath(), "utf8"));
   console.log(`\nstage 2 for note ${state.noteId}`);
 
   const { createNotegenPorts } = await import(
@@ -269,12 +277,124 @@ if (confirmed) {
     })),
   };
 
-  const out = "lib/demo/demo-note-1.json";
-  writeFileSync(out, JSON.stringify(fixture, null, 2));
+  const fixturePath = `lib/demo/${out}.json`;
+  writeFileSync(fixturePath, JSON.stringify(fixture, null, 2));
   const kb = Math.round(JSON.stringify(fixture).length / 1024);
-  console.log(`\nfixture written: ${out}  (~${kb} KB)`);
+  console.log(`\nfixture written: ${fixturePath}  (~${kb} KB)`);
   console.log(`\nThe note row and object are still in place. Delete them once`);
   console.log(`the fixture is committed — the fixture is the artefact, not the row.`);
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// Stage 1b — from a written transcript, with NO audio
+// ---------------------------------------------------------------------------
+//
+// The demo needs more than one note before "All notes" chat is worth showing,
+// and there is only one cleared recording. A note with no audio is a first-
+// class state in this app — `notes.audio_storage_path` is nullable and the
+// player simply does not render — so these notes are honest rather than
+// degraded.
+//
+// A WRITTEN transcript is acceptable here for exactly the reason it was not
+// acceptable for note 1: the objection was that hand-typed timestamps do not
+// match the recording, and there is no recording to mismatch. Nothing is
+// transcribed, so no Gemini transcription call is made; notegen still runs for
+// real in stage 2, so the takeaways are generated rather than invented.
+//
+// Speakers are mapped to "Speaker N" through the SHIPPED speakerFor, not to the
+// names in the source file. Diarization returns opaque cluster ids — the rules
+// are explicit that a label is never a name — so a demo showing "Dana" would be
+// showing something this app cannot actually produce.
+
+if (transcriptPath) {
+  const { speakerFor, formatTimestamp } = await import(
+    new URL("lib/transcription/transcript.ts", ROOT).href
+  );
+
+  const LINE = /^\[(\d{1,2}):(\d{2})\]\s+([^:]+):\s*(.+)$/;
+  const parsed = [];
+  for (const raw of readFileSync(transcriptPath, "utf8").split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const m = LINE.exec(line);
+    if (!m) throw new Error(`unparseable transcript line: ${line}`);
+    parsed.push({
+      seconds: Number(m[1]) * 60 + Number(m[2]),
+      sourceName: m[3].trim(),
+      text: m[4].trim(),
+    });
+  }
+  if (parsed.length === 0) throw new Error("the transcript file is empty");
+
+  // Ordinals by FIRST APPEARANCE, which is what speakerOrdinals does for a real
+  // transcription. Numbering by anything else (alphabetical, say) would put
+  // Speaker 2 before Speaker 1 in the pane.
+  const order = [];
+  for (const p of parsed) if (!order.includes(p.sourceName)) order.push(p.sourceName);
+
+  const noteId = randomUUID();
+  const lastEnd = parsed[parsed.length - 1].seconds + 6;
+
+  const chunks = parsed.map((p, seq) => {
+    const endSeconds = parsed[seq + 1]?.seconds ?? lastEnd;
+    const speaker = speakerFor(order.indexOf(p.sourceName) + 1);
+    return {
+      note_id: noteId,
+      user_id: userId,
+      chunk_type: "transcript_segment",
+      persona_id: null,
+      // null puts the chunk on the embedding queue, which stage 2 then drains.
+      embedding: null,
+      content: p.text,
+      metadata: {
+        seq,
+        ts_start: formatTimestamp(p.seconds),
+        ts_end: formatTimestamp(endSeconds),
+        ts_start_seconds: p.seconds,
+        ts_end_seconds: endSeconds,
+        speaker,
+      },
+    };
+  });
+
+  // Matches what persistTranscription writes: the segments joined, no speaker
+  // labels and no timestamps. This is what chat feeds the model.
+  const rawTranscript = parsed.map((p) => p.text).join(" ");
+
+  const { error: insertError } = await owner.from("notes").insert({
+    id: noteId,
+    user_id: userId,
+    // Left null so stage 2's notegen names it, the same as note 1.
+    title: null,
+    audio_storage_path: null,
+    audio_duration_seconds: lastEnd,
+    raw_transcript: rawTranscript,
+    // 'completed' is what makes the note eligible for notegen: the claim reads
+    // `processing_status = 'completed' AND notegen_status IS NULL`. Nothing is
+    // being skipped — there is genuinely no transcription left to do.
+    processing_status: "completed",
+    diarization_enabled: true,
+  });
+  if (insertError) throw new Error(`insert failed: ${insertError.message}`);
+
+  const { error: chunkError } = await owner.from("note_chunks").insert(chunks);
+  if (chunkError) throw new Error(`chunk insert failed: ${chunkError.message}`);
+
+  mkdirSync("scratch", { recursive: true });
+  writeFileSync(
+    statePath(),
+    JSON.stringify({ noteId, userId, path: null, duration: lastEnd }, null, 2),
+  );
+
+  console.log(`\nsource   : ${transcriptPath}`);
+  console.log(`note     : ${noteId}`);
+  console.log(`segments : ${chunks.length}`);
+  console.log(`speakers : ${order.length} (${order.join(", ")} -> Speaker 1..${order.length})`);
+  console.log(`duration : ${lastEnd}s`);
+  console.log(`audio    : none`);
+  console.log(`\nStage 1b done. State written to ${statePath()}`);
+  console.log(`Run again with --confirm --out ${out} to generate and embed.`);
   process.exit(0);
 }
 
@@ -417,7 +537,7 @@ console.log(row.raw_transcript ?? "(none)");
 
 mkdirSync("scratch", { recursive: true });
 writeFileSync(
-  resolve("scratch", STATE),
+  statePath(),
   JSON.stringify(
     { noteId, userId, path, title, duration, contentType, segments, rawTranscript: row.raw_transcript },
     null,
@@ -426,7 +546,7 @@ writeFileSync(
 );
 
 console.log(`\n${"=".repeat(72)}`);
-console.log(`Stage 1 done. State written to scratch/${STATE}`);
+console.log(`Stage 1 done. State written to ${statePath()}`);
 console.log(`The note row and the object are LEFT IN PLACE for stage 2.`);
 console.log(``);
 console.log(`NOTHING IS PUBLIC YET. Read the transcript above. If any of it`);
