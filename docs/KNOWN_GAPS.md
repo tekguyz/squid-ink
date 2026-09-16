@@ -2891,6 +2891,21 @@ here. Blocks reopening public signup or shipping demo mode. Not urgent —
 zero public exposure currently (2 known users). Revisit before public
 signup or demo mode. (2026-09-14)
 
+**Closed 2026-09-15 — no pricing model will be designed.** Squid Ink is a
+lead-gen / case-study asset, not a revenue product. Public signup is closed
+permanently and demo mode is unblocked, so this gap blocks nothing. See
+`docs/DECISIONS.md` § Auth → Signup access model.
+
+## Demo-mode chat cap — enforcement mechanism undecided (recorded 2026-09-15)
+
+Demo mode caps AI chat at roughly 10 questions. **How that cap is enforced is
+not decided.** It must be server-side — a client-side counter is a public
+endpoint with a number next to it — but the key it counts against is open:
+per demo session (easy to reset by clearing cookies) or per IP (breaks on
+shared networks and CGNAT). Deferred: at current traffic (2 known users, no
+public link yet) the cost of picking wrong is zero. Decide before the demo
+link goes on tekguyz.com. (2026-09-15)
+
 ## A 404 logs a React "script tag" error in dev (recorded 2026-09-15)
 
 Found while checking the new `app/not-found.tsx`. **Measured** over the DevTools

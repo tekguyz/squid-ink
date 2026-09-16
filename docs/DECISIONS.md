@@ -134,6 +134,16 @@ a separate, still-open question (see Branding below).
 - **Signup stays closed until a pricing or usage-cap model exists.** No plan to
   reopen public signup until TEKGUYZ has a paid tier or per-user usage
   limits in place. (2026-09-14)
+- **Superseded 2026-09-15 — the pricing dependency above is wrong.** Squid Ink
+  is a lead-gen / case-study asset, not a revenue product: it exists to show
+  TEKGUYZ's work, and no pricing model will be designed for it. So public
+  signup stays closed **permanently**, not conditionally — there is no
+  condition left to meet. Any real account is created by hand in the Supabase
+  dashboard. **Demo mode is unblocked** (sample meetings, no live recording, a
+  chat cap of roughly 10 questions, everything else read-only) and is the
+  public-facing surface linked from the tekguyz.com case study. The 2–5 minute
+  recording-cap idea is **rejected**: it is moot once live recording is never
+  reachable from open signup. (2026-09-15)
 **Frontend + hosting**
 - Next.js + Vercel. Netlify is out. Root cause of the prior build's sync-processing
   failures was Netlify Functions' 10-second timeout (and no WebSocket
@@ -715,10 +725,9 @@ shipped. Kept in place with what closed them, rather than deleted.
   same day, the long-term model still open.** See § Auth.
 - **Demo mode** — **scoped 2026-09-15, not built, blocked.** Shape: sample
   meetings only, no live recording, an AI chat cap of roughly 10 questions,
-  and everything else read-only. It stays blocked until a pricing/usage-cap
-  model exists — the same reason public signup closed on 2026-09-14 (§ Auth →
-  Signup access model). Open questions: `docs/KNOWN_GAPS.md` § "Public demo
-  mode".
+  and everything else read-only. **Unblocked 2026-09-15** — the pricing/usage-cap
+  dependency that blocked it was superseded the same day (§ Auth → Signup
+  access model). Open questions: `docs/KNOWN_GAPS.md` § "Public demo mode".
 
 Everything else from the 2026-08-30 feature-triage backlog is disposed — see
 ROADMAP.md §8 for what was promoted and where, and "Rejected" above for what
