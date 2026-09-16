@@ -39,6 +39,21 @@ import { createClient } from "@supabase/supabase-js";
 const BUCKET = "audio-recordings";
 const STATE = "scratch-demo-fixture-state.json";
 
+/** Decimal places kept on each embedding component. See the comment at the
+ *  fixture's `embedding` field for the measurement behind the number. */
+const EMBEDDING_DECIMALS = 5;
+
+/** pgvector text form in, pgvector text form out, with the components rounded.
+ *  Parsing and re-stringifying is deliberate — the alternative is a regex over
+ *  a 1024-element numeric string, which is harder to read and no faster. */
+function roundVector(text) {
+  if (typeof text !== "string") return text;
+  const m = 10 ** EMBEDDING_DECIMALS;
+  return JSON.stringify(
+    JSON.parse(text).map((x) => Math.round(x * m) / m),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Arguments
 // ---------------------------------------------------------------------------
@@ -126,12 +141,141 @@ const owner = createClient(url, publishableKey, {
 const userId = signIn.user.id;
 console.log(`signed in as ${env.RLS_TEST_OWNER_EMAIL}  user=${userId}`);
 
+// ---------------------------------------------------------------------------
+// Stage 2 — notegen, embeddings, and the fixture
+// ---------------------------------------------------------------------------
+
 if (confirmed) {
-  console.error(
-    "\n--confirm is not implemented yet. Stage 2 (notegen, embeddings, writing\n" +
-      "the fixture) is a separate change. Run stage 1 and read the transcript.",
+  const state = JSON.parse(readFileSync(resolve("scratch", STATE), "utf8"));
+  console.log(`\nstage 2 for note ${state.noteId}`);
+
+  const { createNotegenPorts } = await import(
+    new URL("lib/notegen/notegen-ports.ts", ROOT).href
   );
-  process.exit(2);
+  const { claimAndGenerate } = await import(
+    new URL("lib/notegen/generate-note.ts", ROOT).href
+  );
+  const { createEmbeddingPorts } = await import(
+    new URL("lib/rag/supabase-ports.ts", ROOT).href
+  );
+  const { embedNoteChunks } = await import(
+    new URL("lib/rag/embed-note.ts", ROOT).href
+  );
+
+  const { data: noteRow, error: noteReadError } = await owner
+    .from("notes")
+    .select("id, user_id, raw_transcript, updated_at, notegen_status")
+    .eq("id", state.noteId)
+    .single();
+  if (noteReadError) throw noteReadError;
+
+  // Re-runnable on purpose. notegen_status IS the queue, and a note that has
+  // already generated takes a contended zero-row claim rather than generating
+  // twice — so re-running this stage to reshape the fixture must not look like
+  // a failure, and must not spend a second Gemini call. Skipping on the status
+  // is cheaper than claiming and interpreting "contended".
+  if (noteRow.notegen_status === null) {
+    // The title is nulled ON PURPOSE, and only on the generating run.
+    // setTitleIfUnset writes behind `is('title', null)` — the overwrite guard
+    // that stops the pipeline renaming a note a human named. Stage 1 set a
+    // placeholder from --title, which would otherwise be KEPT and the
+    // generated title thrown away.
+    //
+    // Inside this branch, not above it. It was above it for one run, which
+    // nulled the title on a RE-run that then skipped generation and never
+    // wrote one back — the fixture came out with title: null. A destructive
+    // step guarded by a different condition than the step that repairs it.
+    const { error: untitleError } = await owner
+      .from("notes")
+      .update({ title: null })
+      .eq("id", state.noteId);
+    if (untitleError) throw untitleError;
+
+    console.log("\ngenerating notes (real Gemini call) ...");
+    const notegenPorts = createNotegenPorts(owner, env.GEMINI_API_KEY);
+    const outcome2 = await claimAndGenerate(notegenPorts, noteRow);
+    console.log(`notegen outcome=${outcome2}`);
+    if (outcome2 !== "generated") {
+      throw new Error(
+        `notegen did not generate (${outcome2}). The claim needs ` +
+          `processing_status='completed' AND notegen_status IS NULL.`,
+      );
+    }
+  } else {
+    console.log(`\nnotegen already ${noteRow.notegen_status} — skipping, no Gemini call`);
+  }
+
+  if (!env.VOYAGE_API_KEY) throw new Error("VOYAGE_API_KEY is missing");
+  // embedding IS NULL is the queue at chunk grain, so a second run finds
+  // nothing pending and makes no Voyage call. No skip needed here — the
+  // pipeline's own queue already says so.
+  console.log("\nembedding chunks (real Voyage calls) ...");
+  const embedPorts = createEmbeddingPorts(owner, env.VOYAGE_API_KEY);
+  const report = await embedNoteChunks(embedPorts, state.noteId);
+  console.log(`embed report=${JSON.stringify(report)}`);
+
+  const { data: finalNote, error: finalNoteError } = await owner
+    .from("notes")
+    .select("title, raw_transcript, notegen_status, audio_duration_seconds, diarization_enabled")
+    .eq("id", state.noteId)
+    .single();
+  if (finalNoteError) throw finalNoteError;
+
+  const { data: finalChunks, error: finalChunkError } = await owner
+    .from("note_chunks")
+    .select("chunk_type, content, metadata, embedding, persona_id")
+    .eq("note_id", state.noteId);
+  if (finalChunkError) throw finalChunkError;
+
+  const byType = {};
+  let missingEmbedding = 0;
+  for (const c of finalChunks ?? []) {
+    byType[c.chunk_type] = (byType[c.chunk_type] ?? 0) + 1;
+    if (c.embedding === null) missingEmbedding += 1;
+  }
+
+  console.log(`\ntitle   : ${finalNote.title}`);
+  console.log(`status  : ${finalNote.notegen_status}`);
+  console.log(`chunks  : ${JSON.stringify(byType)}`);
+  console.log(`unembedded: ${missingEmbedding}`);
+
+  mkdirSync("lib/demo", { recursive: true });
+  const fixture = {
+    // Authored by this script. Regenerate rather than hand-edit: the
+    // embeddings must agree with the content, and no human can keep 1024
+    // floats in step with an edited sentence.
+    authoredAt: new Date().toISOString().slice(0, 10),
+    note: {
+      title: finalNote.title,
+      rawTranscript: finalNote.raw_transcript,
+      audioDurationSeconds: finalNote.audio_duration_seconds,
+      diarizationEnabled: finalNote.diarization_enabled,
+    },
+    chunks: (finalChunks ?? []).map((c) => ({
+      chunkType: c.chunk_type,
+      content: c.content,
+      metadata: c.metadata,
+      // pgvector's text form, which is the shape PostgREST wants on the way
+      // back in — kept as a string rather than an array for that reason.
+      //
+      // Rounded to EMBEDDING_DECIMALS places. Voyage returns 9, and the extra
+      // four are 31% of this file for no retrieval benefit: MEASURED
+      // 2026-09-15 across all 89 vectors, the worst cosine similarity between
+      // a rounded vector and its original is 0.999999996. Ranking cannot see
+      // that. The file is read at runtime rather than imported, so its size is
+      // disk and a little parse time, not bundle — but a megabyte of digits
+      // nobody needs is still a megabyte in every clone and every diff.
+      embedding: roundVector(c.embedding),
+    })),
+  };
+
+  const out = "lib/demo/demo-note-1.json";
+  writeFileSync(out, JSON.stringify(fixture, null, 2));
+  const kb = Math.round(JSON.stringify(fixture).length / 1024);
+  console.log(`\nfixture written: ${out}  (~${kb} KB)`);
+  console.log(`\nThe note row and object are still in place. Delete them once`);
+  console.log(`the fixture is committed — the fixture is the artefact, not the row.`);
+  process.exit(0);
 }
 
 // ---------------------------------------------------------------------------
