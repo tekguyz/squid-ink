@@ -1,4 +1,9 @@
 import type { ChunkMetadata } from "@/lib/notes/types";
+import {
+  resolveSegmentCitation,
+  withCitation,
+  type NotegenSegment,
+} from "@/lib/notegen/segment-citations";
 
 /** Turns a GeneratedNote into rows, and writes them in the one order that is
  *  safe to crash in the middle of.
@@ -33,8 +38,21 @@ export interface GeneratedNote {
    *  items only. Not an empty string: absent and blank are different, and only
    *  one of them should reach the database as a row. */
   summary: string | null;
-  takeaways: string[];
-  actionItems: string[];
+  takeaways: GeneratedItem[];
+  actionItems: GeneratedItem[];
+}
+
+/** One takeaway or action item, with the transcript line the model says
+ *  supports it.
+ *
+ *  `segment` is an ATTRIBUTION, not a timestamp: a 1-based label into the
+ *  numbered transcript this call was given. It is resolved against the note's
+ *  real transcript_segment rows in lib/notegen/segment-citations.ts, and a
+ *  label that resolves to nothing writes no citation at all. Null means the
+ *  model returned nothing usable for it. */
+export interface GeneratedItem {
+  text: string;
+  segment: number | null;
 }
 
 export type NotegenChunkType = "summary" | "takeaway" | "action_item";
@@ -112,6 +130,15 @@ export function normalizeTitle(value: string | null): string | null {
   return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).trimEnd();
 }
 
+/** Trimmed, and blank text dropped. A blank string from the model is not a
+ *  chunk, whatever segment it claims to come from, and content is a not-null
+ *  column. */
+function usable(items: GeneratedItem[]): GeneratedItem[] {
+  return items
+    .map((item) => ({ ...item, text: item.text.trim() }))
+    .filter((item) => item.text.length > 0);
+}
+
 /** Two digits, matching ChunkMetadata.n's documented "01", "02", "03". */
 function ordinal(index: number): string {
   return String(index + 1).padStart(2, "0");
@@ -121,8 +148,12 @@ export function generatedChunkRowsFor(args: {
   noteId: string;
   userId: string;
   note: GeneratedNote;
+  /** This note's real transcript_segment rows. Empty is legitimate — an
+   *  untranscribed or pre-2026-09-16 note — and every citation then misses,
+   *  which writes no citation rather than a guessed one. */
+  segments?: NotegenSegment[];
 }): NotegenChunkInsert[] {
-  const { noteId, userId, note } = args;
+  const { noteId, userId, note, segments = [] } = args;
 
   const base = {
     note_id: noteId,
@@ -146,27 +177,34 @@ export function generatedChunkRowsFor(args: {
     });
   }
 
-  const takeaways = note.takeaways.map((t) => t.trim()).filter(Boolean);
-  takeaways.forEach((content, index) => {
+  const takeaways = usable(note.takeaways);
+  takeaways.forEach((item, index) => {
     rows.push({
       ...base,
       chunk_type: "takeaway",
-      content,
+      content: item.text,
       // n is the rendered ordinal, seq is position within the type. Both, so a
-      // reader does not have to derive one from the other.
-      metadata: { seq: index, n: ordinal(index) },
+      // reader does not have to derive one from the other. segment_id and
+      // ts_start ride alongside when the attribution resolved.
+      metadata: withCitation(
+        { seq: index, n: ordinal(index) },
+        resolveSegmentCitation(segments, item.segment),
+      ),
     });
   });
 
-  const actions = note.actionItems.map((a) => a.trim()).filter(Boolean);
-  actions.forEach((content, index) => {
+  const actions = usable(note.actionItems);
+  actions.forEach((item, index) => {
     // No owner and no due. ROADMAP §5 keeps action items bare text until the
     // drawer that would edit those fields exists.
     rows.push({
       ...base,
       chunk_type: "action_item",
-      content,
-      metadata: { seq: index, n: ordinal(index) },
+      content: item.text,
+      metadata: withCitation(
+        { seq: index, n: ordinal(index) },
+        resolveSegmentCitation(segments, item.segment),
+      ),
     });
   });
 
@@ -178,10 +216,11 @@ export async function persistGeneratedNote(args: {
   noteId: string;
   userId: string;
   note: GeneratedNote;
+  segments?: NotegenSegment[];
 }): Promise<PersistOutcome> {
-  const { store, noteId, userId, note } = args;
+  const { store, noteId, userId, note, segments } = args;
 
-  const rows = generatedChunkRowsFor({ noteId, userId, note });
+  const rows = generatedChunkRowsFor({ noteId, userId, note, segments });
 
   await store.deleteGeneratedChunks(noteId);
   if (rows.length > 0) await store.insertChunks(rows);
