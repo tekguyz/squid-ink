@@ -1,6 +1,6 @@
 ---
 name: doc-audit
-description: Audit CLAUDE.md, docs/KNOWN_GAPS.md, docs/DECISIONS.md, docs/ROADMAP.md and docs/DEPLOYMENT.md against the real repo state and against each other, repair whichever is stale, and commit the doc files. Use when the user asks for a doc audit, says the docs are stale, or when the handoff skill reports a check finding it could not resolve. This is the heavy pass — the handoff skill does not run it.
+description: Audit CLAUDE.md, docs/KNOWN_GAPS.md, docs/DECISIONS.md, docs/ROADMAP.md and docs/DEPLOYMENT.md against the real repo state and against each other, repair whichever is stale, and commit the doc files. Use when the user asks for a doc audit, says the docs are stale, or when the status-sync skill reports a check finding it could not resolve. This is the heavy pass — the status-sync skill does not run it.
 ---
 
 # Doc audit — measure the docs against the repo, repair what drifted
@@ -11,15 +11,15 @@ half every time. Measured that day: a full pass reads about **69k tokens** of
 documents before writing a word, and up to **127k** when a citation leads into a
 `design-reference/*.dc.html` file.
 
-**Run this when a doc is actually suspect**, not on every handoff:
+**Run this when a doc is actually suspect**, not on every status sync:
 
-- `node scripts/check-docs.mjs` reported a finding the `handoff` skill could not
-  resolve from script output alone
+- `node scripts/check-docs.mjs` reported a finding the `status-sync` skill could
+  not resolve from script output alone
 - a session shipped work that needs a new `KNOWN_GAPS.md` entry or a dated
   `RESOLVED` line
 - the user asks for a doc audit, or says something in the docs looks wrong
 
-The `handoff` skill runs the same script but reads only its **output**. It never
+The `status-sync` skill runs the same script but reads only its **output**. It never
 opens a whole doc. That is the whole point of the split — do not reintroduce doc
 reading there.
 

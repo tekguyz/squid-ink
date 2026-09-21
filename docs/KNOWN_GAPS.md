@@ -3068,3 +3068,46 @@ Takeaway citations were assumed to be a strong thing to show a visitor. On a
 generated note they are not: the chips are inert. Whatever seeds the demo will
 either carry this defect or have to work around it, and the demo's citation
 story rests on chat until this is fixed.
+
+## `handoff` → `status-sync`, and what Job 3 deliberately left (recorded 2026-09-20)
+
+Job 3 of `C:\Projects\tekguyz-one\docs\WORKFLOW-PLAN-2026-09-20.md` ran here
+today, for this repo only. `.claude/skills/handoff/` moved to
+`.claude/skills/status-sync/` with `git mv`, the paste-block half was cut, and
+the audit half was kept whole: the reading budget, all five gathering steps
+including the `git fetch origin` before any remote status, the never-repair rule,
+and the surface, candidate and measurement rules. `docs/superpowers/` was
+archived to `docs/_archive/superpowers/`.
+
+Left open, on purpose:
+
+- **`node scripts/check-docs.mjs` exits `1` with one finding:** *"CLAUDE.md + 5
+  rule file(s) names `CONTEXT.md`, which does not exist"*. Pre-existing, from the
+  engineering-skills commit `6cef066`, and not Job 3's to fix. The plan's Job 5
+  says a `CONTEXT.md` for the code repos is **not** written up front —
+  `/grill-with-docs` creates it the moment a term actually resolves. So either
+  the file arrives that way or the reference comes out of `CLAUDE.md`; both are a
+  later sitting's call.
+- **The plan's §1.3 undercounts this repo.** It lists
+  `tekguyz-squid-ink/docs/superpowers/plans/` as 5 files. There were **13 plans
+  and 3 specs, 16 tracked files, 964 KB**. All 16 were archived, not deleted.
+  The plan file is in another repo and was not edited from this session.
+- **Historical mentions of the old skill name are left exactly as written** —
+  this document's dated entries, `CLAUDE.md`'s 2026-09-09 bad-handoff line, the
+  two dated anecdotes in `.claude/skills/doc-audit/SKILL.md`, the comment in
+  `scripts/check-docs.mjs` recording the 2026-09-08 file move, and everything now
+  under `docs/_archive/`. They are a correct record of their own date. Only live
+  references were repointed: the `doc-audit` description and its three pointers
+  to the cheap half, the two header lines in `scripts/check-docs.mjs`, and the
+  spec path in `app/api/chat/route.ts`.
+- **"Device handoff" is untouched everywhere.** It is the audio-device feature,
+  not the skill, and it keeps its name in `lib/recorder/device-handoff.ts`,
+  `.claude/rules/recorder.md`, `docs/qa/recorder-manual-test-protocol.md` and
+  this document.
+- **No exclusion pass was added.** The sibling `tekguyz-one` skill strikes items
+  listed under § "Permanently rejected" and § "Parked" from its findings. This
+  document has neither section, so there was nothing to keep. If either is ever
+  added here, the skill needs that pass.
+
+The other six repos still carry a `handoff` skill and get Job 3 from their own
+sessions.

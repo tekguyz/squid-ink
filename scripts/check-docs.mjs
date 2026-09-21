@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Handoff doc checks for squid-ink.
+ * Status-sync doc checks for squid-ink.
  *
  * Repo-only. No browser, no dev server, no network. Covers the claims that can
  * be measured mechanically, so they cannot be reasoned past under context
- * pressure. Everything else in the handoff audit is a judgement call and stays
+ * pressure. Everything else in the status-sync audit is a judgement call and stays
  * in SKILL.md.
  *
  * Exit 0 = clean, 1 = findings, 2 = could not run (NOT a pass).

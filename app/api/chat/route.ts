@@ -2,7 +2,7 @@
  *
  *  Gates in cheapest-first order, so an abusive or broken client is refused
  *  before anything is spent. See
- *  docs/superpowers/specs/2026-09-03-ask-your-notes-chat-design.md § 4.
+ *  docs/_archive/superpowers/specs/2026-09-03-ask-your-notes-chat-design.md § 4.
  *
  *  This is the ONLY shipped file that reads ANTHROPIC_API_KEY, and the third
  *  and last that reads VOYAGE_API_KEY. project-conventions.test.ts fails the
