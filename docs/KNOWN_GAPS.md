@@ -3155,3 +3155,49 @@ Left open, on purpose:
 
 The other six repos still carry a `handoff` skill and get Job 3 from their own
 sessions.
+
+## `CLAUDE.md` slimmed, and what Job 4 deliberately left (recorded 2026-09-21)
+
+Job 4 of `C:\Projects\tekguyz-one\docs\WORKFLOW-PLAN-2026-09-20.md` ran here
+today, for this repo only. `CLAUDE.md` went from **28,789 bytes / 547 lines** to
+**13,654 bytes / 297 lines** — a 53% cut of a file that loads into every
+message. Five new path-scoped rule files were added beside the existing five
+(`design-tokens.md`, `data-layer.md`, `supabase-schema.md`, `auth.md`,
+`layout-checks.md`), and `docs/CONVENTIONS_DETAIL.md` took the reasoning,
+corrections and dated measurements. No rule was dropped: a shingle audit over
+all 108 blocks of the old file found every one surviving, and all 44 `paths:`
+globs across the ten rule files were proved to match at least one real file.
+
+Left open, on purpose:
+
+- **The starter prompt's "under about 8 KB" target was not reached, and is not
+  reachable here without dropping a rule.** About 3.3 KB of this file is fixed
+  cost before a single judgement call: `scripts/check-docs.mjs` check 1 parses
+  the two pinned-version tables out of `CLAUDE.md` and nowhere else (its own
+  comment says a second table anywhere is the drift it exists to catch), the
+  secret-key check parses its allowlist out of § Supabase → Keys paragraph by
+  paragraph, and the `# This is NOT the Next.js you know` block is rewritten by
+  `next dev` on every run. Moving any of the three would trade a working check
+  for a byte count. The remaining ~10 KB is hard rules — RLS policy shape, the
+  secrets rules, the colour literal ban, the file-size ceilings, the `git fetch`
+  rule — which the job explicitly forbids moving to a path-scoped file, because
+  a path-scoped file does not load when it matters. `tekguyz-one`'s 6 KB
+  benchmark is a knowledge repo with no schema, no secrets and no parsed
+  checks; it is not a like-for-like target for a code repo.
+- **`/skill-doctor` was not run.** It is a UI command in this harness and cannot
+  be invoked from an agent session, so step 2 of the job — the real
+  per-session cost reading and the never-invoked skill list — is unmeasured.
+  Run it from an interactive `claude` session in this repo and record the
+  numbers here.
+- **The pre-existing `CONTEXT.md` finding is untouched.** `node
+  scripts/check-docs.mjs` still exits 1 with *"CLAUDE.md + 10 rule file(s) names
+  `CONTEXT.md`, which does not exist"* — the same single finding it reported
+  before this work, now counting ten rule files instead of five. It was left
+  open by Job 3 for the reason recorded above and is still not this job's to
+  fix.
+- **The archived `project-instructions-squid-ink.md` was mined, not restored.**
+  It is Claude.ai Project material — prompt anatomy, GitHub-connector rules,
+  gates — and none of it is a repo rule. The only repo-facing claims in it
+  (the `CLAUDE.md` § Commands done-list, the `verify-layout.mjs` UI gate, the
+  `verify-rls.mjs` policy gate, the `check-docs.mjs` exit codes) were already
+  in `CLAUDE.md` and stayed. It remains archived under `tekguyz-one`.
