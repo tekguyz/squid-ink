@@ -7,6 +7,11 @@ import {
 import type { GeneratableRow, NotegenPorts } from "@/lib/notegen/sweep";
 import { DEFAULT_PERSONA_FALLBACK } from "@/lib/notes/default-persona";
 
+const SEGMENTS = [
+  { segmentId: 0, tsStart: "00:12", speaker: "Dana", text: "We ship mapping first." },
+  { segmentId: 1, tsStart: "01:40", speaker: "Ravi", text: "Agreed." },
+];
+
 const ROW: GeneratableRow = {
   id: "n1",
   user_id: "u1",
@@ -18,8 +23,8 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
   const generate = vi.fn(async () => ({
     title: "T",
     summary: "S",
-    takeaways: ["t"],
-    actionItems: ["a"],
+    takeaways: [{ text: "t", segment: 1 }],
+    actionItems: [{ text: "a", segment: 2 }],
   }));
 
   const base: NotegenPorts = {
@@ -38,6 +43,7 @@ function ports(overrides: Partial<NotegenPorts> = {}) {
     store: {
       deleteGeneratedChunks: vi.fn(async () => {}),
       insertChunks: vi.fn(async () => {}),
+      listSegments: vi.fn(async () => SEGMENTS),
       setTitleIfUnset: vi.fn(async () => true),
       completeNotegen: vi.fn(async () => true),
       failNotegen: vi.fn(async () => true),
@@ -244,5 +250,66 @@ describe("the claimed persona reaches resolution", () => {
     expect(await claimAndGenerate(p, ROW)).toBe("contended");
     expect(p.resolvePersona).not.toHaveBeenCalled();
     expect(p.generate).not.toHaveBeenCalled();
+  });
+});
+
+describe("segment attribution", () => {
+  it("sends the model the NUMBERED transcript, not the raw one", async () => {
+    // The model can only cite a line it can see a number on.
+    const { ports: p, generate } = ports();
+    await generateClaimedNote(p, ROW, null);
+    expect(generate.mock.calls[0][0].transcript.split("\n")).toEqual([
+      "[1] Dana: We ship mapping first.",
+      "[2] Ravi: Agreed.",
+    ]);
+  });
+
+  it("writes the segment's OWN id and timestamp onto the chunk", async () => {
+    // Copied from the segment's record, never from anything the model said. A
+    // time the model invented would be plausible, wrong, and worse than 00:00.
+    const { ports: p } = ports();
+    await generateClaimedNote(p, ROW, null);
+    const rows = (p.store.insertChunks as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const takeaway = rows.find((r: { chunk_type: string }) => r.chunk_type === "takeaway");
+    expect(takeaway.metadata).toMatchObject({ segment_id: 0, ts_start: "00:12" });
+    const action = rows.find((r: { chunk_type: string }) => r.chunk_type === "action_item");
+    expect(action.metadata).toMatchObject({ segment_id: 1, ts_start: "01:40" });
+  });
+
+  it("falls back to the raw transcript when the note has no segment rows", async () => {
+    // A note transcribed before segments were written, or one with none at
+    // all. It must still generate — just without citations.
+    const { ports: p, generate } = ports();
+    p.store.listSegments = vi.fn(async () => []);
+    expect(await generateClaimedNote(p, ROW, null)).toBe("generated");
+    expect(generate.mock.calls[0][0].transcript).toBe(ROW.raw_transcript!.trim());
+  });
+
+  it("writes no citation at all when there are no segments to resolve against", async () => {
+    const { ports: p } = ports();
+    p.store.listSegments = vi.fn(async () => []);
+    await generateClaimedNote(p, ROW, null);
+    const rows = (p.store.insertChunks as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const takeaway = rows.find((r: { chunk_type: string }) => r.chunk_type === "takeaway");
+    expect("segment_id" in takeaway.metadata).toBe(false);
+    expect("ts_start" in takeaway.metadata).toBe(false);
+  });
+
+  it("generates without citations rather than failing when reading segments throws", async () => {
+    // A citation is an enhancement. Losing the read must not cost the note.
+    const { ports: p, generate } = ports();
+    p.store.listSegments = vi.fn(async () => {
+      throw new Error("permission denied for table note_chunks");
+    });
+    expect(await generateClaimedNote(p, ROW, null)).toBe("generated");
+    expect(generate.mock.calls[0][0].transcript).toBe(ROW.raw_transcript!.trim());
+  });
+
+  it("spends no segment read on a contended claim", async () => {
+    const { ports: p } = ports({
+      claimForGeneration: vi.fn(async () => ({ status: "lost" as const })),
+    });
+    await claimAndGenerate(p, ROW);
+    expect(p.store.listSegments).not.toHaveBeenCalled();
   });
 });

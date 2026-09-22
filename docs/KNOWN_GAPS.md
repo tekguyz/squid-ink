@@ -3069,6 +3069,50 @@ generated note they are not: the chips are inert. Whatever seeds the demo will
 either carry this defect or have to work around it, and the demo's citation
 story rests on chat until this is fixed.
 
+**RESOLVED 2026-09-21.** The second option above was taken: `lib/notegen`
+now attributes each takeaway and action item to the segment it came from.
+`lib/notegen/segment-citations.ts` holds the whole mechanism and
+`lib/notegen/__tests__/segment-citations.test.ts` its 15 tests.
+
+What ships:
+
+- **The model is shown a NUMBERED transcript** — `numberedTranscript()`, one
+  line per segment, each opening `[N]` — and `responseSchemaFor` now types
+  `takeaways` and `action_items` as arrays of `{ text, segment }` rather than
+  arrays of strings. The item carries its own attribution; a parallel array of
+  numbers would be a second list that can fall out of step with the first.
+- **The label is an ATTRIBUTION, not a timestamp.** It is a 1-based position in
+  the text that call was given, resolved against the note's real
+  `transcript_segment` rows, and the `ts_start` written onto the chunk is
+  copied from **the segment's own record**. A time the model invented would be
+  plausible, wrong, and worse than `00:00` — it would look trustworthy.
+- **The label is not the segment id.** Stored `metadata.seq` starts at 0 and
+  the prompt's labels start at 1, so label 1 resolves to seq 0.
+  `segmentsFromChunks` mirrors `note-view-model.ts`'s `seq ?? index + 1` rule
+  deliberately, and a test pins the mirroring: if the two drift, every citation
+  this pipeline writes points one segment off.
+- **A miss writes nothing.** A zero (which the prompt asks for when no single
+  line supports a claim), a non-integer, a label past the end, or a note with
+  no segments at all all resolve to null, and the chunk is written with neither
+  field — exactly as before. `withCitation` spreads rather than assigns so a
+  miss adds no keys: the view model cannot tell absent from null, so an
+  explicit null would be a lie with a value in it. Clamping to a nearby
+  segment was considered and refused.
+- **Losing the segment read costs the citations, never the note.**
+  `generateClaimedNote` catches it, logs it and generates against the raw
+  transcript. A note with no segment rows takes the same path, because sending
+  an empty numbered transcript is the one way this change could lose a note
+  that used to generate.
+
+**Nothing backfills the 42 chunks already written**, same as the untitled
+notes above. Regeneration stays rejected (`docs/DECISIONS.md` § Personas), so
+those notes keep inert chips until something that regenerates exists. Notes
+generated from today carry live ones.
+
+The demo consequence above is therefore narrower than it reads: notes authored
+by `scripts/author-demo-fixture.mjs` run real notegen, so a demo seeded after
+today gets real takeaway citations.
+
 ## `handoff` → `status-sync`, and what Job 3 deliberately left (recorded 2026-09-20)
 
 Job 3 of `C:\Projects\tekguyz-one\docs\WORKFLOW-PLAN-2026-09-20.md` ran here

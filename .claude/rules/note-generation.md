@@ -188,6 +188,38 @@ what the model returned and what the row carries are different facts.
 **Nothing backfills the notes that are already untitled** — see
 `docs/KNOWN_GAPS.md`.
 
+**Every takeaway and action item carries the segment it came from — shipped
+2026-09-21.** `lib/notegen/segment-citations.ts` owns the whole mechanism and
+is the file to read before touching any of it.
+
+- **The model is shown `numberedTranscript(segments)`**, not
+  `notes.raw_transcript`. One line per segment, each opening with a 1-based
+  `[N]`. `generateClaimedNote` reads the segments ONCE through
+  `store.listSegments` and uses them twice — to number the prompt and to
+  resolve what comes back — so the text cited into and the text resolved
+  against cannot be two different lists.
+- **`takeaways` and `action_items` are arrays of `{ text, segment }`** in
+  `responseSchemaFor`, not arrays of strings. The attribution rides on the
+  item. Do not split it into a parallel array of numbers.
+- **The label is not the segment id, and it is not a timestamp.** It is a
+  position in the text that call was given. `resolveSegmentCitation` maps it
+  to the segment's own `segmentId`, and `ts_start` is copied from the
+  segment's record — never from anything the model said. Stored `seq` is
+  0-based and the labels are 1-based, so label 1 is seq 0.
+- **A miss writes nothing, in one place.** Zero, a non-integer, a label past
+  the end, and a note with no segments are all the same answer: null, and
+  `withCitation` then adds no keys. `parseGeneratedNote` deliberately keeps a
+  0 rather than nulling it at the boundary — what counts as a miss is
+  `resolveSegmentCitation`'s to decide, once. Never clamp to a neighbour.
+- **A failed segment read degrades, it does not fail the note.** Citations are
+  an enhancement on a note that generates fine without them; a note with no
+  segment rows falls back to the raw transcript for the same reason, because
+  an empty numbered transcript would lose a note that used to generate.
+
+`docs/KNOWN_GAPS.md` § "Takeaway and action-item citations are dead" carries
+the measurement this fixed and the note that **nothing backfills** the 42
+chunks written before it.
+
 Generated chunks always write `persona_id: null` and `embedding: null`. The
 embedding stays null only until the embedding phase runs, which since
 2026-09-03 is the very next step in the same `after()` chain — `.claude/rules/embeddings.md`

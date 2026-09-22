@@ -168,7 +168,12 @@ describe("createNotegenStore", () => {
     const rows = generatedChunkRowsFor({
       noteId: "n1",
       userId: "u1",
-      note: { title: "T", summary: "S", takeaways: ["t"], actionItems: ["a"] },
+      note: {
+        title: "T",
+        summary: "S",
+        takeaways: [{ text: "t", segment: 1 }],
+        actionItems: [{ text: "a", segment: 1 }],
+      },
     });
     expect(rows.every((r) => r.persona_id === null)).toBe(true);
 

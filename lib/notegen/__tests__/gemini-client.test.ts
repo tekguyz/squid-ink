@@ -74,14 +74,22 @@ describe("responseSchemaFor", () => {
     ]);
   });
 
-  it("types both lists as arrays of strings", () => {
+  it("types both lists as arrays of cited items, not bare strings", () => {
+    // The item carries its attribution with it. A parallel array of segment
+    // numbers would be a second list that can fall out of step with the first.
     const schema = responseSchemaFor(planForDepth("dense")) as {
       properties: Record<string, unknown>;
     };
-    expect(schema.properties.takeaways).toEqual({
+    const itemArray = {
       type: "array",
-      items: { type: "string" },
-    });
+      items: {
+        type: "object",
+        properties: { text: { type: "string" }, segment: { type: "integer" } },
+        required: ["text", "segment"],
+      },
+    };
+    expect(schema.properties.takeaways).toEqual(itemArray);
+    expect(schema.properties.action_items).toEqual(itemArray);
   });
 });
 
@@ -89,9 +97,15 @@ describe("parseGeneratedNote", () => {
   it("reads the three fields off well-formed JSON", () => {
     expect(
       parseGeneratedNote(
-        '{"summary":"S","takeaways":["a","b"],"action_items":["c"]}',
+        '{"summary":"S","takeaways":[{"text":"a","segment":2}],' +
+          '"action_items":[{"text":"c","segment":5}]}',
       ),
-    ).toEqual({ title: null, summary: "S", takeaways: ["a", "b"], actionItems: ["c"] });
+    ).toEqual({
+      title: null,
+      summary: "S",
+      takeaways: [{ text: "a", segment: 2 }],
+      actionItems: [{ text: "c", segment: 5 }],
+    });
   });
 
   it("returns a null summary when the field is absent", () => {
@@ -122,11 +136,40 @@ describe("parseGeneratedNote", () => {
     ).toEqual([]);
   });
 
-  it("drops non-string entries rather than writing them as chunks", () => {
+  it("drops entries with no usable text rather than writing them as chunks", () => {
     expect(
-      parseGeneratedNote('{"takeaways":["a",5,null,"b"],"action_items":[]}')
+      parseGeneratedNote(
+        '{"takeaways":[{"text":"a","segment":1},5,null,"bare",' +
+          '{"segment":3},{"text":"b","segment":2}],"action_items":[]}',
+      ).takeaways,
+    ).toEqual([
+      { text: "a", segment: 1 },
+      { text: "b", segment: 2 },
+    ]);
+  });
+
+  it("nulls a segment that is not an integer rather than guessing one", () => {
+    // Same rule segment-citations.ts states: a miss writes no citation. A
+    // clamped or rounded label would look trustworthy and point nowhere.
+    expect(
+      parseGeneratedNote(
+        '{"takeaways":[{"text":"a","segment":"2"},{"text":"b","segment":1.5},' +
+          '{"text":"c"}],"action_items":[]}',
+      ).takeaways,
+    ).toEqual([
+      { text: "a", segment: null },
+      { text: "b", segment: null },
+      { text: "c", segment: null },
+    ]);
+  });
+
+  it("keeps 0, which the prompt asks for when nothing supports the claim", () => {
+    // Kept as 0 here and missed later, rather than nulled at the boundary:
+    // resolveSegmentCitation owns what a miss is, in one place.
+    expect(
+      parseGeneratedNote('{"takeaways":[{"text":"a","segment":0}],"action_items":[]}')
         .takeaways,
-    ).toEqual(["a", "b"]);
+    ).toEqual([{ text: "a", segment: 0 }]);
   });
 
   it("survives a JSON null body without throwing on property access", () => {
@@ -172,5 +215,24 @@ describe("title in the structured output", () => {
     expect(parseGeneratedNote(JSON.stringify({ takeaways: [] })).title).toBe(null);
     expect(parseGeneratedNote(JSON.stringify({ title: "  " })).title).toBe(null);
     expect(parseGeneratedNote(JSON.stringify({ title: 7 })).title).toBe(null);
+  });
+});
+
+describe("segment attribution in the prompt", () => {
+  it("asks for the supporting line number at every depth", () => {
+    // The transcript this call is given is numbered by segment-citations.ts.
+    // The model is asked which numbered line supports each claim — never for a
+    // timestamp, which it would have to invent.
+    for (const depth of ["brief", "dense", "exhaustive"] as const) {
+      const prompt = systemPromptFor(lensPromptFor("neutral-analyst"), planForDepth(depth));
+      expect(prompt).toMatch(/segment/i);
+      expect(prompt).toMatch(/transcript line/i);
+    }
+  });
+
+  it("tells the model to answer 0 rather than guess a line", () => {
+    const prompt = systemPromptFor(lensPromptFor("neutral-analyst"), planForDepth("dense"));
+    expect(prompt).toMatch(/\b0\b/);
+    expect(prompt).toMatch(/never guess/i);
   });
 });

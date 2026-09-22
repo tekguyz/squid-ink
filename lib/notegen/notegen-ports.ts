@@ -7,6 +7,8 @@ import type {
   ResolvedPersona,
 } from "@/lib/notegen/sweep";
 import { resolvePersonaFor } from "@/lib/notegen/resolve-persona";
+import { segmentsFromChunks } from "@/lib/notegen/segment-citations";
+import type { ChunkRow } from "@/lib/notes/types";
 
 /** Re-exported so callers and tests that already import it from here keep
  *  working. It MOVED on 2026-09-02, it did not change owner: per-note lens
@@ -58,6 +60,32 @@ export function createNotegenStore(db: SupabaseClient): NotegenStore {
       if (error) {
         throw new Error(`clearing old generated chunks failed: ${error.message}`);
       }
+    },
+
+    async listSegments(noteId) {
+      // A READ of the transcription pipeline's rows, and the only one in this
+      // track. Scoped to chunk_type 'transcript_segment' for the same reason
+      // the delete above is scoped away from it: the two pipelines share a
+      // table and nothing but the column says which rows are whose.
+      //
+      // No user_id filter. RLS supplies it on the Server Action path, and the
+      // note_id is already the cron path's scope — see CLAUDE.md § Supabase →
+      // RLS rules. Ordering is applied in segmentsFromChunks, which mirrors
+      // note-view-model.ts's, so the two cannot drift.
+      // THREE COLUMNS, not `*`. embedding is a vector(1024) per row and a
+      // 60-minute note carries hundreds of segments, so `*` would drag
+      // megabytes of floats across the wire — inside a cron run that shares a
+      // 300 s budget — for data segmentsFromChunks never reads.
+      const { data, error } = await db
+        .from("note_chunks")
+        .select("id, content, metadata")
+        .eq("note_id", noteId)
+        .eq("chunk_type", "transcript_segment");
+
+      if (error) throw new Error(`reading transcript segments failed: ${error.message}`);
+      return segmentsFromChunks(
+        (data ?? []) as Pick<ChunkRow, "id" | "content" | "metadata">[],
+      );
     },
 
     async insertChunks(rows) {

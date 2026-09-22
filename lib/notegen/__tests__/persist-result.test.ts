@@ -11,9 +11,20 @@ import {
 const NOTE: GeneratedNote = {
   title: "Mapping before billing",
   summary: "They agreed to ship the mapping work first.",
-  takeaways: ["Mapping ships first", "Billing slips a week"],
-  actionItems: ["Dana to draft the sequencing plan"],
+  takeaways: [
+    { text: "Mapping ships first", segment: 1 },
+    { text: "Billing slips a week", segment: 2 },
+  ],
+  actionItems: [{ text: "Dana to draft the sequencing plan", segment: 3 }],
 };
+
+/** The note's real segment rows, as the store would hand them over. Label 1
+ *  resolves to segmentId 0 — the labels are 1-based and the stored seq is not. */
+const SEGMENTS = [
+  { segmentId: 0, tsStart: "00:12", speaker: "Dana", text: "Mapping first." },
+  { segmentId: 1, tsStart: "01:40", speaker: "Ravi", text: "Billing slips." },
+  { segmentId: 2, tsStart: null, speaker: "Dana", text: "I'll draft it." },
+];
 
 function storeSpy(overrides: Partial<NotegenStore> = {}) {
   const calls: string[] = [];
@@ -24,6 +35,7 @@ function storeSpy(overrides: Partial<NotegenStore> = {}) {
     insertChunks: vi.fn(async () => {
       calls.push("insert");
     }),
+    listSegments: vi.fn(async () => SEGMENTS),
     completeNotegen: vi.fn(async () => {
       calls.push("complete");
       return true;
@@ -103,11 +115,80 @@ describe("generatedChunkRowsFor", () => {
     const rows = generatedChunkRowsFor({
       noteId: "n1",
       userId: "u1",
-      note: { title: null, summary: "   ", takeaways: ["", "  ", "real"], actionItems: [] },
+      note: {
+        title: null,
+        summary: "   ",
+        takeaways: [
+          { text: "", segment: 1 },
+          { text: "  ", segment: 1 },
+          { text: "real", segment: 1 },
+        ],
+        actionItems: [],
+      },
     });
     expect(rows).toHaveLength(1);
     expect(rows[0].content).toBe("real");
     expect(rows[0].metadata.n).toBe("01");
+  });
+
+  it("resolves a 1-based label to the segment's own id and timestamp", () => {
+    // The chip is only live because segment_id is on the row. Before this
+    // shipped, every generated takeaway fell back to segment 0 / 00:00 and
+    // scrolled nowhere — docs/KNOWN_GAPS.md carries the measurement.
+    const rows = generatedChunkRowsFor({
+      noteId: "n1",
+      userId: "u1",
+      note: NOTE,
+      segments: SEGMENTS,
+    });
+    const takeaways = rows.filter((r) => r.chunk_type === "takeaway");
+    expect(takeaways[0].metadata).toMatchObject({ segment_id: 0, ts_start: "00:12" });
+    expect(takeaways[1].metadata).toMatchObject({ segment_id: 1, ts_start: "01:40" });
+  });
+
+  it("writes segment_id with no ts_start when the segment carries none", () => {
+    const rows = generatedChunkRowsFor({
+      noteId: "n1",
+      userId: "u1",
+      note: NOTE,
+      segments: SEGMENTS,
+    });
+    const action = rows.find((r) => r.chunk_type === "action_item")!;
+    expect(action.metadata.segment_id).toBe(2);
+    expect("ts_start" in action.metadata).toBe(false);
+  });
+
+  it("writes no citation when the note has no segments at all", () => {
+    // The default: an untranscribed note, or one from before segments were
+    // written. It must render exactly as it did — no keys, not null keys.
+    const rows = generatedChunkRowsFor({ noteId: "n1", userId: "u1", note: NOTE });
+    for (const row of rows) {
+      expect("segment_id" in row.metadata).toBe(false);
+    }
+  });
+
+  it("writes no citation for a label past the end rather than clamping", () => {
+    const rows = generatedChunkRowsFor({
+      noteId: "n1",
+      userId: "u1",
+      note: { ...NOTE, takeaways: [{ text: "orphan", segment: 99 }] },
+      segments: SEGMENTS,
+    });
+    const takeaway = rows.find((r) => r.chunk_type === "takeaway")!;
+    expect("segment_id" in takeaway.metadata).toBe(false);
+  });
+
+  it("keeps seq and n alongside the citation", () => {
+    // n is the rendered ordinal and seq the position within the type. The
+    // citation rides beside them; it does not replace either.
+    const rows = generatedChunkRowsFor({
+      noteId: "n1",
+      userId: "u1",
+      note: NOTE,
+      segments: SEGMENTS,
+    });
+    const takeaways = rows.filter((r) => r.chunk_type === "takeaway");
+    expect(takeaways[1].metadata).toMatchObject({ seq: 1, n: "02", segment_id: 1 });
   });
 
   it("writes no owner or due on an action item", () => {

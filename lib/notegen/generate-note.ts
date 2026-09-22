@@ -1,6 +1,10 @@
 import { planForDepth } from "@/lib/notegen/depth-policy";
 import { lensPromptFor } from "@/lib/notegen/lens-prompts";
 import { persistGeneratedNote } from "@/lib/notegen/persist-result";
+import {
+  numberedTranscript,
+  type NotegenSegment,
+} from "@/lib/notegen/segment-citations";
 import type { GeneratableRow, NotegenPorts } from "@/lib/notegen/sweep";
 
 /** ONE note, from eligible to a terminal state. Both triggers call this: the
@@ -110,19 +114,42 @@ export async function generateClaimedNote(
     const plan = planForDepth(persona.depth);
     const lens = lensPromptFor(persona.slug);
 
-    const note = await ports.generate({
-      // Non-null: claimNoteForGeneration returned 'blank' for anything else,
-      // and this function is only ever called after a 'claimed'.
-      transcript: row.raw_transcript!.trim(),
-      lens,
-      plan,
-    });
+    // The note's real transcript_segment rows, read ONCE and used twice: they
+    // number the transcript the model is shown, and they resolve the labels it
+    // answers with. One read, so the text the model cited into and the text a
+    // label is resolved against cannot be two different lists.
+    //
+    // A FAILED READ COSTS THE CITATIONS, NEVER THE NOTE. Attribution is an
+    // enhancement on top of a note that generates perfectly well without it,
+    // so this degrades to the raw transcript rather than sending the row to
+    // the staleness sweep over a chip.
+    let segments: NotegenSegment[] = [];
+    try {
+      segments = await ports.store.listSegments(row.id);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      ports.log(
+        `note ${row.id}: could not read segments for attribution — ${reason}. ` +
+          `Generating without citations.`,
+      );
+    }
+
+    // Non-null: claimNoteForGeneration returned 'blank' for anything else, and
+    // this function is only ever called after a 'claimed'. The numbered form
+    // replaces it only when there is something to number — a note with no
+    // segment rows would otherwise be sent an EMPTY transcript, which is the
+    // one way this change could lose a note that used to generate.
+    const raw = row.raw_transcript!.trim();
+    const transcript = segments.length > 0 ? numberedTranscript(segments) : raw;
+
+    const note = await ports.generate({ transcript, lens, plan });
 
     const persisted = await persistGeneratedNote({
       store: ports.store,
       noteId: row.id,
       userId: row.user_id,
       note,
+      segments,
     });
 
     // The resolution path is named here rather than inferred later. Which

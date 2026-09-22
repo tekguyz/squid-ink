@@ -76,6 +76,15 @@ export interface NotegenChunkInsert {
 export interface NotegenStore {
   deleteGeneratedChunks(noteId: string): Promise<void>;
   insertChunks(rows: NotegenChunkInsert[]): Promise<void>;
+  /** This note's transcript_segment rows, in the order the view model reads
+   *  them, reduced to what attribution needs.
+   *
+   *  It is a READ of another pipeline's rows, which is why it is scoped to
+   *  chunk_type 'transcript_segment' here exactly as deleteGeneratedChunks is
+   *  scoped away from it. Empty is legitimate — a note transcribed before
+   *  segments were written, or one with none — and every citation then misses,
+   *  which writes no citation rather than a guessed one. */
+  listSegments(noteId: string): Promise<NotegenSegment[]>;
   /** Writes notes.title ONLY where it is still null.
    *
    *  THE NULL-GUARD IS THE WHOLE POINT. notes.title is nullable with no

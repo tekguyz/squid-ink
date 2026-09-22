@@ -2,6 +2,7 @@ import type { DepthPlan } from "@/lib/notegen/depth-policy";
 import type { LensPrompt } from "@/lib/notegen/lens-prompts";
 import {
   normalizeTitle,
+  type GeneratedItem,
   type GeneratedNote,
 } from "@/lib/notegen/persist-result";
 
@@ -102,12 +103,34 @@ export function systemPromptFor(lens: LensPrompt, plan: DepthPlan): string {
       "speaker is identified you may attribute; where speakers are " +
       "unlabelled, do not guess who said what.",
     "",
+    // The attribution ask. The transcript this call is given is numbered by
+    // lib/notegen/segment-citations.ts, and the label is a position in THAT
+    // text — never a timestamp, which the model is not asked for and would
+    // only invent.
+    "Every takeaway and every action item carries a segment: the number of " +
+      "the transcript line, in square brackets, that supports it. Use 0 when " +
+      "no single line supports it. Never guess a line number.",
+    "",
     "Return JSON matching the provided schema and nothing else.",
   ].join("\n");
 }
 
 export function responseSchemaFor(plan: DepthPlan): Record<string, unknown> {
-  const stringArray = { type: "array", items: { type: "string" } };
+  // Each entry is an OBJECT, not a string: the text plus the 1-based label of
+  // the numbered transcript line that supports it. segment is nullable because
+  // the prompt asks for 0 when nothing supports the claim, and
+  // resolveSegmentCitation treats every miss the same way.
+  const itemArray = {
+    type: "array",
+    items: {
+      type: "object",
+      properties: {
+        text: { type: "string" },
+        segment: { type: "integer" },
+      },
+      required: ["text", "segment"],
+    },
+  };
 
   // Brief produces no summary, so the field is absent from the schema rather
   // than present-but-nullable. A nullable field the prompt separately tells
@@ -119,23 +142,37 @@ export function responseSchemaFor(plan: DepthPlan): Record<string, unknown> {
     ? {
         title: { type: "string" },
         summary: { type: "string" },
-        takeaways: stringArray,
-        action_items: stringArray,
+        takeaways: itemArray,
+        action_items: itemArray,
       }
     : {
         title: { type: "string" },
-        takeaways: stringArray,
-        action_items: stringArray,
+        takeaways: itemArray,
+        action_items: itemArray,
       };
 
   return { type: "object", properties, required: Object.keys(properties) };
 }
 
-/** Only strings survive. A model that returns a number, a null or a nested
- *  object in one of these arrays must not put it into a not-null text column. */
-function stringsFrom(value: unknown): string[] {
+/** Only well-formed items survive. A model that returns a number, a null or a
+ *  bare string in one of these arrays must not put it into a not-null text
+ *  column, and a segment that is not an integer becomes null rather than a
+ *  guessed citation — the same "a miss writes nothing" rule
+ *  lib/notegen/segment-citations.ts states. */
+function itemsFrom(value: unknown): GeneratedItem[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((entry): entry is string => typeof entry === "string");
+  const items: GeneratedItem[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const record = entry as Record<string, unknown>;
+    if (typeof record.text !== "string") continue;
+    const segment = record.segment;
+    items.push({
+      text: record.text,
+      segment: typeof segment === "number" && Number.isInteger(segment) ? segment : null,
+    });
+  }
+  return items;
 }
 
 /** Pure, exported and tested without the SDK — the same reason
@@ -173,8 +210,8 @@ export function parseGeneratedNote(rawText: string): GeneratedNote {
   return {
     title,
     summary,
-    takeaways: stringsFrom(record.takeaways),
-    actionItems: stringsFrom(record.action_items),
+    takeaways: itemsFrom(record.takeaways),
+    actionItems: itemsFrom(record.action_items),
   };
 }
 

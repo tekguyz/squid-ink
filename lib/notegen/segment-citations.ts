@@ -46,15 +46,22 @@ export interface SegmentCitation {
   ts_start?: string;
 }
 
+/** Only the three fields attribution reads. Narrower than ChunkRow on
+ *  purpose: it lets the store select three columns instead of `*`, which
+ *  matters because `embedding` is a vector(1024) per row and a 60-minute note
+ *  carries hundreds of segments — megabytes over the wire, inside a cron run
+ *  that shares a 300 s budget, for data nothing here touches. */
+type SegmentSource = Pick<ChunkRow, "id" | "content" | "metadata">;
+
 /** Same ordering note-view-model.ts's partition() applies, so the index a
  *  label lands on here is the index that file would land on too. */
-const bySeq = (a: ChunkRow, b: ChunkRow) =>
+const bySeq = (a: SegmentSource, b: SegmentSource) =>
   (a.metadata.seq ?? 0) - (b.metadata.seq ?? 0) || a.id.localeCompare(b.id);
 
 /** Rows in, segments out — the same `seq ?? index + 1` rule toSegments()
  *  applies, mirrored deliberately. If the two ever disagree, every citation
  *  this pipeline writes points one row off. */
-export function segmentsFromChunks(rows: ChunkRow[]): NotegenSegment[] {
+export function segmentsFromChunks(rows: SegmentSource[]): NotegenSegment[] {
   return [...rows].sort(bySeq).map((row, index) => ({
     segmentId: row.metadata.seq ?? index + 1,
     tsStart: row.metadata.ts_start ?? null,
