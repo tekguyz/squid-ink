@@ -3184,11 +3184,30 @@ Left open, on purpose:
   a path-scoped file does not load when it matters. `tekguyz-one`'s 6 KB
   benchmark is a knowledge repo with no schema, no secrets and no parsed
   checks; it is not a like-for-like target for a code repo.
-- **`/skill-doctor` was not run.** It is a UI command in this harness and cannot
-  be invoked from an agent session, so step 2 of the job — the real
-  per-session cost reading and the never-invoked skill list — is unmeasured.
-  Run it from an interactive `claude` session in this repo and record the
-  numbers here.
+- **`/skill-doctor` ran, and found a second cost the size of this one.** The
+  agent session could not invoke it — it is a UI command — so the owner ran it
+  and pasted the reading on 2026-09-21. Skill listings cost about **4,580
+  tokens every turn** in this repo. Of that, **~2,470 is 15 plugin skills that
+  have never once been invoked**, all from two plugins: `anthropic-skills`
+  (~2,230 — `docs` 330, `docx` 350, `pptx` 330, `xlsx` 320, `pdf` 150,
+  `doc-coauthoring` 160, `skill-creator` 120, `morning` 120,
+  `web-artifacts-builder` 110, `explain-usage` 80, `schedule` 80,
+  `consolidate-memory` 40, `setup-claude` 40) and `cowork-plugin-management`
+  (~240). For scale, this sitting's `CLAUDE.md` cut saved roughly 3,800 tokens
+  a turn, so **turning those two plugins off is about two-thirds of the same
+  win again, for one toggle.**
+
+  **Not done, and deliberately left to the owner.** A plugin's skills cannot
+  be disabled one at a time — `/plugin` turns off the whole plugin, which would
+  also remove `xlsx`, `pdf`, `docx` and `pptx`. Nothing has needed them here
+  yet, but that is a fleet-wide call about which formats stay reachable, not a
+  Squid Ink one. It also belongs in `claude-config`, which is where plugin
+  state is committed, not in this repo.
+
+  **`status-sync` reads 0 uses and must not be read as dead.** It is this
+  repo's own skill and Job 3 renamed it from `handoff` on 2026-09-20 — one day
+  before this measurement. A one-day-old skill with no invocations is a new
+  skill, not an unused one. Re-measure after it has had a fortnight.
 - **The pre-existing `CONTEXT.md` finding is untouched.** `node
   scripts/check-docs.mjs` still exits 1 with *"CLAUDE.md + 10 rule file(s) names
   `CONTEXT.md`, which does not exist"* — the same single finding it reported
