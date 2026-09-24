@@ -86,6 +86,22 @@ so the sweep would silently never run while the job reported success. Public to
 the middleware is not unauthenticated: the route's `CRON_SECRET` bearer check is
 its authorization. An unset secret refuses everything rather than failing open.
 
+**Every Gemini call has a time limit — issue #11, 2026-09-24.**
+`TranscribeRequest.timeoutMs` is required, so no caller can leave it out.
+`transcribeClaimedNote` sets it to `GEMINI_CALL_TIMEOUT_MS` (240 s), or to
+less when the caller passes `deadlineAt`. Both callers pass `startedAt +
+TRANSCRIBE_HARD_STOP_MS` (280 s): the sweep because `RUN_BUDGET_MS` is checked
+before a claim, so a call claimed at 239 s would otherwise outlive the 300 s
+ceiling; the Server Action because its `after()` shares the request's 300 s,
+so its clock starts at the top of the action. A call that runs out rejects,
+and the row goes `'failed'` in the same run instead of sitting at
+`'analyzing'` for up to a day. **The bound is `gemini-client.ts`'s own timer
+race, never the SDK.** The abort signal is also sent to both calls, but at
+the pinned 2.19.0 only `interactions.create` reads it — `files.upload` types
+`abortSignal` and ignores it at runtime. The abort is client-side only; Google
+may still bill a call we abandoned. **Not bounded:** the Storage download
+before the call. A call that ends near 280 s leaves about 20 s to persist.
+
 `maxDuration = 300` and `MAX_TRANSCRIPTIONS_PER_RUN = 3` are sized to the
 **Vercel Hobby** ceiling, where 300 s is both the default and the hard maximum
 and a cron may fire only once per day. Re-measure the plan before raising

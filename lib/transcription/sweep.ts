@@ -33,6 +33,12 @@ export const MAX_RECONCILIATIONS_PER_RUN = 25;
  *  to finish and return rather than being killed mid-write. */
 export const RUN_BUDGET_MS = 240_000;
 
+/** Every Gemini call in the run must END by this, measured from the run's
+ *  start (issue #11). RUN_BUDGET_MS is checked before a claim, not during a
+ *  call, so a row claimed at 239 s would otherwise run past the 300 s ceiling
+ *  and be killed mid-flight. 20 s is left to write 'failed' and return. */
+export const TRANSCRIBE_HARD_STOP_MS = 280_000;
+
 export interface UploadingRow {
   id: string;
   user_id: string;
@@ -164,7 +170,9 @@ export async function sweep(ports: SweepPorts): Promise<SweepReport> {
     }
 
     attempts += 1;
-    const result = await transcribeClaimedNote(ports, row);
+    const result = await transcribeClaimedNote(ports, row, {
+      deadlineAt: startedAt + TRANSCRIBE_HARD_STOP_MS,
+    });
     if (result === "transcribed") report.transcribed += 1;
     else report.failed += 1;
   }
