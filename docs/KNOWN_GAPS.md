@@ -1,5 +1,55 @@
 # Known Gaps
 
+**Frozen 2026-09-23. New work goes to GitHub Issues, not here.** Every open
+work item in this file was moved to an issue that day. What stays here is the
+record: decisions, measurements, and things left as they are on purpose. Do
+not add new gaps to this file — open an issue (`docs/agents/issue-tracker.md`).
+
+Each issue carries a size label. `size:small`: `/implement #N` directly.
+`size:feature`: grill, spec, implement. `size:big`: grill, spec, to-tickets,
+implement. A heading below that ends in `→ #N` is tracked in that issue.
+
+## Moved to GitHub Issues (2026-09-23)
+
+Line numbers are as of commit `8b57f5b`, before this table was added.
+
+| Issue | Size | Title | Source |
+|---|---|---|---|
+| #1 | small | 404 page logs a React "script tag" error in dev | L2942 |
+| #2 | small | Transcript Search button does nothing: wire it or remove it | L373 |
+| #3 | small | "Require a citation for every claim" is saved but nothing reads it | L118 |
+| #4 | small | Dashboard shows only the newest 100 notes: add "load older" | L2471 |
+| #5 | small | verify-layout.mjs reports scrolled-off rows as overlaps | L2406 |
+| #6 | small | verify-layout.mjs: capture URL and HTML when the sign-in leg fails | L2420 |
+| #7 | small | Docs name CONTEXT.md, which does not exist (check-docs finding) | L3128 |
+| #8 | small | check-docs: fail when a .claude/ file carries a frozen surface count | L2519 |
+| #9 | small | Pick one focus style for all four text inputs | L2332 |
+| #10 | small | Citation chip tap target is about 10px tall | L2346 |
+| #11 | small | Gemini call has no time limit and can run past the 300 s function cap | L2211 |
+| #12 | small | Failed recordings keep their IndexedDB audio backup forever | L1307 |
+| #13 | small | Show when a transcript has no speaker labels (28-60 min recordings) | L1824 |
+| #14 | small | Missing live proofs: Brief and Exhaustive depth, fallback-persona generation | L432 |
+| #15 | small | Run the recorder hand checks on real devices: Safari, Android, device switch, echo | L1413 |
+| #16 | small | Hosted auth email templates can drift from the repo copies | L2808 |
+| #17 | small | Old notes have no title and dead citation chips: fix them or leave them | L2297 |
+| #18 | small | Control to move a keyword rule from needs-review to auto-file | L2608 |
+| #19 | feature | Demo mode: the one-click door | L2845 |
+| #20 | feature | Mic-only recording mode | L1428 |
+| #21 | feature | Import audio from a file | L2953 |
+| #22 | feature | New colour tokens: disabled text, strong rule, failed-state fill | L2452 |
+| #23 | feature | Note Detail: hide or resize panes; narrow layouts for other screens | L2224 |
+| #24 | feature | Record HUD: design the three invented states, and the jot pane | L1319 |
+| #25 | feature | Personas: create, duplicate and delete | L65 |
+| #26 | feature | Settings: Account page, and export or delete your data | L128 |
+| #27 | feature | Live transcript while recording: decide, then build | L1812 |
+| #28 | feature | Quick actions that draft a follow-up (email, Slack, Jira) | L532 |
+| #29 | feature | Dashboard search | L42 |
+| #30 | big | Google Calendar and Drive connect | L558 |
+| #31 | big | Surface 02: the full recorder pane | ROADMAP |
+| #32 | big | Surface 08: Share | ROADMAP |
+| #33 | big | Surface 09: Live assistant | ROADMAP |
+| #34 | big | Installable app (PWA) | L1471 |
+
 ## Missing design-reference files (recorded 2026-08-30)
 
 The brief named three files to read. Only one was present.
@@ -1316,7 +1366,7 @@ is the correct conservative choice — nothing can resume an upload from it, but
 deleting it would destroy the only copy of the audio. The unbounded-growth
 problem the original entry names is therefore **narrowed, not closed**.
 
-### Three HUD states are INVENTED, not from the design
+### Three HUD states are INVENTED, not from the design → #24
 
 Verified by reading `design-reference/App Surfaces.dc.html`, not from memory.
 Surface 02b defines exactly four state labels — `Idle · docked bottom-right,
@@ -1425,7 +1475,7 @@ Related: `MediaRecorder` is given the Web Audio destination node's stream, never
 the mic stream. That indirection is the only reason `replaceMic()` can swap a
 microphone mid-recording without ending the recording.
 
-### Cancelling the share picker kills the recording — there is no mic-only path (recorded 2026-09-01)
+### Cancelling the share picker kills the recording — there is no mic-only path (recorded 2026-09-01) → #20
 
 The line under "Not built at all" above — "A mic-only mode — system+mic is
 mandatory, not optional" — is accurate but too thin to plan against. It does not
@@ -1809,7 +1859,7 @@ was not merged. `components/note-detail/__tests__/transcript-pane-empty-state.te
 asserts all five strings plus the `'completed'`-with-segments case, which must
 still render the transcript.
 
-### Nothing renders a live transcript while recording (recorded 2026-08-31)
+### Nothing renders a live transcript while recording (recorded 2026-08-31) → #27
 
 There is no Web Speech API usage anywhere — `grep -rni "SpeechRecognition"`
 over `app/`, `components/` and `lib/` returns nothing. `record-hud.tsx` shows
@@ -1821,7 +1871,7 @@ Whether this build wants one is undecided, and it is a separate question from
 the trigger above: a browser live transcript is display only and would not feed
 the Gemini pass.
 
-### Recordings past Gemini's caps fail outright, and 28–60 min degrades silently-ish
+### Recordings past Gemini's caps fail outright, and 28–60 min degrades silently-ish → #13
 
 Two distinct behaviours, both deliberate, and the second is the one likely to
 surprise someone:
@@ -2208,7 +2258,7 @@ delete, and both are the "second mechanism for one failure" that the ordering
 was chosen to avoid. The window requires the completing UPDATE specifically to
 fail after a successful insert, which nothing observed has done.
 
-### The `MAX_TRANSCRIPTIONS_PER_RUN` cap bounds attempts, not wall-clock
+### The `MAX_TRANSCRIPTIONS_PER_RUN` cap bounds attempts, not wall-clock → #11
 
 `sweep.ts` counts transcription **attempts** against the cap, so three failing
 Gemini calls end the run just as three successful ones do. What it cannot do is
@@ -2221,7 +2271,7 @@ marks it `'failed'` on a later tick — but on the Hobby daily schedule "a later
 tick" is up to 24 hours. A per-call timeout on the Gemini request would close
 it properly.
 
-## Note Detail layout has no responsive/minimize path, and two bottom-right elements collide (recorded 2026-09-03)
+## Note Detail layout has no responsive/minimize path, and two bottom-right elements collide (recorded 2026-09-03) → #23
 
 Screenshot review against the shipped app, not the design file.
 
@@ -2403,7 +2453,7 @@ corrected on 2026-09-03: a test that forbids its own fix. Widened to
 Superseded by `lib/notes/get-dashboard-feed.ts` when the real Dashboard
 landed. Deleted; zero remaining imports confirmed via grep.
 
-## verify-layout.mjs false positive on clipped scroll content (recorded 2026-09-06)
+## verify-layout.mjs false positive on clipped scroll content (recorded 2026-09-06) → #5
 
 Discovered building the Dashboard (App Surface 01). The overlap probe
 measures raw bounding boxes and doesn't account for a scroll container
@@ -2417,7 +2467,7 @@ at that row count; the script's blind spot to clipping itself remains.
 the current scroll container's visible viewport. Not built; out of the
 dashboard's fence.
 
-## The dev server was started from a shell, and one verify-layout run failed unexplained (recorded 2026-09-07)
+## The dev server was started from a shell, and one verify-layout run failed unexplained (recorded 2026-09-07) → #6
 
 `.claude/launch.json` already carried a working dev-server entry and was not
 used; `npm run dev` was started from a shell instead. Three consequences, all
@@ -2449,7 +2499,7 @@ worth capturing is the page's URL and HTML at the moment the assertion fails —
 the message names the note, not the route, so it cannot currently tell
 "dashboard with no notes" from "still on /login".
 
-## Token gaps from Dashboard critique (recorded 2026-09-07)
+## Token gaps from Dashboard critique (recorded 2026-09-07) → #22
 
 `--ink-disabled` (~3.0–3.5:1 on `rail`/`paper`) — today's only choices are
 `faint` (too weak) or `muted` (doesn't read as disabled).
@@ -2468,7 +2518,7 @@ Detector flags 10px/10.5px/22px as off-ramp; 12.5px and 15px are equally
 off-ramp and go unflagged (tolerance gap in the check itself). Addressed by
 the /impeccable document regen — see follow-up.
 
-## The Dashboard feed query has a cap, not a pager (recorded 2026-09-07)
+## The Dashboard feed query has a cap, not a pager (recorded 2026-09-07) → #4
 
 `lib/notes/get-dashboard-feed.ts` fetched every note on the account on every
 load of `/`, then shaped and grouped all of them. `FEED_LIMIT = 100` now bounds
@@ -2516,7 +2566,7 @@ narrow layout) is **not** derived from `design-reference/App Surfaces.dc.html`.
 No drawing for it exists. It follows common responsive practice, not the
 design file. **Do not cite `App Surfaces.dc.html` as its source.**
 
-## Two frozen-copy defects, and the one class they share (recorded 2026-09-09)
+## Two frozen-copy defects, and the one class they share (recorded 2026-09-09) → #8
 
 Two bugs shipped bad information to the user on the same run. Neither was in
 application code, and neither was caught by any check this repo owns.
@@ -2605,7 +2655,7 @@ nothing feeds it", never as "zero because nobody matched".
 never addresses, so there is nothing on an existing note to derive a domain
 from.
 
-### The auto-file / needs-review split is an assumption, not a specification (recorded 2026-09-11)
+### The auto-file / needs-review split is an assumption, not a specification (recorded 2026-09-11) → #18
 
 App Surfaces 07 prints three counts per rule — matched, needed review, false
 positives — so not every match is silently auto-filed. It does not say where
@@ -2842,7 +2892,7 @@ error screen comes back after a sign-in, look for
 `[supabase] PGRST303 … retrying` in the Vercel log. Three failed retries
 means the lag outlasted about 5 s.
 
-## Public demo mode — not built, requested by the owner (recorded 2026-09-14)
+## Public demo mode — not built, requested by the owner (recorded 2026-09-14) → #19
 
 **An idea to plan, not a defect.** The owner's portfolio site shows live
 demos of their apps. The CRM's demo, `https://tekguyz-crm.vercel.app/demo`,
@@ -2939,7 +2989,7 @@ effort lowered. **No rate-limit table was added**, per
 `.claude/rules/chat.md`: `chat_messages` already answers the question and a
 monthly ceiling is the same question over a longer window.
 
-## A 404 logs a React "script tag" error in dev (recorded 2026-09-15)
+## A 404 logs a React "script tag" error in dev (recorded 2026-09-15) → #1
 
 Found while checking the new `app/not-found.tsx`. **Measured** over the DevTools
 Protocol on `npm run dev`: `/notes/anything` logs `Encountered a script tag
@@ -2950,7 +3000,7 @@ renders correctly in both themes, because the server HTML runs the script
 before React loads. Not fixed here: changing how the theme boots touches every
 page, and it is its own change. Not measured in a production build.
 
-## Importing audio recorded elsewhere — designed, disabled, unscheduled (recorded 2026-09-15)
+## Importing audio recorded elsewhere — designed, disabled, unscheduled (recorded 2026-09-15) → #21
 
 **Requested by the owner 2026-09-15**, from the previous app: they want to bring
 in audio captured somewhere else — a different microphone, other software, a
