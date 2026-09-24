@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bitter, Archivo, IBM_Plex_Mono } from "next/font/google";
 import { RecorderDock } from "@/components/recorder/recorder-dock";
+import { ThemeBoot } from "@/components/theme-boot";
 import "./globals.css";
 
 const bitter = Bitter({
@@ -29,8 +30,6 @@ export const metadata: Metadata = {
   description: "Review a note and its source transcript.",
 };
 
-const themeBoot = `try{var t=localStorage.getItem("theme");var d=document.documentElement;if(t==="dark")d.classList.add("dark");else if(t==="light")d.classList.add("light");else if(matchMedia("(prefers-color-scheme:dark)").matches)d.classList.add("dark")}catch(e){}`;
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -41,7 +40,7 @@ export default function RootLayout({
       className={`${bitter.variable} ${archivo.variable} ${plexMono.variable}`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBoot }} />
+        <ThemeBoot />
       </head>
       <body className="bg-canvas text-ink font-body antialiased">
         {children}
