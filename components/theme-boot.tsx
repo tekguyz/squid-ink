@@ -25,17 +25,21 @@ import { useLayoutEffect } from "react";
 
 // Serialised into the script below, so it must stay self-contained ES5: no
 // imports, no closures, nothing the browser cannot parse before React loads.
+// That is why the "theme" key and the class names are literals here rather
+// than imports — they are the same contract applyTheme writes, so a rename in
+// components/theme-toggle.tsx must be made here too.
 function applySavedTheme() {
   try {
     var t = localStorage.getItem("theme");
+    var c = t === "dark" || t === "light" ? t : matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "";
     var d = document.documentElement;
-    if (t === "dark") d.classList.add("dark");
-    else if (t === "light") d.classList.add("light");
-    else if (matchMedia("(prefers-color-scheme:dark)").matches) d.classList.add("dark");
+    // Replace, never add beside: .dark wins over .light in globals.css.
+    d.classList.remove("light", "dark");
+    if (c) d.classList.add(c);
   } catch (e) {}
 }
 
-const BOOT = `(${applySavedTheme.toString()})()`;
+const BOOT_SCRIPT = `(${applySavedTheme.toString()})()`;
 
 export function ThemeBoot() {
   useLayoutEffect(applySavedTheme, []);
@@ -43,7 +47,7 @@ export function ThemeBoot() {
     <script
       type={typeof window === "undefined" ? "text/javascript" : "text/plain"}
       suppressHydrationWarning
-      dangerouslySetInnerHTML={{ __html: BOOT }}
+      dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }}
     />
   );
 }

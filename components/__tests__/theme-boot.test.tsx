@@ -8,11 +8,22 @@ function bootScript(container: HTMLElement) {
   return script;
 }
 
+/** Runs the script text as the browser would, on a clean <html>. Mounting
+ *  already applied the theme, so the class is cleared first — otherwise this
+ *  would measure the effect, not the script. */
+function runBootScript(container: HTMLElement) {
+  document.documentElement.classList.remove("light", "dark");
+  new Function(bootScript(container).textContent ?? "")();
+}
+
+const root = () => document.documentElement.classList;
+
 describe("ThemeBoot", () => {
   afterEach(() => {
     localStorage.clear();
-    document.documentElement.classList.remove("light", "dark");
+    root().remove("light", "dark");
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   // React skips its "Encountered a script tag" warning for a script whose type
@@ -27,22 +38,17 @@ describe("ThemeBoot", () => {
   it("applies a saved dark theme to <html>", () => {
     localStorage.setItem("theme", "dark");
     const { container } = render(<ThemeBoot />);
-    // Mounting already applied it; clear it so only the script is measured.
-    document.documentElement.classList.remove("light", "dark");
-    new Function(bootScript(container).textContent ?? "")();
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    runBootScript(container);
+    expect(root().contains("dark")).toBe(true);
   });
 
   it("applies a saved light theme over a dark OS setting", () => {
     localStorage.setItem("theme", "light");
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
     const { container } = render(<ThemeBoot />);
-    // Mounting already applied it; clear it so only the script is measured.
-    document.documentElement.classList.remove("light", "dark");
-    new Function(bootScript(container).textContent ?? "")();
-    expect(document.documentElement.classList.contains("light")).toBe(true);
-    expect(document.documentElement.classList.contains("dark")).toBe(false);
-    vi.unstubAllGlobals();
+    runBootScript(container);
+    expect(root().contains("light")).toBe(true);
+    expect(root().contains("dark")).toBe(false);
   });
 
   // A notFound() after the shell has streamed makes React client-render the
@@ -52,6 +58,16 @@ describe("ThemeBoot", () => {
   it("re-applies a saved theme when mounted, without running the script", () => {
     localStorage.setItem("theme", "dark");
     render(<ThemeBoot />);
-    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    expect(root().contains("dark")).toBe(true);
+  });
+
+  // .dark wins over .light in globals.css, so a stale "dark" left beside a
+  // saved "light" (another tab changed it) would keep the page dark.
+  it("replaces a stale opposite class instead of adding beside it", () => {
+    root().add("dark");
+    localStorage.setItem("theme", "light");
+    render(<ThemeBoot />);
+    expect(root().contains("light")).toBe(true);
+    expect(root().contains("dark")).toBe(false);
   });
 });
