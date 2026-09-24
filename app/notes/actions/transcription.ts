@@ -16,7 +16,10 @@ import {
   claimNoteForTranscription,
   transcribeClaimedNote,
 } from "@/lib/transcription/transcribe-note";
-import type { UploadingRow } from "@/lib/transcription/sweep";
+import {
+  TRANSCRIBE_HARD_STOP_MS,
+  type UploadingRow,
+} from "@/lib/transcription/sweep";
 
 /** What the browser learns the moment the claim settles. Deliberately not a
  *  boolean: "we did not start it" has three causes and the button says
@@ -90,6 +93,11 @@ export type TranscriptionTrigger =
 export async function triggerTranscription(
   noteId: string,
 ): Promise<TranscriptionTrigger> {
+  // The after() callback shares this invocation's 300 s ceiling, so the
+  // Gemini call's deadline is measured from HERE, not from when the call
+  // starts. Issue #11: a call that outlives the ceiling strands the row.
+  const startedAt = Date.now();
+
   const supabase = await createClient();
 
   const {
@@ -165,6 +173,7 @@ export async function triggerTranscription(
       const transcribed = await transcribeClaimedNote(
         createTranscriptionPorts(deferred, geminiKey),
         row,
+        { deadlineAt: startedAt + TRANSCRIBE_HARD_STOP_MS },
       );
 
       // Note generation chains only off a real transcript. A failed

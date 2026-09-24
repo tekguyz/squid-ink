@@ -4,6 +4,8 @@ import {
   sweep,
   STALE_AFTER_MS,
   MAX_TRANSCRIPTIONS_PER_RUN,
+  RUN_BUDGET_MS,
+  TRANSCRIBE_HARD_STOP_MS,
   type SweepPorts,
   type UploadingRow,
 } from "@/lib/transcription/sweep";
@@ -356,5 +358,33 @@ describe("sweep — caps", () => {
 
     expect(report.transcribed).toBe(1);
     expect(p.transcribe).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives a call claimed late in the run only the time left before the hard stop (#11)", async () => {
+    // The budget is checked BEFORE a claim, so a claim just inside it can
+    // still reach Gemini at 239 s. That call must end before the platform's
+    // 300 s kill, or the row is stranded at 'analyzing' for a day.
+    let clock = NOW;
+    const p = ports({
+      now: () => clock,
+      listUploading: vi.fn(async () => [row()]),
+      downloadAudio: vi.fn(async () => {
+        clock = NOW + RUN_BUDGET_MS - 1_000;
+        return { blob: new Blob(["x"]), mimeType: "audio/webm" };
+      }),
+    });
+
+    await sweep(p);
+
+    expect(p.transcribe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        timeoutMs: TRANSCRIBE_HARD_STOP_MS - (RUN_BUDGET_MS - 1_000),
+      }),
+    );
+  });
+
+  it("keeps the hard stop under the 300 s platform ceiling", () => {
+    expect(TRANSCRIBE_HARD_STOP_MS).toBeGreaterThan(RUN_BUDGET_MS);
+    expect(TRANSCRIBE_HARD_STOP_MS).toBeLessThan(300_000);
   });
 });

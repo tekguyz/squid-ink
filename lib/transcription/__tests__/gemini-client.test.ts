@@ -1,10 +1,68 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
+  createGeminiTranscriber,
   segmentsFromInteraction,
   parseOffsetSeconds,
   resolveAudioMimeType,
 } from "@/lib/transcription/gemini-client";
+
+/** The SDK, faked only for the time-limit tests below. The pure-function tests
+ *  never load it. `create` is replaced per test. */
+const sdk = vi.hoisted(() => ({
+  upload: vi.fn(),
+  create: vi.fn(),
+}));
+
+vi.mock("@google/genai", () => ({
+  GoogleGenAI: class {
+    files = { upload: sdk.upload };
+    interactions = { create: sdk.create };
+  },
+}));
+
+describe("createGeminiTranscriber — the time limit (#11)", () => {
+  beforeEach(() => {
+    sdk.upload.mockReset().mockResolvedValue({ uri: "files/abc" });
+    sdk.create.mockReset();
+  });
+
+  const request = (timeoutMs: number) => ({
+    audio: new Blob(["x"]),
+    mimeType: "audio/webm",
+    diarize: false,
+    timeoutMs,
+  });
+
+  it("rejects when Gemini does not answer in time, even if the SDK ignores the signal", async () => {
+    // A call that never settles and never looks at its signal. The bound must
+    // hold on our side, not depend on the SDK honouring the abort.
+    sdk.create.mockReturnValue(new Promise(() => {}));
+
+    await expect(createGeminiTranscriber("key")(request(20))).rejects.toThrow(
+      /timed out after 20ms/,
+    );
+  });
+
+  it("hands the same abort signal to both SDK calls, so the fetch is cancelled too", async () => {
+    sdk.create.mockResolvedValue({ output_text: "hello", steps: [] });
+
+    await createGeminiTranscriber("key")(request(10_000));
+
+    const uploadSignal = sdk.upload.mock.calls[0][0].config.abortSignal;
+    const createSignal = sdk.create.mock.calls[0][1].signal;
+    expect(uploadSignal).toBeInstanceOf(AbortSignal);
+    expect(createSignal).toBe(uploadSignal);
+  });
+
+  it("spends no call at all when the time is already gone", async () => {
+    await expect(createGeminiTranscriber("key")(request(0))).rejects.toThrow(
+      /timed out/,
+    );
+    expect(sdk.upload).not.toHaveBeenCalled();
+    expect(sdk.create).not.toHaveBeenCalled();
+  });
+});
 
 /** Shaped exactly like the documented response:
  *  ai.google.dev/gemini-api/docs/transcribe, § speaker diarization. */

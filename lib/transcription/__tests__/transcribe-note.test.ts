@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   claimAndTranscribe,
   claimNoteForTranscription,
+  GEMINI_CALL_TIMEOUT_MS,
   transcribeClaimedNote,
 } from "@/lib/transcription/transcribe-note";
 import type { SweepPorts, UploadingRow } from "@/lib/transcription/sweep";
@@ -197,5 +198,53 @@ describe("transcribeClaimedNote", () => {
 
     expect(await transcribeClaimedNote(p, row())).toBe("failed");
     expect(p.store.markFailed).toHaveBeenCalledWith("note-1", "gemini exploded");
+  });
+
+  it("gives the Gemini call the standard time limit when the caller has no deadline", async () => {
+    const p = ports();
+
+    await transcribeClaimedNote(p, row());
+
+    expect(p.transcribe).toHaveBeenCalledWith(
+      expect.objectContaining({ timeoutMs: GEMINI_CALL_TIMEOUT_MS }),
+    );
+  });
+
+  it("shortens the time limit to whatever is left before the caller's deadline", async () => {
+    const p = ports();
+
+    await transcribeClaimedNote(p, row(), { deadlineAt: NOW + 30_000 });
+
+    expect(p.transcribe).toHaveBeenCalledWith(
+      expect.objectContaining({ timeoutMs: 30_000 }),
+    );
+  });
+
+  it("never lengthens the time limit past the standard one", async () => {
+    const p = ports();
+
+    await transcribeClaimedNote(p, row(), {
+      deadlineAt: NOW + GEMINI_CALL_TIMEOUT_MS * 2,
+    });
+
+    expect(p.transcribe).toHaveBeenCalledWith(
+      expect.objectContaining({ timeoutMs: GEMINI_CALL_TIMEOUT_MS }),
+    );
+  });
+
+  it("marks the note failed when the Gemini call times out", async () => {
+    const p = ports({
+      transcribe: vi.fn(async () => {
+        throw new Error("Gemini transcription timed out after 30000ms");
+      }),
+    });
+
+    expect(
+      await transcribeClaimedNote(p, row(), { deadlineAt: NOW + 30_000 }),
+    ).toBe("failed");
+    expect(p.store.markFailed).toHaveBeenCalledWith(
+      "note-1",
+      "Gemini transcription timed out after 30000ms",
+    );
   });
 });

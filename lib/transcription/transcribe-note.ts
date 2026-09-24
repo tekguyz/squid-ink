@@ -44,8 +44,24 @@ export type ClaimPorts = Pick<SweepPorts, "claim" | "objectExists" | "log">;
 /** The transcribing half. Only ever called on a row this process just claimed. */
 export type TranscribePorts = Pick<
   SweepPorts,
-  "log" | "downloadAudio" | "transcribe" | "store"
+  "now" | "log" | "downloadAudio" | "transcribe" | "store"
 >;
+
+/** The longest one Gemini call may take, upload included (issue #11).
+ *
+ *  Sized for the manual path: its after() callback has the Hobby 300 s
+ *  function ceiling, and the claim and the download spend some of that before
+ *  the call starts. 240 s leaves room to write 'failed' before the platform
+ *  kills the function — which is the whole point, since a killed function
+ *  leaves the row at 'analyzing' until a sweep up to a day later. */
+export const GEMINI_CALL_TIMEOUT_MS = 240_000;
+
+export interface TranscribeOptions {
+  /** An absolute time (ports.now() scale) the Gemini call must end by. The
+   *  sweep passes its hard stop so a call claimed late in the run gets only
+   *  what is left. It can shorten the call, never lengthen it. */
+  deadlineAt?: number;
+}
 
 export async function claimNoteForTranscription(
   ports: ClaimPorts,
@@ -88,6 +104,7 @@ export async function claimNoteForTranscription(
 export async function transcribeClaimedNote(
   ports: TranscribePorts,
   row: UploadingRow,
+  options: TranscribeOptions = {},
 ): Promise<"transcribed" | "failed"> {
   const plan = planFor(row.audio_duration_seconds);
 
@@ -107,10 +124,18 @@ export async function transcribeClaimedNote(
       row.audio_storage_path!,
     );
 
+    // Measured AFTER the download, so the time the download took is already
+    // off the clock. A zero or negative result is a rejection with no call.
+    const timeoutMs =
+      options.deadlineAt === undefined
+        ? GEMINI_CALL_TIMEOUT_MS
+        : Math.min(GEMINI_CALL_TIMEOUT_MS, options.deadlineAt - ports.now());
+
     const result = await ports.transcribe({
       audio: blob,
       mimeType,
       diarize: plan.kind === "diarized",
+      timeoutMs,
     });
 
     await persistTranscription({

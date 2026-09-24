@@ -25,6 +25,10 @@ export interface TranscribeRequest {
   audio: Blob;
   mimeType: string;
   diarize: boolean;
+  /** How long the provider may take, upload included, before the call is
+   *  abandoned and rejects. Required so no caller can forget it: an unbounded
+   *  call is one the platform kills mid-flight, stranding the row. */
+  timeoutMs: number;
 }
 
 export type Transcriber = (

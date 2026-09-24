@@ -138,37 +138,86 @@ function transcriptionConfig(diarize: boolean) {
   };
 }
 
+/** Runs `work` under a hard time limit (issue #11).
+ *
+ *  The signal is handed to the SDK, but the bound does NOT rely on that: the
+ *  race below rejects on time whether or not the SDK honours the abort. At the
+ *  pinned 2.19.0 only `interactions.create` does — `files.upload` types an
+ *  `abortSignal` and its runtime never reads it (dist/node/index.mjs,
+ *  ApiClient.uploadFile, read 2026-09-24). Aborting is client-side only — Google may still
+ *  finish, and bill, the request. What it buys is that the row is marked
+ *  'failed' by us rather than stranded at 'analyzing' by the platform's kill.
+ *
+ *  No time left means no call at all, not a call that is abandoned at once. */
+async function withTimeLimit<T>(
+  timeoutMs: number,
+  work: (signal: AbortSignal) => Promise<T>,
+): Promise<T> {
+  const timedOut = new Error(
+    `Gemini transcription timed out after ${timeoutMs}ms`,
+  );
+  if (timeoutMs <= 0) throw timedOut;
+
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort(timedOut);
+      reject(timedOut);
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([work(controller.signal), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function createGeminiTranscriber(apiKey: string): Transcriber {
   return async ({
     audio,
     mimeType,
     diarize,
+    timeoutMs,
   }: TranscribeRequest): Promise<TranscriptionResult> => {
-    // Imported lazily so that the pure parser above can be unit-tested without
-    // loading the SDK, and so the SDK never reaches a client bundle by
-    // accident.
-    const { GoogleGenAI } = await import("@google/genai");
-    const client = new GoogleGenAI({ apiKey });
+    const interaction = await withTimeLimit(timeoutMs, async (signal) => {
+      // Imported lazily so that the pure parser above can be unit-tested
+      // without loading the SDK, and so the SDK never reaches a client bundle
+      // by accident.
+      const { GoogleGenAI } = await import("@google/genai");
+      const client = new GoogleGenAI({ apiKey });
 
-    // The File API, not inline bytes. A thirty-minute recording is tens of
-    // megabytes and would not survive a JSON request body.
-    //
-    // camelCase `mimeType` here — this is the Files API surface. See header.
-    const uploaded = await client.files.upload({
-      file: audio,
-      config: { mimeType },
+      // The File API, not inline bytes. A thirty-minute recording is tens of
+      // megabytes and would not survive a JSON request body.
+      //
+      // camelCase `mimeType` here — this is the Files API surface. See header.
+      // The two surfaces also take the signal differently: `abortSignal` in
+      // the upload config, `signal` in the interactions request options. The
+      // upload one is inert at 2.19.0 (see withTimeLimit) and is sent anyway,
+      // so a later SDK that honours it cancels the upload for free.
+      const uploaded = await client.files.upload({
+        file: audio,
+        config: { mimeType, abortSignal: signal },
+      });
+
+      if (!uploaded.uri) {
+        throw new Error("Gemini file upload returned no uri");
+      }
+
+      return (await client.interactions.create(
+        {
+          model: GEMINI_TRANSCRIBE_MODEL,
+          // snake_case `mime_type` here — this is the interactions surface.
+          input: [{ type: "audio", uri: uploaded.uri, mime_type: mimeType }],
+          generation_config: {
+            transcription_config: transcriptionConfig(diarize),
+          },
+        },
+        { signal },
+      )) as GeminiInteraction;
     });
-
-    if (!uploaded.uri) {
-      throw new Error("Gemini file upload returned no uri");
-    }
-
-    const interaction = (await client.interactions.create({
-      model: GEMINI_TRANSCRIBE_MODEL,
-      // snake_case `mime_type` here — this is the interactions surface.
-      input: [{ type: "audio", uri: uploaded.uri, mime_type: mimeType }],
-      generation_config: { transcription_config: transcriptionConfig(diarize) },
-    })) as GeminiInteraction;
 
     const rawTranscript = interaction.output_text?.trim() ?? "";
     if (!rawTranscript) {
