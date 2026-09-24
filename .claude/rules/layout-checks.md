@@ -29,6 +29,17 @@ themes**, six assertions each:
   (`scrollbar-width` AND `::-webkit-scrollbar`),
 - no OS arrow buttons on any scrollbar.
 
+**On the note route only, a seventh: every citation chip has a 24px tap
+target** (issue #10, 2026-09-24). The chip grows its target with an invisible
+`::before`, which no rect can see, so the probe hit-tests instead: a point
+11.5px above, below, left and right of each chip's centre — half a pixel inside
+a 24px box — must land on a chip.
+A chip an overlay covers, or whose grown area a scroll container clips, is
+skipped; zero chips measured is a failure, not a pass. A point landing on a
+NEIGHBOUR chip on the next line counts as a hit and prints a `note:` line —
+that overlap is allowed but visible. Proved red before the fix: 18px box,
+2/4 misses.
+
 It was proved to fail before it was trusted: restoring `theme-toggle.tsx` to
 its original `right-3 bottom-3` turns 48 green into 40 green and 8 failures
 naming both colliding elements. A layout assertion nobody has watched fail is

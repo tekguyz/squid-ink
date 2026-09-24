@@ -264,8 +264,7 @@ const PROBE = `(() => {
   // cut down to that, and a row with nothing left is skipped. The walk stops
   // after a fixed ancestor: it clips its own content, but nothing above it
   // clips it.
-  const clippedRect = (el) => {
-    const r = el.getBoundingClientRect();
+  const clippedRect = (el, r = el.getBoundingClientRect()) => {
     let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
     for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
       const s = getComputedStyle(p);
@@ -324,7 +323,38 @@ const PROBE = `(() => {
       };
     });
 
+  // --- citation chip hit area (issue #10) ----------------------------------
+  // The chip is 10px type set inline in prose, so its tap target is grown by an
+  // invisible ::before rather than by its box, which would change the line
+  // height of every paragraph that carries one. A rect cannot see a
+  // pseudo-element's hit area; hit-testing can. A 24px target reaches HALF px
+  // from the chip's centre, so a point half a pixel inside that edge, on each
+  // side, must land on a chip — its own, or a neighbour's
+  // on the next line, which is the overlap the issue asked about and is
+  // counted separately. Chips an overlay covers, or whose grown area a scroll
+  // container clips, have no room to test and are skipped.
+  const HALF = 12;
+  const CHIP = 'button[aria-label^="Jump to transcript"]';
+  const chips = [...document.querySelectorAll(CHIP)].filter(visible).flatMap((chip) => {
+    const r = chip.getBoundingClientRect();
+    const grown = new DOMRect(r.x + r.width / 2 - HALF, r.y + r.height / 2 - HALF, 2 * HALF, 2 * HALF);
+    const room = clippedRect(chip, grown);
+    if (!room || room.width < grown.width || room.height < grown.height) return [];
+    if (grown.top < 0 || grown.bottom > innerHeight) return [];
+    const cx = r.x + r.width / 2, cy = r.y + r.height / 2;
+    if (!chip.contains(document.elementFromPoint(cx, cy))) return [];
+    const hits = [[cx, cy - HALF + 0.5], [cx, cy + HALF - 0.5], [cx - HALF + 0.5, cy], [cx + HALF - 0.5, cy]]
+      .map(([x, y]) => document.elementFromPoint(x, y)?.closest(CHIP));
+    return [{
+      chip: label(chip) + " " + (chip.textContent || "").trim(),
+      height: Math.round(r.height),
+      misses: hits.filter((h) => !h).length,
+      shared: hits.filter((h) => h && h !== chip).length,
+    }];
+  });
+
   return {
+    chips,
     fixedCount: fixed.length,
     fixedLabels: fixed.map((f) => label(f.el)),
     fixedCollisions,
@@ -386,8 +416,21 @@ async function signIn(cdp, sessionId) {
 
 // ---------------------------------------------------------------------------
 
-function report(route, width, theme, probe) {
+function report(route, width, theme, probe, expectChips) {
   const where = `${route} @ ${width}px ${theme}`;
+
+  if (expectChips) {
+    const short = probe.chips.filter((c) => c.misses > 0);
+    check(
+      probe.chips.length > 0 && short.length === 0,
+      `${where} — every citation chip has a 24px tap target`,
+      probe.chips.length === 0
+        ? "no citation chip had room to measure — the check measured nothing"
+        : short.map((c) => `${c.chip} (${c.height}px box, ${c.misses}/4 misses)`).join("; "),
+    );
+    const shared = probe.chips.filter((c) => c.shared > 0).length;
+    if (shared) console.log(`  note: ${where} — ${shared}/${probe.chips.length} chips share hit area with a neighbour`);
+  }
 
   check(
     probe.fixedCollisions.length === 0,
@@ -553,7 +596,7 @@ async function main() {
             `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}"); })()`,
           );
           const probe = await evaluate(cdp, sessionId, PROBE);
-          report(route, width, theme, probe);
+          report(route, width, theme, probe, route === noteHref);
         }
       }
     }

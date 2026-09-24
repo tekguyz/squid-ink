@@ -179,6 +179,26 @@ describe("project conventions", () => {
     expect(ragFiles.filter((f) => read(f).includes("process.env"))).toEqual([]);
   });
 
+  it("shows a text input's focus as the button outline, never a border colour change", () => {
+    // Issue #9. A 1px border changing colour is a weaker focus indicator than
+    // the 2px accent outline every button carries, and two idioms side by side
+    // made each framed input the odd one out. A framed input (a wrapper
+    // carrying the border, the input inside it on `outline-none`) draws the
+    // outline on the FRAME, keyed to the input's own :focus-visible so a
+    // mouse click on a button inside the frame does not light it too.
+    const borderFocus = sourceFiles().filter((f) =>
+      /focus-within:border-/.test(read(f)),
+    );
+    expect(borderFocus).toEqual([]);
+
+    const unframed = sourceFiles().filter(
+      (f) =>
+        /\boutline-none\b/.test(read(f)) &&
+        !read(f).includes("has-[input:focus-visible]:outline-accent"),
+    );
+    expect(unframed).toEqual([]);
+  });
+
   it("keeps every file under the 400-line hard ceiling", () => {
     const offenders = sourceFiles()
       .map((f) => [f, read(f).split("\n").length] as const)

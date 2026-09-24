@@ -41,7 +41,7 @@ export function CollectionCreate() {
       {/* The border is --control-edge because this IS an interactive control.
           --rule-2 is the edge of a decorative frame and would measure ~1.4:1
           here — see CLAUDE.md § Colour. */}
-      <span className="border-control-edge focus-within:border-accent flex items-center gap-[5px] border px-[8px] py-[4px]">
+      <span className="border-control-edge has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[5px] border px-[8px] py-[4px]">
         <span aria-hidden className="font-mono text-muted text-[9px]">
           +
         </span>
