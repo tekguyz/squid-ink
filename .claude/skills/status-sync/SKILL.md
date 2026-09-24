@@ -83,11 +83,12 @@ into `design-reference/Note Detail.dc.html` (33k) or `App Surfaces.dc.html`
   ```
 
   That returns every open issue on one line each — 2.7 KB for 29 issues,
-  measured 2026-09-24. Then read the pinned tracking issue, which holds the
+  measured 2026-09-24. If it returns exactly 100 lines, the list is cut off:
+  raise `--limit` and run it again. Then read the pinned tracking issue, which holds the
   order and the "next" list:
 
   ```bash
-  gh api graphql -f query='{repository(owner:"tekguyz",name:"squid-ink"){pinnedIssues(first:5){nodes{issue{number title}}}}}' --jq '.data.repository.pinnedIssues.nodes[].issue | "#\(.number) \(.title)"'
+  gh api graphql -F owner='{owner}' -F name='{repo}' -f query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){pinnedIssues(first:5){nodes{issue{number title}}}}}' --jq '.data.repository.pinnedIssues.nodes[].issue | "#\(.number) \(.title)"'
   gh issue view <pinned-number> --json body --jq .body
   ```
 

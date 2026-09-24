@@ -164,6 +164,11 @@ what closed it. The file is a record of decisions, and a deletion destroys the
 reasoning along with the entry. The App Surfaces reference gap was closed this
 way on 2026-08-30.
 
+The file froze on 2026-09-23 (its own header says how). A heading ending
+`→ #N` is tracked in that issue: when that work closes, close the issue, not the
+heading. This check looks for record claims that are now untrue. It never
+treats the file as the open-work list.
+
 ### Check 3b — contradictions between the five docs
 
 The highest-yield check in this job, because it was impossible before
