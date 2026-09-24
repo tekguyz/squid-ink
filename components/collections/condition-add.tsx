@@ -100,7 +100,7 @@ export function AddCondition({ slug }: { slug: string }) {
 
       <label className="font-body text-ink-2 text-[12px]">
         {LEAD[kind]}
-        <span className="border-control-edge focus-within:border-accent mt-[4px] flex border px-[8px] py-[4px]">
+        <span className="border-control-edge has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent mt-[4px] flex border px-[8px] py-[4px]">
           <input
             autoFocus
             value={draft}

@@ -10,8 +10,17 @@ export interface CitationChipProps {
   onSelect: (segmentId: number) => void;
 }
 
+/** The chip is 10px type set inline in prose, so its box is far under the
+ *  24px WCAG 2.2 AA target, and growing the box would grow the line box of
+ *  every paragraph that carries one. The target is grown instead by an
+ *  invisible ::before, 24px tall and centred, which takes no layout (issue
+ *  #10). On adjacent lines two chips' targets can overlap by a few px; the
+ *  later chip wins that strip, and `verify-layout.mjs` counts it. */
+const HIT_AREA =
+  "relative before:absolute before:inset-x-0 before:top-1/2 before:h-6 before:-translate-y-1/2";
+
 const BASE =
-  "font-mono text-[10px] cursor-pointer transition-colors " +
+  `${HIT_AREA} font-mono text-[10px] cursor-pointer transition-colors ` +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent";
 
 const FILLED =

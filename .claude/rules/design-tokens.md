@@ -55,6 +55,23 @@ without `lab()` renders.
 `record-hud`'s `role="status"` and `role="alert"` pills are not controls and
 keep `rule-2`.
 
+## One focus idiom, inputs included
+
+**Focus is a 2px `outline-accent` outline on `:focus-visible` — buttons and
+inputs alike. Never a border colour change.** Issue #9, 2026-09-24: six framed
+inputs (chat, the four collection fields, tag entry) showed focus as
+`focus-within:border-accent` on a 1px frame, a weaker indicator than the
+buttons' outline. A framed input keeps `outline-none` on the `<input>` and
+draws the outline on its FRAME with
+`has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent`
+— keyed to the input, not `focus-within`, so a mouse click on a button
+inside the frame does not light the frame too. Every frame uses `outline-offset-1`; elsewhere the offset
+varies by geometry (`-2` on buttons in a tight row, `4` on the seek bar),
+the colour and width do not. `persona-step.tsx` uses the broader
+`has-focus-visible:` on its radio cards, which is right there: the card holds
+nothing else focusable. `project-conventions.test.ts` fails on any `focus-within:border-` and on
+any `outline-none` file without the frame outline.
+
 ## The accent family splits the same way
 
 **`border-accent` is a control edge; `bg-tint-hover` is a fill;

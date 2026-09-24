@@ -63,7 +63,7 @@ export function CollectionManage({
           });
         }}
       >
-        <span className="border-control-edge focus-within:border-accent flex items-center border px-[8px] py-[3px]">
+        <span className="border-control-edge has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center border px-[8px] py-[3px]">
           <input
             value={draft}
             disabled={pending}
