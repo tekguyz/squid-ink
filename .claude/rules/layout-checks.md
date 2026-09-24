@@ -35,6 +35,18 @@ naming both colliding elements. A layout assertion nobody has watched fail is
 an assertion about a walk nobody watched — the same reasoning
 `project-conventions.test.ts` states about its own file walk.
 
+**Flow text is measured by what its scroll containers leave visible**, not by
+its raw box (issue #5, 2026-09-23). A Dashboard row scrolled out of its list
+still has a full bounding box, and used to "collide" with the HUD. Proved both
+ways on a synthetic page in headless Chrome: rows scrolled off under a fixed
+box — old probe 3 hits, new probe 0; visible rows under the same box — 2 hits
+in both.
+
+**When sign-in lands on no note link, the script prints the page URL and saves
+its HTML to the OS temp dir** (issue #6, 2026-09-23). Read the dev server log
+beside it: when the HTML is Next's error page, the cause is only in the log.
+The file can hold the fixture owner's note text and is not deleted.
+
 Widths are `1440` and `1280` on every route. **`/` is also measured at `1024`,
 `768` and `390`**, because the Dashboard's stacked layout shipped 2026-09-15;
 `NARROW_WIDTHS` in the script lists which routes get narrow widths. No other

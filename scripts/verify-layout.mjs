@@ -37,7 +37,7 @@
  *   LAYOUT_KEEP=1 leave the browser open on failure, to look at it yourself
  */
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServerClient } from "@supabase/ssr";
@@ -257,18 +257,43 @@ const PROBE = `(() => {
       (el.textContent || "").trim().length > 0,
   );
 
+  // A raw rect ignores clipping: a row scrolled out of its scroll container
+  // still reports its full box, so a Dashboard with enough notes put a row
+  // nobody can see "under" the HUD (issue #5). What can be
+  // covered is the part every clipping ancestor leaves visible, so the rect is
+  // cut down to that, and a row with nothing left is skipped. The walk stops
+  // after a fixed ancestor: it clips its own content, but nothing above it
+  // clips it.
+  const clippedRect = (el) => {
+    const r = el.getBoundingClientRect();
+    let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+    for (let p = el.parentElement; p && p !== document.documentElement; p = p.parentElement) {
+      const s = getComputedStyle(p);
+      const clipsX = s.overflowX !== "visible";
+      const clipsY = s.overflowY !== "visible";
+      if (clipsX || clipsY) {
+        const c = p.getBoundingClientRect();
+        if (clipsX) { left = Math.max(left, c.left); right = Math.min(right, c.right); }
+        if (clipsY) { top = Math.max(top, c.top); bottom = Math.min(bottom, c.bottom); }
+      }
+      if (s.position === "fixed") break;
+    }
+    if (right <= left || bottom <= top) return null;
+    return { left, top, right, bottom, width: right - left, height: bottom - top, x: left, y: top };
+  };
+
   const overlayHits = [];
   for (const f of fixed) {
     for (const t of leafText) {
       if (f.el.contains(t)) continue;
-      const r = t.getBoundingClientRect();
-      if (r.width === 0 || r.height === 0) continue;
+      const r = clippedRect(t);
+      if (!r) continue;
       if (!overlaps(f.rect, r)) continue;
       overlayHits.push({
         overlay: label(f.el),
         text: (t.textContent || "").trim().slice(0, 40),
         overlayRect: f.rect.toJSON(),
-        textRect: r.toJSON(),
+        textRect: r,
       });
     }
   }
@@ -469,7 +494,21 @@ async function main() {
       sessionId,
       `(() => { const a = document.querySelector('a[href^="/notes/"]'); return a && a.getAttribute("href"); })()`,
     );
-    if (!noteHref) throw new Error("Signed in, but the dashboard listed no note to measure");
+    if (!noteHref) {
+      // This failed once, unexplained (issue #6), and the bare
+      // message could not tell "a dashboard with no notes" from "still on
+      // /login". The URL says which; the saved HTML says why.
+      const { url, html } = await evaluate(
+        cdp,
+        sessionId,
+        `({ url: location.href, html: document.documentElement.outerHTML })`,
+      );
+      const dump = path.join(tmpdir(), `verify-layout-no-note-${Date.now()}.html`);
+      writeFileSync(dump, html);
+      throw new Error(
+        `Signed in, but the page listed no note to measure.\n  url : ${url}\n  html: ${dump}`,
+      );
+    }
 
     // A route this script does not visit has no layout proof at all, which is
     // why /personas was added here in the same change that added the screen.
