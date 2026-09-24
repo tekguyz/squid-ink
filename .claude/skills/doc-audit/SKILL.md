@@ -15,8 +15,10 @@ documents before writing a word, and up to **127k** when a citation leads into a
 
 - `node scripts/check-docs.mjs` reported a finding the `status-sync` skill could
   not resolve from script output alone
-- a session shipped work that needs a new `KNOWN_GAPS.md` entry or a dated
-  `RESOLVED` line
+- a session shipped work that leaves a doc claim untrue — a figure, a rule,
+  or a frozen `KNOWN_GAPS.md` section that now needs a dated `RESOLVED` line.
+  A new gap is **not** a reason to run this: it goes to a GitHub issue
+  (`docs/agents/issue-tracker.md`)
 - the user asks for a doc audit, or says something in the docs looks wrong
 
 The `status-sync` skill runs the same script but reads only its **output**. It never
@@ -25,13 +27,14 @@ reading there.
 
 ## Where status lives in this repo
 
-This repo has **no `STATUS.md`**, and does not need one yet. Five files carry
-everything, and all five are on disk:
+This repo has **no `STATUS.md`**, and does not need one yet. Five files on disk
+and the GitHub issue tracker carry everything:
 
 | What it holds | Lives in |
 |---|---|
 | Stack decision, pinned versions, the rules that govern new code | `CLAUDE.md` |
-| Every deviation, deferral, and deliberately-not-built thing | `docs/KNOWN_GAPS.md` |
+| Decisions, measurements and things left as they are on purpose — frozen 2026-09-23 | `docs/KNOWN_GAPS.md` |
+| Open work: every new gap, deferral and bug, ordered by the pinned tracking issue | GitHub Issues |
 | Locked decisions, what was rejected and why, what is still open | `docs/DECISIONS.md` |
 | Scope, phases, cost picture, explicit out-of-scope | `docs/ROADMAP.md` |
 | Vercel and Supabase config, and how to re-measure it | `docs/DEPLOYMENT.md` |
@@ -141,8 +144,10 @@ figure, keep the reason.
 ### Check 2 — what shipped that the docs do not mention
 
 `git log --oneline -20`, and `git log origin/main --oneline -5` if a remote
-exists. For every commit since `docs/KNOWN_GAPS.md`'s newest dated entry,
-confirm something covers it. Read commit bodies — this repo writes real ones.
+exists. For every recent commit, confirm something covers it — a doc, or the
+issue or PR it closed. Read commit bodies — this repo writes real ones. Do not
+count from `docs/KNOWN_GAPS.md`'s newest dated entry: the file froze on
+2026-09-23, and later work is recorded in issues, not there.
 
 ### Check 3 — what `docs/KNOWN_GAPS.md` claims that is no longer true
 
@@ -158,6 +163,11 @@ deleted: rewrite it in place with a dated `**RESOLVED YYYY-MM-DD.**` line saying
 what closed it. The file is a record of decisions, and a deletion destroys the
 reasoning along with the entry. The App Surfaces reference gap was closed this
 way on 2026-08-30.
+
+The file froze on 2026-09-23 (its own header says how). A heading ending
+`→ #N` is tracked in that issue: when that work closes, close the issue, not the
+heading. This check looks for record claims that are now untrue. It never
+treats the file as the open-work list.
 
 ### Check 3b — contradictions between the five docs
 
@@ -238,9 +248,12 @@ Repair whichever doc is stale, in that doc's own established format:
   behind a real edit is the exact drift this audit exists to catch. Same rule
   for `docs/ROADMAP.md`'s header and `docs/DECISIONS.md`'s "Working state as of"
   line — a doc this job repairs is a doc whose date it stamps.
-- **`docs/KNOWN_GAPS.md`** — add a dated section for anything newly deferred,
-  and mark anything now closed `**RESOLVED YYYY-MM-DD.**` in place, with what
-  closed it.
+- **`docs/KNOWN_GAPS.md`** — frozen since 2026-09-23. **Never add a section.**
+  Anything newly deferred goes to a GitHub issue instead
+  (`docs/agents/issue-tracker.md`). You may still mark an old section
+  `**RESOLVED YYYY-MM-DD.**` in place, with what closed it, when it is part of
+  the record and not already moved to an issue (a heading ending `→ #N` is
+  tracked there — close the issue, not the heading).
 
 If every doc was already accurate, say so plainly and change nothing.
 

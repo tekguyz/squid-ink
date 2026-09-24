@@ -1,20 +1,25 @@
 ---
 name: status-sync
-description: Audit this repo's real state — check-docs.mjs output, git state after a fetch, and the open headings in docs/KNOWN_GAPS.md — and report what is genuinely open, ending with 2-3 next-step candidates and one recommended pick. Reads check-script output, never whole documents. Use when the user asks for a status sync, a handoff, "where are we", or "what's next".
+description: Audit this repo's real state — check-docs.mjs output, git state after a fetch, and the open GitHub issues plus the pinned tracking issue — and report what is genuinely open, ending with 2-3 next-step candidates and one recommended pick. Reads check-script output, never whole documents. Use when the user asks for a status sync, a handoff, "where are we", or "what's next".
 ---
 
 # Status sync for `squid-ink`
 
 This repo's state lives in four places: `scripts/check-docs.mjs` (countable
-claims), `git` (what happened), `docs/KNOWN_GAPS.md` (open work) and `CLAUDE.md`
+claims), `git` (what happened), GitHub Issues (open work) and `CLAUDE.md`
 (standing rules). This skill measures all four and reports what is open.
+
+**`docs/KNOWN_GAPS.md` is frozen since 2026-09-23.** Every open item in it moved
+to an issue that day, and a pinned tracking issue holds the order. The file is
+now a record of decisions and measurements. It is not the open-work list — do
+not read it for "what is open" or "what is next".
 
 **That is the whole job.** It prints no paste block and produces no message for
 another tool. Nothing is pasted into a Claude.ai Project any more — see
 `C:\Projects\tekguyz-one\docs\adr\0001-retire-the-claude-ai-project-loop.md`.
 
 **There is deliberately no `STATUS.md` here and this skill must never create
-one.** Status lives in `CLAUDE.md`, `docs/KNOWN_GAPS.md` and `git log`. A
+one.** Status lives in `CLAUDE.md`, GitHub Issues and `git log`. A
 sibling repo consolidated all three into one status file and it reached 734
 lines.
 
@@ -71,23 +76,30 @@ into `design-reference/Note Detail.dc.html` (33k) or `App Surfaces.dc.html`
 
   That is ~200 tokens against the file's 5.9k, and it is the ONLY source for
   the surface count. See the surface rule under "Rules for the findings".
-- **For open work, grep the *headings*, not the bullets.** Use:
+- **For open work, list issue *titles and labels*, not bodies.** Use:
 
   ```bash
-  grep -n "^#\{2,3\} " docs/KNOWN_GAPS.md
+  gh issue list --state open --limit 100 --json number,title,labels --jq '.[] | "#\(.number) \(.title) [\([.labels[].name]|join(","))]"'
   ```
 
-  That returns every gap's heading with its line number — 4.0 KB against the
-  file's 132 KB, measured 2026-09-09. Then `sed -n '<start>,<end>p'` for the one
-  or two sections the findings actually need. A heading carrying
-  `**RESOLVED YYYY-MM-DD.**` in its body is closed, and there are many of them —
-  count them this run rather than trusting a number written here:
+  That returns every open issue on one line each — 2.7 KB for 29 issues,
+  measured 2026-09-24. If it returns exactly 100 lines, the list is cut off:
+  raise `--limit` and run it again. Then read the pinned tracking issue, which holds the
+  order and the "next" list:
 
   ```bash
-  grep -c "RESOLVED" docs/KNOWN_GAPS.md
+  gh api graphql -F owner='{owner}' -F name='{repo}' -f query='query($owner:String!,$name:String!){repository(owner:$owner,name:$name){pinnedIssues(first:5){nodes{issue{number title}}}}}' --jq '.data.repository.pinnedIssues.nodes[].issue | "#\(.number) \(.title)"'
+  gh issue view <pinned-number> --json body --jq .body
   ```
 
-  Do not report a heading as open without opening its section.
+  Find the pinned issue by that query each run. Do not trust a number written
+  here. Open a single issue with `gh issue view <n>` only when the findings need
+  its body. A tracking-list box can lag its issue: when they disagree, the
+  issue's own state wins, and the mismatch is a finding.
+
+  **Do not grep `docs/KNOWN_GAPS.md` for open work.** It is frozen, and its
+  headings are closed or moved. That grep is what this skill did before
+  2026-09-23.
 - **Never read `docs/_archive/*` for current state.** It is superseded material
   kept as a record — the retired Superpowers plans and specs archived 2026-09-20
   among it — and by design it contains claims that are no longer true. Open one
@@ -123,7 +135,7 @@ treat silence as clean.
    - **behind origin** — work exists that this machine has not pulled. Say
      "behind origin/main by N commits — run `git pull` before working here",
      and do NOT describe the tree as current. Pushed is still not deployed.
-4. `docs/KNOWN_GAPS.md` open sections, by the heading grep above.
+4. Open GitHub issues and the pinned tracking issue, by the two commands above.
 5. `CLAUDE.md` rules, from context.
 
 `main` auto-deploys to Vercel (`tekguyz/squid-ink`,
@@ -166,15 +178,18 @@ will claim something is done. Otherwise report them as not run.
   number written into a skill is a number nobody re-checks.
 - **"Next" costs no extra reading, and that is the constraint that shapes it.**
   Derive the candidates from what this run already gathered and nothing else:
-  the unbuilt surfaces the ROADMAP status line names, and the open headings the
-  `KNOWN_GAPS.md` grep returned. Opening a document to pick a next step is the
-  budget breach this skill exists to prevent. If the two sources already in hand
-  do not support a recommendation, write `no clear next — the user should choose`
-  and stop; that is a valid answer, not a failure.
+  the unbuilt surfaces the ROADMAP status line names, the open issue list, and
+  the pinned tracking issue's order. Take candidates from the top of its "next"
+  section first. Opening a document to pick a next step is the budget breach
+  this skill exists to prevent. If the sources already in hand do not support a
+  recommendation, write `no clear next — the user should choose` and stop; that
+  is a valid answer, not a failure.
 
   **Name candidates, never a roadmap.** Two or three, one pick, and no ordering
-  beyond the pick. A candidate must be ready *now*: an open gap whose blocker is
-  still open is not a candidate, it is open work.
+  beyond the pick. A candidate must be ready *now*: an open issue whose blocker
+  is still open, or that the tracking issue says needs a decision first, is not
+  a candidate, it is open work. Give each candidate its issue number and its
+  `size:` label, because the label says which workflow runs it.
 
   **Never carry a candidate list forward, and never write one into this file.**
   The pick is measured off this run's output, the same as every figure. The
@@ -205,7 +220,7 @@ Cover, in this order, and leave out any line with nothing measured behind it:
   matters.
 - **This session** — what was asked, what was decided, what was rejected and
   why.
-- **Open now** — from the heading grep, measured only, plus every check finding
+- **Open now** — from the issue list, measured only, plus every check finding
   one line each. Omit the check lines entirely when the script exits `0`.
 - **Next** — 2-3 candidates, one line each, then the pick and the half-sentence
   reason.
