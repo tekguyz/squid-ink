@@ -14,7 +14,7 @@ import { useSyncExternalStore } from "react";
  *
  * What remains is the store both used: the class on <html>, which is what the
  * stylesheet paints from, plus localStorage, which the boot script in
- * app/layout.tsx reads on the next load.
+ * components/theme-boot.tsx reads on the next load.
  */
 
 export type Theme = "light" | "dark";
