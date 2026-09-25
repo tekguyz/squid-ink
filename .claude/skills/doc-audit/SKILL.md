@@ -127,11 +127,12 @@ Repo-only. No browser, no dev server, no network. It measures thirteen things:
     this repo carries that it is deployed at all, so a number raised in code and
     not there reads as a plan change that never happened.
 13. **No file under `.claude/` carries a frozen surface count** — the ROADMAP
-    status line's own "N of the ten" phrase, the old zero-count claim, or a
-    number followed by "built". The exact patterns are in the detector. The built count lives only on the `docs/ROADMAP.md`
-    status line; skills copied it three times and every copy went stale. The
-    detector is `scripts/frozen-surface-count.mjs`, with its own unit test. To
-    record a past count in a correction note, say what the status line listed.
+    status line's own "N of the ten ..." phrase, the old zero-count claim, or a
+    number followed by "built". The built count lives only on the
+    `docs/ROADMAP.md` status line; two skills copied it and every copy went
+    stale. The exact patterns are in `scripts/frozen-surface-count.mjs`, with
+    its own unit test. To record a past count in a correction note, say what
+    the status line listed.
 
 Exit `0` clean, `1` findings one per line, `2` means it could not read something
 and **is not a pass** — fix the script before continuing.
@@ -238,8 +239,8 @@ design file to re-count. If the session touched a surface that status line does
 not list as built, say so loudly — it is scope creep, not progress.
 
 Corrected 2026-09-14. This carried a zero count and "none was in scope",
-frozen from 2026-08-30, while the status line listed six. The `handoff` skill dropped the same
-frozen count on 2026-09-09; this copy was missed.
+frozen from 2026-08-30, while the status line listed six. The `handoff` skill
+dropped the same frozen count on 2026-09-09; this copy was missed.
 
 ---
 
