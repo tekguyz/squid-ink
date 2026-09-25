@@ -768,7 +768,7 @@ gates, in that order.
     "Explicitly still open" above.
 ## Frontend engineering conventions (added 2026-08-30, trimmed 2026-08-30 to remove duplication with CLAUDE.md)
  
-- **Repo/package naming**: local folder `tekguyz-squid-ink`, npm package
+- **Repo/package naming**: local folder `squid-ink` (renamed from `tekguyz-squid-ink` 2026-09-25), npm package
   name `squid-ink` — these were deliberately decoupled from the app's
   public name while it was unconfirmed. Since the 2026-09-07 lock they
   agree: the public name is **Squid Ink** (see Branding above). The former
