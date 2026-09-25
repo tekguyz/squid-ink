@@ -41,6 +41,7 @@ export const mockNote: Note = {
   // No object behind this fixture — it is a test fixture, not a recording. The
   // player renders nothing for a null path, which is what component tests want.
   audioStoragePath: null,
+  hasSpeakerLabels: true,
   turnCount: 12,
   duration: "41:07",
   playhead: "03:31",

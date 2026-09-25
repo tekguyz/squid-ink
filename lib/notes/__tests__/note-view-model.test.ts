@@ -105,6 +105,14 @@ describe("buildNoteViewModel", () => {
     ).toBe("uploading");
   });
 
+  it("carries diarization_enabled through as hasSpeakerLabels", () => {
+    expect(buildNoteViewModel(row, [], []).hasSpeakerLabels).toBe(true);
+    expect(
+      buildNoteViewModel({ ...row, diarization_enabled: false }, [], [])
+        .hasSpeakerLabels,
+    ).toBe(false);
+  });
+
   it("carries the row's id and title through", () => {
     expect(note.id).toBe(NOTE_ID);
     expect(note.title).toBe("Pilot pricing & rollout");

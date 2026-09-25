@@ -176,6 +176,7 @@ export function buildNoteViewModel(
     notegenStatus: row.notegen_status,
     personaId,
     audioStoragePath: row.audio_storage_path,
+    hasSpeakerLabels: row.diarization_enabled,
     turnCount: segments.length,
     duration: formatDuration(row.audio_duration_seconds),
     playhead: DEFAULT_PLAYHEAD,

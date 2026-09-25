@@ -125,6 +125,11 @@ export interface Note {
    *  note has no audio. Carried raw rather than formatted — it is the key the
    *  playback helper fetches with, not something to display. */
   audioStoragePath: string | null;
+  /** notes.diarization_enabled, carried through. False when the recording
+   *  was transcribed plain (28-60 min), so no turn has a real speaker. An
+   *  OUTCOME of transcription, not a user setting: DECISIONS.md § Speaker
+   *  diarization makes it automatic, with no manual toggle. */
+  hasSpeakerLabels: boolean;
   turnCount: number;
   duration: string;
   playhead: string;

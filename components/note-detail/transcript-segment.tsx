@@ -5,13 +5,16 @@ import { SPEAKER_TEXT } from "./speaker-colors";
 export interface TranscriptSegmentProps {
   segment: Segment;
   active: boolean;
-  showSpeakerLabels: boolean;
+  /** Note.hasSpeakerLabels. Gemini gives speakers and timestamps together or
+   *  not at all (diarization-policy.ts), so a plain turn has neither: its
+   *  name would be "Unknown" and its time the view model's "00:00". */
+  diarized: boolean;
 }
 
 export function TranscriptSegment({
   segment,
   active,
-  showSpeakerLabels,
+  diarized,
 }: TranscriptSegmentProps) {
   return (
     <li
@@ -22,15 +25,17 @@ export function TranscriptSegment({
         active ? "border-accent bg-seg-wash" : "border-transparent",
       ].join(" ")}
     >
-      {showSpeakerLabels ? <SpeakerAvatar speaker={segment.speaker} /> : <span />}
+      {diarized ? <SpeakerAvatar speaker={segment.speaker} /> : <span />}
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
-          {showSpeakerLabels ? (
+          {diarized ? (
             <span className={`text-[12px] leading-[16px] ${SPEAKER_TEXT[segment.speaker.token]}`}>
               {segment.speaker.name}
             </span>
           ) : null}
-          <span className="font-mono text-[9.5px] text-meta-4">{segment.time}</span>
+          {diarized ? (
+            <span className="font-mono text-[9.5px] text-meta-4">{segment.time}</span>
+          ) : null}
         </div>
         <p className="mt-[3px] text-[13px] leading-[1.56] text-pretty text-ink-2">
           {segment.text}
