@@ -61,9 +61,9 @@ import {
  *  response body; it does not fail a run whose first two phases succeeded.
  *
  *  The note-gen ports are built from the SAME db client. A second client here
- *  would be a second secret-key read for no reason — this route is still the
- *  only shipped file that reads SUPABASE_SECRET_KEY, and
- *  project-conventions.test.ts fails the build if that stops being true.
+ *  would be a second secret-key read for no reason. The shipped readers are
+ *  listed in CLAUDE.md > Supabase > Keys, and project-conventions.test.ts
+ *  fails the build if another one appears.
  *
  *  maxDuration is 300 because the TEKGUYZ team is on the Vercel Hobby plan,
  *  where 300 s is both the default and the hard ceiling — there is no extended

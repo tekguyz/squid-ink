@@ -29,8 +29,9 @@ because they bite from files this rule's globs do not cover:
   mirrored in `supabase/templates/` and `config.toml` and never pushed.
   `docs/DEPLOYMENT.md` § Auth email.
 
-Test sign-in locally with `RLS_TEST_OWNER_EMAIL` / `RLS_TEST_OWNER_PASSWORD`
-from `.env.local` at `/login`.
+Test the sign-in FORM locally with `RLS_TEST_OWNER_EMAIL` /
+`RLS_TEST_OWNER_PASSWORD` from `.env.local` at `/login`. To just reach a
+signed-in page, open `/api/dev-login` (`CLAUDE.md` > Commands).
 
 ## Deployment interacts with this
 

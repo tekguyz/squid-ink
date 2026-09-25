@@ -8,7 +8,7 @@ paths:
 # Screen-level layout proof
 
 **Every other check in this repo is file-shaped; this class of defect is
-screen-shaped.** `npm test` renders in jsdom, which has no layout engine, so
+screen-shaped.** `npm run test:unit` renders in jsdom, which has no layout engine, so
 every rect there is zeros. `project-conventions.test.ts` reads source text.
 The impeccable detector lints class strings. All three are correct and all
 three are blind to two files that are each right alone and wrong on the same

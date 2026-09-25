@@ -143,7 +143,7 @@ treat silence as clean.
 `vercel ls squid-ink --scope tekguyz` and report what it says, or report the
 deploy as not checked. A push is not proof the build went green.
 
-Gates (`npm run build`, `npm run typecheck`, `npm test`) only if the findings
+Gates (`npm run build`, `npm run typecheck`, `npm run test:unit`) only if the findings
 will claim something is done. Otherwise report them as not run.
 
 ## Rules for the findings

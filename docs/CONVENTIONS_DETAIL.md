@@ -66,6 +66,11 @@ which was correct while naming was reopened between 2026-08-30 and the lock on
 `scripts/check-docs.mjs` parses it from that section. Its count has drifted
 three times; this is the record.
 
+**Changed 2026-09-25 (issue #44)**, a deliberate move, not a correction: the
+shipped-reader count went from one to two. `app/api/dev-login/route.ts` reads
+the key to create or repair the dev account, and only in development — the
+route answers 404 before reading anything otherwise.
+
 **Corrected 2026-09-14**, measured with the second grep in that section:
 `verify-chat-rls.mjs` had read the key since the chat pack and was never listed,
 and the deleted `print-signin-link.mjs` went with magic-link sign-in. The count

@@ -24,8 +24,11 @@ import { isSessionOnly, withPersistence } from "@/lib/auth/session-persistence";
  *  Reachable is not unauthenticated. app/api/cron/transcribe/route.ts refuses
  *  every request that does not carry `Authorization: Bearer $CRON_SECRET`.
  *  That bearer check is the route's authorization; a user session was never
- *  the right gate for a machine caller. */
-const PUBLIC_PREFIXES = ["/login", "/auth/confirm", "/api/cron"];
+ *  the right gate for a machine caller.
+ *
+ *  /api/dev-login: it exists to create the session, so it cannot require one.
+ *  Its own NODE_ENV check is its gate — outside development it answers 404. */
+const PUBLIC_PREFIXES = ["/login", "/auth/confirm", "/api/cron", "/api/dev-login"];
 
 /**
  * Refreshes the auth session on every matched request and writes the rotated

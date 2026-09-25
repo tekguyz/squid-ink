@@ -62,4 +62,12 @@ describe("updateSession — signed-out redirects", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("location")).toBeNull();
   });
+
+  it("does NOT redirect the dev-login route, which exists to create the session", async () => {
+    // Its own NODE_ENV check is its gate: it answers 404 outside development.
+    const res = await visit("/api/dev-login");
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
 });

@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "node -e \"console.error('Do not run the aggregate test command. Use: npm run test:unit, then npm run test:integration. See CLAUDE.md.'); process.exit(1)\"",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration --no-file-parallelism --passWithNoTests"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.49",

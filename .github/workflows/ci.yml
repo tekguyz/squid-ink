@@ -1,0 +1,22 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      # Unit tests only. Integration tests need SUPABASE_SECRET_KEY and run
+      # locally, serially. Never the aggregate `npm test`: see CLAUDE.md.
+      - run: npm run test:unit
+      - run: npm run build

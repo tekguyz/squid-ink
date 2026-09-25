@@ -123,9 +123,9 @@ reaches the shared unit only as `failOnMissingObject`, which the action always
 passes `true`. Object existence still gates the call, still through `list()`.
 
 **Secret-key usage did not change.** The action runs on the authenticated
-cookie client and RLS supplies the owner; `app/api/cron/transcribe/route.ts` is
-still the only shipped file that reads `SUPABASE_SECRET_KEY`, and
-`project-conventions.test.ts` now fails the build if a second one appears.
+cookie client and RLS supplies the owner. The shipped files that read
+`SUPABASE_SECRET_KEY` are listed in `CLAUDE.md` > Supabase > Keys, and
+`project-conventions.test.ts` fails the build if another one appears.
 There is **no retry for `'failed'`** — the button is absent from the DOM for
 `'failed'` and `'completed'`, not disabled.
 
