@@ -262,8 +262,3 @@ If every doc was already accurate, say so plainly and change nothing.
 **If any doc changed, commit it — those files alone, nothing else in the tree**,
 even if other work is in progress. Message names the measurement, e.g.
 `"CLAUDE.md: next 16.3.3 -> 16.4.0, measured against package.json"`.
-
-Then tell the user to click **Sync now** in the Claude.ai Project, because the
-connector serves the branch and a repair it has not fetched is not yet visible
-there. Do not print an attach-list; the file selection is set once in the
-Claude.ai UI.
