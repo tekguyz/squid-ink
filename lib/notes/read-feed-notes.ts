@@ -18,8 +18,7 @@ import type { NoteTag } from "@/lib/notes/tags";
  * eventually disagree about the same note.
  *
  * Neither query filters on user_id. RLS supplies it, and a redundant filter
- * would mask an RLS failure instead of exposing it. The two are issued
- * together because neither depends on the other's result.
+ * would mask an RLS failure instead of exposing it.
  *
  * The counts are the point of the second query. One query grouped in memory,
  * never one query per row: a list of 128 notes would otherwise be 128 round
@@ -110,8 +109,13 @@ export interface FeedNotes {
  * collection is a real state, and two round trips that provably return nothing
  * are two round trips wasted.
  *
- * `limit` is a bound, not a page size. Nothing here can ask for the next page,
- * and a cursor pager is deliberately not built.
+ * `limit` is how many of the newest rows to read. The Dashboard grows it one
+ * page at a time (lib/notes/feed-page.ts); a collection passes a plain bound.
+ *
+ * The chunk query is narrowed to the notes actually read, so it is issued
+ * AFTER the note query. Until 2026-09-25 (#4) the two ran together and the
+ * chunk read was unbounded: every generated chunk the account owned, on every
+ * load, to label a page of twenty rows.
  */
 export async function readFeedNotes(
   supabase: Client,
@@ -129,31 +133,32 @@ export async function readFeedNotes(
     return { inputs: [], counts: new Map(), matched: 0 };
   }
 
-  const [
-    { data: notes, error: noteError, count },
-    { data: chunks, error: chunkError },
-  ] = await Promise.all([
-    (() => {
-      const query = supabase
-        .from("notes")
-        .select(
-          "id, title, created_at, processing_status, audio_duration_seconds",
-          { count: "exact" },
-        )
-        .order("created_at", { ascending: false })
-        .limit(limit);
-      return (noteIds === null ? query : query.in("id", noteIds)).returns<
-        NoteQueryRow[]
-      >();
-    })(),
-    supabase
-      .from("note_chunks")
-      .select("note_id, chunk_type, content, metadata")
-      .in("chunk_type", GENERATED)
-      .returns<ChunkQueryRow[]>(),
-  ]);
-
+  const notesQuery = supabase
+    .from("notes")
+    .select("id, title, created_at, processing_status, audio_duration_seconds", {
+      count: "exact",
+    })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  const {
+    data: notes,
+    error: noteError,
+    count,
+  } = await (noteIds === null ? notesQuery : notesQuery.in("id", noteIds)).returns<
+    NoteQueryRow[]
+  >();
   if (noteError) throw new Error(`Failed to load notes: ${noteError.message}`);
+
+  const ids = (notes ?? []).map((row) => row.id);
+  const { data: chunks, error: chunkError } =
+    ids.length === 0
+      ? { data: [], error: null }
+      : await supabase
+          .from("note_chunks")
+          .select("note_id, chunk_type, content, metadata")
+          .in("note_id", ids)
+          .in("chunk_type", GENERATED)
+          .returns<ChunkQueryRow[]>();
   if (chunkError)
     throw new Error(`Failed to load note counts: ${chunkError.message}`);
 

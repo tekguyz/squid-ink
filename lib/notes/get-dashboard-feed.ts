@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { groupNotesByDay, type DayGroup } from "@/lib/notes/group-notes-by-day";
 import { readFeedNotes } from "@/lib/notes/read-feed-notes";
 import { readTagIndex } from "@/lib/notes/get-tags";
+import { FEED_PAGE } from "@/lib/notes/feed-page";
 import type { TagChip } from "@/lib/notes/tags";
 
 /**
@@ -16,23 +17,16 @@ import type { TagChip } from "@/lib/notes/tags";
  * mask an RLS failure instead of exposing it — the rule CLAUDE.md § Supabase
  * states.
  *
- * The note read is CAPPED at FEED_LIMIT and the cap is not pagination. Every
- * note ever recorded was being fetched, shaped and grouped on every load of
- * the root route, which is unbounded work for a screen that shows the most
- * recent day first and is scrolled, not paged. A real feed pager — a cursor,
- * a "load older" control, a rail that knows about the days it has not fetched
- * — is deferred and is NOT built here; the cap is the bound that stops the
- * query growing with the table until it is.
+ * The note read is PAGED by `limit` (lib/notes/feed-page.ts): the newest
+ * FEED_PAGE notes first, one more page per "Show older notes". It replaced a
+ * flat 100-row cap on 2026-09-25 (#4), which left notes past the hundredth
+ * unreachable and still put a hundred rows on screen.
  *
  * `totalNotes` therefore comes from PostgREST's exact count rather than from
  * the number of rows returned. The rail and the end-of-feed footer both print
  * it, and after the cap bites the row count is the size of the page, not the
  * size of the account.
  */
-
-/** Most recent notes fetched per load. See the note above: a bound, not a page
- *  size, because nothing exists yet to ask for the next one. */
-const FEED_LIMIT = 100;
 
 export interface DashboardFeed {
   /** How many notes THIS FEED shows, which is the account total until a tag
@@ -53,6 +47,9 @@ export interface DashboardFeed {
    *  from a multi-tenant product this one is not (docs/ROADMAP.md §9). */
   email: string | null;
   totalNotes: number;
+  /** True when notes matching this feed exist past `limit`, so the page
+   *  offers "Show older notes". */
+  hasOlder: boolean;
   groups: DayGroup[];
 }
 
@@ -60,13 +57,14 @@ export interface DashboardFeed {
  * The feed, optionally narrowed to one tag.
  *
  * The tag index is read FIRST when a filter is asked for, because the note
- * query has to be narrowed before FEED_LIMIT applies — filtering the capped
+ * query has to be narrowed before the limit applies — filtering the capped
  * page in memory would silently drop tagged notes that fell outside the most
- * recent hundred. That is one extra round trip, and only on the filtered path.
+ * recent page. That is one extra round trip, and only on the filtered path.
  */
 export async function getDashboardFeed(
   now: Date,
   tagSlug: string | null = null,
+  limit: number = FEED_PAGE,
 ): Promise<DashboardFeed> {
   const supabase = await createClient();
 
@@ -86,7 +84,7 @@ export async function getDashboardFeed(
   const [feed, { count: totalCount }, { data: auth }] = await Promise.all([
     readFeedNotes(supabase, {
       noteIds: matching,
-      limit: FEED_LIMIT,
+      limit,
       tagsByNote: byNote,
     }),
     // The account total, never narrowed. head: true fetches no rows at all —
@@ -103,6 +101,7 @@ export async function getDashboardFeed(
     tagChips: chips,
     activeTag: active,
     shownNotes: feed.matched,
+    hasOlder: feed.matched > feed.inputs.length,
     totalNotes: totalCount ?? feed.matched,
     groups: groupNotesByDay(feed.inputs, feed.counts, now),
   };
