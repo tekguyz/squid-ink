@@ -172,8 +172,8 @@ will claim something is done. Otherwise report them as not run.
   unbuilt surface as scope creep only when the session touched one the status
   line does not list as built — and say so loudly then.
 
-  This bullet used to name a frozen count. It said "none built and none in
-  scope" on 2026-09-09, when three were built and the ROADMAP said so, and a
+  This bullet used to name a frozen count. On 2026-09-09 it claimed a zero
+  count and nothing in scope, when the ROADMAP status line listed three, and a
   status report called a shipped surface scope creep on the strength of it. A
   number written into a skill is a number nobody re-checks.
 - **"Next" costs no extra reading, and that is the constraint that shapes it.**

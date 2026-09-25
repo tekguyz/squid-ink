@@ -75,7 +75,7 @@ claim in chat — as something to verify, not something to cite.
 node scripts/check-docs.mjs
 ```
 
-Repo-only. No browser, no dev server, no network. It measures twelve things:
+Repo-only. No browser, no dev server, no network. It measures thirteen things:
 
 1. **The pinned-version table in `CLAUDE.md` against `package.json`** — both
    directions, so a package added to one and not the other is a finding, and any
@@ -126,13 +126,21 @@ Repo-only. No browser, no dev server, no network. It measures twelve things:
     `MAX_TRANSCRIPTIONS_PER_RUN` against `sweep.ts`. That file is the only record
     this repo carries that it is deployed at all, so a number raised in code and
     not there reads as a plan change that never happened.
+13. **No file under `.claude/` carries a frozen surface count** — the ROADMAP
+    status line's own "N of the ten ..." phrase, the old zero-count claim, or a
+    number followed by "built". The built count lives only on the
+    `docs/ROADMAP.md` status line; two skills copied it and every copy went
+    stale. The exact patterns are in `scripts/frozen-surface-count.mjs`, with
+    its own unit test. To record a past count in a correction note, say what
+    the status line listed.
 
 Exit `0` clean, `1` findings one per line, `2` means it could not read something
 and **is not a pass** — fix the script before continuing.
 
-All twelve were verified to catch real drift, by breaking each one and watching
+All thirteen were verified to catch real drift, by breaking each one and watching
 it fail — the original nine when the script was written, checks 10–12 when the
-docs moved in on 2026-08-31. If you change a check, do that again; a check that
+docs moved in on 2026-08-31, check 13 on 2026-09-25 against the three history
+notes that still quoted a count. If you change a check, do that again; a check that
 has never failed is decoration.
 
 **What it cannot do, so do not claim it did:** it cannot check a *rule*. Most of
@@ -230,9 +238,9 @@ are built changes, and the count does not live here** — read it off the
 design file to re-count. If the session touched a surface that status line does
 not list as built, say so loudly — it is scope creep, not progress.
 
-Corrected 2026-09-14. This read "None is built and none was in scope", frozen
-from 2026-08-30, while six were built. The `handoff` skill dropped the same
-frozen count on 2026-09-09; this copy was missed.
+Corrected 2026-09-14. This carried a zero count and "none was in scope",
+frozen from 2026-08-30, while the status line listed six. The `handoff` skill
+dropped the same frozen count on 2026-09-09; this copy was missed.
 
 ---
 
