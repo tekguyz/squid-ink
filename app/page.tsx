@@ -2,7 +2,9 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { IdentityRail } from "@/components/dashboard/identity-rail";
 import { NoteFeed } from "@/components/dashboard/note-feed";
 import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
+import Link from "next/link";
 import { getDashboardFeed } from "@/lib/notes/get-dashboard-feed";
+import { feedLimit, olderHref } from "@/lib/notes/feed-page";
 
 /**
  * The Dashboard, App Surfaces 01. This replaced the throwaway scaffold that
@@ -48,11 +50,16 @@ export default async function Dashboard({
   // `?tag=<slug>` is the whole filter. It lives in the URL so it survives a
   // refresh and can be linked, and it is applied by the same server query that
   // builds the unfiltered feed — there is no second path to disagree with.
-  const tag = (await searchParams).tag;
+  // `?show=<n>` is how many notes are on screen (lib/notes/feed-page.ts), and
+  // "Show older notes" is a plain link that raises it by one page.
+  const { tag, show } = await searchParams;
+  const limit = feedLimit(show);
   const feed = await getDashboardFeed(
     new Date(),
     typeof tag === "string" ? tag : null,
+    limit,
   );
+  const onScreen = feed.groups.reduce((sum, g) => sum + g.notes.length, 0);
 
   return (
     <div className="h-dvh overflow-hidden">
@@ -83,14 +90,28 @@ export default async function Dashboard({
           <DashboardHeader />
           <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
             <NoteFeed groups={feed.groups} />
+            {/* scroll={false}: the next page lands under the reader's eye, and
+              the inner scroll area keeps its place across the soft navigation. */}
+            {feed.hasOlder && (
+              <div className="px-[24px] pt-[18px] pb-[24px]">
+                <Link
+                  href={olderHref(limit, feed.activeTag)}
+                  scroll={false}
+                  className="font-body text-ink border-control-edge hover:bg-raised focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-1 inline-flex min-h-[32px] items-center border px-[12px] text-[12.5px]"
+                >
+                  Show older notes
+                </Link>
+              </div>
+            )}
           </div>
           <footer
             style={{ height: HUD_RESERVE }}
             className="bg-canvas border-rule flex flex-none items-center border-t px-[24px]"
           >
             <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
-              End of feed · {feed.shownNotes}{" "}
-              {feed.shownNotes === 1 ? "note" : "notes"}
+              {feed.hasOlder
+                ? `Showing ${onScreen} of ${feed.shownNotes} notes`
+                : `End of feed · ${feed.shownNotes} ${feed.shownNotes === 1 ? "note" : "notes"}`}
               {feed.activeTag ? ` · tagged ${feed.activeTag}` : ""}
             </p>
           </footer>
