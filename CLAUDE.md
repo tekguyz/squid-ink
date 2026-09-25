@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-21
+**Last updated:** 2026-09-25
 Update this line whenever this file changes — don't let it drift from reality.
 
 **This file states standing rules and pointers. It loads into every message.**
@@ -201,12 +201,15 @@ Publishable key only in app code, via `NEXT_PUBLIC_SUPABASE_*`. **Never give the
 secret key a `NEXT_PUBLIC_` prefix** — Next.js ships every such variable to the
 browser.
 
-The secret key bypasses RLS. **Exactly one file in shipped application code
-reads it:** `app/api/cron/transcribe/route.ts`, from the Vercel environment. A
-cron invocation carries no user session and therefore no RLS identity, so it
-must read and write rows belonging to whichever user recorded them. The route
-refuses every request that does not carry `Authorization: Bearer $CRON_SECRET`
-before it touches the database or the Gemini API.
+The secret key bypasses RLS. **Exactly two files in shipped application code
+read it.** `app/api/cron/transcribe/route.ts` reads it from the Vercel
+environment. A cron invocation carries no user session and therefore no RLS
+identity, so it must read and write rows belonging to whichever user recorded
+them. The route refuses every request that does not carry
+`Authorization: Bearer $CRON_SECRET` before it touches the database or the
+Gemini API. `app/api/dev-login/route.ts` reads it only to create or repair the
+dev account, and answers 404 before reading anything unless `NODE_ENV` is
+`development`.
 
 **Nine local-only** scripts also read it from the gitignored `.env.local` —
 `verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
@@ -243,7 +246,10 @@ below is what a human types. Why it matters: `docs/CONVENTIONS_DETAIL.md`.
     npm run dev        # dev server — agents: use .claude/launch.json instead
     npm run build      # production build
     npm run typecheck  # tsc --noEmit
-    npm test           # vitest run
+    npm run test:unit         # unit tests; CI runs them on every PR
+    npm run test:integration  # database tests in supabase/tests/, serially;
+                              # none yet — DB proofs are scripts/verify-*.mjs
+    npm test                  # refuses on purpose: prints the two above, exits 1
     node scripts/check-docs.mjs                    # doc drift; 0 clean, 1 findings,
                                                    # 2 could not run — NOT a pass
     node scripts/verify-rls.mjs                    # two-user RLS proof, .env.local
@@ -255,10 +261,17 @@ below is what a human types. Why it matters: `docs/CONVENTIONS_DETAIL.md`.
                                                    # and .env.local
     bash .claude/hooks/install.sh                  # once per machine
 
-**UI work has one extra gate.** `npm test` runs in jsdom, which has no layout
+**UI work has one extra gate.** `npm run test:unit` runs in jsdom, which has no layout
 engine, so every rect there is zeros. Any change to fixed positioning, a scroll
 container or a corner overlay ends with `node scripts/verify-layout.mjs`
 exiting 0. What it asserts: `.claude/rules/layout-checks.md`.
+
+**Signed-in pages: open `/api/dev-login` in the browser pane.** An agent may not
+type a password there, and this route removes the need. In development it signs
+in `dev@squid-ink.test` for real — RLS applies — and redirects to `/`, or to
+`?next=/some/path` on the same origin. It creates the account (confirmed and
+onboarded) when it is missing, and writes a random `DEV_LOGIN_PASSWORD` into
+`.env.local` when that is missing. Outside development it answers 404.
 
 ## Two machines, one repo
 

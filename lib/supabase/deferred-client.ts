@@ -22,9 +22,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  *
  *  RLS IS UNCHANGED. This is the publishable key plus the user's own JWT, so
  *  every read and write is still confined to that user's rows by the same four
- *  policies. It is emphatically NOT the secret key —
- *  app/api/cron/transcribe/route.ts remains the only shipped file that reads
- *  SUPABASE_SECRET_KEY.
+ *  policies. It is emphatically NOT the secret key — the shipped files that
+ *  read SUPABASE_SECRET_KEY are listed in CLAUDE.md > Supabase > Keys.
  *
  *  `accessToken` rather than a global Authorization header: supabase-js builds
  *  one `fetchWithAuth` from it and gives that same fetch to BOTH the PostgREST

@@ -212,8 +212,10 @@ Check it with `vercel ls squid-ink --scope tekguyz` and report what it says.
 ```bash
 npm run build
 npx tsc --noEmit
-npm test
+npm run test:unit
 ```
+
+Never `npm test`: it refuses on purpose and exits 1 (`CLAUDE.md` > Commands).
 
 A doc saying something is complete is not evidence. Run them and quote the real
 output. Skip this only when the audit makes no completeness claim at all.

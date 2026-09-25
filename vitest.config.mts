@@ -2,13 +2,37 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 
+// Two separate suites. Never run both at once: see CLAUDE.md > Commands.
+//   unit        — `__tests__/` folders beside the code. No network. CI runs it.
+//   integration — `supabase/tests/`. Real users against the hosted project,
+//                 so always serial (`--no-file-parallelism`): hosted Auth
+//                 rate-limits sign-up and sign-in. Empty today; the database
+//                 proofs so far are the scripts/verify-*.mjs scripts.
 export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["**/__tests__/**/*.test.{ts,tsx}"],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["**/__tests__/**/*.test.{ts,tsx}"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          environment: "node",
+          include: ["supabase/tests/**/*.test.ts"],
+          testTimeout: 30_000,
+          hookTimeout: 60_000,
+        },
+      },
+    ],
     // Nested node_modules (worktrees, sub-packages) ship their own type-stub
     // "tests"; a bare "node_modules/**" only matches the top level.
     //

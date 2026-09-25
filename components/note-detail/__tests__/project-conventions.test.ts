@@ -108,16 +108,19 @@ describe("project conventions", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("reads SUPABASE_SECRET_KEY from exactly one shipped file", () => {
+  it("reads SUPABASE_SECRET_KEY from exactly two shipped files", () => {
     // The key bypasses RLS. The cron route needs it because a cron invocation
-    // carries no session and therefore no RLS identity; nothing else does. The
-    // manual Transcribe action added on 2026-09-01 runs as the signed-in user,
-    // and this guard is what keeps it that way.
+    // carries no session and therefore no RLS identity. The dev-login route
+    // (issue #44) needs it to create its account, and answers 404 outside
+    // development before reading it. Nothing else does. The manual Transcribe
+    // action added on 2026-09-01 runs as the signed-in user, and this guard is
+    // what keeps it that way.
     const readers = sourceFiles().filter((f) =>
       read(f).includes("process.env.SUPABASE_SECRET_KEY"),
     );
-    expect(readers).toEqual([
+    expect(readers.sort()).toEqual([
       path.join("app", "api", "cron", "transcribe", "route.ts"),
+      path.join("app", "api", "dev-login", "route.ts"),
     ]);
   });
 
