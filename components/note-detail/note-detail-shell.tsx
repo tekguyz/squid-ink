@@ -168,7 +168,9 @@ export function NoteDetailShell({
             activeSegmentId={activeSegmentId}
             onCitationSelect={handleCitationSelect}
           />
-          <SpeakerInsights stats={note.stats} />
+          {/* A plain transcript has one "Unknown" speaker; stats for it would
+              be data that does not exist. */}
+          {note.hasSpeakerLabels ? <SpeakerInsights stats={note.stats} /> : null}
         </div>
 
         <ChatPanel
@@ -184,7 +186,6 @@ export function NoteDetailShell({
       <TranscriptPane
         note={note}
         activeSegmentId={activeSegmentId}
-        showSpeakerLabels
         scrollRef={scrollRef}
       />
     </div>

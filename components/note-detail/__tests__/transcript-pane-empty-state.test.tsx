@@ -10,7 +10,6 @@ function renderPane(note: Note) {
     <TranscriptPane
       note={note}
       activeSegmentId={-1}
-      showSpeakerLabels
       scrollRef={createRef<HTMLDivElement>()}
     />,
   );

@@ -8,14 +8,12 @@ import { Waveform } from "./waveform";
 export interface TranscriptPaneProps {
   note: Note;
   activeSegmentId: number;
-  showSpeakerLabels: boolean;
   scrollRef: RefObject<HTMLDivElement | null>;
 }
 
 export function TranscriptPane({
   note,
   activeSegmentId,
-  showSpeakerLabels,
   scrollRef,
 }: TranscriptPaneProps) {
   return (
@@ -26,18 +24,29 @@ export function TranscriptPane({
           <span className="font-mono text-[9px] text-meta-2">
             {note.turnCount} TURNS
           </span>
+          {/* Disabled, not live: there is no transcript search yet (#29 builds
+              search). Same idea and tokens as dashboard-header.tsx's dead
+              controls, sized for this header and unframed like the text button
+              it replaces: a dimmed label plus a full-strength "Soon" badge.
+              Measured on `bg-pane`, built CSS, 2026-09-25: the badge 4.78:1
+              light / 5.65:1 dark; the dimmed label 1.66 / 1.83, which is the
+              disabled-control exemption the dashboard already relies on. */}
           <button
             type="button"
-            className="ml-auto cursor-pointer font-mono text-[9px] text-meta-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+            disabled
+            className="ml-auto flex cursor-not-allowed items-center gap-[6px] font-mono text-[9px] text-faint"
           >
-            SEARCH
+            <span className="opacity-60">SEARCH</span>
+            <span className="text-[8.5px] tracking-[0.14em] text-muted uppercase">
+              Soon
+            </span>
           </button>
         </div>
 
-        {!showSpeakerLabels ? (
+        {!note.hasSpeakerLabels ? (
           <p className="mt-[9px] bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice">
-            Speaker labels unavailable for this recording. Timestamps and source
-            spans unaffected.
+            No speaker labels or timestamps for this recording. Recordings over
+            28 minutes are transcribed as plain text.
           </p>
         ) : null}
 
@@ -61,7 +70,7 @@ export function TranscriptPane({
                 key={segment.id}
                 segment={segment}
                 active={segment.id === activeSegmentId}
-                showSpeakerLabels={showSpeakerLabels}
+                diarized={note.hasSpeakerLabels}
               />
             ))}
           </ol>
