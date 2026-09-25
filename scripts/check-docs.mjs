@@ -13,6 +13,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { findFrozenSurfaceCounts } from "./frozen-surface-count.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const findings = [];
@@ -676,6 +677,32 @@ const governingLabel = ruleFiles.length
     }
     notes.push(`deployment numbers: ${compared} figure(s) match the code`);
   }
+}
+
+/* 13 — no file under .claude/ carries a frozen surface count ------------- */
+{
+  // How many App Surfaces are built lives on the docs/ROADMAP.md status line
+  // and nowhere else. Skills copied it three times (handoff 2026-09-09,
+  // doc-audit 2026-09-12) and each copy decayed on its own, so a built surface
+  // was reported as scope creep. Harness worktrees are skipped: each is a full
+  // copy of another branch, not this tree's files.
+  const DIR = ".claude";
+  const files = [];
+  const walk = (rel) => {
+    for (const entry of readdirSync(path.join(ROOT, rel))) {
+      const child = `${rel}/${entry}`;
+      if (child === ".claude/worktrees") continue;
+      if (statSync(path.join(ROOT, child)).isDirectory()) walk(child);
+      else if (/\.(md|sh|json)$/.test(entry)) files.push(child);
+    }
+  };
+  if (has(DIR)) walk(DIR);
+  for (const rel of files) {
+    for (const hit of findFrozenSurfaceCounts(read(rel))) {
+      findings.push(`${rel}:${hit.line} says "${hit.phrase}"; the built-surface count lives only on the docs/ROADMAP.md status line — point at it instead`);
+    }
+  }
+  notes.push(`frozen surface counts: ${files.length} file(s) under .claude/, none restates the count`);
 }
 
 /* ------------------------------------------------------------------------- */
