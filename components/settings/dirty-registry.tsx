@@ -39,7 +39,7 @@ interface Handlers {
 
 interface Registry {
   /** Every registered section, clean ones included (count 0). */
-  sections: DirtySection[];
+  registered: DirtySection[];
   report: (section: DirtySection) => void;
   unregister: (id: string) => void;
   handlers: RefObject<Map<string, Handlers>>;
@@ -54,11 +54,11 @@ function useRegistry(): Registry {
 }
 
 export function DirtyRegistryProvider({ children }: { children: ReactNode }) {
-  const [sections, setSections] = useState<DirtySection[]>([]);
+  const [registered, setRegistered] = useState<DirtySection[]>([]);
   const handlers = useRef(new Map<string, Handlers>());
 
   const report = useCallback((section: DirtySection) => {
-    setSections((previous) => {
+    setRegistered((previous) => {
       const index = previous.findIndex((s) => s.id === section.id);
       if (index === -1) return [...previous, section];
       const next = [...previous];
@@ -68,12 +68,12 @@ export function DirtyRegistryProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unregister = useCallback((id: string) => {
-    setSections((previous) => previous.filter((s) => s.id !== id));
+    setRegistered((previous) => previous.filter((s) => s.id !== id));
   }, []);
 
   const value = useMemo(
-    () => ({ sections, report, unregister, handlers }),
-    [sections, report, unregister],
+    () => ({ registered, report, unregister, handlers }),
+    [registered, report, unregister],
   );
   return <RegistryContext value={value}>{children}</RegistryContext>;
 }
@@ -110,7 +110,7 @@ export function useDirtySection(
 /** What the footer reads: whether any section registered, the dirty sections,
  *  and one save and one discard that reach every one of them. */
 export function useDirtySummary() {
-  const { sections: registered, handlers } = useRegistry();
+  const { registered, handlers } = useRegistry();
   const sections = useMemo(() => registered.filter((s) => s.count > 0), [registered]);
 
   const saveAll = useCallback(async () => {

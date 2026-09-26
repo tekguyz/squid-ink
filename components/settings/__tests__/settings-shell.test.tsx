@@ -92,6 +92,7 @@ describe("SettingsShell", () => {
     await waitFor(() => expect(espresso).toHaveAttribute("aria-pressed", "true"));
     // No Update needed for a theme: the bar stays hidden.
     expect(screen.queryByRole("button", { name: "Update" })).toBeNull();
+    expect(screen.queryByText("No unsaved changes")).toBeNull();
 
     // A theme change from anywhere else reaches the cards without a click.
     act(() => applyTheme("light"));
