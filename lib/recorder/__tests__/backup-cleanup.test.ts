@@ -10,13 +10,14 @@ import {
   backupsToDiscard,
   cleanUpBackups,
 } from "@/lib/recorder/backup-cleanup";
+import type { ProcessingStatus } from "@/lib/notes/view-types";
 
 const NOW = Date.UTC(2026, 8, 26, 12);
 const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
 const C = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 
-const row = (noteId: string, status: string, ageMs = 0) => ({
+const row = (noteId: string, status: ProcessingStatus, ageMs = 0) => ({
   noteId,
   status,
   updatedAtMs: NOW - ageMs,

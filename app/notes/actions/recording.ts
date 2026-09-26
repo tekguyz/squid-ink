@@ -3,8 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { backupsToDiscard } from "@/lib/recorder/backup-cleanup";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isNoteId } from "@/lib/notes/note-id";
 
 /**
  * Creates the notes row for a recording, called as the upload STARTS.
@@ -134,7 +133,7 @@ export async function backupsSafeToDiscard(noteIds: string[]): Promise<string[]>
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const ids = noteIds.filter((id) => UUID.test(id));
+  const ids = noteIds.filter(isNoteId);
   if (ids.length === 0) return [];
 
   const { data, error } = await supabase

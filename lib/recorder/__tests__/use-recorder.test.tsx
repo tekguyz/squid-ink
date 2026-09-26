@@ -437,16 +437,17 @@ describe("useRecorder", () => {
     expect(await listBackups()).toEqual([]);
   });
 
+  const backup = (noteId: string) => ({
+    noteId,
+    blob: new Blob(["audio"]),
+    mimeType: "audio/webm",
+    durationSeconds: 1,
+    savedAtMs: 0,
+  });
+
   // #12. The dock mounts once per full page load, so this is "once per visit".
   it("on mount, discards the backups the server names and keeps the rest", async () => {
     const OLD = "99999999-9999-4999-8999-999999999999";
-    const backup = (noteId: string) => ({
-      noteId,
-      blob: new Blob(["audio"]),
-      mimeType: "audio/webm",
-      durationSeconds: 1,
-      savedAtMs: 0,
-    });
     await saveBackup(backup(NOTE));
     await saveBackup(backup(OLD));
     const d = makeDeps();
@@ -460,13 +461,7 @@ describe("useRecorder", () => {
   });
 
   it("a cleanup that throws is logged and does not break the recorder", async () => {
-    await saveBackup({
-      noteId: NOTE,
-      blob: new Blob(["audio"]),
-      mimeType: "audio/webm",
-      durationSeconds: 1,
-      savedAtMs: 0,
-    });
+    await saveBackup(backup(NOTE));
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const d = makeDeps();
     d.backupsSafeToDiscard.mockRejectedValue(new Error("offline"));

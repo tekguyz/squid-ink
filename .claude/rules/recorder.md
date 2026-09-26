@@ -67,6 +67,12 @@ in `backupsSafeToDiscard()` in `app/notes/actions/recording.ts`, against the
 server clock, so a wrong browser clock cannot delete audio early. Before this,
 nothing discarded on `'completed'` either — the docs said it did; no code did.
 
+**Two kinds of backup are still kept forever, on purpose:** one whose note row
+was never written (`createNote` threw), and one owned by another account on
+the same browser (RLS hides its row). No row is no evidence, and the blob may
+be the only copy. Cleanup also runs only on a full page load, so a tab left
+open for days waits for the next one.
+
 Codec strings are feature-detected through `lib/recorder/codec.ts`. Never
 hardcode one, and keep WebM ahead of MP4 — Chromium accepts both, so the order
 decides what Chromium produces.

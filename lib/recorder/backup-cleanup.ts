@@ -1,4 +1,5 @@
 import { discardBackup, listBackups } from "@/lib/recorder/audio-backup";
+import type { ProcessingStatus } from "@/lib/notes/view-types";
 
 /**
  * When a recording's IndexedDB backup may go (#12, decided 2026-09-25):
@@ -22,7 +23,7 @@ export const FAILED_BACKUP_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface BackupNoteStatus {
   noteId: string;
-  status: string;
+  status: ProcessingStatus;
   updatedAtMs: number;
 }
 
