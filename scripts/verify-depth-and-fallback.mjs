@@ -26,8 +26,15 @@
  * it, and the persona deletes through personas_delete_own. The admin deletes
  * the account at the end; every row cascades.
  *
- * SUPABASE_SECRET_KEY is read for exactly two calls: creating and deleting
- * that account. Nothing is read or written through it in between.
+ * SUPABASE_SECRET_KEY is used only for the account's lifecycle: listing
+ * users to remove a stale copy, creating it, and deleting it at the end.
+ * Nothing is read or written through it in between.
+ *
+ * The fallback proof uses a COPY OF THE STATE, not 4tekguyz@gmail.com itself:
+ * zero persona rows, reached by deleting them. It generates on the signed-in
+ * (RLS) client, as the sibling scripts do. The cron reaches the same branch
+ * through the secret key; proof 6 of verify-persona-selection.mjs covers that
+ * client for resolution.
  *
  * Three proofs:
  *
@@ -93,8 +100,11 @@ const { resolvePersonaFor } = await import(
 const { claimAndGenerate } = await import(
   new URL("lib/notegen/generate-note.ts", ROOT).href
 );
-const { DEFAULT_PERSONA_ID } = await import(
+const { DEFAULT_PERSONA_ID, DEFAULT_PERSONA_FALLBACK } = await import(
   new URL("lib/notes/default-persona.ts", ROOT).href
+);
+const { planForDepth } = await import(
+  new URL("lib/notegen/depth-policy.ts", ROOT).href
 );
 
 // ---------------------------------------------------------------------------
@@ -218,7 +228,7 @@ try {
 
   /** Seed a completed note and run the shipped claim-and-generate on it.
    *  Returns the outcome, the Gemini calls it spent, and its chunks. */
-  async function generate(title, personaId) {
+  async function seedAndGenerate(title, personaId) {
     const { data: note, error } = await owner
       .from("notes")
       .insert({
@@ -263,7 +273,7 @@ try {
     const lens = await setDepth(DEFAULT_PERSONA_ID, "brief");
     check("the lens now reads brief", lens.depth === "brief");
 
-    const r = await generate("depth proof — brief", lens.id);
+    const r = await seedAndGenerate("depth proof — brief", lens.id);
     check("generated", r.outcome === "generated", r.outcome);
     check("exactly one Gemini call", r.calls === 1, `${r.calls}`);
     check("the persona came from the note", lastSource === "note", lastSource);
@@ -287,7 +297,7 @@ try {
     const lens = await setDepth(DEFAULT_PERSONA_ID, "exhaustive");
     check("the lens now reads exhaustive", lens.depth === "exhaustive");
 
-    const r = await generate("depth proof — exhaustive", lens.id);
+    const r = await seedAndGenerate("depth proof — exhaustive", lens.id);
     check("generated", r.outcome === "generated", r.outcome);
     check("exactly one Gemini call", r.calls === 1, `${r.calls}`);
     check(
@@ -311,13 +321,17 @@ try {
     const resolved = await resolvePersonaFor(owner, userId, null);
     check("resolution reports fallback", resolved.source === "fallback", resolved.source);
 
-    const r = await generate("depth proof — fallback", null);
+    const r = await seedAndGenerate("depth proof — fallback", null);
     check("generated", r.outcome === "generated", r.outcome);
     check("exactly one Gemini call", r.calls === 1, `${r.calls}`);
     check("the generation itself used the fallback", lastSource === "fallback", lastSource);
+    // Read from the shipped constant, so a change to the fallback's depth
+    // moves this expectation with it rather than failing a correct run.
+    const expected = planForDepth(DEFAULT_PERSONA_FALLBACK.depth);
     check(
-      "the call ran the fallback's Dense plan",
-      lastPlan?.thinkingLevel === "medium" && lastPlan?.scope === "balanced",
+      `the call ran the fallback's ${DEFAULT_PERSONA_FALLBACK.depth} plan`,
+      lastPlan?.thinkingLevel === expected.thinkingLevel &&
+        lastPlan?.scope === expected.scope,
       `${lastPlan?.thinkingLevel}/${lastPlan?.scope}`,
     );
     check("chunks were written", r.chunks.length > 0, `${r.chunks.length} rows`);
