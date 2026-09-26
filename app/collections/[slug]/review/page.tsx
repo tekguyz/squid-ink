@@ -41,7 +41,7 @@ export default async function CollectionReviewPage({
       activeSlug={screen.collection.id}
       aside={<RulePanel slug={screen.collection.id} rule={screen.rule} />}
     >
-      <header className="border-rule flex flex-col gap-[6px] border-b px-[24px] pt-[18px] pb-[14px]">
+      <header className="border-rule-strong flex flex-col gap-[6px] border-b px-[24px] pt-[18px] pb-[14px]">
         <Link
           href={href}
           className="font-mono text-muted hover:text-ink focus-visible:outline-accent w-fit text-[9px] tracking-[0.14em] uppercase focus-visible:outline-2"
@@ -67,7 +67,7 @@ export default async function CollectionReviewPage({
       {/* The recorder HUD's corner, as on the collection page. */}
       <footer
         style={{ height: HUD_RESERVE }}
-        className="bg-canvas border-rule flex flex-none items-center border-t px-[24px]"
+        className="bg-canvas border-rule-strong flex flex-none items-center border-t px-[24px]"
       >
         <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
           {screen.pending.length} waiting · {screen.collection.name}

@@ -69,7 +69,7 @@ export function DefaultLensButton({
             isDefault
               ? "border-control-edge bg-tint text-accent-text cursor-default"
               : pending
-                ? "border-control-edge text-ink-2 cursor-progress"
+                ? "border-rule-2 text-ink-disabled cursor-progress"
                 : "border-control-edge text-ink-2 hover:bg-raised cursor-pointer",
           ].join(" ")}
         >

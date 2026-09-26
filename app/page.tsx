@@ -137,7 +137,7 @@ async function dashboard(
           </div>
           <footer
             style={{ height: HUD_RESERVE }}
-            className="bg-canvas border-rule flex flex-none items-center border-t px-[24px]"
+            className="bg-canvas border-rule-strong flex flex-none items-center border-t px-[24px]"
           >
             <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
               {feed.hasOlder

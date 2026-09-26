@@ -66,12 +66,14 @@ export function ScopeToggle({
           className={
             "-ml-px touch-manipulation border px-[7px] py-[3px] font-mono " +
             "text-[9px] uppercase tracking-[0.06em] transition-colors " +
-            "first:ml-0 disabled:cursor-not-allowed disabled:text-faint " +
+            "first:ml-0 disabled:cursor-not-allowed " +
             "focus-visible:outline-2 focus-visible:outline-offset-1 " +
             "focus-visible:outline-accent " +
             (value === option.value
               ? "border-accent bg-tint text-accent-text"
-              : "border-control-edge text-meta hover:text-ink-2")
+              : // The checked option keeps its look while busy: it reports
+                // the scope the question was asked in (issue #22).
+                "border-control-edge text-meta hover:text-ink-2 disabled:border-rule-2 disabled:text-ink-disabled")
           }
         >
           {option.label}

@@ -73,9 +73,14 @@ const LOOKS: Record<Exclude<ProcessingStatus, "completed">, Look> = {
     chrome: "border-rule-2 bg-tint text-accent-text",
     marker: "bg-accent",
   },
+  /** Filled since issue #22: Failed is the one state that needs the user, and
+   *  was the only coloured pill without a fill. `live-tint` is a pale wash of
+   *  `live`; the label on it is 4.93:1 light / 4.78:1 dark as Chrome paints it,
+   *  WCAG 1.4.3 (globals.css's annotation holds the computed 4.92). Medium
+   *  weight so the word, not only the red, carries the urgency. */
   failed: {
     label: "Failed",
-    chrome: "border-live text-live",
+    chrome: "border-live bg-live-tint text-live font-medium",
     marker: "bg-live",
   },
 };

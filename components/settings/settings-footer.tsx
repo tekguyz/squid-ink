@@ -51,7 +51,7 @@ export function SettingsFooter() {
   return (
     <footer
       style={{ height: HUD_RESERVE }}
-      className="bg-dock border-rule-3 flex flex-none items-center gap-[10px] border-t px-[26px]"
+      className="bg-dock border-rule-strong flex flex-none items-center gap-[10px] border-t px-[26px]"
     >
       <span
         role={phase === "failed" ? "alert" : "status"}
@@ -69,17 +69,25 @@ export function SettingsFooter() {
             discardAll();
             setPhase("idle");
           }}
-          className={`${MONO_BUTTON} border-control-edge text-notice hover:bg-raised disabled:border-rule-2 disabled:text-muted border px-[13px] py-[7px] disabled:hover:bg-transparent`}
+          className={`${MONO_BUTTON} border-control-edge text-notice hover:bg-raised disabled:border-rule-2 disabled:text-ink-disabled border px-[13px] py-[7px] disabled:hover:bg-transparent`}
         >
           Discard
         </button>
         <button
           type="button"
           disabled={clean || phase === "saving"}
+          aria-busy={phase === "saving"}
           onClick={() => void update()}
-          className={`${MONO_BUTTON} bg-accent text-on-accent hover:bg-accent-pressed disabled:bg-raised disabled:text-muted border border-transparent px-[15px] py-[7px] font-medium disabled:border-rule-2`}
+          // Saving is BUSY, not unavailable (issue #22 critique): the pressed
+          // button keeps its fill and says "Saving…". Only a clean form, with
+          // nothing to update, takes the disabled look.
+          className={`${MONO_BUTTON} bg-accent text-on-accent hover:bg-accent-pressed border border-transparent px-[15px] py-[7px] font-medium ${
+            phase === "saving"
+              ? ""
+              : "disabled:bg-raised disabled:text-ink-disabled disabled:border-rule-2"
+          }`}
         >
-          {phase === "saving" ? "Saving" : "Update"}
+          {phase === "saving" ? "Saving…" : "Update"}
         </button>
       </div>
     </footer>

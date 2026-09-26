@@ -35,13 +35,14 @@ import { useRecorderStore } from "@/lib/recorder/recorder-store";
 /** Shared by the two dead controls. No `--control-edge`: that token is the
  *  boundary of something you can actually operate, and neither of these is.
  *
- *  The `opacity-60` moved off this shared class and onto the dimmed label
- *  alone on 2026-09-07 — composited, `text-faint` under it measured 1.81:1 on
- *  `bg-paper` light and 1.88:1 dark, and it was dragging the border down to
- *  1.22:1 as well. See identity-rail.tsx's PendingItem for the full
- *  measurement and the reasoning; the two files are one decision. */
+ *  Dashed, like `+ New persona`, so the dead search field does not read as
+ *  an empty live input (issue #22 critique: `ink-disabled` sits close to
+ *  `placeholder`). The label is `ink-disabled`, the one disabled colour
+ *  app-wide (issue #22),
+ *  which replaced `text-faint` under `opacity-60` (1.81:1 on `bg-paper`). See
+ *  identity-rail.tsx's PendingItem; the two files are one decision. */
 const DISABLED_CONTROL =
-  "border-rule-2 text-faint flex cursor-not-allowed items-center border";
+  "border-rule-2 text-ink-disabled flex cursor-not-allowed items-center border border-dashed";
 
 /** The state badge on a dead control, at full `muted` so the word explaining
  *  the control is legible even though the control is not. */
@@ -73,7 +74,7 @@ export function DashboardHeader() {
   return (
     // Below md the header wraps: the dead search field drops to its own full
     // line under the title and Record, and Import audio — dead too — goes.
-    <header className="border-rule flex items-center gap-[14px] border-b px-[24px] pt-[18px] pb-[13px] max-md:flex-wrap max-md:gap-y-[10px] max-md:px-[16px]">
+    <header className="border-rule-strong flex items-center gap-[14px] border-b px-[24px] pt-[18px] pb-[13px] max-md:flex-wrap max-md:gap-y-[10px] max-md:px-[16px]">
       <h1 className="font-header text-ink flex-none text-[22px] font-semibold tracking-[-0.01em]">
         All notes
       </h1>
@@ -85,7 +86,7 @@ export function DashboardHeader() {
         aria-hidden
         className={`${DISABLED_CONTROL} min-w-0 max-w-[320px] flex-1 gap-[8px] px-[10px] py-[6px] max-md:order-last max-md:max-w-none max-md:basis-full`}
       >
-        <span className="font-body truncate text-[12.5px] opacity-60">
+        <span className="font-body truncate text-[12.5px]">
           Search notes, speakers, sources
         </span>
         <span className={`${SOON_BADGE} ml-auto flex-none`}>Soon</span>
@@ -100,7 +101,7 @@ export function DashboardHeader() {
           disabled
           className={`${DISABLED_CONTROL} ${MONO_ACTION} gap-[8px] px-[11px] py-[7px] max-md:hidden`}
         >
-          <span className="opacity-60">Import audio</span>
+          Import audio
           <span className={SOON_BADGE}>Soon</span>
         </button>
         {busy ? (

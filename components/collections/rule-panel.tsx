@@ -65,7 +65,7 @@ export function RulePanel({
       // neither the footer nor a scrolled clause passes under the pill.
       // scripts/verify-layout.mjs failed on exactly this before the reserve.
       style={{ paddingBottom: HUD_RESERVE }}
-      className="bg-dock border-rule flex min-h-0 flex-col overflow-hidden border-l px-[16px] pt-[15px]"
+      className="bg-dock border-rule-strong flex min-h-0 flex-col overflow-hidden border-l px-[16px] pt-[15px]"
     >
       <h2 className={LABEL}>Auto-file rules</h2>
 

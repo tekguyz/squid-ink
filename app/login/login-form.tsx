@@ -72,7 +72,7 @@ export function LoginForm({ next, notice }: { next: string; notice: string | nul
             Keep me signed in
           </label>
         </div>
-        <button type="submit" disabled={pending} className={PRIMARY}>
+        <button type="submit" disabled={pending} aria-busy={pending} className={PRIMARY}>
           {pending ? "Signing in…" : "Sign in"}
         </button>
         <div className="mt-[14px] flex flex-col gap-[10px]">

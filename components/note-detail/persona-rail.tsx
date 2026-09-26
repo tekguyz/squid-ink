@@ -41,7 +41,7 @@ export function PersonaRail({
   onSelect,
 }: PersonaRailProps) {
   return (
-    <div className="flex min-h-0 flex-col overflow-hidden border-r border-rule bg-rail">
+    <div className="flex min-h-0 flex-col overflow-hidden border-r border-rule-strong bg-rail">
       {/* The way back. Until 2026-09-13 a note page had none. */}
       <AppNav />
       <div className={`px-3 pt-3.5 pb-2.5 ${LABEL}`}>Lens</div>
@@ -69,7 +69,7 @@ export function PersonaRail({
                     // dimming it would hide the answer along with the control.
                     "border-accent bg-paper text-ink"
                   : locked
-                    ? "border-transparent text-placeholder"
+                    ? "border-transparent text-ink-disabled"
                     : "border-transparent text-rail-idle hover:bg-raised",
               ].join(" ")}
             >
@@ -79,7 +79,7 @@ export function PersonaRail({
         })}
       </div>
 
-      <div className="cursor-pointer border-l-2 border-transparent px-[11px] pt-2 pb-[9px] font-header text-[14px] leading-[20px] font-semibold text-placeholder">
+      <div className="cursor-not-allowed border-l-2 border-transparent px-[11px] pt-2 pb-[9px] font-header text-[14px] leading-[20px] font-semibold text-ink-disabled">
         + New lens
       </div>
 

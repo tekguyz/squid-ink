@@ -29,7 +29,7 @@ export function NewPasswordForm() {
       <div className={STACK}>
         <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
       </div>
-      <button type="submit" disabled={pending} className={PRIMARY}>
+      <button type="submit" disabled={pending} aria-busy={pending} className={PRIMARY}>
         {pending ? "Saving…" : "Save password"}
       </button>
       {message ? <div className="mt-[14px]"><AuthNotice>{message}</AuthNotice></div> : null}

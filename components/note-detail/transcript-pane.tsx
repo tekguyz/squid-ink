@@ -19,7 +19,7 @@ export function TranscriptPane({
 }: TranscriptPaneProps) {
   return (
     <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-pane">
-      <div className="border-b border-rule px-[18px] pt-[15px] pb-[11px]">
+      <div className="border-b border-rule-strong px-[18px] pt-[15px] pb-[11px]">
         <div className="flex items-baseline gap-2">
           <h2 className="font-header text-[16px] leading-[24px] font-semibold">Transcript</h2>
           <span className="font-mono text-[9px] text-meta-2">
@@ -28,16 +28,16 @@ export function TranscriptPane({
           {/* Disabled, not live: there is no transcript search yet (#29 builds
               search). Same idea and tokens as dashboard-header.tsx's dead
               controls, sized for this header and unframed like the text button
-              it replaces: a dimmed label plus a full-strength "Soon" badge.
-              Measured on `bg-pane`, built CSS, 2026-09-25: the badge 4.78:1
-              light / 5.65:1 dark; the dimmed label 1.66 / 1.83, which is the
-              disabled-control exemption the dashboard already relies on. */}
+              it replaces: an `ink-disabled` label plus a full-strength "Soon"
+              badge. Measured on `bg-pane`, built CSS, 2026-09-25: the badge
+              4.78:1 light / 5.65:1 dark. The label was 1.66 / 1.83 under
+              `opacity-60` until issue #22 gave it its own token. */}
           <button
             type="button"
             disabled
-            className="ml-auto flex cursor-not-allowed items-center gap-[6px] font-mono text-[9px] text-faint"
+            className="ml-auto flex cursor-not-allowed items-center gap-[6px] font-mono text-[9px] text-ink-disabled"
           >
-            <span className="opacity-60">SEARCH</span>
+            SEARCH
             <span className="text-[8.5px] tracking-[0.14em] text-muted uppercase">
               Soon
             </span>
@@ -85,7 +85,7 @@ export function TranscriptPane({
       <div
         aria-hidden="true"
         style={{ height: HUD_RESERVE }}
-        className="flex-none border-t border-rule bg-pane"
+        className="flex-none border-t border-rule-strong bg-pane"
       />
     </aside>
   );

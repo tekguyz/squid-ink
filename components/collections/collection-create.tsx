@@ -51,7 +51,7 @@ export function CollectionCreate() {
           onChange={(event) => setDraft(event.target.value)}
           aria-label="New collection name"
           placeholder="new collection"
-          className="font-mono text-ink placeholder:text-placeholder w-full bg-transparent text-[9.5px] tracking-[0.04em] uppercase outline-none"
+          className="font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-full bg-transparent text-[9.5px] tracking-[0.04em] uppercase outline-none"
         />
       </span>
     </form>

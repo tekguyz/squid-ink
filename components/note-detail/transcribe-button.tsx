@@ -66,18 +66,18 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
  *  surface are not the same job.
  *
  *  No `disabled:` variants. The element is never natively disabled — see
- *  aria-disabled below — so the unavailable state is styled through
- *  `aria-disabled:`. `text-muted` rather than `text-meta`: meta measured
- *  4.37:1 on dark paper, under the 4.5:1 the 9px type needs. */
+ *  aria-disabled below. It is only ever aria-disabled while WORKING, which is
+ *  busy, not unavailable (issue #22 critique): it keeps its look, sets
+ *  `aria-busy`, says "Transcribing…", and only its hover is switched off. */
 const BUTTON =
   "font-mono text-[9px] tracking-[0.06em] uppercase " +
   "flex items-center gap-[7px] border border-control-edge bg-raised text-notice " +
   "px-[9px] py-[5px] transition-colors cursor-pointer " +
   "hover:border-accent hover:bg-tint hover:text-accent-text " +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent " +
-  "aria-disabled:cursor-default aria-disabled:text-muted " +
-  "aria-disabled:hover:border-control-edge aria-disabled:hover:bg-raised " +
-  "aria-disabled:hover:text-muted";
+  "aria-busy:cursor-progress " +
+  "aria-busy:hover:border-control-edge aria-busy:hover:bg-raised " +
+  "aria-busy:hover:text-notice";
 
 const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
 
@@ -192,6 +192,7 @@ export function TranscribeButton({
         // mid-interaction. This keeps it focusable and announceable; `start`
         // guards the press instead.
         aria-disabled={working || pending}
+        aria-busy={working || pending}
         onClick={start}
       >
         {/* The same 9px filled square the recorder HUD and the audio player

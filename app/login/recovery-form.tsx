@@ -54,7 +54,7 @@ export function RecoveryForm({ onBack }: { onBack: () => void }) {
               value={email} onChange={(e) => setEmail(e.target.value)} className={FIELD} />
           </div>
         </div>
-        <button type="submit" disabled={pending} className={PRIMARY}>
+        <button type="submit" disabled={pending} aria-busy={pending} className={PRIMARY}>
           {pending ? "Sending…" : "Send reset link"}
         </button>
         <div className="mt-[14px] flex flex-col gap-[10px]">

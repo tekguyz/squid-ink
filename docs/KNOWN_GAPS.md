@@ -2509,7 +2509,25 @@ nothing reads as a structural boundary.
 `--live-tint` — `failed` is the state needing action and has no fill;
 `analyzing` has one.
 
-**STILL OPEN.** None needs a new hue. Design decision, not built here.
+**RESOLVED 2026-09-26 (#22).** None needed a new hue; each is a lightness
+step inside an existing family. The values are post-lock, in no design file,
+and `scripts/check-docs.mjs` accepts them only because they are recorded here:
+
+- `--ink-disabled` `oklch(0.605 0.015 66)` light, `oklch(0.520 0.013 78)` dark.
+- `--rule-strong` `oklch(0.730 0.022 78)` light, `oklch(0.410 0.016 52)` dark.
+- `--live-tint` carries a `DERIVED` annotation in `app/globals.css` instead
+  (4.5:1 against `--live` is a real WCAG 1.4.3 bar).
+
+The `--ink-disabled` band is 3.0–3.7:1, not the spec's "about 3.0–3.5": a
+value that keeps `rail`/`pane` clear of 3.0 with margin (3.08) lands at 3.67
+on `paper`, the lightest sheet. Readability on the worst sheet won.
+
+A BUSY button is not a disabled one (founder decision, same day, after the
+Impeccable critique; overrides the spec's user story 6): the pressed button
+keeps its fill and sets `aria-busy`. Sign in, onboarding, Settings' Update and
+Transcribe follow it.
+
+Purpose and measured contrast: `.claude/rules/design-tokens.md`.
 
 ## DESIGN.md type ramp incomplete (recorded 2026-09-07)
 

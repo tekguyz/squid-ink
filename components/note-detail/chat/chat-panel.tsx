@@ -121,7 +121,7 @@ export function ChatPanel({
     );
 
   return (
-    <div className="border-t border-rule bg-dock px-[26px] pt-3 pb-3.5">
+    <div className="border-t border-rule-strong bg-dock px-[26px] pt-3 pb-3.5">
       <div
         ref={listRef}
         className="scroll-thin max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain"
@@ -207,7 +207,7 @@ export function ChatPanel({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="flex-none touch-manipulation font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed disabled:cursor-not-allowed disabled:text-faint focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+          className="flex-none touch-manipulation font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed disabled:cursor-not-allowed disabled:text-ink-disabled focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
         >
           Ask
         </button>

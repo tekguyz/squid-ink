@@ -64,7 +64,7 @@ export function SettingsNav({
   return (
     <nav
       aria-label="Settings"
-      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r"
+      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r"
     >
       <AppNav current="settings" />
       <div className="px-[14px] pt-[14px] pb-[12px]">

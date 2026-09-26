@@ -49,8 +49,9 @@ function initials(email: string | null): string {
  *  9px text in status-pill.tsx and replaced there; this reintroduced it and
  *  then halved it.
  *
- *  The dimming now applies to the LABEL only, and the badge that explains the
- *  state carries `muted` at full opacity — 4.78:1 light / 6.29:1 dark on
+ *  The label is now `ink-disabled` (issue #22, 2026-09-26: 3.08:1 light /
+ *  3.55:1 dark on `bg-rail`), with no opacity, and the badge that explains the
+ *  state carries `muted` at full strength — 4.78:1 light / 6.29:1 dark on
  *  `bg-rail`, clearing AA. The item still reads as off; the word saying why is
  *  legible. `title` is gone: browsers suppress pointer events on a disabled
  *  element, so that tooltip provably never rendered, and the badge is the only
@@ -60,9 +61,9 @@ function PendingItem({ label }: { label: string }) {
     <button
       type="button"
       disabled
-      className={`${NAV_ITEM} text-faint w-full cursor-not-allowed border-transparent text-left`}
+      className={`${NAV_ITEM} text-ink-disabled w-full cursor-not-allowed border-transparent text-left`}
     >
-      <span className="opacity-60">{label}</span>
+      {label}
       <span className="font-mono text-muted ml-auto text-[8.5px] tracking-[0.14em] uppercase">
         Soon
       </span>
@@ -91,7 +92,7 @@ export function IdentityRail({
       // Below lg the rail sits ABOVE the feed (app/page.tsx), so its edge moves
       // to the bottom and it is capped, scrolling itself, so a long tag list
       // cannot push the feed off the screen.
-      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r scroll-thin max-lg:max-h-[40dvh] max-lg:overflow-y-auto max-lg:border-r-0 max-lg:border-b max-lg:pb-[12px]"
+      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r scroll-thin max-lg:max-h-[40dvh] max-lg:overflow-y-auto max-lg:border-r-0 max-lg:border-b max-lg:pb-[12px]"
     >
       <div className="border-rule-3 max-lg:hidden flex items-center gap-[9px] border-b px-[14px] pt-[14px] pb-[12px]">
         {/* Square, not a circle. Circles are for people's faces in a

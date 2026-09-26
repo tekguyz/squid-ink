@@ -39,7 +39,7 @@ export function CollectionsRail({
   return (
     <nav
       aria-label="Collections"
-      className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r"
+      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r"
     >
       {/* The shared app nav, since 2026-09-13. It replaces this rail's own
           one-off "All notes" link. */}
