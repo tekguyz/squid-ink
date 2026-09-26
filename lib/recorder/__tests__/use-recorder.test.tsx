@@ -2,7 +2,12 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRecorder } from "@/lib/recorder/use-recorder";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
-import { discardBackup, listBackups } from "@/lib/recorder/audio-backup";
+import {
+  discardBackup,
+  listBackups,
+  loadBackup,
+  saveBackup,
+} from "@/lib/recorder/audio-backup";
 
 const USER = "8f1c2a3b-0000-4444-8888-aaaaaaaaaaaa";
 const NOTE = "11111111-2222-3333-4444-555555555555";
@@ -57,6 +62,7 @@ function makeDeps() {
   };
   const createNote = vi.fn(async (_i: unknown) => ({ id: NOTE }));
   const markUploadFailed = vi.fn(async (_noteId: string) => {});
+  const backupsSafeToDiscard = vi.fn(async (_ids: string[]): Promise<string[]> => []);
 
   // Typed against the real StorageBucketLike result shapes, so `data: null`
   // with an error is assignable in the failure tests.
@@ -93,6 +99,7 @@ function makeDeps() {
     captureHandles,
     createNote,
     markUploadFailed,
+    backupsSafeToDiscard,
     bucketApi,
     deps: {
       capture: vi.fn(async () => captureHandles),
@@ -104,6 +111,7 @@ function makeDeps() {
       bucket: () => bucketApi,
       createNote,
       markUploadFailed,
+      backupsSafeToDiscard,
     },
   };
 }
@@ -427,5 +435,50 @@ describe("useRecorder", () => {
     expect(d.captureHandles.stop).toHaveBeenCalled();
     expect(useRecorderStore.getState().phase).toBe("idle");
     expect(await listBackups()).toEqual([]);
+  });
+
+  // #12. The dock mounts once per full page load, so this is "once per visit".
+  it("on mount, discards the backups the server names and keeps the rest", async () => {
+    const OLD = "99999999-9999-4999-8999-999999999999";
+    const backup = (noteId: string) => ({
+      noteId,
+      blob: new Blob(["audio"]),
+      mimeType: "audio/webm",
+      durationSeconds: 1,
+      savedAtMs: 0,
+    });
+    await saveBackup(backup(NOTE));
+    await saveBackup(backup(OLD));
+    const d = makeDeps();
+    d.backupsSafeToDiscard.mockResolvedValue([OLD]);
+
+    renderHook(() => useRecorder(d.deps as never));
+
+    await waitFor(async () => expect(await loadBackup(OLD)).toBeNull());
+    expect(d.backupsSafeToDiscard).toHaveBeenCalledTimes(1);
+    expect(await loadBackup(NOTE)).not.toBeNull();
+  });
+
+  it("a cleanup that throws is logged and does not break the recorder", async () => {
+    await saveBackup({
+      noteId: NOTE,
+      blob: new Blob(["audio"]),
+      mimeType: "audio/webm",
+      durationSeconds: 1,
+      savedAtMs: 0,
+    });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const d = makeDeps();
+    d.backupsSafeToDiscard.mockRejectedValue(new Error("offline"));
+
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+
+    await waitFor(() => expect(error).toHaveBeenCalled());
+    expect(await loadBackup(NOTE)).not.toBeNull();
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(useRecorderStore.getState().phase).toBe("recording");
+    error.mockRestore();
   });
 });

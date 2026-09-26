@@ -2,6 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { backupsToDiscard } from "@/lib/recorder/backup-cleanup";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Creates the notes row for a recording, called as the upload STARTS.
@@ -106,4 +109,47 @@ export async function markUploadFailed(noteId: string): Promise<void> {
   if (error) throw new Error(`Failed to mark note as failed: ${error.message}`);
 
   revalidatePath("/");
+}
+
+/**
+ * Which of the browser's IndexedDB audio backups may be deleted (#12). The
+ * browser sends the note ids it holds; this reads their rows and applies
+ * `backupsToDiscard` against the SERVER's clock, so a wrong browser clock can
+ * never delete audio early. The rule itself lives in lib/recorder/backup-cleanup.ts.
+ *
+ * No session answers with an empty list, not a throw: the recorder calls this
+ * on every full page load, sign-in page included, and "not signed in" means
+ * "no evidence", which means keep everything.
+ *
+ * Ids that are not uuids are dropped before the query, because one malformed
+ * id would make Postgres reject the whole `in` list. RLS scopes the read to the
+ * owner, so another account's note on this browser comes back as no row, and
+ * no row is kept. No `user_id` filter, for the reason markUploadFailed gives.
+ */
+export async function backupsSafeToDiscard(noteIds: string[]): Promise<string[]> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const ids = noteIds.filter((id) => UUID.test(id));
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select("id, processing_status, updated_at")
+    .in("id", ids);
+
+  if (error) throw new Error(`Failed to read note statuses: ${error.message}`);
+
+  return backupsToDiscard(
+    (data ?? []).map((row) => ({
+      noteId: row.id,
+      status: row.processing_status,
+      updatedAtMs: Date.parse(row.updated_at),
+    })),
+    Date.now(),
+  );
 }

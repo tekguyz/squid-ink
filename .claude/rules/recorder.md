@@ -51,13 +51,21 @@ The notes row is written when the upload **starts**, at
 `processing_status = 'uploading'`, because the path is deterministic. This track
 never writes `'analyzing'` or `'completed'` — those are Track 3's. A failed
 upload writes `'failed'` in-session through `markUploadFailed()` — tier 1,
-shipped 2026-09-01 — and still leaves its audio in IndexedDB; **nothing
-reconciles that pair**, so Track 3 must check the object exists before
-transcribing.
+shipped 2026-09-01 — and still leaves its audio in IndexedDB, for seven days
+(below). Track 3 must still check the object exists before transcribing.
 
 **Corrected 2026-09-01.** This paragraph read "leaves a visible row … nothing
 reconciles that pair yet", written when tier 1 did not exist. The row half is
 now reconciled in milliseconds; the blob half is not.
+
+**The blob half shipped 2026-09-26 (#12).** `lib/recorder/backup-cleanup.ts`
+holds the rule: a backup goes at once when its note is `'completed'`, seven
+days after its note went `'failed'` (measured on `notes.updated_at`), and
+**never** on `'uploading'`, `'analyzing'`, or a note the server does not
+return. `useRecorder` runs it once on mount. The decision runs on the server,
+in `backupsSafeToDiscard()` in `app/notes/actions/recording.ts`, against the
+server clock, so a wrong browser clock cannot delete audio early. Before this,
+nothing discarded on `'completed'` either — the docs said it did; no code did.
 
 Codec strings are feature-detected through `lib/recorder/codec.ts`. Never
 hardcode one, and keep WebM ahead of MP4 — Chromium accepts both, so the order

@@ -1,7 +1,11 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { createRecordedNote, markUploadFailed } from "@/app/notes/actions/recording";
+import {
+  backupsSafeToDiscard,
+  createRecordedNote,
+  markUploadFailed,
+} from "@/app/notes/actions/recording";
 import { startCapture } from "@/lib/recorder/capture";
 import { AUDIO_BUCKET, type StorageBucketLike } from "@/lib/recorder/upload-audio";
 
@@ -26,6 +30,9 @@ export interface RecorderDeps {
    *  on a caught Storage error, guarded server-side by the 'uploading'
    *  precondition. Injectable for the same reason as everything else here. */
   markUploadFailed: typeof markUploadFailed;
+  /** #12: which IndexedDB backups the server says may go. The rule and the
+   *  clock are server-side; see lib/recorder/backup-cleanup.ts. */
+  backupsSafeToDiscard: typeof backupsSafeToDiscard;
 }
 
 export function browserDeps(): RecorderDeps {
@@ -44,6 +51,7 @@ export function browserDeps(): RecorderDeps {
       createClient().storage.from(AUDIO_BUCKET) as unknown as StorageBucketLike,
     createNote: createRecordedNote,
     markUploadFailed,
+    backupsSafeToDiscard,
   };
 }
 
