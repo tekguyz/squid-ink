@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { browserDeps, readLevel, type RecorderDeps } from "@/lib/recorder/browser-deps";
 import { discardBackup } from "@/lib/recorder/audio-backup";
+import { cleanUpBackups } from "@/lib/recorder/backup-cleanup";
 import { pickMimeType } from "@/lib/recorder/codec";
 import { type CaptureHandles } from "@/lib/recorder/capture";
 import { watchAudioInputs } from "@/lib/recorder/device-handoff";
@@ -48,6 +49,16 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
   const lastTick = useRef(0);
 
   const store = useRecorderStore;
+
+  // #12: drop the IndexedDB backups the server says may go — 'completed' at
+  // once, 'failed' after seven days. The dock mounts once per full page load,
+  // so this runs once per visit. A failure only means the blobs wait for the
+  // next visit, so it is logged, never shown.
+  useEffect(() => {
+    cleanUpBackups(depsRef.current.backupsSafeToDiscard).catch((error: unknown) => {
+      console.error("Could not clean up audio backups:", error);
+    });
+  }, []);
 
   // One interval drives both the clock and the level meter. It reads the store
   // rather than closing over it, so it never holds a stale phase.

@@ -101,8 +101,8 @@ export async function finishRecording(args: {
     // reconciliation path for a single failure. The original error stays on
     // the HUD; this one is logged and dropped.
     //
-    // The IndexedDB backup is untouched: it is discarded only on 'completed',
-    // and a 'failed' row keeps the only copy of its audio indefinitely.
+    // The IndexedDB backup is untouched here. A 'failed' row keeps the only
+    // copy of its audio for seven days (lib/recorder/backup-cleanup.ts, #12).
     if (rowWritten) {
       try {
         await deps.markUploadFailed(noteId);
@@ -117,6 +117,7 @@ export async function finishRecording(args: {
   // and must not reach the catch above and fail a note that uploaded fine.
   //
   // The backup is deliberately NOT discarded — it waits for
-  // processing_status === 'completed', which the transcription pipeline owns.
+  // processing_status === 'completed', which the transcription pipeline owns,
+  // and is then dropped on the next page load (lib/recorder/backup-cleanup.ts).
   store.getState().finish();
 }

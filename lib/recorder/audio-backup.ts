@@ -2,10 +2,9 @@
  * The local backup buffer, light version (ROADMAP §8b).
  *
  * The recorded blob is written here the moment MediaRecorder stops, BEFORE the
- * upload is attempted, and is discarded only once the note's processing_status
- * reaches 'completed'. Track 3 does not exist yet, so in this track the blob
- * legitimately persists after a successful upload. That is the rule working,
- * not a leak.
+ * upload is attempted. When it may be discarded is decided elsewhere, in
+ * lib/recorder/backup-cleanup.ts: at once for a 'completed' note, seven days
+ * after failing for a 'failed' one, and never on any other status (#12).
  *
  * IndexedDB, deliberately. A module-level variable dies on a full page load and
  * localStorage cannot hold binary; IndexedDB is the only browser store that
@@ -25,7 +24,8 @@
  *      contents survive, which for a data-loss guard is not acceptable.
  *
  * This is NOT the full encrypted 48-hour buffer from the Core UX/UI phase.
- * Nothing here is encrypted and nothing expires on a timer.
+ * Nothing here is encrypted, and expiry is keyed to the note's status, not to
+ * the age of the blob.
  */
 const DB_NAME = "recorder-backup";
 const DB_VERSION = 1;
