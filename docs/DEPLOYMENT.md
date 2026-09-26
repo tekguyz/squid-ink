@@ -246,10 +246,25 @@ where marked measured:
 | Password requirements | lower case, upper case, digits and symbols |
 | Prevent leaked passwords | off, and Pro-plan only |
 | Templates | "Confirm sign up" and "Reset password" pasted by the owner from `supabase/templates/confirmation.html` and `recovery.html` |
+| Subjects | "Confirm your Squid Ink account" and "Reset your Squid Ink password". **Measured** 2026-09-26 by the script below; `config.toml` said "code" until then |
 
-**The hosted templates are pasted by hand, and nothing checks them.**
-`lib/auth/__tests__/email-link-policy.test.ts` checks the repo copies only. If
-someone edits a template in the dashboard, re-read it against the repo file.
+**The hosted templates are pasted by hand. A script reads them back:**
+
+    node scripts/verify-email-templates.mjs
+
+It fetches `GET /v1/projects/{ref}/config/auth` from the management API and
+compares the confirmation and recovery **subject and body** with the
+`[auth.email.template.*]` sections of `supabase/config.toml` and the HTML files
+they name. CRLF from a Windows checkout is ignored. Exit 0: they match. 1: they
+differ, and it names the template and the field. 2: it could not run, which is
+**not** a pass. It needs `SUPABASE_ACCESS_TOKEN` (set in the gitignored
+`.claude/settings.local.json`) and `NEXT_PUBLIC_SUPABASE_URL` in `.env.local`.
+It only reads; it never writes the hosted config and does not use the secret
+key. Run it after anyone edits a template, in the dashboard or in the repo.
+First run, 2026-09-26: both bodies matched; both subjects in `config.toml` were
+stale and were brought up to the hosted ones.
+
+`lib/auth/__tests__/email-link-policy.test.ts` checks the repo copies' links.
 The one thing that must survive is the href,
 `{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email` (or
 `type=recovery`). `{{ .ConfirmationURL }}` would bring back both failures in

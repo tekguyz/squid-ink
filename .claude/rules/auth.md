@@ -27,6 +27,7 @@ because they bite from files this rule's globs do not cover:
   retirement.
 - **The hosted email templates and link lifetime are dashboard settings**,
   mirrored in `supabase/templates/` and `config.toml` and never pushed.
+  `node scripts/verify-email-templates.mjs` diffs hosted against the repo.
   `docs/DEPLOYMENT.md` § Auth email.
 
 Test the sign-in FORM locally with `RLS_TEST_OWNER_EMAIL` /
