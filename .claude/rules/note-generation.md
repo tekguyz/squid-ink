@@ -8,6 +8,7 @@ paths:
   - "scripts/verify-notegen-pipeline.mjs"
   - "scripts/verify-persona-provisioning.mjs"
   - "scripts/verify-persona-selection.mjs"
+  - "scripts/verify-depth-and-fallback.mjs"
 ---
 
 # Note generation
@@ -258,3 +259,10 @@ were a fixture standing in for this pipeline.
                                                # transcript generated under
                                                # two lenses so the framings
                                                # can be read side by side
+    node scripts/verify-depth-and-fallback.mjs # no dev server needed:
+                                               # three proofs on a throwaway
+                                               # depth-proof@squid-ink.test —
+                                               # generation under Brief, under
+                                               # Exhaustive, and through
+                                               # DEFAULT_PERSONA_FALLBACK, each
+                                               # plan read off the real call
