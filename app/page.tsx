@@ -2,7 +2,10 @@ import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { IdentityRail } from "@/components/dashboard/identity-rail";
 import { NoteFeed } from "@/components/dashboard/note-feed";
 import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
+import { LandingPage } from "@/components/landing/landing-page";
 import Link from "next/link";
+import type { Metadata } from "next";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDashboardFeed } from "@/lib/notes/get-dashboard-feed";
 import { feedLimit, olderHref } from "@/lib/notes/feed-page";
 
@@ -39,14 +42,42 @@ import { feedLimit, olderHref } from "@/lib/notes/feed-page";
  * 390 as well as 1440 and 1280.
  */
 
-export const metadata = { title: "All notes" };
+const LANDING_TITLE = "Squid Ink — meeting notes with no bot in the call";
 
-export default async function Dashboard({
-  searchParams,
-}: {
+const LANDING_METADATA: Metadata = {
+  title: LANDING_TITLE,
+  description:
+    "Squid Ink records a meeting in your browser, transcribes it, and writes a summary, takeaways and action items, with each takeaway and action item linked back to what was said.",
+  openGraph: {
+    title: LANDING_TITLE,
+    description:
+      "Records in your browser. Writes the note. Takeaways link back to the transcript.",
+    siteName: "Squid Ink",
+    type: "website",
+  },
+};
+
+/** One path, two screens (issue #60). The proxy lets "/" through with no
+ *  session, exactly and only "/", and this decides which screen that is. */
+export async function generateMetadata(): Promise<Metadata> {
+  return (await getCurrentUser()) ? { title: "All notes" } : LANDING_METADATA;
+}
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function Root({ searchParams }: { searchParams: SearchParams }) {
+  // No user means no RLS identity, so the Dashboard's queries would return
+  // nothing or fail. The landing page reads nothing at all.
+  if (!(await getCurrentUser())) return <LandingPage />;
+  return dashboard(searchParams);
+}
+
+/** A plain async function rather than a component: it runs only after the
+ *  session check above, and never as a sibling that could start early. */
+async function dashboard(
   // A Promise in the App Router, and awaited rather than read synchronously.
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+  searchParams: SearchParams,
+) {
   // `?tag=<slug>` is the whole filter. It lives in the URL so it survives a
   // refresh and can be linked, and it is applied by the same server query that
   // builds the unfiltered feed — there is no second path to disagree with.

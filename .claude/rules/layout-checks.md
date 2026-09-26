@@ -58,6 +58,11 @@ its HTML to the OS temp dir** (issue #6, 2026-09-23). Read the dev server log
 beside it: when the HTML is Next's error page, the cause is only in the log.
 The file can hold the fixture owner's note text and is not deleted.
 
+**Before it signs in, it measures the landing page** (issue #60): `/` with no
+session at all five widths, both themes — the same assertions, plus the page
+is the landing page and not a redirect, it offers no Record control, and its
+specimen's citation chips (links there, not buttons) have 24px targets.
+
 Widths are `1440` and `1280` on every route. **`/` is also measured at `1024`,
 `768` and `390`**, because the Dashboard's stacked layout shipped 2026-09-15;
 `NARROW_WIDTHS` in the script lists which routes get narrow widths. No other

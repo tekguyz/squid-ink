@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bitter, Archivo, IBM_Plex_Mono } from "next/font/google";
-import { RecorderDock } from "@/components/recorder/recorder-dock";
+import { Suspense } from "react";
+import { SignedInDock } from "@/components/recorder/signed-in-dock";
 import { ThemeBoot } from "@/components/theme-boot";
 import "./globals.css";
 
@@ -26,6 +27,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  // Share cards need absolute URLs. The production address, from
+  // docs/DEPLOYMENT.md, which is the source of truth for it.
+  metadataBase: new URL("https://squid-ink.vercel.app"),
   title: "Note detail",
   description: "Review a note and its source transcript.",
 };
@@ -47,8 +51,11 @@ export default function RootLayout({
         {/* Mounted here, not per route: the HUD has to survive navigation, and
             the recorder store lives at module scope so it never resets. This
             layout stays a server component — the dock is an isolated client
-            island, not a reason to convert the shell. */}
-        <RecorderDock />
+            island, not a reason to convert the shell. Only with a session:
+            components/recorder/signed-in-dock.tsx. */}
+        <Suspense fallback={null}>
+          <SignedInDock />
+        </Suspense>
       </body>
     </html>
   );

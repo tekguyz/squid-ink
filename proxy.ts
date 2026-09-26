@@ -12,7 +12,10 @@ export const config = {
     /*
      * Every path except static assets and image files. Auth cookies rotate
      * on the request that needs them, so the matcher stays broad.
+     *
+     * robots.txt is excluded like favicon.ico (issue #60): a crawler has no
+     * session, and without this it was sent to /login for the file.
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico)$).*)",
   ],
 };

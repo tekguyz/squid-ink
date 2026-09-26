@@ -262,6 +262,8 @@ below is what a human types. Why it matters: `docs/CONVENTIONS_DETAIL.md`.
                                                    # paces itself, minutes
     node scripts/verify-layout.mjs                 # layout proof, needs `npm run dev`
                                                    # and .env.local
+    node scripts/capture-og-image.mjs              # re-shoots app/opengraph-image.png from
+                                                   # the landing page; needs `npm run dev`
     node scripts/verify-email-templates.mjs        # hosted auth email templates vs
                                                    # repo; SUPABASE_ACCESS_TOKEN
     bash .claude/hooks/install.sh                  # once per machine

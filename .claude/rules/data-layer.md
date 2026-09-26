@@ -28,7 +28,16 @@ array. A new account gets its four rows from the database, not from app code:
 `supabase/schemas/persona_provisioning.sql` puts a `security definer` trigger on
 `auth.users` that inserts them. Accounts created before that trigger shipped
 (2026-08-31) are deliberately not backfilled, which is why the fallback below is
-still live code. `note_chunks.persona_id` attributes a takeaway to a lens, and a null
+still live code.
+
+**One exception, and it is copy, not data:** the landing page
+(`components/landing/persona-table.tsx`, issue #60) lists the four personas by
+name for a visitor with no session, who has no rows to read. It is never used
+to generate or resolve anything, and `components/landing/__tests__/specimen.test.ts`
+fails if it drifts from `persona_provisioning.sql`. `components/landing/specimen.ts`
+quotes the demo fixture the same way, under the same test.
+
+`note_chunks.persona_id` attributes a takeaway to a lens, and a null
 `persona_id` means the default persona — which is why chunks written before the
 table existed still render under Neutral Analyst. `DEFAULT_PERSONA_ID` and the
 one fallback persona for a user with no rows live in
