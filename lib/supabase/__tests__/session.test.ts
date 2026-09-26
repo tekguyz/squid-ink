@@ -29,11 +29,29 @@ async function visit(pathname: string) {
 }
 
 describe("updateSession — signed-out redirects", () => {
-  it("sends an anonymous page request to /login", async () => {
-    const res = await visit("/notes/abc");
+  it("sends an anonymous page request to /login, with next set", async () => {
+    for (const path of ["/notes/abc", "/settings"]) {
+      const res = await visit(path);
+      const location = new URL(res.headers.get("location") ?? "", "https://x");
 
-    expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toContain("/login");
+      expect(res.status).toBe(307);
+      expect(location.pathname).toBe("/login");
+      expect(location.searchParams.get("next")).toBe(path);
+    }
+  });
+
+  it("leaves the root alone, because the landing page lives there (#60)", async () => {
+    const res = await visit("/");
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("location")).toBeNull();
+  });
+
+  it("makes only the root public, not every path under it", async () => {
+    // "/" as a prefix would be every path. It must match exactly.
+    for (const path of ["/collections", "/personas", "/onboarding", "/notes"]) {
+      expect((await visit(path)).status).toBe(307);
+    }
   });
 
   it("leaves /login and the email-link landing alone, or sign-in is impossible", async () => {

@@ -30,6 +30,17 @@ import { isSessionOnly, withPersistence } from "@/lib/auth/session-persistence";
  *  Its own NODE_ENV check is its gate — outside development it answers 404. */
 const PUBLIC_PREFIXES = ["/login", "/auth/confirm", "/api/cron", "/api/dev-login"];
 
+/** Pages a person with no session may open, matched EXACTLY, never as a
+ *  prefix — "/" as a prefix would be every path in the app.
+ *
+ *  /: the landing page (issue #60). app/page.tsx renders it when there is no
+ *  user and the Dashboard when there is one.
+ *
+ *  Kept apart from PUBLIC_PREFIXES on purpose: those paths also skip the
+ *  onboarding gate below, and "/" must not. A signed-in account that has not
+ *  onboarded still goes to /onboarding from here. */
+const SIGNED_OUT_PAGES = ["/"];
+
 /**
  * Refreshes the auth session on every matched request and writes the rotated
  * cookies onto the response that is actually returned.
@@ -78,7 +89,7 @@ export async function updateSession(request: NextRequest) {
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 
-  if (!user && !isPublic) {
+  if (!user && !isPublic && !SIGNED_OUT_PAGES.includes(pathname)) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";
     redirect.searchParams.set("next", pathname);

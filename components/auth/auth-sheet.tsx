@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 /**
  * The Auth surface, App Surfaces 04: one paper sheet on the canvas, the mark
@@ -22,10 +23,16 @@ export function AuthSheet({ children }: { children: ReactNode }) {
   return (
     <main className="bg-canvas text-ink flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="bg-paper border-rule flex min-h-[520px] w-full max-w-[392px] flex-col border px-[32px] py-[34px]">
-        <p className="font-header text-ink flex items-center gap-[8px] text-[15px] font-bold tracking-[-0.01em]">
+        {/* The quiet way back to the landing page (issue #60): someone who
+            opened /login directly can find out what the app is. A link, not a
+            paragraph, and nothing else about the mark changed. */}
+        <Link
+          href="/"
+          className={`font-header text-ink flex items-center gap-[8px] self-start text-[15px] font-bold tracking-[-0.01em] underline-offset-[3px] hover:underline ${FOCUS}`}
+        >
           <span aria-hidden="true" className="bg-accent h-[18px] w-[18px]" />
-          Squid Ink
-        </p>
+          <span translate="no">Squid Ink</span>
+        </Link>
         {children}
         <p className="font-mono text-muted mt-auto pt-[22px] text-[9px] leading-[1.75] tracking-[0.06em] uppercase">
           No calendar or Drive access is asked for here.

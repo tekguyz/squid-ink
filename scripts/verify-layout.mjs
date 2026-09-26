@@ -55,6 +55,10 @@ const WIDTHS = [1440, 1280];
  *  two-column width, 768 the last four-track row, 390 a phone. */
 const NARROW_WIDTHS = { "/": [1024, 768, 390] };
 
+/** The landing page (issue #60): "/" with no session, before signIn() runs.
+ *  Every width, because a shared link is opened on a phone as often as not. */
+const SIGNED_OUT_WIDTHS = [...WIDTHS, ...NARROW_WIDTHS["/"]];
+
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -334,7 +338,8 @@ const PROBE = `(() => {
   // counted separately. Chips an overlay covers, or whose grown area a scroll
   // container clips, have no room to test and are skipped.
   const HALF = 12;
-  const CHIP = 'button[aria-label^="Jump to transcript"]';
+  // A link on the landing page's specimen (issue #60), a button in the app.
+  const CHIP = ':is(button, a)[aria-label^="Jump to transcript"]';
   const chips = [...document.querySelectorAll(CHIP)].filter(visible).flatMap((chip) => {
     const r = chip.getBoundingClientRect();
     const grown = new DOMRect(r.x + r.width / 2 - HALF, r.y + r.height / 2 - HALF, 2 * HALF, 2 * HALF);
@@ -527,6 +532,41 @@ async function main() {
     });
     await cdp.send("Page.enable", {}, sessionId);
     await cdp.send("Runtime.enable", {}, sessionId);
+
+    // Signed out first: the browser has no cookies until signIn() sets them.
+    for (const width of SIGNED_OUT_WIDTHS) {
+      await cdp.send(
+        "Emulation.setDeviceMetricsOverride",
+        { width, height: VIEWPORT.height, deviceScaleFactor: 1, mobile: false },
+        sessionId,
+      );
+      await goto(cdp, sessionId, `${ORIGIN}/`);
+      const where = `/ (signed out) @ ${width}px`;
+      const page = await evaluate(
+        cdp,
+        sessionId,
+        `({ path: location.pathname, h1: document.querySelector("h1")?.textContent ?? "",
+            record: [...document.querySelectorAll("button")].some((b) => /record/i.test(b.textContent)) })`,
+      );
+      check(
+        page.path === "/" && page.h1 !== "" && !/All notes/.test(page.h1),
+        `${where} — is the landing page, not a redirect`,
+        `landed on ${page.path}, h1 "${page.h1}"`,
+      );
+      check(!page.record, `${where} — offers no Record control`, "a Record button rendered with no session");
+      for (const theme of ["light", "dark"]) {
+        // The chips sit below the fold on a phone; bring them on screen so
+        // the tap-target probe has something to measure.
+        await evaluate(
+          cdp,
+          sessionId,
+          `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}");
+             document.querySelector('a[aria-label^="Jump to transcript"]')?.scrollIntoView({ block: "center" }); })()`,
+        );
+        const probe = await evaluate(cdp, sessionId, PROBE);
+        report("/ (signed out)", width, theme, probe, true);
+      }
+    }
 
     await signIn(cdp, sessionId);
 

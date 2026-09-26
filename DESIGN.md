@@ -146,6 +146,48 @@ typography:
     fontWeight: 400
     lineHeight: 1.4
     letterSpacing: "0.16em"
+  landing-hero:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "56px"
+    fontWeight: 500
+    lineHeight: 1.04
+    letterSpacing: "-0.02em"
+  landing-hero-tablet:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "52px"
+    fontWeight: 500
+    lineHeight: 1.04
+    letterSpacing: "-0.02em"
+  landing-hero-phone:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "40px"
+    fontWeight: 500
+    lineHeight: 1.04
+    letterSpacing: "-0.02em"
+  landing-section:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "30px"
+    fontWeight: 500
+    lineHeight: 1.15
+    letterSpacing: "-0.012em"
+  landing-section-phone:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "26px"
+    fontWeight: 500
+    lineHeight: 1.15
+    letterSpacing: "-0.012em"
+  landing-step:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "18px"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "normal"
+  landing-specimen-title:
+    fontFamily: "Bitter, Georgia, serif"
+    fontSize: "17px"
+    fontWeight: 600
+    lineHeight: 1.3
+    letterSpacing: "normal"
 rounded:
   none: "0"
   full: "9999px"
@@ -326,6 +368,17 @@ the live-recording dot. Nothing else does.
 - Micro-typography: 8.5–10.5px letterspaced uppercase mono for all metadata
 - Odd-number spacing rhythm (5 / 7 / 9 / 11 / 13 / 14 / 18 / 24 / 26px), tuned by eye rather than to a 4px grid
 - Absence is a signal: a finished note shows no status pill and no counts, so anything in those tracks means "this row needs something"
+
+### The landing page
+
+**The landing page** (`components/landing/`, issue #60) is the third distance:
+the front page of the paper. It is the one Persuade surface, and the one place
+the type ramp climbs above `display` — the `landing-*` steps above, all Bitter,
+from the 56px headline down to the 17px specimen title. They exist for this
+page only; an app screen that reaches for them is drifting. Everything else is
+the app's own: the same tokens, rules, slugs and square corners, a masthead
+double rule as its one flourish, and a real note from the demo fixture as its
+proof rather than a drawing of one.
 
 ### Naming
 
