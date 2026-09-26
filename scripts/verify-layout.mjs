@@ -41,6 +41,7 @@ import { existsSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from "no
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createServerClient } from "@supabase/ssr";
+import { CONTRAST_PROBE, PLANT_FAILED_PILL, UNPLANT, reportContrast } from "./layout-contrast.mjs";
 
 const ORIGIN = process.env.LAYOUT_ORIGIN ?? "http://localhost:3000";
 const VIEWPORT = { width: 1440, height: 900 };
@@ -565,6 +566,7 @@ async function main() {
         );
         const probe = await evaluate(cdp, sessionId, PROBE);
         report("/ (signed out)", width, theme, probe, true);
+        reportContrast(check, `/ (signed out) @ ${width}px ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE));
       }
     }
 
@@ -637,6 +639,20 @@ async function main() {
           );
           const probe = await evaluate(cdp, sessionId, PROBE);
           report(route, width, theme, probe, route === noteHref);
+          // Issue #22. The tokens each route is KNOWN to render at full
+          // width, so measuring none of them there is a failure, not a pass.
+          // The planted Failed pill is in a Dashboard row at every width.
+          const mustShow = !WIDTHS.includes(width)
+            ? []
+            : route === "/" || route === noteHref
+              ? ["ink-disabled", "rule-strong"]
+              : route === "/personas"
+                ? ["ink-disabled"]
+                : [];
+          // The Failed pill is planted on the Dashboard, where it lives.
+          if (route === "/" && (await evaluate(cdp, sessionId, PLANT_FAILED_PILL))) mustShow.push("live-tint");
+          reportContrast(check, `${route} @ ${width}px ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE), mustShow);
+          await evaluate(cdp, sessionId, UNPLANT);
         }
       }
     }

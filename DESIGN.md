@@ -11,6 +11,7 @@ colors:
   rule: "oklch(0.856 0.023 80)"
   rule-2: "oklch(0.870 0.021 82)"
   rule-3: "oklch(0.898 0.019 82)"
+  rule-strong: "oklch(0.730 0.022 78)"
   control-edge: "oklch(0.585 0.016 70)"
   ink: "oklch(0.226 0.022 62)"
   ink-2: "oklch(0.300 0.021 62)"
@@ -24,6 +25,7 @@ colors:
   meta-4: "oklch(0.530 0.017 64)"
   meta-5: "oklch(0.530 0.017 64)"
   faint: "oklch(0.660 0.015 68)"
+  ink-disabled: "oklch(0.605 0.015 66)"
   placeholder: "oklch(0.585 0.016 66)"
   rail-idle: "oklch(0.450 0.018 62)"
   notice: "oklch(0.415 0.019 62)"
@@ -37,6 +39,7 @@ colors:
   seg-wash: "oklch(0.905 0.064 142)"
   waveform: "oklch(0.800 0.052 142)"
   live: "oklch(0.520 0.170 25)"
+  live-tint: "oklch(0.935 0.030 25)"
   speaker-1: "oklch(0.50 0.10 252)"
   speaker-1-avatar: "oklch(0.90 0.04 252)"
   speaker-2: "oklch(0.47 0.09 155)"
@@ -243,7 +246,7 @@ components:
     padding: "5px 8px"
   button-pending:
     backgroundColor: "{colors.paper}"
-    textColor: "{colors.faint}"
+    textColor: "{colors.ink-disabled}"
     typography: "{typography.action}"
     rounded: "{rounded.none}"
     padding: "7px 11px"
@@ -263,7 +266,7 @@ components:
     backgroundColor: "{colors.tint}"
     textColor: "{colors.accent-text}"
   pill-status-failed:
-    backgroundColor: "{colors.paper}"
+    backgroundColor: "{colors.live-tint}"
     textColor: "{colors.live}"
   chip-citation:
     backgroundColor: "{colors.tint}"
@@ -291,7 +294,7 @@ components:
     textColor: "{colors.ink}"
   nav-item-pending:
     backgroundColor: "{colors.rail}"
-    textColor: "{colors.faint}"
+    textColor: "{colors.ink-disabled}"
   row-note:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
@@ -443,7 +446,7 @@ background.
 - **Speaker Amber** (`oklch(0.48 0.09 55)` / `oklch(0.80 0.08 60)`) on
   `speaker-3-avatar`.
 
-### Neutral — six surfaces, three rules, one control edge, five inks
+### Neutral — six surfaces, four rules, one control edge, six inks
 
 Surfaces, lightest to heaviest in the light theme: **Newsprint** (`paper`,
 `0.979`), **Dock Cream** (`dock`, `0.960`), **Raised Cream** (`raised`,
@@ -457,6 +460,15 @@ Rules: **Rule** (`0.856` / `0.30`), **Rule 2** (`0.870` / `0.32`), **Rule 3**
 list-row dividers respectively. All three measure roughly 1.4–1.5:1 against the
 sheets they sit on. That is deliberate: they are *texture*, not information.
 
+**Rule Strong** (`oklch(0.730 0.022 78)` / `oklch(0.410 0.016 52)`) — token
+`rule-strong`, added 2026-09-26 (#22) for the **structural seams** only: rail
+to main area, main area to a side pane, page and pane header bottoms, and the
+top of a dock or footer bar. About 2:1 — measured 1.91–2.27:1 light and
+1.98–2.20:1 dark against the sheets on both sides — so a seam reads as an edge,
+clearly above `rule` and clearly below `control-edge`, and is never mistaken for
+a control. Row dividers, table rows, card frames and pill frames keep
+`rule` / `rule-2` / `rule-3`.
+
 **Control Edge** (`oklch(0.585 0.016 70)` / `oklch(0.550 0.014 78)`) — token
 `control-edge`. A fourth, much stronger hairline, added 2026-09-05 for one job
 only: the boundary of something you can operate. Measured against every sheet a
@@ -466,7 +478,10 @@ dark** (`raised`), clearing WCAG 1.4.11's 3:1 for a non-text control boundary.
 Inks: **Ink** (`0.226` / `0.93`) for headings and primary text, **Ink 2**
 (`0.300` / `0.88`) for transcript and chat prose, then **Muted** (`0.500`),
 **Meta** (`0.530`), **Meta 3** (`0.455`), **Faint** (`0.660`) for the metadata
-ladder. **Notice** (`0.415` / `0.78`) on **Notice BG** (`0.898` / `0.235`)
+ladder. **Ink Disabled** (`0.605` / `0.520`), token `ink-disabled`, added
+2026-09-26 (#22), is the label of a disabled control and nothing else: 3.08–3.67:1
+light and 3.03–3.55:1 dark on every sheet a control sits on — readable, below
+`muted`, and plainly off. **Notice** (`0.415` / `0.78`) on **Notice BG** (`0.898` / `0.235`)
 carries warnings without introducing an alert colour.
 
 ### Alert
@@ -476,6 +491,10 @@ carries warnings without introducing an alert colour.
   the Failed status pill — the three states that will not resolve on their own.
   The light value is derived, not lifted from a design file; recorded as such in
   `docs/KNOWN_GAPS.md`.
+- **Live Tint** (`oklch(0.935 0.030 25)` light / `oklch(0.250 0.045 25)` dark) —
+  token `live-tint`, added 2026-09-26 (#22). A pale wash of `live`, and only
+  the fill of the Failed status pill: `live` on it is 4.93:1 light / 4.78:1
+  dark, and the `live` frame is at least 4.78:1 against the fill and the row.
 
 ### Named Rules
 
@@ -590,13 +609,14 @@ glyphs apart; a tight 9px label is unreadable regardless of contrast.
 counts, elapsed clocks, note tallies — carries `tabular-nums`. Ragged numerals
 in a scannable column defeat the column.
 
-**The Legible-Even-When-Off Rule.** A disabled control may dim its **label**;
-it may never dim the badge that explains why it is off. Measured 2026-09-07:
-`text-faint` under `opacity-60` composited to 1.66:1 on `bg-rail`, which is
-WCAG-exempt for an inactive control and still reads as a rendering fault when
-five of six nav items look that way. The `opacity-60` therefore sits on the
-label alone, and the "Soon" badge carries `muted` at full strength — 4.78:1
-light / 6.29:1 dark. Never put an explanation in a `title` attribute on a
+**The Legible-Even-When-Off Rule.** A disabled control draws its **label** in
+`ink-disabled`; it never dims the badge that explains why it is off. One colour,
+app-wide, for native `disabled` and `aria-disabled` alike: never an `opacity-*`
+fade, never `faint` or `muted` standing in (#22, 2026-09-26 — until then each
+screen improvised, and `text-faint` under `opacity-60` composited to 1.66:1 on
+`bg-rail`). A disabled control that is **selected** keeps its selected look — it
+reports an answer, such as the lens a note was written in. The "Soon" badge
+carries `muted` at full strength — 4.78:1 light / 6.29:1 dark. Never put an explanation in a `title` attribute on a
 disabled element: browsers suppress its pointer events, so that tooltip never
 renders.
 
@@ -700,7 +720,8 @@ status pill, the Record button, the Transcribe button, the audio player and the
 HUD, and it always means the same thing — *this is the state of the thing beside
 me.*
 
-Borders are 1px hairlines in `rule` / `rule-2` / `rule-3` for structure and
+Borders are 1px hairlines in `rule` / `rule-2` / `rule-3` for dividers and
+frames, `rule-strong` for the structural seams between regions, and
 `control-edge` for controls. Selection is a **2px left border**
 (`border-l-2`) on the persona-rail tab, the dashboard's current nav item and the
 active transcript segment — a printer's marginal rule, never an outline around
@@ -735,16 +756,28 @@ The action-item checkbox is a bespoke 11px square: `appearance-none`, 1px
 - **Quick action (persona rail):** `raised` fill, 1px `control-edge`, 8px × 6px,
   11.5px body text, left-aligned; hover lifts the fill to `paper`.
 - **Pending ("Soon"):** the shape a planned-but-unbuilt control takes. 1px
-  `rule-2` — **not** `control-edge`, because that token is the boundary of
-  something you can operate and this is not — `cursor-not-allowed`, the label at
-  `opacity-60`, and an 8.5px mono `muted` "Soon" badge at full strength pushed
+  **dashed** `rule-2` — dashed so a dead field never reads as an empty live
+  input — **not** `control-edge`, because that token is the boundary of
+  something you can operate and this is not — `cursor-not-allowed`, the label in
+  `ink-disabled`, and an 8.5px mono `muted` "Soon" badge at full strength pushed
   to the end with `ml-auto`. Used on Search, Import audio, Calendar,
   Collections, Sources and Settings.
 - **Focus:** every interactive element carries
   `focus-visible:outline-2 outline-accent` with `outline-offset-1`, or
   `-outline-offset-2` where an element is flush to a container edge.
-- **Disabled:** `disabled:text-faint` plus `disabled:cursor-not-allowed`;
-  opacity is used only on a disabled control's label and on the login submit.
+- **Disabled:** the label in `ink-disabled` (`disabled:` or `aria-disabled:`),
+  never opacity, and the frame drops from `control-edge` to `rule-2` so the
+  border never says "operable" around an off label. Cursor stays as each
+  control has it. A filled button that is unavailable drops to `raised` on a
+  `rule-2` frame.
+- **Busy:** not the same state as Disabled. The button the user just pressed —
+  Sign in, onboarding's Continue, Settings' Update while saving, Transcribe
+  while it works — keeps its
+  fill, sets `aria-busy`, and its label says what is happening ("Saving").
+  A busy button that turned grey vanished for the one second the user was
+  watching it (1.06:1 against the page; #22 critique).
+  `project-conventions.test.ts` fails on a disabled `opacity-*`, `text-faint`
+  or `text-muted`.
 
 ### Chips
 
@@ -765,8 +798,10 @@ frame, not a control edge — 7px × 2px padding, mono 9px / 0.14em uppercase.
 - **Local:** `muted` frame and marker. The audio has not left the device.
 - **Uploading:** `meta-3`.
 - **Transcribing:** `tint` fill, `accent-text` label, `accent` marker.
-- **Failed:** `live` frame, label and marker. The one status that will not
-  change on its own, and the only one that earns a hue.
+- **Failed:** `live-tint` fill; `live` frame, label and marker; the label at
+  medium weight so the word, not only the red, carries it. The one status
+  that will not change on its own, the only one that earns a hue, and — since
+  #22 — filled, so it catches the eye before states that resolve by themselves.
 - **Completed:** **renders nothing.** A finished note is the resting state of
   the list, so a pill on almost every row is ink carrying no information. The
   column stays empty by default, which is what makes any pill in it mean "this
@@ -888,8 +923,8 @@ are precomputed constants — nothing in a render path calls `Math.random()` or
 - **Do** carry `tabular-nums` on any column of figures.
 - **Do** leave a track empty rather than filling it with a zero or a
   normal-state label, and keep its width so the grid does not move.
-- **Do** keep the "Soon" badge on a disabled control at full `muted`, dimming
-  only the label.
+- **Do** keep the "Soon" badge on a disabled control at full `muted`, with
+  only the label in `ink-disabled`.
 - **Do** measure contrast against the surface a thing actually sits on, in both
   themes, against the built CSS.
 - **Do** keep 24px clear of the bottom-right corner and end bottom-anchored

@@ -33,7 +33,7 @@ import type { NoteCollection } from "@/lib/notes/collections";
  */
 
 const FIELD =
-  "font-mono text-ink placeholder:text-placeholder w-[132px] bg-transparent text-[9px] tracking-[0.04em] uppercase outline-none";
+  "font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-[132px] bg-transparent text-[9px] tracking-[0.04em] uppercase outline-none";
 
 export function CollectionPicker({
   noteId,
@@ -81,7 +81,7 @@ export function CollectionPicker({
             type="button"
             disabled={pending}
             aria-label={`Remove from ${collection.name}`}
-            className="focus-visible:outline-accent cursor-pointer leading-none focus-visible:outline-1 focus-visible:outline-offset-1"
+            className="focus-visible:outline-accent disabled:text-ink-disabled cursor-pointer leading-none focus-visible:outline-1 focus-visible:outline-offset-1"
             onClick={() =>
               run(() => removeNoteFromCollection(noteId, collection.id))
             }

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { completeOnboarding, type OnboardingExit } from "@/app/notes/actions/onboarding";
-import { PRIMARY, SECONDARY, StepActions, StepHeader } from "./step-parts";
+import { PRIMARY, SECONDARY, StepActions, StepHeader, UNAVAILABLE } from "./step-parts";
 
 /**
  * Step 3 — Connect calendar. Optional.
@@ -20,9 +20,12 @@ import { PRIMARY, SECONDARY, StepActions, StepHeader } from "./step-parts";
 export function CalendarStep() {
   const [pending, startTransition] = useTransition();
   const [failed, setFailed] = useState(false);
+  // Which button was pressed: that one is BUSY, the other merely unavailable.
+  const [chosen, setChosen] = useState<OnboardingExit | null>(null);
 
   const finish = (exit: OnboardingExit) => {
     setFailed(false);
+    setChosen(exit);
     startTransition(async () => {
       try {
         // Success is a server redirect the router follows; only a refusal
@@ -55,18 +58,20 @@ export function CalendarStep() {
         <button
           type="button"
           disabled={pending}
+          aria-busy={pending && chosen === "connected-apps"}
           onClick={() => finish("connected-apps")}
-          className={PRIMARY}
+          className={`${PRIMARY} ${chosen === "connected-apps" ? "" : UNAVAILABLE}`}
         >
-          Open Connected apps
+          {pending && chosen === "connected-apps" ? "Opening…" : "Open Connected apps"}
         </button>
         <button
           type="button"
           disabled={pending}
+          aria-busy={pending && chosen === "dashboard"}
           onClick={() => finish("dashboard")}
-          className={SECONDARY}
+          className={`${SECONDARY} ${chosen === "dashboard" ? "" : UNAVAILABLE}`}
         >
-          Skip · go to my notes
+          {pending && chosen === "dashboard" ? "Opening your notes…" : "Skip · go to my notes"}
         </button>
         {failed && (
           <p role="alert" className="font-mono text-notice text-[9.5px]">

@@ -28,7 +28,7 @@ import { normalizeCollectionName } from "@/lib/notes/collections";
  */
 
 const CONTROL =
-  "font-mono focus-visible:outline-accent text-[9px] tracking-[0.14em] uppercase focus-visible:outline-2 focus-visible:-outline-offset-2";
+  "font-mono focus-visible:outline-accent text-[9px] tracking-[0.14em] uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 disabled:text-ink-disabled";
 
 export function CollectionManage({
   slug,
@@ -72,7 +72,7 @@ export function CollectionManage({
               setTaken(false);
             }}
             aria-label="Collection name"
-            className="font-mono text-ink w-[180px] bg-transparent text-[9.5px] tracking-[0.04em] uppercase outline-none"
+            className="font-mono text-ink disabled:text-ink-disabled w-[180px] bg-transparent text-[9.5px] tracking-[0.04em] uppercase outline-none"
           />
         </span>
         <button

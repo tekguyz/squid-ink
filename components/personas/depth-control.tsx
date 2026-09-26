@@ -64,7 +64,7 @@ export function DepthControl({
                 pending ? "cursor-progress" : "cursor-pointer",
                 selected
                   ? "bg-tint text-accent-text"
-                  : "text-ink-2 hover:bg-raised",
+                  : "text-ink-2 hover:bg-raised disabled:text-ink-disabled",
               ].join(" ")}
             >
               {option}

@@ -41,7 +41,7 @@ export default async function CollectionPage({
       activeSlug={screen.collection.id}
       aside={<RulePanel slug={screen.collection.id} rule={screen.rule} />}
     >
-      <header className="border-rule flex flex-col gap-[10px] border-b px-[24px] pt-[18px] pb-[14px]">
+      <header className="border-rule-strong flex flex-col gap-[10px] border-b px-[24px] pt-[18px] pb-[14px]">
         <h1 className="font-header text-ink text-[18px] font-semibold">
           {screen.collection.name}
         </h1>
@@ -74,7 +74,7 @@ export default async function CollectionPage({
           still passing underneath. */}
       <footer
         style={{ height: HUD_RESERVE }}
-        className="bg-canvas border-rule flex flex-none items-center border-t px-[24px]"
+        className="bg-canvas border-rule-strong flex flex-none items-center border-t px-[24px]"
       >
         <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
           {screen.noteCount} {screen.noteCount === 1 ? "note" : "notes"} ·{" "}

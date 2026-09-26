@@ -80,8 +80,9 @@ export function SettingsShell({ screen }: { screen: SettingsScreen }) {
                 lede="You sign in with the email address shown in the rail."
               >
                 <NotBuiltYet>
-                  There is no profile, display name or password to change. Sign-in is by
-                  emailed link only.
+                  There is no profile or display name to change. You sign in with your
+                  email and password; to change the password, use “Forgot your
+                  password?” on the sign-in page.
                 </NotBuiltYet>
               </SectionFrame>
 

@@ -24,7 +24,7 @@ export const LEAD: Record<ConditionKind, string> = {
 
 export const FOCUS =
   "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2";
-export const SMALL_BUTTON = `${FOCUS} font-mono cursor-pointer text-[9px] tracking-[0.14em] uppercase disabled:cursor-default disabled:opacity-60`;
+export const SMALL_BUTTON = `${FOCUS} font-mono cursor-pointer text-[9px] tracking-[0.14em] uppercase disabled:cursor-default disabled:text-ink-disabled`;
 
 const KIND_OPTION: Record<ConditionKind, string> = {
   attendee_email_domain: "Email domain",
@@ -111,7 +111,7 @@ export function AddCondition({ slug }: { slug: string }) {
               setDraft(event.target.value);
               setInvalid(false);
             }}
-            className="font-mono text-ink placeholder:text-placeholder w-full bg-transparent text-[11.5px] outline-none"
+            className="font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-full bg-transparent text-[11.5px] outline-none"
           />
         </span>
       </label>

@@ -92,8 +92,8 @@ export function PersonaStep({
       </fieldset>
 
       <StepActions>
-        <button type="button" onClick={save} disabled={pending} className={PRIMARY}>
-          {pending ? "Saving" : "Continue"}
+        <button type="button" onClick={save} disabled={pending} aria-busy={pending} className={PRIMARY}>
+          {pending ? "Saving…" : "Continue"}
         </button>
         {message !== null ? (
           <p role="alert" className="font-mono text-notice text-[9.5px]">

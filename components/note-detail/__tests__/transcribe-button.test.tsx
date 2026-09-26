@@ -198,6 +198,8 @@ describe("TranscribeButton — an 'analyzing' note", () => {
     // tab order and the accessibility tree so the label change is announced.
     const button = screen.getByRole("button");
     expect(button).toHaveAttribute("aria-disabled", "true");
+    // Working is busy, not unavailable (issue #22): it says so, and keeps its look.
+    expect(button).toHaveAttribute("aria-busy", "true");
     expect(button).not.toBeDisabled();
     expect(triggerTranscription).not.toHaveBeenCalled();
 

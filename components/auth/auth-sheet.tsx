@@ -93,10 +93,12 @@ export const CHECK_ROW = "font-body text-ink-2 flex cursor-pointer items-center 
 
 export const CHECKBOX = `border-control-edge checked:border-accent checked:bg-accent size-[11px] shrink-0 cursor-pointer appearance-none border ${FOCUS}`;
 
-/** Opacity on the disabled submit is the one place DESIGN.md allows it. */
-export const PRIMARY = `bg-accent text-on-accent hover:bg-accent-pressed font-mono mt-[18px] w-full cursor-pointer py-[10px] text-[10.5px] font-medium tracking-[0.08em] uppercase disabled:cursor-progress disabled:opacity-60 ${FOCUS}`;
+/** Only ever disabled while BUSY, and busy is not "unavailable" (issue #22
+ *  critique): the button the user just pressed keeps its fill and its label
+ *  says what is happening. Every caller sets `aria-busy` with `disabled`. */
+export const PRIMARY = `bg-accent text-on-accent hover:bg-accent-pressed font-mono mt-[18px] w-full cursor-pointer py-[10px] text-[10.5px] font-medium tracking-[0.08em] uppercase disabled:cursor-progress ${FOCUS}`;
 
-export const LINK = `font-body text-ink-2 hover:text-ink cursor-pointer self-start text-left text-[12.5px] underline underline-offset-[3px] ${FOCUS}`;
+export const LINK = `font-body text-ink-2 hover:text-ink disabled:text-ink-disabled cursor-pointer self-start text-left text-[12.5px] underline underline-offset-[3px] ${FOCUS}`;
 
 /** An email address inside prose, set as a figure. */
 export const ADDRESS = "font-mono text-ink-2 text-[12.5px] break-all";

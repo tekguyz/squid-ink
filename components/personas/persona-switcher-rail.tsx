@@ -37,7 +37,7 @@ export function PersonaSwitcherRail({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r">
+    <div className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r">
       {/* The way back. Until 2026-09-13 this screen had none. */}
       <AppNav current="personas" />
       <div className="border-rule-3 border-b px-[15px] pt-[15px] pb-[11px]">
@@ -97,9 +97,9 @@ export function PersonaSwitcherRail({
           <button
             type="button"
             disabled
-            className="border-rule-2 text-faint font-header flex w-full cursor-not-allowed items-center gap-[8px] border border-dashed px-[6px] py-[8px] text-left text-[14.5px]"
+            className="border-rule-2 text-ink-disabled font-header flex w-full cursor-not-allowed items-center gap-[8px] border border-dashed px-[6px] py-[8px] text-left text-[14.5px]"
           >
-            <span className="opacity-60">+ New persona</span>
+            + New persona
             <span className="font-mono text-muted ml-auto text-[8.5px] tracking-[0.14em] uppercase">
               Soon
             </span>

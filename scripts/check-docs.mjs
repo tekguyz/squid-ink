@@ -195,6 +195,14 @@ const governingLabel = ruleFiles.length
     // (rail/pane), 3.44:1 dark worst case (raised).
     ["oklch(0.585 0.016 70)", "--control-edge light, computed for 3:1, post-lock"],
     ["oklch(0.550 0.014 78)", "--control-edge dark, computed for 3:1, post-lock"],
+    // "RESOLVED 2026-09-26 — token gaps from Dashboard critique" (issue #22).
+    // Design bands with no WCAG criterion the annotation path can name:
+    // --ink-disabled 3.0-3.7:1 (inactive controls are exempt), --rule-strong
+    // about 2:1 (a seam is not a control). --live-tint is annotated instead.
+    ["oklch(0.605 0.015 66)", "--ink-disabled light, 3.0-3.7:1 band, post-lock"],
+    ["oklch(0.520 0.013 78)", "--ink-disabled dark, 3.0-3.7:1 band, post-lock"],
+    ["oklch(0.730 0.022 78)", "--rule-strong light, about 2:1, post-lock"],
+    ["oklch(0.410 0.016 52)", "--rule-strong dark, about 2:1, post-lock"],
   ]);
 
   // The second acceptance path: a token annotated in app/globals.css as

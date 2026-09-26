@@ -77,9 +77,9 @@ export function QuickActionsEditor({
               })
             }
             className={[
-              "border-control-edge text-ink-2 font-mono flex-none border px-[7px] py-[2px] text-[9.5px]",
+              "font-mono flex-none border px-[7px] py-[2px] text-[9.5px]",
               "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
-              pending ? "cursor-progress" : "cursor-pointer hover:bg-raised",
+              pending ? "border-rule-2 text-ink-disabled cursor-progress" : "border-control-edge text-ink-2 cursor-pointer hover:bg-raised",
             ].join(" ")}
           >
             Remove
@@ -117,17 +117,17 @@ export function QuickActionsEditor({
           aria-label="New quick action"
           placeholder={full ? "Limit reached" : "Add a quick action"}
           onChange={(event) => setDraft(event.target.value)}
-          className="border-control-edge bg-paper text-ink-2 font-body placeholder:text-placeholder focus-visible:outline-accent min-w-0 flex-1 border px-[9px] py-[7px] text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2 disabled:cursor-not-allowed"
+          className="border-control-edge bg-paper text-ink-2 font-body placeholder:text-placeholder focus-visible:outline-accent min-w-0 flex-1 border px-[9px] py-[7px] text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2 disabled:cursor-not-allowed disabled:border-rule-2 disabled:text-ink-disabled"
         />
         <button
           type="submit"
           disabled={!canAdd}
           className={[
-            "border-control-edge text-ink-2 font-mono flex-none border px-[11px] py-[7px] text-[9.5px] tracking-[0.06em] uppercase",
+            "font-mono flex-none border px-[11px] py-[7px] text-[9.5px] tracking-[0.06em] uppercase",
             "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
             canAdd
-              ? "cursor-pointer hover:bg-raised"
-              : "text-faint cursor-not-allowed",
+              ? "border-control-edge text-ink-2 cursor-pointer hover:bg-raised"
+              : "border-rule-2 text-ink-disabled cursor-not-allowed",
           ].join(" ")}
         >
           Add

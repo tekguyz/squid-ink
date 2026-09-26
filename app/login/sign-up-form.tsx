@@ -57,7 +57,9 @@ export function SignUpForm({ onBack }: { onBack: () => void }) {
           </div>
           <PasswordFields password={password} confirm={confirm} onPassword={setPassword} onConfirm={setConfirm} />
         </div>
-        <button type="submit" disabled={pending} className={PRIMARY}>Create account</button>
+        <button type="submit" disabled={pending} aria-busy={pending} className={PRIMARY}>
+          {pending ? "Creating account…" : "Create account"}
+        </button>
         <div className="mt-[14px] flex flex-col gap-[10px]">
           {message ? <AuthNotice>{message}</AuthNotice> : null}
           <button type="button" onClick={onBack} className={LINK}>Back to sign in</button>

@@ -42,7 +42,7 @@ const ROW_LABEL =
 const CHIP = "font-mono bg-pane text-ink-2 px-[10px] py-[5px] text-[9.5px]";
 const ACCENT_CHIP = "font-mono bg-tint text-accent-text px-[10px] py-[5px] text-[9.5px]";
 const DEAD_CONTROL =
-  "border-rule-2 text-faint font-mono cursor-not-allowed border text-[10px] tracking-[0.06em] uppercase";
+  "border-rule-2 text-ink-disabled font-mono cursor-not-allowed border border-dashed text-[10px] tracking-[0.06em] uppercase";
 const SOON = "font-mono text-muted text-[8.5px] tracking-[0.14em] uppercase";
 
 /** The reader's own words for what setPersonaDepth refuses. */
@@ -82,7 +82,7 @@ export function PersonaAnatomy({
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-      <header className="border-rule flex items-end gap-[14px] border-b px-[26px] pt-[20px] pb-[15px]">
+      <header className="border-rule-strong flex items-end gap-[14px] border-b px-[26px] pt-[20px] pb-[15px]">
         <div>
           <p className="font-mono text-meta text-[9px] tracking-[0.14em] uppercase">
             Persona
@@ -98,7 +98,7 @@ export function PersonaAnatomy({
               disabled
               className={`${DEAD_CONTROL} flex items-center gap-[8px] px-[11px] py-[7px]`}
             >
-              <span className="opacity-60">Duplicate</span>
+              Duplicate
               <span className={SOON}>Soon</span>
             </button>
           </span>

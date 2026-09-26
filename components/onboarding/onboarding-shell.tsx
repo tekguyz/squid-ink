@@ -48,7 +48,7 @@ export function OnboardingShell({
         style={{ minWidth: MIN_SURFACE_WIDTH }}
         className="bg-paper text-ink grid h-full grid-cols-[264px_minmax(0,1fr)]"
       >
-        <aside className="bg-rail border-rule flex min-h-0 flex-col overflow-hidden border-r px-[22px] py-[26px]">
+        <aside className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r px-[22px] py-[26px]">
           <p className="font-header text-ink flex items-center gap-[8px] text-[14px] font-bold">
             <span aria-hidden="true" className="bg-accent h-[16px] w-[16px]" />
             Squid Ink

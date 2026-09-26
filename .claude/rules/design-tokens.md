@@ -82,3 +82,47 @@ drawn. All three accent-edged controls — those two plus `record-hud`'s Resume 
 now use `border-accent`, at 5.28:1 worst case light and 8.03:1 dark. **Do not
 darken `--tint-hover` to "fix" a border**: it is the hover and active FILL under
 `citation-chip` and `cite-runs`, and `accent-text` sits on it.
+
+## Three single-job tokens (issue #22, 2026-09-26)
+
+Each is a lightness step inside an existing family, and each has ONE job. Do
+not reuse one for anything else. All numbers below were measured by
+`scripts/verify-layout.mjs` (via `scripts/layout-contrast.mjs`) in real
+Chrome, against the BUILT CSS and the sheet each element really sits on, in
+both themes. The script prints them as `note:` lines and asserts the bands.
+
+**`--ink-disabled`** — the label of a disabled or `aria-disabled` control.
+Nothing else. Never an `opacity-*` fade, never `faint` or `muted` standing in:
+`project-conventions.test.ts` fails on `disabled:`/`aria-disabled:` with any
+of those (proved red on 7 files first). A disabled control's frame drops
+from `control-edge` to `rule-2`; a filled button that is unavailable drops to
+`bg-raised`. A BUSY button (`aria-busy`, just pressed) is not unavailable: it
+keeps its fill. A disabled control that is **selected**
+(`aria-selected`/`aria-pressed`/`aria-checked`) keeps its selected look — it
+reports an answer. The "Soon" badge stays full `muted`. 3.08–3.67:1 light,
+3.03–3.55:1 dark (worst case dark is `raised`, e.g. an unavailable filled
+button; the shipped routes measured 3.17–3.54); asserted 3.0–3.7:1. WCAG exempts inactive controls,
+so this band is a design choice: readable, visibly below `muted`, plainly off.
+
+**`--live-tint`** — the fill of the Failed status pill. Nothing else; the
+frame, label and marker stay `live`. `live` on it: 4.93:1 light, 4.78:1 dark
+as Chrome paints it (WCAG 1.4.3 for 9px text). The `DERIVED` annotation in
+`globals.css` holds the oklch computation, 4.92 light, which
+`check-docs.mjs` recomputes. The `live` frame: at least 4.78:1
+against the fill and the row. The fixture owner has no Failed note, so the
+layout script plants one — the shipped classes — in a real Dashboard row.
+The HUD's `role="alert"` error pill is not a status pill and keeps `bg-pane`.
+
+**`--rule-strong`** — a structural seam, nothing else: rail to main (every
+screen's rail), main to side pane (note transcript pane, collection rule
+panel), page and pane header bottoms, and the top of a dock or footer bar.
+Row dividers, table rows, card frames and pill frames keep
+`rule`/`rule-2`/`rule-3`. Measured 1.91–2.27:1 light, 1.98–2.20:1 dark, on
+both sides of each seam; asserted 1.8–2.6:1 — above `rule` (~1.46), below
+`--control-edge` (~3.3), so a seam never reads as a control. No WCAG bar
+applies.
+
+`--ink-disabled` and `--rule-strong` carry no WCAG criterion the `DERIVED`
+annotation can name, so their values sit in `check-docs.mjs`'s `DERIVED` map
+and in `docs/KNOWN_GAPS.md` § "Token gaps from Dashboard critique". Change a
+value and all three places move together.

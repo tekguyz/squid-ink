@@ -29,7 +29,7 @@ import { TAG_CHIP } from "./tag-colors";
  */
 
 const FIELD =
-  "font-mono text-ink placeholder:text-placeholder w-[110px] bg-transparent text-[9px] tracking-[0.04em] uppercase outline-none";
+  "font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-[110px] bg-transparent text-[9px] tracking-[0.04em] uppercase outline-none";
 
 export function TagEntry({
   noteId,
@@ -69,7 +69,7 @@ export function TagEntry({
             type="button"
             disabled={pending}
             aria-label={`Remove tag ${tag.name}`}
-            className="focus-visible:outline-accent cursor-pointer leading-none focus-visible:outline-1 focus-visible:outline-offset-1"
+            className="focus-visible:outline-accent disabled:text-ink-disabled cursor-pointer leading-none focus-visible:outline-1 focus-visible:outline-offset-1"
             onClick={() => run(() => removeNoteTag(noteId, tag.id))}
           >
             ×

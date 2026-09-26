@@ -202,6 +202,17 @@ describe("project conventions", () => {
     expect(unframed).toEqual([]);
   });
 
+  it("draws every disabled label in ink-disabled, never a fade or a stand-in grey", () => {
+    // Issue #22. Disabled controls used three idioms — `opacity-60`, `faint`
+    // and `muted` — so "off" looked different on every screen. One token now
+    // carries it. Covers `disabled:` and `aria-disabled:`, and any variant
+    // stacked after them (`aria-disabled:hover:text-muted`).
+    const DISABLED_STAND_IN =
+      /\b(?:aria-)?disabled:(?:[\w-]+:)*(?:opacity-\S+|text-(?:faint|muted)\b)/;
+    const offenders = sourceFiles().filter((f) => DISABLED_STAND_IN.test(read(f)));
+    expect(offenders).toEqual([]);
+  });
+
   it("keeps every file under the 400-line hard ceiling", () => {
     const offenders = sourceFiles()
       .map((f) => [f, read(f).split("\n").length] as const)

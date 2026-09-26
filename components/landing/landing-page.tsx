@@ -163,7 +163,7 @@ export function LandingPage() {
         </div>
       </main>
 
-      <footer className="bg-canvas border-rule border-t">
+      <footer className="bg-canvas border-rule-strong border-t">
         <div className={`${WRAP} flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-[22px]`}>
           <p className="text-ink-2 text-[13px] leading-[1.5]">
             <span translate="no">Squid Ink</span> is designed and built by{" "}

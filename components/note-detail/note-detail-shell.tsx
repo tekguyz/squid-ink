@@ -126,7 +126,7 @@ export function NoteDetailShell({
         onSelect={handlePersonaSelect}
       />
 
-      <main className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule bg-paper">
+      <main className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule-strong bg-paper">
         <NoteHeader meta={note.meta} title={note.title} />
         {/* Directly under the title, because a tag is a fact about what the
             note IS rather than about its recording — the transport and the

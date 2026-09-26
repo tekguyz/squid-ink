@@ -25,7 +25,7 @@ import type { PendingMatchView } from "@/lib/collection-rules/read-rules";
  */
 
 const BUTTON =
-  "font-mono focus-visible:outline-accent cursor-pointer border px-[9px] py-[5px] text-[9px] tracking-[0.14em] uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 disabled:cursor-default disabled:opacity-60";
+  "font-mono focus-visible:outline-accent cursor-pointer border px-[9px] py-[5px] text-[9px] tracking-[0.14em] uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 disabled:cursor-default disabled:text-ink-disabled";
 
 const WHY: Record<ConditionKind, string> = {
   attendee_email_domain: "attendee email domain",
