@@ -9,9 +9,11 @@ import type { Segment } from "@/lib/notes/view-types";
  * of embeddings, and the page needs about 2 KB of it.
  *
  * ONE THING IS CHOSEN BY HAND: which segment each chip cites. The fixture's
- * chunks carry no citation runs, so the pairing here was made by reading the
- * transcript. Each chip points at the line that says what its claim says; the
- * test checks the times and speakers, and a reader can check the rest.
+ * chunks carry no citation metadata, so the pairing here was made by reading
+ * the transcript, and the page's caption says so. One segment per claim, as
+ * the pipeline writes them. Each chip points at the line that says what its
+ * claim says; the test checks the times and speakers, and a reader can check
+ * the rest.
  */
 
 export const SPECIMEN_TITLE = "Planning Haas group recording sessions and data storage";
@@ -25,7 +27,8 @@ export const SPECIMEN_SUMMARY =
 export interface SpecimenClaim {
   n: string;
   text: string;
-  /** Segment ids (the fixture's `seq`) this claim cites. */
+  /** Segment ids (the fixture's `seq`) this claim cites. One, as the pipeline
+   *  writes them; an array only so a claim could carry none. */
   cites: number[];
 }
 
@@ -38,7 +41,7 @@ export const SPECIMEN_TAKEAWAYS: SpecimenClaim[] = [
   {
     n: "03",
     text: "Participants will be split into two sessions of four, leaving the ninth respondent for a future round to maintain diarization quality.",
-    cites: [13, 16],
+    cites: [16],
   },
   {
     n: "04",
@@ -68,12 +71,6 @@ const S3 = { name: "Speaker 3", initials: "S3", token: "speaker-3" } as const;
  *  recording, and the page marks them. */
 export const SPECIMEN_SEGMENTS: Segment[] = [
   { id: 8, time: "00:42", speaker: S3, text: "We can't pay them. There's no line for it." },
-  {
-    id: 13,
-    time: "01:08",
-    speaker: S2,
-    text: "Three is tight for diarization. If two people are quiet you effectively get one speaker.",
-  },
   {
     id: 16,
     time: "01:24",

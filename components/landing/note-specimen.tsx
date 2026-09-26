@@ -99,8 +99,9 @@ export function NoteSpecimen() {
           {SPECIMEN_TITLE}
         </p>
         <p className="text-muted mt-[6px] max-w-[62ch] text-[12px] leading-[1.5] text-pretty">
-          A real note from a 3-minute planning call, run through the pipeline. Select a
-          time to see the line it came from.
+          A real note from a 3-minute planning call, run through the pipeline. Its time
+          links were matched by hand for this page. Select one to see the line it came
+          from.
         </p>
       </figcaption>
 

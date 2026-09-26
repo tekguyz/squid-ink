@@ -42,14 +42,16 @@ import { feedLimit, olderHref } from "@/lib/notes/feed-page";
  * 390 as well as 1440 and 1280.
  */
 
+const LANDING_TITLE = "Squid Ink — meeting notes with no bot in the call";
+
 const LANDING_METADATA: Metadata = {
-  title: "Squid Ink — meeting notes with no bot in the call",
+  title: LANDING_TITLE,
   description:
-    "Squid Ink records a meeting in your browser, transcribes it, and writes a summary, takeaways and action items, each one linked back to what was said.",
+    "Squid Ink records a meeting in your browser, transcribes it, and writes a summary, takeaways and action items, with each takeaway and action item linked back to what was said.",
   openGraph: {
-    title: "Squid Ink — meeting notes with no bot in the call",
+    title: LANDING_TITLE,
     description:
-      "Records in your browser. Writes the note. Every claim links back to the transcript.",
+      "Records in your browser. Writes the note. Takeaways link back to the transcript.",
     siteName: "Squid Ink",
     type: "website",
   },

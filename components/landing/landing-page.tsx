@@ -19,7 +19,7 @@ import { PersonaTable } from "./persona-table";
  * that does not exist; no figure nobody measured.
  */
 
-const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+const FOCUS = "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent";
 
 const WRAP = "mx-auto w-full max-w-[1180px] px-4 sm:px-[26px]";
 
@@ -36,7 +36,7 @@ const STEPS = [
   {
     n: "01",
     title: "Record",
-    body: "In the browser, from the call’s audio, your mic, or both. Nothing joins the call and nothing asks for your calendar.",
+    body: "In the browser, from the call’s audio and your mic together. Nothing joins the call and nothing asks for your calendar.",
   },
   {
     n: "02",
@@ -46,7 +46,7 @@ const STEPS = [
   {
     n: "03",
     title: "Write up",
-    body: "A summary, numbered takeaways and action items. Each claim carries a citation to the segment it came from.",
+    body: "A summary, numbered takeaways and action items. Each takeaway and action item cites the segment it came from.",
   },
 ] as const;
 
@@ -102,8 +102,8 @@ export function LandingPage() {
             </h1>
             <p className="text-ink-2 mt-[20px] max-w-[46ch] text-[16px] leading-[1.62] text-pretty">
               Squid Ink records a meeting in your browser, with no bot joining the call. Then
-              it writes the transcript, a summary, takeaways and action items — and every claim
-              links back to the line it came from.
+              it writes the transcript, a summary, takeaways and action items — and each
+              takeaway and action item links back to the line it came from.
             </p>
             {/* The demo entry goes first in this row when it ships (#19). It
                 is a button in a form, never a link: docs/adr/0001. Until then
@@ -145,7 +145,7 @@ export function LandingPage() {
             <p className="text-ink-2 mt-[14px] max-w-[62ch] text-[14.5px] leading-[1.66] text-pretty">
               A persona decides how a note is written. Its lens is whose expertise frames the
               analysis. Its depth — Brief, Dense or Exhaustive — is how much work goes into
-              it. Each one also drafts the follow-up, like a client email or a handoff brief.
+              it. Every account starts with these four.
             </p>
             <div className="mt-[22px]">
               <PersonaTable />

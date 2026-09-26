@@ -57,9 +57,10 @@ describe("the landing specimen", () => {
     }
   });
 
-  it("cites only lines the specimen shows", () => {
+  it("cites one line per claim, as the pipeline does, and only lines it shows", () => {
     const shown = new Set(SPECIMEN_SEGMENTS.map((s) => s.id));
     for (const claim of [...SPECIMEN_TAKEAWAYS, ...SPECIMEN_ACTIONS]) {
+      expect(claim.cites.length).toBeLessThanOrEqual(1);
       for (const id of claim.cites) expect(shown.has(id)).toBe(true);
     }
   });
@@ -68,10 +69,8 @@ describe("the landing specimen", () => {
 describe("the landing persona table", () => {
   const sql = readFileSync("supabase/schemas/persona_provisioning.sql", "utf8");
 
-  it("lists the default personas a new account is given, with their real quick actions", () => {
-    for (const p of LANDING_PERSONAS) {
-      expect(sql).toContain(`'${p.name}', '${p.sub}'`);
-      for (const action of p.actions) expect(sql).toContain(`'${action}'`);
-    }
+  it("lists exactly the default personas a new account is given", () => {
+    for (const p of LANDING_PERSONAS) expect(sql).toContain(`'${p.name}', '${p.sub}'`);
+    expect(sql.match(/\(new\.id, '/g)).toHaveLength(LANDING_PERSONAS.length);
   });
 });

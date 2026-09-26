@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
  *
  * `cache` makes it one auth call per request however many server components
  * ask: app/page.tsx asks twice (the page and its metadata) and app/layout.tsx
- * asks once for the recorder dock.
+ * asks once for the recorder dock
+ * (components/recorder/signed-in-dock.tsx).
  *
  * getUser, never getSession: the proxy revalidates the token on every request
  * and this reads the same revalidated identity.
