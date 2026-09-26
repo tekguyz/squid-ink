@@ -19,11 +19,11 @@ colors:
   ink-prose: "oklch(0.226 0.022 62)"
   ink-stat: "oklch(0.226 0.022 62)"
   muted: "oklch(0.500 0.018 64)"
-  meta: "oklch(0.530 0.017 64)"
-  meta-2: "oklch(0.530 0.017 64)"
+  meta: "oklch(0.505 0.017 64)"
+  meta-2: "oklch(0.505 0.017 64)"
   meta-3: "oklch(0.455 0.018 62)"
-  meta-4: "oklch(0.530 0.017 64)"
-  meta-5: "oklch(0.530 0.017 64)"
+  meta-4: "oklch(0.505 0.017 64)"
+  meta-5: "oklch(0.505 0.017 64)"
   faint: "oklch(0.660 0.015 68)"
   ink-disabled: "oklch(0.605 0.015 66)"
   placeholder: "oklch(0.585 0.016 66)"
@@ -477,8 +477,12 @@ dark** (`raised`), clearing WCAG 1.4.11's 3:1 for a non-text control boundary.
 
 Inks: **Ink** (`0.226` / `0.93`) for headings and primary text, **Ink 2**
 (`0.300` / `0.88`) for transcript and chat prose, then **Muted** (`0.500`),
-**Meta** (`0.530`), **Meta 3** (`0.455`), **Faint** (`0.660`) for the metadata
-ladder. **Ink Disabled** (`0.605` / `0.520`), token `ink-disabled`, added
+**Meta** (`0.505` / `0.62`), **Meta 3** (`0.455`), **Faint** (`0.660`) for the
+metadata ladder. **The Ladder Clears AA Rule:** every ladder token colours
+8.5–10px text, so each clears 4.5:1 on **every** sheet in both themes — worst
+case 4.66:1 light (`rail`/`pane`) and 4.58:1 dark (`raised`), measured in
+Chrome (#65). The ladder's steps are small by design; legibility beats the
+step. **Ink Disabled** (`0.605` / `0.520`), token `ink-disabled`, added
 2026-09-26 (#22), is the label of a disabled control and nothing else: 3.08–3.67:1
 light and 3.03–3.55:1 dark on every sheet a control sits on — readable, below
 `muted`, and plainly off. **Notice** (`0.415` / `0.78`) on **Notice BG** (`0.898` / `0.235`)

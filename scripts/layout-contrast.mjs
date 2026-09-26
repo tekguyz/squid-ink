@@ -130,7 +130,18 @@ function probe() {
   });
   const seamShown = all.filter((el) => /\brule-strong\b/.test(cls(el))).length;
 
-  return { disabled, tints, tintShown, seams, seamShown };
+  // Issue #65. The metadata ladder colours 8.5-10px mono labels, so every
+  // one is small text and owes WCAG 1.4.3's 4.5:1 on the sheet it is on.
+  // Only elements that paint their OWN text are measured.
+  const ladder = ["muted", "meta", "meta-2", "meta-3", "meta-4", "meta-5"].map((name) => [name, token(name)]);
+  const ownText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+  const labels = all.filter(ownText).flatMap((el) => {
+    const color = rgba(getComputedStyle(el).color);
+    const hit = ladder.find(([, value]) => same(color, value));
+    return hit ? [{ el: label(el), token: hit[0], ratio: round(ratio(color, backdrop(el))) }] : [];
+  });
+
+  return { disabled, tints, tintShown, seams, seamShown, labels };
 }
 
 export const CONTRAST_PROBE = `(${probe.toString()})()`;
@@ -165,7 +176,7 @@ const RULE_STRONG = [1.8, 2.6];
 /** `expect` names the tokens this route is known to render, so a route that
  *  should show one and measured none fails instead of passing on nothing. */
 export function reportContrast(check, where, probe, expect = []) {
-  const { disabled, tints, tintShown, seams, seamShown } = probe;
+  const { disabled, tints, tintShown, seams, seamShown, labels } = probe;
   const inBand = (n, [lo, hi]) => n >= lo && n <= hi;
 
   // The measured range, printed, so the numbers docs record come from here.
@@ -173,7 +184,17 @@ export function reportContrast(check, where, probe, expect = []) {
   console.log(
     `  note: ${where} — ink-disabled ${range(disabled.map((d) => d.ratio))}, ` +
       `live-tint text ${range(tints.map((t) => t.text))} frame ${range(tints.flatMap((t) => [t.frameOnFill, t.frameOnSheet]))}, ` +
-      `rule-strong ${range(seams.flatMap((s) => [s.inside, s.outside]))}`,
+      `rule-strong ${range(seams.flatMap((s) => [s.inside, s.outside]))}, ` +
+      `meta ladder ${range(labels.map((l) => l.ratio))}`,
+  );
+
+  const faint = labels.filter((l) => l.ratio < 4.5);
+  check(
+    faint.length === 0,
+    `${where} — every metadata-ladder label clears 4.5:1 (${labels.length} measured)`,
+    [...new Map(faint.map((l) => [`${l.token} ${l.ratio}`, l])).values()]
+      .map((l) => `${l.token} at ${l.ratio}:1, e.g. ${l.el}`)
+      .join("; "),
   );
 
   const offToken = disabled.filter((d) => !d.isToken);

@@ -70,11 +70,12 @@ screen has breakpoint work, so add a route there when its breakpoints ship, not
 before. Next's dev-tools badge is a real fixed element in the bottom-left corner
 and is excluded by name; it does not ship.
 
-**Every route also gets three contrast assertions** (issue #22), from
+**Every route also gets four contrast assertions** (issues #22 and #65), from
 `scripts/layout-contrast.mjs`: every visible, unselected, non-busy disabled control IS
 `ink-disabled` and sits at 3.0–3.7:1 on its sheet; every `live-tint` fill
 carries 4.5:1 text and a 3:1 frame; every `rule-strong` seam is 1.8–2.6:1 on
-both sides. Colours are read as painted pixels off a 1px canvas, so the
+both sides; and every label painted in a metadata-ladder token (`muted`,
+`meta*`) clears 4.5:1. Colours are read as painted pixels off a 1px canvas, so the
 syntax Chrome computes (`lab()`, `oklch()`) does not matter. A route that is
 known to show a token and measures none of it fails — `/` and the note at full
 width must show `ink-disabled` and `rule-strong`, `/personas` `ink-disabled`,

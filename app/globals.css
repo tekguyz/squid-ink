@@ -119,11 +119,18 @@
   --ink-stat: oklch(0.226 0.022 62);
 
   --muted: oklch(0.500 0.018 64);
-  --meta: oklch(0.530 0.017 64);
-  --meta-2: oklch(0.530 0.017 64);
+  /* The metadata ladder colours 8.5-10px labels, so each owes 4.5:1 on EVERY
+     sheet. Was 0.530: 4.20:1 on rail/pane (issue #65). Now 4.68 on rail/pane,
+     the worst case, up to 5.55 on paper. */
+  /* DERIVED: 4.68:1 against --rail, WCAG 1.4.3 */
+  --meta: oklch(0.505 0.017 64);
+  /* DERIVED: 4.68:1 against --rail, WCAG 1.4.3 */
+  --meta-2: oklch(0.505 0.017 64);
   --meta-3: oklch(0.455 0.018 62);
-  --meta-4: oklch(0.530 0.017 64);
-  --meta-5: oklch(0.530 0.017 64);
+  /* DERIVED: 4.68:1 against --rail, WCAG 1.4.3 */
+  --meta-4: oklch(0.505 0.017 64);
+  /* DERIVED: 4.68:1 against --rail, WCAG 1.4.3 */
+  --meta-5: oklch(0.505 0.017 64);
   --faint: oklch(0.660 0.015 68);
   /* The LABEL of a disabled or aria-disabled control, and nothing else —
      never an opacity fade, never faint or muted standing in. Issue #22: a
@@ -249,10 +256,12 @@
   --ink-stat: oklch(0.92 0.010 88);
 
   --muted: oklch(0.66 0.012 80);
-  --meta: oklch(0.58 0.012 80);
+  /* --meta was 0.58 (3.90:1 on raised) and --meta-4 0.60 (4.23), issue #65.
+     Both now take --meta-2's design value: 4.59:1 on raised, the worst case. */
+  --meta: oklch(0.62 0.012 80);
   --meta-2: oklch(0.62 0.012 80);
   --meta-3: oklch(0.70 0.012 80);
-  --meta-4: oklch(0.60 0.012 80);
+  --meta-4: oklch(0.62 0.012 80);
   --meta-5: oklch(0.64 0.012 80);
   --faint: oklch(0.50 0.014 78);
   /* See the light block. */
@@ -335,10 +344,11 @@
     --ink-stat: oklch(0.92 0.010 88);
 
     --muted: oklch(0.66 0.012 80);
-    --meta: oklch(0.58 0.012 80);
+    /* Issue #65 — see the .dark block. */
+    --meta: oklch(0.62 0.012 80);
     --meta-2: oklch(0.62 0.012 80);
     --meta-3: oklch(0.70 0.012 80);
-    --meta-4: oklch(0.60 0.012 80);
+    --meta-4: oklch(0.62 0.012 80);
     --meta-5: oklch(0.64 0.012 80);
     --faint: oklch(0.50 0.014 78);
     /* See the light block. */
