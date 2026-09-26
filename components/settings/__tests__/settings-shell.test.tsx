@@ -63,7 +63,9 @@ describe("SettingsShell", () => {
     expect(document.body).not.toHaveTextContent(/require a citation/i);
     const capture = screen.getByRole("region", { name: "Capture & audio" });
     expect(capture).toHaveTextContent("Nothing built here yet");
-    expect(screen.getByText("No unsaved changes")).toBeInTheDocument();
+    // Nothing saves a preference, so there is no Update / Discard bar (#56).
+    expect(screen.queryByRole("button", { name: "Update" })).toBeNull();
+    expect(screen.queryByText("No unsaved changes")).toBeNull();
   });
 
   it("Connect says it is not built, instead of doing nothing or faking success", async () => {
@@ -88,8 +90,9 @@ describe("SettingsShell", () => {
     expect(document.documentElement).toHaveClass("dark");
     expect(localStorage.getItem("theme")).toBe("dark");
     await waitFor(() => expect(espresso).toHaveAttribute("aria-pressed", "true"));
-    // No Update needed for a theme.
-    expect(screen.getByText("No unsaved changes")).toBeInTheDocument();
+    // No Update needed for a theme: the bar stays hidden.
+    expect(screen.queryByRole("button", { name: "Update" })).toBeNull();
+    expect(screen.queryByText("No unsaved changes")).toBeNull();
 
     // A theme change from anywhere else reaches the cards without a click.
     act(() => applyTheme("light"));
