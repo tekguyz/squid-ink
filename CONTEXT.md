@@ -89,3 +89,19 @@ _Avoid_: Page, view
 
 **Demo mode**:
 A signed-in-anonymously tour of sample notes, with no live recording.
+
+**Demo visitor**:
+A person in demo mode. Each one has their own anonymous identity, which owns only their chat, so no visitor sees another's questions. Deleted after 7 days.
+_Avoid_: Guest, demo user
+
+**Demo owner**:
+The one account that owns the demo notes. Every demo visitor reads its notes; nobody signs in as it.
+_Avoid_: Demo account, shared account
+
+**Demo notes**:
+The three sample notes the demo owner holds, read-only to every demo visitor. They are real pipeline output, not hand-written.
+_Avoid_: Sample data, seed data
+
+**Landing page**:
+What a person with no session sees at the app's address: what Squid Ink does, a way into demo mode, and a way to sign in.
+_Avoid_: Home page, marketing page, splash
