@@ -18,9 +18,9 @@ import { SECTION_IDS, SettingsNav, type SectionId } from "./settings-nav";
  * real content is its own component owning its own draft and dirty state —
  * decided 2026-09-13, docs/DECISIONS.md § Settings.
  *
- * Three sections are real: Capture & audio, Connected apps (a stub, honestly
- * labelled) and Appearance. Account, Sharing and Data & privacy are nav
- * destinations with nothing built behind them, and say so.
+ * Two sections are real: Connected apps (a stub, honestly
+ * labelled) and Appearance. Account, Capture & audio, Sharing and Data &
+ * privacy are nav destinations with nothing built behind them, and say so.
  *
  * Held at MIN_SURFACE_WIDTH and scrolled sideways below it, the same interim
  * treatment app/page.tsx documents.
@@ -85,7 +85,7 @@ export function SettingsShell({ screen }: { screen: SettingsScreen }) {
                 </NotBuiltYet>
               </SectionFrame>
 
-              <CaptureSection initial={screen.settings} />
+              <CaptureSection />
               <ConnectedAppsSection />
               <AppearanceSection />
 

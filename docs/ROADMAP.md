@@ -15,8 +15,8 @@ Connected apps and Appearance), **05 Onboarding** (2026-09-14,
 calendar) and **04 Auth** (2026-09-14, `/login`, `/login/new-password` and
 `/auth/confirm` in one shared sheet). None is finished to the drawing — 01 ships without the right-hand
 widget column, without search, without live-updating status and without a design
-below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual half plus auto-file rules (2026-09-11) with a review panel (2026-09-14) — condition list, per-collection needs-review, Confirm/Reject — but no promote-to-auto-file control; 06 ships Google connect as a stub, a citation preference
-nothing reads yet, and empty states for Account, Sharing and Data & privacy;
+below 1280px; 03 ships without create, duplicate or delete; 07 ships the manual half plus auto-file rules (2026-09-11) with a review panel (2026-09-14) — condition list, per-collection needs-review, Confirm/Reject — but no promote-to-auto-file control; 06 ships Google connect as a stub and empty states for Account, Capture & audio,
+Sharing and Data & privacy (the citation preference was removed 2026-09-26, #3);
 05 ships without the drawing's workspace step (cut: single-owner), without real
 calendar OAuth (step 3 opens 06's stub) and without persona create or delete;
 04 ships without the drawing's six-digit code entry (the app sends links),

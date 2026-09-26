@@ -165,13 +165,12 @@ is not all of 06, and every absence below is deliberate:
   would be a claim with no code under it.
 - **No audio retention job, and so no "Keep local audio after structuring ·
   deletes after 30 days" toggle.** Nothing deletes audio on a schedule.
-- **"Require a citation for every claim" is persisted, not chat-wired.** It
-  saves to `user_settings.require_citations`
-  (`supabase/schemas/user_settings.sql`) through
-  `app/notes/actions/settings.ts`, and **nothing reads it**. Grounding is
-  always on today; switching it off changes no answer, and the row's meta line
-  says so on screen. Wiring it into `lib/notegen` and the chat path is a
-  separate change.
+- **No "Require a citation for every claim" switch.** It shipped persisted but
+  unread, since grounding is always on. **Removed 2026-09-26 (#3)**: the row,
+  the `saveCaptureSettings` Server Action and the
+  `user_settings.require_citations` column. Capture & audio is now an empty
+  state; `public.user_settings` stays, with no preference column, for the next
+  real preference.
 - **No real Google OAuth.** Google Calendar and Google Drive render
   full-fidelity Connect buttons that answer "Not connected yet · Google connect
   is not built". No OAuth flow, no token storage, no connections table.
