@@ -68,7 +68,8 @@ generation under a persona, citations, ask-your-notes chat, personas
 (editable depth, quick actions, default lens), collections with auto-file
 rules and needs-review, tags, settings, onboarding, email + password sign-in.
 
-**Planned, not built:** share links with guest controls, a live assistant
+**Planned, not built:** calendar sync and import from Drive (connected later,
+never at sign-in — `docs/ROADMAP.md`), share links with guest controls, a live assistant
 (silent by default, speaks only when asked), speaker tags with real names,
 action-item details, export, webhooks, an MCP bridge, PII redaction, a PWA
 shell. Status lives in GitHub Issues, not here.
