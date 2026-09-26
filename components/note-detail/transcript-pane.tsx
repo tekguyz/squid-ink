@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
 import type { Note, ProcessingStatus } from "@/lib/notes/view-types";
 import { TranscriptSegment } from "./transcript-segment";
 import { Waveform } from "./waveform";
@@ -76,6 +77,16 @@ export function TranscriptPane({
           </ol>
         )}
       </div>
+
+      {/* The Record HUD owns this column's bottom-right corner. Padding the
+          list only moves the last line; at any other scroll position a line
+          still passes under the HUD, so the list ENDS above this band (#58),
+          as the Dashboard's feed does. */}
+      <div
+        aria-hidden="true"
+        style={{ height: HUD_RESERVE }}
+        className="flex-none border-t border-rule bg-pane"
+      />
     </aside>
   );
 }
