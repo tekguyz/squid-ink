@@ -29,7 +29,8 @@ function projectRef() {
     // Fall through to process.env.
   }
   const url =
-    env.match(/^NEXT_PUBLIC_SUPABASE_URL=(.*)$/m)?.[1]?.trim() ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+    env.match(/^NEXT_PUBLIC_SUPABASE_URL=(.*)$/m)?.[1]?.trim().replace(/^(["'])(.*)\1$/, "$2") ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL;
   const ref = url?.match(/^https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1];
   if (!ref) fail("no NEXT_PUBLIC_SUPABASE_URL in .env.local or the environment");
   return ref;
@@ -64,8 +65,13 @@ if (!res.ok) {
         console.log(`  hosted: ${JSON.stringify(d.hosted)}`);
         console.log(`  repo:   ${JSON.stringify(d.repo)}`);
       } else {
-        console.log(`  hosted: ${d.hosted === undefined ? "missing" : `${d.hosted.length} chars`}`);
-        console.log(`  repo:   ${d.repo === undefined ? "missing" : `${d.repo.length} chars`}`);
+        const h = d.hosted?.replace(/\r\n/g, "\n").split("\n");
+        const r = d.repo?.replace(/\r\n/g, "\n").split("\n");
+        const at = h && r ? h.findIndex((line, i) => line !== r[i]) : -1;
+        const line = at === -1 ? (h && r ? h.length : 0) : at;
+        console.log(`  first difference at line ${line + 1}`);
+        console.log(`  hosted: ${h === undefined ? "missing" : JSON.stringify(h[line] ?? "(end)")}`);
+        console.log(`  repo:   ${r === undefined ? "missing" : JSON.stringify(r[line] ?? "(end)")}`);
       }
     }
     console.log("Paste the repo copy into the dashboard, or bring the repo copy up to the hosted one.");
