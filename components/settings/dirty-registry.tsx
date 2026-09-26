@@ -38,8 +38,10 @@ interface Handlers {
 }
 
 interface Registry {
+  /** Every registered section, clean ones included (count 0). */
   sections: DirtySection[];
   report: (section: DirtySection) => void;
+  unregister: (id: string) => void;
   handlers: RefObject<Map<string, Handlers>>;
 }
 
@@ -57,12 +59,22 @@ export function DirtyRegistryProvider({ children }: { children: ReactNode }) {
 
   const report = useCallback((section: DirtySection) => {
     setSections((previous) => {
-      const others = previous.filter((s) => s.id !== section.id);
-      return section.count > 0 ? [...others, section] : others;
+      const index = previous.findIndex((s) => s.id === section.id);
+      if (index === -1) return [...previous, section];
+      const next = [...previous];
+      next[index] = section;
+      return next;
     });
   }, []);
 
-  const value = useMemo(() => ({ sections, report, handlers }), [sections, report]);
+  const unregister = useCallback((id: string) => {
+    setSections((previous) => previous.filter((s) => s.id !== id));
+  }, []);
+
+  const value = useMemo(
+    () => ({ sections, report, unregister, handlers }),
+    [sections, report, unregister],
+  );
   return <RegistryContext value={value}>{children}</RegistryContext>;
 }
 
@@ -74,7 +86,7 @@ export function useDirtySection(
   save: () => Promise<void>,
   discard: () => void,
 ) {
-  const { report, handlers } = useRegistry();
+  const { report, unregister, handlers } = useRegistry();
 
   // The latest closures, every render: a save must send the draft as it is
   // when Update is pressed, not as it was when the section mounted.
@@ -88,17 +100,18 @@ export function useDirtySection(
 
   useEffect(
     () => () => {
-      report({ id, label, count: 0 });
+      unregister(id);
       handlers.current.delete(id);
     },
-    [id, label, report, handlers],
+    [id, unregister, handlers],
   );
 }
 
-/** What the footer reads: the dirty sections, and one save and one discard
- *  that reach every one of them. */
+/** What the footer reads: whether any section registered, the dirty sections,
+ *  and one save and one discard that reach every one of them. */
 export function useDirtySummary() {
-  const { sections, handlers } = useRegistry();
+  const { sections: registered, handlers } = useRegistry();
+  const sections = useMemo(() => registered.filter((s) => s.count > 0), [registered]);
 
   const saveAll = useCallback(async () => {
     for (const section of sections) await handlers.current.get(section.id)?.save();
@@ -108,5 +121,5 @@ export function useDirtySummary() {
     for (const section of sections) handlers.current.get(section.id)?.discard();
   }, [sections, handlers]);
 
-  return { sections, saveAll, discardAll };
+  return { anyRegistered: registered.length > 0, sections, saveAll, discardAll };
 }

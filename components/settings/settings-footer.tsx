@@ -15,13 +15,16 @@ import { useDirtySummary } from "./dirty-registry";
  * (components/recorder/hud-safe-margin.ts), and this bar sits in exactly that
  * band: buttons at the right would sit under the idle pill. The bar is
  * HUD_RESERVE tall for the same reason the Dashboard's footer is.
+ *
+ * It renders nothing until a section registers: a disabled bar that can never
+ * enable is a dead control (issue #56).
  */
 
 const MONO_BUTTON =
   "focus-visible:outline-accent cursor-pointer font-mono text-[10px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed";
 
 export function SettingsFooter() {
-  const { sections, saveAll, discardAll } = useDirtySummary();
+  const { anyRegistered, sections, saveAll, discardAll } = useDirtySummary();
   const [phase, setPhase] = useState<"idle" | "saving" | "failed">("idle");
 
   const total = sections.reduce((sum, section) => sum + section.count, 0);
@@ -42,6 +45,8 @@ export function SettingsFooter() {
       setPhase("failed");
     }
   };
+
+  if (!anyRegistered) return null;
 
   return (
     <footer

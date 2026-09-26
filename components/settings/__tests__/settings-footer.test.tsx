@@ -43,6 +43,17 @@ function renderBar(save: () => Promise<void> = async () => {}) {
 }
 
 describe("SettingsFooter", () => {
+  it("renders nothing while no section has registered", () => {
+    render(
+      <DirtyRegistryProvider>
+        <SettingsFooter />
+      </DirtyRegistryProvider>,
+    );
+    expect(screen.queryByRole("contentinfo")).not.toBeInTheDocument();
+    expect(screen.queryByText("No unsaved changes")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Update" })).not.toBeInTheDocument();
+  });
+
   it("counts one unsaved change and names its section; toggling back is not a change", async () => {
     const user = userEvent.setup();
     const { toggle } = renderBar();
