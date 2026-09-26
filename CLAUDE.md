@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-25
+**Last updated:** 2026-09-26
 Update this line whenever this file changes — don't let it drift from reality.
 
 **This file states standing rules and pointers. It loads into every message.**
@@ -259,6 +259,8 @@ below is what a human types. Why it matters: `docs/CONVENTIONS_DETAIL.md`.
                                                    # paces itself, minutes
     node scripts/verify-layout.mjs                 # layout proof, needs `npm run dev`
                                                    # and .env.local
+    node scripts/verify-email-templates.mjs        # hosted auth email templates vs
+                                                   # repo; SUPABASE_ACCESS_TOKEN
     bash .claude/hooks/install.sh                  # once per machine
 
 **UI work has one extra gate.** `npm run test:unit` runs in jsdom, which has no layout

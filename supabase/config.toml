@@ -260,11 +260,11 @@ otp_expiry = 3600
 # dashboard, which allows it only once custom SMTP is on (free projects created
 # after 2026-06-03). lib/auth/__tests__/email-link-policy.test.ts checks both.
 [auth.email.template.confirmation]
-subject = "Your Squid Ink confirmation code"
+subject = "Confirm your Squid Ink account"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Your Squid Ink password reset code"
+subject = "Reset your Squid Ink password"
 content_path = "./supabase/templates/recovery.html"
 
 # Uncomment to customize email template
