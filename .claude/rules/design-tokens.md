@@ -126,3 +126,17 @@ applies.
 annotation can name, so their values sit in `check-docs.mjs`'s `DERIVED` map
 and in `docs/KNOWN_GAPS.md` § "Token gaps from Dashboard critique". Change a
 value and all three places move together.
+
+## The metadata ladder clears 4.5:1 everywhere (issue #65, 2026-09-26)
+
+`muted`, `meta`, `meta-2`, `meta-3`, `meta-4` and `meta-5` colour 8.5–10px
+mono labels, so every one owes WCAG 1.4.3's 4.5:1 on **every** sheet it can
+sit on, in both themes. Before #65, light `meta*` (0.530) measured 4.20:1 on
+`rail`/`pane` and dark `meta` (0.58) 3.90:1 on `raised`. Now light `meta`,
+`meta-2`, `meta-4`, `meta-5` are 0.505 (DERIVED, 4.68:1 against `rail`) and
+dark `meta` and `meta-4` take `meta-2`'s design value 0.62 (4.59:1 against
+`raised`). `scripts/layout-contrast.mjs` measures every visible element that
+paints its own text in a ladder token, against its real background, on every
+route in both themes, and fails under 4.5:1 — proved red on `main` first.
+Measured after: 4.66–6.88:1 light, 4.58–7.22:1 dark. **Do not lighten a
+ladder token to "restore the step"** without re-running that check.
