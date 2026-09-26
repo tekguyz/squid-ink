@@ -11,7 +11,9 @@
 -- Applied AFTER notes.sql, which defines public.set_updated_at(). Read the
 -- order out of config.toml, not from here.
 --
--- Every statement is idempotent so the whole file can be re-applied.
+-- Every statement is idempotent so the whole file can be re-applied. That
+-- includes the drop below: `create table if not exists` never removes a column
+-- from a table that already exists, so a dropped column is dropped here too.
 --
 -- WHAT IS DELIBERATELY NOT A COLUMN, because each would be a setting for a
 -- behaviour this repo does not have:
@@ -22,17 +24,18 @@
 --     components/theme-toggle.tsx. A second copy here would be a second source
 --     of truth that could disagree with the one the page actually paints.
 --   - any Google connection or token. Connect ships as a UI stub.
+--   - require_citations. Grounding is always on, so the switch could never
+--     change an answer. Dropped 2026-09-26 (issue #3) by migration
+--     20260926120000_drop_user_settings_require_citations.sql. The table stays
+--     as the place the next real preference lands (docs/DECISIONS.md
+--     § Settings); today it holds no preference column at all.
 create table if not exists public.user_settings (
   user_id uuid primary key references auth.users (id) on delete cascade,
-  -- PERSISTED, NOT YET READ. Grounding is always on today — the chat and RAG
-  -- path drops ungrounded claims regardless of this value, and nothing in
-  -- lib/ reads the column. Wiring it is a separate change; see
-  -- docs/KNOWN_GAPS.md. Default true so an unsaved account and a saved-on
-  -- account describe the same behaviour the product already has.
-  require_citations boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.user_settings drop column if exists require_citations;
 
 drop trigger if exists user_settings_set_updated_at on public.user_settings;
 create trigger user_settings_set_updated_at
@@ -92,5 +95,5 @@ revoke all on public.user_settings from anon, authenticated, service_role;
 grant select, insert, update, delete on public.user_settings to authenticated;
 
 -- service_role is granted NOTHING. No cron path and no generation pipeline
--- reads a preference today. Wiring require_citations into chat would still not
--- need one — chat runs as the signed-in user, not as service_role.
+-- reads a preference. A future preference read by chat would still not need
+-- one — chat runs as the signed-in user, not as service_role.

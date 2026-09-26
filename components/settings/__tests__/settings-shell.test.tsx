@@ -5,29 +5,14 @@ import { SettingsShell } from "../settings-shell";
 import { applyTheme } from "@/components/theme-toggle";
 import type { SettingsScreen } from "@/lib/settings/settings-types";
 
-/** The Server Actions, stubbed. What the action does with a payload is
- *  app/notes/actions/__tests__/settings.test.ts's job; this file is about what
- *  the screen sends and when. */
-const actions = vi.hoisted(() => ({
-  saveCaptureSettings: vi.fn(async () => "written" as "written" | "not-found"),
-}));
-vi.mock("@/app/notes/actions/settings", () => actions);
 vi.mock("@/app/notes/actions/session", () => ({ signOut: vi.fn() }));
 
-const data: SettingsScreen = {
-  email: "owner@example.test",
-  settings: { requireCitations: true },
-};
+const data: SettingsScreen = { email: "owner@example.test" };
 
 beforeEach(() => {
-  actions.saveCaptureSettings.mockClear();
-  actions.saveCaptureSettings.mockImplementation(async () => "written");
   document.documentElement.classList.remove("light", "dark");
   localStorage.clear();
 });
-
-const citationSwitch = () =>
-  screen.getByRole("switch", { name: "Require a citation for every claim" });
 
 describe("SettingsShell", () => {
   it("renders all seven nav destinations, with Personas linking to its own screen", () => {
@@ -72,56 +57,13 @@ describe("SettingsShell", () => {
     expect(screen.queryByRole("button", { name: /delete|export/i })).toBeNull();
   });
 
-  it("tracks the citation toggle as one unsaved change, named by section", async () => {
-    const user = userEvent.setup();
+  it("offers no citation switch: grounding is always on, so there is nothing to choose", () => {
     render(<SettingsShell screen={data} />);
-
+    expect(screen.queryByRole("switch")).toBeNull();
+    expect(document.body).not.toHaveTextContent(/require a citation/i);
+    const capture = screen.getByRole("region", { name: "Capture & audio" });
+    expect(capture).toHaveTextContent("Nothing built here yet");
     expect(screen.getByText("No unsaved changes")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Update" })).toBeDisabled();
-
-    await user.click(citationSwitch());
-    expect(citationSwitch()).toHaveAttribute("aria-checked", "false");
-    expect(await screen.findByText("1 unsaved change · Capture & audio")).toBeInTheDocument();
-
-    // Toggling back is not a change.
-    await user.click(citationSwitch());
-    expect(await screen.findByText("No unsaved changes")).toBeInTheDocument();
-  });
-
-  it("saves the draft on Update, and the bar goes clean", async () => {
-    const user = userEvent.setup();
-    render(<SettingsShell screen={data} />);
-
-    await user.click(citationSwitch());
-    await user.click(await screen.findByRole("button", { name: "Update" }));
-
-    expect(actions.saveCaptureSettings).toHaveBeenCalledWith({ requireCitations: false });
-    expect(await screen.findByText("No unsaved changes")).toBeInTheDocument();
-    expect(citationSwitch()).toHaveAttribute("aria-checked", "false");
-  });
-
-  it("Discard restores the saved value without calling the action", async () => {
-    const user = userEvent.setup();
-    render(<SettingsShell screen={data} />);
-
-    await user.click(citationSwitch());
-    await user.click(await screen.findByRole("button", { name: "Discard" }));
-
-    expect(citationSwitch()).toHaveAttribute("aria-checked", "true");
-    expect(await screen.findByText("No unsaved changes")).toBeInTheDocument();
-    expect(actions.saveCaptureSettings).not.toHaveBeenCalled();
-  });
-
-  it("keeps the change and says so when the save is refused", async () => {
-    actions.saveCaptureSettings.mockImplementation(async () => "not-found");
-    const user = userEvent.setup();
-    render(<SettingsShell screen={data} />);
-
-    await user.click(citationSwitch());
-    await user.click(await screen.findByRole("button", { name: "Update" }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("Could not save");
-    expect(citationSwitch()).toHaveAttribute("aria-checked", "false");
   });
 
   it("Connect says it is not built, instead of doing nothing or faking success", async () => {

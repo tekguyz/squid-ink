@@ -190,8 +190,8 @@ const QUERIES = [
     // (ensureUserSettings below), so the second user seeing exactly ONE row —
     // their own — is "filtered", not "empty".
     table: "user_settings",
-    sql: "select user_id, require_citations from user_settings",
-    run: (c) => c.from("user_settings").select("user_id, require_citations"),
+    sql: "select user_id, updated_at from user_settings",
+    run: (c) => c.from("user_settings").select("user_id, updated_at"),
     secondUserExpects: 1,
   },
 ];
@@ -202,7 +202,7 @@ const QUERIES = [
 async function ensureUserSettings(user) {
   const { error } = await user.client
     .from("user_settings")
-    .upsert({ user_id: user.userId, require_citations: true }, { onConflict: "user_id" });
+    .upsert({ user_id: user.userId }, { onConflict: "user_id" });
   if (error) throw new Error(`${user.email} could not save their own settings: ${error.message}`);
 }
 
@@ -210,28 +210,38 @@ async function ensureUserSettings(user) {
  *  somebody else's id. The insert policy's with check must refuse the insert,
  *  and the update policy's using must match zero rows. The owner's row is read
  *  back afterwards as the owner, because "no error" on an update is exactly
- *  what a silently-successful cross-tenant write also looks like. */
+ *  what a silently-successful cross-tenant write also looks like.
+ *
+ *  The table holds no preference column since 2026-09-26 (issue #3), so the
+ *  write under attack is updated_at: a successful update would move it, both
+ *  by the value sent and by the set_updated_at trigger. */
 async function crossTenantSettingsAreRefused(user, owner) {
+  const readOwnerStamp = async () => {
+    const { data } = await owner.client
+      .from("user_settings")
+      .select("updated_at")
+      .maybeSingle();
+    return data?.updated_at ?? null;
+  };
+  const before = await readOwnerStamp();
+
   const inserted = await user.client
     .from("user_settings")
-    .insert({ user_id: owner.userId, require_citations: false });
+    .insert({ user_id: owner.userId });
 
   const updated = await user.client
     .from("user_settings")
-    .update({ require_citations: false })
+    .update({ updated_at: "2000-01-01T00:00:00Z" })
     .eq("user_id", owner.userId)
     .select("user_id");
 
-  const { data: ownerRow } = await owner.client
-    .from("user_settings")
-    .select("require_citations")
-    .maybeSingle();
+  const after = await readOwnerStamp();
 
   return {
     insertRefused: Boolean(inserted.error),
     insertCode: inserted.error?.code ?? null,
     updateRows: updated.data?.length ?? 0,
-    ownerStillTrue: ownerRow?.require_citations === true,
+    ownerUnchanged: before !== null && before === after,
   };
 }
 
@@ -656,8 +666,8 @@ console.log("--- user_settings cross-tenant writes ---");
     `attempt: second user inserts a row naming the owner's user_id  refused=${probe.insertRefused}  code=${probe.insertCode}`,
   );
   console.log(`attempt: second user updates the owner's row  rows=${probe.updateRows}`);
-  console.log(`owner's row read back as owner  require_citations still true=${probe.ownerStillTrue}`);
-  if (!probe.insertRefused || probe.updateRows !== 0 || !probe.ownerStillTrue) {
+  console.log(`owner's row read back as owner  updated_at unchanged=${probe.ownerUnchanged}`);
+  if (!probe.insertRefused || probe.updateRows !== 0 || !probe.ownerUnchanged) {
     failed = true;
     console.log("             FAIL: a user wrote another user's settings");
   }

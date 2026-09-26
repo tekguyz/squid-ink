@@ -630,7 +630,8 @@ KNOWN_GAPS.md collision recorded the same day)
 
 **Next build priority** (decided 2026-09-14)
 - Order: (1) Onboarding surface (05), (2) citation-required toggle — pulled
-  from Settings UI for now rather than wired up, (3) Google Calendar OAuth,
+  from Settings UI for now rather than wired up (done 2026-09-26, #3: row,
+  Server Action and column all removed; grounding stays always on), (3) Google Calendar OAuth,
   (4) Dashboard search.
 - **Auto-file domain rule fix: a paste-the-invite field on the recorder, not
   Calendar OAuth.** Parses attendee emails out of pasted invite text into
