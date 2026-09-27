@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { NoteSpecimen } from "./note-specimen";
 import { PersonaTable } from "./persona-table";
+import { DemoButton } from "./demo-button";
 
 /**
  * The landing page (issue #60): what a person with no session sees at "/".
@@ -11,9 +12,9 @@ import { PersonaTable } from "./persona-table";
  * like a printed front page, and it shows the product rather than describing
  * it — the specimen is a real note from the demo fixture.
  *
- * A server component with no client island and no data read: with no session
- * there is no RLS identity to read as. The chips in the specimen are fragment
- * links, so even they need no JavaScript.
+ * A server component with one client island, the demo button, and no data
+ * read: with no session there is no RLS identity to read as. The chips in the
+ * specimen are fragment links, so even they need no JavaScript.
  *
  * Copy rules (PRODUCT.md): no signup offer, because there is none; no feature
  * that does not exist; no figure nobody measured.
@@ -105,11 +106,11 @@ export function LandingPage() {
               it writes the transcript, a summary, takeaways and action items — and each
               takeaway and action item links back to the line it came from.
             </p>
-            {/* The demo entry goes first in this row when it ships (#19). It
-                is a button in a form, never a link: docs/adr/0001. Until then
-                a stranger's one real next step is the studio that built it;
-                Sign in stays in the masthead, for the few it is for. */}
+            {/* The demo entry goes first (#19). It is a button in a form, never
+                a link: docs/adr/0001. The studio that built it is the second
+                step; Sign in stays in the masthead, for the few it is for. */}
             <div className="mt-[26px] flex flex-wrap items-center gap-x-[16px] gap-y-[10px]">
+              <DemoButton />
               <a href={TEKGUYZ} className={OUTLINE_BUTTON}>
                 Talk to&nbsp;<span translate="no">TEKGUYZ</span>
               </a>

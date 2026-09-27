@@ -9,7 +9,8 @@
 -- The candidate pool is ONE clause. `created_at > now() - interval '90 days'
 -- order by created_at desc limit 25` naturally yields whichever bound is
 -- smaller: 25 for a busy month, fewer (or none) for a quiet year. No second
--- branch, nothing to keep in sync.
+-- branch, nothing to keep in sync. The one exemption, the demo owner's notes,
+-- is explained where it is written.
 --
 -- The result cap is unconditional: 25 chunks post-RRF, whatever the pool.
 --
@@ -50,7 +51,12 @@ as $$
   with candidates as (
     select n.id, n.title
     from public.notes n
+    -- The demo owner's notes are exempt from the 90-day window, or the demo
+    -- would stop answering cross-note questions three months after it was
+    -- loaded. This widens nothing: RLS decides which notes the caller sees at
+    -- all, and only an anonymous session sees the demo owner's.
     where n.created_at > now() - interval '90 days'
+      or n.user_id = (select public.demo_owner_id())
     order by n.created_at desc
     limit 25
   ),

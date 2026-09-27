@@ -1,5 +1,6 @@
 import { RecorderDock } from "@/components/recorder/recorder-dock";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { isDemoVisitor } from "@/lib/auth/demo-visitor";
 
 /**
  * The recorder dock, only with a session (issue #60). The landing page sits at
@@ -12,5 +13,6 @@ import { getCurrentUser } from "@/lib/auth/current-user";
  * layout, so the answer does not go stale.
  */
 export async function SignedInDock() {
-  return (await getCurrentUser()) ? <RecorderDock /> : null;
+  const user = await getCurrentUser();
+  return user ? <RecorderDock demo={isDemoVisitor(user)} /> : null;
 }

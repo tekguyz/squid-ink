@@ -112,6 +112,17 @@ the rollback; that silently un-gates the rate limit. Four tests in
 `route-gates.test.ts` pin all of it, and the rate-limit consequence is recorded
 in `docs/KNOWN_GAPS.md`.
 
+**A demo visitor can READ notes it does not own, so the route checks access,
+not readability — added 2026-09-26, issue #19.** `ports.noteAccess` answers
+`"own"`, `"demo"` or null; the route accepts `"demo"` only from an anonymous
+session. The database holds the same line: `chat_messages_insert_own` requires
+the note to be readable by the caller, because `note_id`'s single-column
+foreign key alone accepts any note. `search_note_chunks` exempts the demo
+owner's notes from its 90-day pool so the demo keeps answering; RLS still
+decides who sees them. The chat panel shows a visitor's questions left, from
+the same `countVisitorQuestions` the cap reads, and shows the route's own
+refusal text. `scripts/verify-demo-rls.mjs` proves all of it live.
+
 **`note_chunks.embedding IS NULL` is still the embedding queue and nothing
 here touches it.** Chat is read-only against `note_chunks`.
 

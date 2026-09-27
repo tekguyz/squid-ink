@@ -11,6 +11,8 @@ import {
   normalizeQuickAction,
 } from "@/lib/notes/persona-config";
 import { usePersonaWrite } from "./use-persona-write";
+import { useDemo } from "@/components/demo/demo-mode";
+import { PERSONAS_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * The quick-action list, with add and remove.
@@ -54,7 +56,10 @@ export function QuickActionsEditor({
   const [draft, setDraft] = useState("");
 
   const full = shown.length >= MAX_QUICK_ACTIONS;
-  const canAdd = !full && !pending && draft.trim().length > 0;
+  // Issue #19: every edit here is turned off for a demo visitor.
+  const demo = useDemo();
+  const describedBy = demo ? PERSONAS_DEMO_OFF : undefined;
+  const canAdd = !demo && !full && !pending && draft.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-[5px]">
@@ -68,8 +73,9 @@ export function QuickActionsEditor({
           </span>
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || demo}
             aria-label={`Remove quick action: ${action}`}
+            aria-describedby={describedBy}
             onClick={() =>
               run(async () => {
                 apply({ kind: "remove", value: action });
@@ -79,7 +85,11 @@ export function QuickActionsEditor({
             className={[
               "font-mono flex-none border px-[7px] py-[2px] text-[9.5px]",
               "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
-              pending ? "border-rule-2 text-ink-disabled cursor-progress" : "border-control-edge text-ink-2 cursor-pointer hover:bg-raised",
+              demo
+                ? "border-rule-2 text-ink-disabled cursor-not-allowed"
+                : pending
+                  ? "border-rule-2 text-ink-disabled cursor-progress"
+                  : "border-control-edge text-ink-2 cursor-pointer hover:bg-raised",
             ].join(" ")}
           >
             Remove
@@ -112,9 +122,10 @@ export function QuickActionsEditor({
         <input
           type="text"
           value={draft}
-          disabled={full || pending}
+          disabled={full || pending || demo}
           maxLength={MAX_QUICK_ACTION_LENGTH}
           aria-label="New quick action"
+          aria-describedby={describedBy}
           placeholder={full ? "Limit reached" : "Add a quick action"}
           onChange={(event) => setDraft(event.target.value)}
           className="border-control-edge bg-paper text-ink-2 font-body placeholder:text-placeholder focus-visible:outline-accent min-w-0 flex-1 border px-[9px] py-[7px] text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2 disabled:cursor-not-allowed disabled:border-rule-2 disabled:text-ink-disabled"
@@ -122,6 +133,7 @@ export function QuickActionsEditor({
         <button
           type="submit"
           disabled={!canAdd}
+          aria-describedby={describedBy}
           className={[
             "font-mono flex-none border px-[11px] py-[7px] text-[9.5px] tracking-[0.06em] uppercase",
             "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",

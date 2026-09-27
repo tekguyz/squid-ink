@@ -383,7 +383,7 @@ const PROBE = `(() => {
 // a sign-in redesign.
 // ---------------------------------------------------------------------------
 
-async function signIn(cdp, sessionId) {
+async function signIn(cdp, sessionId, { visitor = false } = {}) {
   const env = Object.fromEntries(
     readFileSync(".env.local", "utf8")
       .split(/\r?\n/)
@@ -406,14 +406,22 @@ async function signIn(cdp, sessionId) {
       },
     },
   );
-  const { error } = await supabase.auth.signInWithPassword({
-    email: env.RLS_TEST_OWNER_EMAIL,
-    password: env.RLS_TEST_OWNER_PASSWORD,
-  });
+  // A demo visitor (issue #19) signs in the way the demo button does:
+  // anonymously, already onboarded. Each run is one real visit, which the
+  // cleanup job deletes after 7 days like any other.
+  const { error } = visitor
+    ? await supabase.auth.signInAnonymously({
+        options: { data: { onboarded_at: new Date().toISOString() } },
+      })
+    : await supabase.auth.signInWithPassword({
+        email: env.RLS_TEST_OWNER_EMAIL,
+        password: env.RLS_TEST_OWNER_PASSWORD,
+      });
   if (error) throw error;
   if (jar.size === 0) throw new Error("Signed in, but @supabase/ssr wrote no cookies");
 
   await cdp.send("Network.enable", {}, sessionId);
+  await cdp.send("Network.clearBrowserCookies", {}, sessionId);
   for (const [name, value] of jar) {
     await cdp.send("Network.setCookie", { name, value, url: ORIGIN, path: "/", sameSite: "Lax" }, sessionId);
   }
@@ -486,6 +494,60 @@ function report(route, width, theme, probe, expectChips) {
     `${where} — no OS arrow buttons on any scrollbar`,
     arrows.map((s) => `${s.el} button=${s.webkitButton}`).join("; "),
   );
+}
+
+/** Issue #19: the same screens as a DEMO VISITOR. The banner sits in flow
+ *  above every screen, so each must still end at the bottom of the viewport
+ *  (no vertical page overflow), and every write control is turned off, so
+ *  each screen must show ink-disabled. The demo owner's note 1 is measured
+ *  because it is the one with audio. */
+async function measureDemo(cdp, sessionId) {
+  await signIn(cdp, sessionId, { visitor: true });
+  const noteHref = await evaluate(
+    cdp,
+    sessionId,
+    `(() => { const a = [...document.querySelectorAll('a[href^="/notes/"]')].at(-1); return a && a.getAttribute("href"); })()`,
+  );
+  if (!noteHref) throw new Error("Signed in as a demo visitor, but the dashboard listed no demo note");
+
+  const routes = ["/", noteHref, "/personas", "/collections", "/settings"];
+  for (const width of [...WIDTHS, ...NARROW_WIDTHS["/"]]) {
+    await cdp.send(
+      "Emulation.setDeviceMetricsOverride",
+      { width, height: VIEWPORT.height, deviceScaleFactor: 1, mobile: false },
+      sessionId,
+    );
+    for (const route of WIDTHS.includes(width) ? routes : ["/"]) {
+      await goto(cdp, sessionId, `${ORIGIN}${route}`);
+      const where = `${route} (demo) @ ${width}px`;
+      const page = await evaluate(
+        cdp,
+        sessionId,
+        `({ banner: document.querySelector("[data-demo-banner]")?.getBoundingClientRect().height ?? 0,
+            docH: document.documentElement.scrollHeight, vh: innerHeight })`,
+      );
+      check(page.banner > 0, `${where} — shows the demo banner`, "no [data-demo-banner] on the page");
+      check(
+        page.docH <= page.vh,
+        `${where} — the banner does not push the screen past the viewport`,
+        `document ${page.docH}px tall in a ${page.vh}px viewport`,
+      );
+      for (const theme of ["light", "dark"]) {
+        await evaluate(
+          cdp,
+          sessionId,
+          `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}"); })()`,
+        );
+        report(`${route} (demo)`, width, theme, await evaluate(cdp, sessionId, PROBE), route === noteHref);
+        reportContrast(
+          check,
+          `${where} ${theme}`,
+          await evaluate(cdp, sessionId, CONTRAST_PROBE),
+          WIDTHS.includes(width) && route !== "/collections" ? ["ink-disabled"] : [],
+        );
+      }
+    }
+  }
 }
 
 async function main() {
@@ -656,6 +718,8 @@ async function main() {
         }
       }
     }
+
+    await measureDemo(cdp, sessionId);
   } finally {
     if (!(failures.length && process.env.LAYOUT_KEEP === "1")) {
       try {

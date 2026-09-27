@@ -24,7 +24,10 @@ export function CollectionsShell({
   activeSlug,
   aside,
   children,
+  demo = false,
 }: {
+  /** Issue #19: passed to the rail. */
+  demo?: boolean;
   chips: CollectionChip[];
   activeSlug: string | null;
   /** The third column App Surfaces 07 draws — the auto-file rules panel. Only
@@ -35,7 +38,7 @@ export function CollectionsShell({
   children: ReactNode;
 }) {
   return (
-    <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
+    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden">
       <div
         style={{ minWidth: MIN_SURFACE_WIDTH }}
         className={`bg-canvas text-ink grid h-full ${
@@ -44,7 +47,7 @@ export function CollectionsShell({
             : "grid-cols-[236px_minmax(0,1fr)]"
         }`}
       >
-        <CollectionsRail chips={chips} activeSlug={activeSlug} />
+        <CollectionsRail chips={chips} activeSlug={activeSlug} demo={demo} />
         <main className="bg-paper flex min-h-0 min-w-0 flex-col overflow-hidden">
           {children}
         </main>

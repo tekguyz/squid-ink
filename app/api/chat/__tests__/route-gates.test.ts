@@ -22,7 +22,7 @@ const ports = {
   insertAssistantMessage: vi.fn(),
   deleteMessage: vi.fn(),
   readNoteContext: vi.fn(),
-  noteBelongsToCaller: vi.fn(),
+  noteAccess: vi.fn(),
   countVisitorQuestions: vi.fn(),
   countDemoQuestionsThisMonth: vi.fn(),
   searchRpc: vi.fn(),
@@ -110,7 +110,7 @@ beforeEach(() => {
   process.env.VOYAGE_API_KEY = "voyage-key";
   ports.countRecentUserMessages.mockResolvedValue(0);
   ports.readNoteContext.mockResolvedValue(NOTE);
-  ports.noteBelongsToCaller.mockResolvedValue(true);
+  ports.noteAccess.mockResolvedValue("own");
   ports.countVisitorQuestions.mockResolvedValue(0);
   ports.countDemoQuestionsThisMonth.mockResolvedValue(0);
   ports.readHistory.mockResolvedValue([
@@ -253,7 +253,7 @@ describe("refusals that are not about cost", () => {
   it("404s a note the caller does not own, without persisting a turn", async () => {
     // RLS returns null for someone else's note, so this is the ownership
     // check as well as the existence one.
-    ports.readNoteContext.mockResolvedValue(null);
+    ports.noteAccess.mockResolvedValue(null);
     const res = await post({ noteId: "someone-elses", scope: "this_note", text: "q" });
 
     expect(res.status).toBe(404);
@@ -267,12 +267,65 @@ describe("refusals that are not about cost", () => {
     // table's owner and is NOT subject to RLS, so a caller could name anybody's
     // note, have the insert land under their own user_id, and get a model call
     // out of it. Anonymous sign-ins made that reachable by any stranger.
-    ports.noteBelongsToCaller.mockResolvedValue(false);
+    ports.noteAccess.mockResolvedValue(null);
     const res = await post({ noteId: "someone-elses", scope: "all_notes", text: "q" });
 
     expect(res.status).toBe(404);
     expect(ports.insertUserMessage).not.toHaveBeenCalled();
     expect(streamText).not.toHaveBeenCalled();
+  });
+});
+
+/** Issue #19. A demo visitor reads the demo owner's notes through a widened
+ *  select policy, so "RLS returned the row" is no longer the same fact as
+ *  "the caller owns it". The route accepts a note it can read but does not
+ *  own ONLY for an anonymous session. */
+describe("demo notes: readable is not the same as owned", () => {
+  const visitor = { id: "visitor-1", is_anonymous: true };
+
+  it.each(["this_note", "all_notes"] as const)(
+    "lets a visitor ask about a demo note (%s)",
+    async (scope) => {
+      user = visitor;
+      ports.noteAccess.mockResolvedValue("demo");
+      const res = await post({ noteId: "demo-note", scope, text: "q" });
+
+      expect(res.status).toBe(200);
+      expect(ports.insertUserMessage).toHaveBeenCalledWith("demo-note", "visitor-1", "q", scope);
+      expect(streamText).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it.each(["this_note", "all_notes"] as const)(
+    "refuses a visitor asking about another account's note (%s)",
+    async (scope) => {
+      user = visitor;
+      ports.noteAccess.mockResolvedValue(null);
+      const res = await post({ noteId: "owners-note", scope, text: "q" });
+
+      expect(res.status).toBe(404);
+      expect(ports.insertUserMessage).not.toHaveBeenCalled();
+      expect(streamText).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["this_note", "all_notes"] as const)(
+    "refuses a REAL account a note it can read but does not own (%s)",
+    async (scope) => {
+      // Only reachable if the select policy were ever widened for real
+      // accounts. The route must not follow it.
+      ports.noteAccess.mockResolvedValue("demo");
+      const res = await post({ noteId: "demo-note", scope, text: "q" });
+
+      expect(res.status).toBe(404);
+      expect(ports.insertUserMessage).not.toHaveBeenCalled();
+      expect(streamText).not.toHaveBeenCalled();
+    },
+  );
+
+  it("asks the port with the caller's own id", async () => {
+    await post({ noteId: "n1", scope: "this_note", text: "q" });
+    expect(ports.noteAccess).toHaveBeenCalledWith("n1", "user-1");
   });
 });
 

@@ -4,7 +4,7 @@ import { resendConfirmationLink, signUpWithPassword } from "@/app/auth/actions/s
 import { requestPasswordReset, setNewPassword } from "@/app/auth/actions/recovery";
 import { confirmEmailLink } from "@/app/auth/actions/email-link";
 
-type Err = { code: string; message: string } | null;
+type Err = { code: string; message: string; status?: number } | null;
 
 const state = vi.hoisted(() => ({
   clientOptions: [] as unknown[],
@@ -121,6 +121,16 @@ describe("signup", () => {
     });
     expect(args("signOut")).toEqual([{ scope: "local" }]);
     log.mockRestore();
+  });
+
+  it("reads the signup hook's 403 as signup closed", async () => {
+    // The before-user-created hook (demo_visitors.sql) refuses every signup
+    // that is not anonymous, with a 403 and no known code. Measured 2026-09-26.
+    state.error = { code: "unknown", message: "Signups not allowed for this instance", status: 403 };
+    await expect(signUpWithPassword({ email: "a@b.co", password: "pw" })).resolves.toEqual({
+      ok: false,
+      failure: "signup_closed",
+    });
   });
 
   it("resends the confirmation link as type signup", async () => {

@@ -37,7 +37,7 @@ export function PersonasShell({ screen }: { screen: PersonasScreen }) {
     screen.personas.find((p) => p.id === selectedId) ?? screen.personas[0];
 
   return (
-    <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
+    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden">
       <div
         style={{ minWidth: MIN_SURFACE_WIDTH }}
         className="bg-paper text-ink grid h-full grid-cols-[236px_minmax(0,1fr)]"

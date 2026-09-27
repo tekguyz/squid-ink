@@ -2911,6 +2911,17 @@ means the lag outlasted about 5 s.
 
 ## Public demo mode — not built, requested by the owner (recorded 2026-09-14) → #19
 
+**BUILT 2026-09-26 (issue #19).** The questions below are answered in
+`docs/adr/0001-demo-visitors-read-one-shared-demo-owner.md` and the #19 spec:
+one demo owner holds the three demo notes, visitors are anonymous identities
+that read it through a widened select policy, the entry is a Server Action
+behind the landing page's button, visitors are deleted after 7 days by a
+pg_cron job, and every write control shows "Not available in the demo."
+Anonymous sign-in needed "Allow new users to sign up" ON; a before-user-created
+hook keeps every other signup refused (`supabase/schemas/demo_visitors.sql`,
+`docs/DECISIONS.md` § Auth). Proof: `scripts/verify-demo-rls.mjs`. The text
+below is kept as the record of what was open.
+
 **An idea to plan, not a defect.** The owner's portfolio site shows live
 demos of their apps. The CRM's demo, `https://tekguyz-crm.vercel.app/demo`,
 puts a visitor inside a live, seeded, **read-only** copy with one click: no

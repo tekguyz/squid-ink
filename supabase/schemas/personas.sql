@@ -73,11 +73,22 @@ alter table public.personas enable row level security;
 -- wrapped in a select so the planner evaluates it once per query rather than
 -- once per row. `to authenticated` alone would be authentication without
 -- authorization, so every policy also carries an ownership predicate.
+--
+-- SELECT is widened for demo visitors exactly as notes_select_own is (ADR
+-- 0001). A visitor owns no personas — persona_provisioning.sql skips
+-- anonymous identities — so the four they see are the demo owner's, the ones
+-- the demo notes were generated under.
 
 drop policy if exists personas_select_own on public.personas;
 create policy personas_select_own on public.personas
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    or (
+      (select public.is_anon_session())
+      and user_id = (select public.demo_owner_id())
+    )
+  );
 
 drop policy if exists personas_insert_own on public.personas;
 create policy personas_insert_own on public.personas

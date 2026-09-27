@@ -135,11 +135,22 @@ alter table public.note_chunks enable row level security;
 
 -- Four per-operation policies, matching notes. auth.uid() is wrapped in a
 -- select so the planner evaluates it once per query, not once per row.
+--
+-- SELECT is widened for demo visitors exactly as notes_select_own is, for the
+-- reason given there (ADR 0001): an anonymous session also reads the demo
+-- owner's chunks, which is what lets chat and chunk search reach the demo
+-- notes. search_note_chunks runs as the caller, so this policy is its scope.
 
 drop policy if exists note_chunks_select_own on public.note_chunks;
 create policy note_chunks_select_own on public.note_chunks
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    or (
+      (select public.is_anon_session())
+      and user_id = (select public.demo_owner_id())
+    )
+  );
 
 drop policy if exists note_chunks_insert_own on public.note_chunks;
 create policy note_chunks_insert_own on public.note_chunks

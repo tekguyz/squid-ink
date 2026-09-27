@@ -37,6 +37,15 @@ to generate or resolve anything, and `components/landing/__tests__/specimen.test
 fails if it drifts from `persona_provisioning.sql`. `components/landing/specimen.ts`
 quotes the demo fixture the same way, under the same test.
 
+**The demo owner (issue #19, ADR 0001).** `public.demo_owner_id()` in
+`notes.sql` names one account. The select policies on notes, note_chunks,
+personas and the audio bucket let an anonymous session read that account's
+rows too; every write policy still refuses anonymous sessions. So a demo
+visitor's `getNote`, feed and personas read the demo owner's rows with no
+change to this layer. The rows are loaded only by
+`scripts/load-demo-owner.mjs`, from `lib/demo/`. Do not add demo rows any other
+way, and never widen a select policy for a non-anonymous session.
+
 `note_chunks.persona_id` attributes a takeaway to a lens, and a null
 `persona_id` means the default persona — which is why chunks written before the
 table existed still render under Neutral Analyst. `DEFAULT_PERSONA_ID` and the

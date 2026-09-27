@@ -13,8 +13,11 @@ import { emailLinkTarget } from "@/lib/auth/email-redirect";
  * lands on app/auth/confirm, which verifies it only when a person presses
  * Continue — never on the GET a mail scanner sends.
  *
- * Signup is public, with no invite code. That is today's default, not a locked
- * decision — docs/DECISIONS.md § Auth → Signup access model (open).
+ * PUBLIC SIGNUP IS CLOSED, permanently — docs/DECISIONS.md § Auth → Signup
+ * access model. Since 2026-09-26 (issue #19) the refusal comes from the
+ * project's before-user-created hook, which lets only anonymous demo visitors
+ * through, rather than from the dashboard switch. This form stays for the
+ * account the owner creates by hand and for the day that decision changes.
  */
 
 const Email = z.string().trim().toLowerCase().pipe(z.email());
@@ -32,6 +35,11 @@ export async function signUpWithPassword(input: z.input<typeof SignUp>): Promise
     ...parsed.data,
     options: { emailRedirectTo: await emailLinkTarget() },
   });
+  // The hook's refusal (supabase/schemas/demo_visitors.sql) arrives as a 403
+  // with no error code — measured 2026-09-26 — so it cannot go through
+  // toAuthFailure's code table. A 403 is the only answer signUp gives for a
+  // refused signup.
+  if (error?.status === 403) return { ok: false, failure: "signup_closed" };
   if (error) return { ok: false, failure: toAuthFailure(error) };
 
   // A session here means the hosted confirm-email gate is OFF — config drift,

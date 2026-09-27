@@ -211,12 +211,13 @@ Gemini API. `app/api/dev-login/route.ts` reads it only to create or repair the
 dev account, and answers 404 before reading anything unless `NODE_ENV` is
 `development`.
 
-**Ten local-only** scripts also read it from the gitignored `.env.local` —
+**Twelve local-only** scripts also read it from the gitignored `.env.local` —
 `verify-rls.mjs`, `verify-storage-rls.mjs`, `verify-recorder-upload.mjs`,
 `verify-persona-provisioning.mjs`, `verify-transcription-pipeline.mjs`,
 `verify-manual-transcribe.mjs`, `verify-notegen-pipeline.mjs`,
-`verify-persona-selection.mjs`, `verify-chat-rls.mjs` and
-`verify-depth-and-fallback.mjs`. None ships.
+`verify-persona-selection.mjs`, `verify-chat-rls.mjs`,
+`verify-depth-and-fallback.mjs`, `verify-demo-rls.mjs` and
+`load-demo-owner.mjs`. None ships.
 
 `scripts/check-docs.mjs` PARSES that allowlist out of this section, so the two
 paragraphs above are load-bearing prose, not a note. Run the greps rather than
@@ -254,6 +255,9 @@ below is what a human types. Why it matters: `docs/CONVENTIONS_DETAIL.md`.
     node scripts/check-docs.mjs                    # doc drift; 0 clean, 1 findings,
                                                    # 2 could not run — NOT a pass
     node scripts/verify-rls.mjs                    # two-user RLS proof, .env.local
+    node scripts/verify-demo-rls.mjs               # demo read rule, door and cleanup;
+                                                   # .env.local + SUPABASE_ACCESS_TOKEN
+    node scripts/load-demo-owner.mjs               # (re)loads the demo notes, .env.local
     node scripts/verify-persona-provisioning.mjs   # signup-trigger proof, .env.local
     node scripts/verify-transcription-pipeline.mjs # live, needs `npm run dev`
     node scripts/verify-depth-and-fallback.mjs     # live notegen at Brief, Exhaustive

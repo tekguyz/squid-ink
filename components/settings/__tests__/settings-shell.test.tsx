@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SettingsShell } from "../settings-shell";
+import { DemoMode } from "@/components/demo/demo-mode";
 import { applyTheme } from "@/components/theme-toggle";
 import type { SettingsScreen } from "@/lib/settings/settings-types";
 
 vi.mock("@/app/notes/actions/session", () => ({ signOut: vi.fn() }));
+vi.mock("@/app/notes/actions/demo", () => ({ leaveDemo: vi.fn() }));
 
 const data: SettingsScreen = { email: "owner@example.test" };
 
@@ -98,5 +100,42 @@ describe("SettingsShell", () => {
     act(() => applyTheme("light"));
     await waitFor(() => expect(newsprint).toHaveAttribute("aria-pressed", "true"));
     expect(espresso).toHaveAttribute("aria-pressed", "false");
+  });
+});
+
+/** Issue #19: Settings is visible to a demo visitor, and turned off. */
+describe("SettingsShell in the demo", () => {
+  const demo = () =>
+    render(
+      <DemoMode demo>
+        <SettingsShell screen={{ email: null }} />
+      </DemoMode>,
+    );
+
+  it("leaves Connect as the stub everyone gets, not a demo block", () => {
+    // Google connect is not built for anyone, so "Not available in the demo."
+    // would be untrue. The stub already says so on press.
+    demo();
+    expect(screen.getByRole("button", { name: "Connect Google Calendar" })).toBeEnabled();
+    expect(screen.queryByText("Not available in the demo.")).toBeNull();
+  });
+
+  it("does not tell a visitor about an email or a password they do not have", () => {
+    demo();
+    expect(document.body).not.toHaveTextContent(/Forgot your password/);
+  });
+
+  it("offers Leave demo instead of Log me out, and names the visitor", () => {
+    demo();
+    expect(screen.getByRole("button", { name: "Leave demo" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Log me out" })).toBeNull();
+    expect(screen.getByText("Demo visitor")).toBeInTheDocument();
+  });
+
+  it("is unchanged outside the demo", () => {
+    render(<SettingsShell screen={data} />);
+    expect(screen.getByRole("button", { name: "Connect Google Calendar" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Log me out" })).toBeInTheDocument();
+    expect(screen.queryByText("Not available in the demo.")).toBeNull();
   });
 });

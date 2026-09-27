@@ -626,8 +626,9 @@ renders.
 
 ## Layout
 
-**Two screens, one shell language.** Both are `h-dvh` fixed grids that fill the
-viewport; the page itself never scrolls vertically, and the interior regions do.
+**Two screens, one shell language.** Both are `h-app` fixed grids that fill the
+viewport (`h-app` is `100dvh` less the demo banner's band, which is 0 unless a
+demo visitor is on the page — `app/globals.css`, issue #19); the page itself never scrolls vertically, and the interior regions do.
 
 **Dashboard** (`app/page.tsx`) is `grid-cols-[212px_minmax(0,1fr)]`: a 212px
 identity rail on `rail`, then a `paper` main column holding a fixed header, a

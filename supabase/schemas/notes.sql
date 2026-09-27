@@ -186,6 +186,28 @@ as $$
   select coalesce(((select auth.jwt()) ->> 'is_anonymous')::boolean, false);
 $$;
 
+-- The DEMO OWNER: the one account that holds the three demo notes (issue #19,
+-- docs/adr/0001-demo-visitors-read-one-shared-demo-owner.md). Every demo
+-- visitor reads its notes, chunks, personas and audio; nobody signs in as it.
+--
+-- A fixed id, and this function is the ONE place it is written down.
+-- scripts/load-demo-owner.mjs reads it back from here rather than keeping a
+-- copy, and creates the account with exactly this id. A one-row lookup table
+-- was the alternative; it would cost a table read inside every select policy
+-- that calls this, where an immutable constant is folded by the planner.
+--
+-- Lives in notes.sql for the reason is_anon_session() does: config.toml
+-- applies this file first and the select policies in later files call it.
+create or replace function public.demo_owner_id()
+returns uuid
+language sql
+immutable
+security invoker
+set search_path = ''
+as $$
+  select 'de300000-0000-4000-8000-000000000001'::uuid;
+$$;
+
 alter table public.notes enable row level security;
 
 -- Four per-operation policies, not one blanket rule.
@@ -197,14 +219,26 @@ alter table public.notes enable row level security;
 --
 -- The three WRITE policies carry a second predicate as well:
 -- `not public.is_anon_session()`, demo mode's write block. See the function
--- above for why `to authenticated` is not enough on its own. SELECT does not
--- carry it — a demo visitor reads their own seeded copies, and ownership
--- already scopes that to rows nobody else can see.
+-- above for why `to authenticated` is not enough on its own.
+--
+-- SELECT is the one policy WIDER than ownership, and deliberately (ADR 0001):
+-- an anonymous session may also read the demo owner's rows. Read-only, anon
+-- only, one named account. A real account never matches the second clause,
+-- because its session is not anonymous, so it never sees the demo notes; a
+-- visitor never matches the first against anyone's rows but their own, and
+-- owns no notes. The same widening is on note_chunks, personas and the audio
+-- bucket, and nowhere else. scripts/verify-demo-rls.mjs proves its width.
 
 drop policy if exists notes_select_own on public.notes;
 create policy notes_select_own on public.notes
   for select to authenticated
-  using ((select auth.uid()) = user_id);
+  using (
+    (select auth.uid()) = user_id
+    or (
+      (select public.is_anon_session())
+      and user_id = (select public.demo_owner_id())
+    )
+  );
 
 drop policy if exists notes_insert_own on public.notes;
 create policy notes_insert_own on public.notes

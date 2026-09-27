@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createCollection } from "@/app/notes/actions/collections";
+import { DemoOffNote, useDemo } from "@/components/demo/demo-mode";
 
 /**
  * The one place a collection is made from the Collections screen.
@@ -24,6 +25,8 @@ export function CollectionCreate() {
   const [draft, setDraft] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  // Issue #19: a demo visitor sees the field, turned off, with the reason.
+  const demo = useDemo();
 
   return (
     <form
@@ -41,19 +44,21 @@ export function CollectionCreate() {
       {/* The border is --control-edge because this IS an interactive control.
           --rule-2 is the edge of a decorative frame and would measure ~1.4:1
           here — see CLAUDE.md § Colour. */}
-      <span className="border-control-edge has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[5px] border px-[8px] py-[4px]">
+      <span className={`${demo ? "border-rule-2" : "border-control-edge"} has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[5px] border px-[8px] py-[4px]`}>
         <span aria-hidden className="font-mono text-muted text-[9px]">
           +
         </span>
         <input
           value={draft}
-          disabled={pending}
+          disabled={pending || demo}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="New collection name"
+          aria-describedby={demo ? "collection-create-demo-off" : undefined}
           placeholder="new collection"
           className="font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-full bg-transparent text-[9.5px] tracking-[0.04em] uppercase outline-none"
         />
       </span>
+      {demo ? <DemoOffNote id="collection-create-demo-off" className="mt-[5px] block" /> : null}
     </form>
   );
 }

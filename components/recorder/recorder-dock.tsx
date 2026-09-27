@@ -24,7 +24,7 @@ const HIDDEN_PREFIXES = ["/login", "/auth", "/onboarding"];
  * every navigation. Nothing re-creates the store per route, and there is no
  * provider a route change could remount.
  */
-export function RecorderDock() {
+export function RecorderDock({ demo = false }: { demo?: boolean }) {
   const pathname = usePathname();
   const controls = useRecorder();
 
@@ -37,13 +37,16 @@ export function RecorderDock() {
   useEffect(() => {
     if (startRequests === served.current) return;
     served.current = startRequests;
+    // A demo visitor's Record controls are all turned off; this is the second
+    // half of that, so no request can start a capture there.
+    if (demo) return;
     void controls.start();
-  }, [startRequests, controls]);
+  }, [startRequests, controls, demo]);
 
   const hidden = HIDDEN_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
   if (hidden) return null;
 
-  return <RecordHud controls={controls} />;
+  return <RecordHud controls={controls} demo={demo} />;
 }

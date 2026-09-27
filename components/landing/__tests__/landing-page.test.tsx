@@ -1,6 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, within } from "@testing-library/react";
 import { LandingPage } from "../landing-page";
+
+// The Server Action is a server module; the page test only needs its shape.
+vi.mock("@/app/notes/actions/demo", () => ({ enterDemo: async () => null }));
 
 /** What a stranger with no session gets at "/" (issue #60): what the product
  *  is, a way to sign in, and honesty about what it does not offer. */
@@ -23,10 +26,14 @@ describe("LandingPage", () => {
     expect(document.body).toHaveTextContent(/invitation/i);
   });
 
-  it("has no demo button until the demo ships (#19)", () => {
+  it("offers the demo as a button in a form, never a link (#19)", () => {
     render(<LandingPage />);
 
-    expect(screen.queryByRole("button", { name: /demo/i })).toBeNull();
+    // A link is a GET, and a GET is followed by previews and crawlers. Only a
+    // press may create a demo visitor: docs/adr/0001.
+    const button = screen.getByRole("button", { name: "Try the demo" });
+    expect(button).toHaveAttribute("type", "submit");
+    expect(button.closest("form")).not.toBeNull();
     expect(screen.queryByRole("link", { name: /demo/i })).toBeNull();
   });
 

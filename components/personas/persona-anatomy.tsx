@@ -12,6 +12,8 @@ import { DepthControl } from "./depth-control";
 import { QuickActionsEditor } from "./quick-actions-editor";
 import { DefaultLensButton } from "./default-lens-button";
 import { usePersonaWrite } from "./use-persona-write";
+import { DemoOffNote, useDemo } from "@/components/demo/demo-mode";
+import { PERSONAS_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * One persona's anatomy, App Surfaces 03's right-hand pane.
@@ -79,6 +81,7 @@ export function PersonaAnatomy({
   const lens = lensPromptFor(persona.id);
   const depthWrite = usePersonaWrite(REFUSED);
   const [depth, setDepth] = useOptimistic(persona.depth);
+  const demo = useDemo();
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
@@ -102,6 +105,7 @@ export function PersonaAnatomy({
               <span className={SOON}>Soon</span>
             </button>
           </span>
+          {demo ? <DemoOffNote id={PERSONAS_DEMO_OFF} /> : null}
           <DefaultLensButton
             slug={persona.id}
             defaultPersonaId={defaultPersonaId}

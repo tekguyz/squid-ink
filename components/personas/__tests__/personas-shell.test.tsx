@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PersonasShell } from "../personas-shell";
+import { DemoMode } from "@/components/demo/demo-mode";
 import { lensPromptFor } from "@/lib/notegen/lens-prompts";
 import { MAX_QUICK_ACTIONS } from "@/lib/notes/persona-config";
 import type { PersonasScreen } from "@/lib/notes/get-personas-screen";
@@ -217,5 +218,54 @@ describe("PersonasShell — the default lens", () => {
     await userEvent.click(tab(/Investor/));
     await userEvent.click(screen.getByRole("button", { name: "Set as default" }));
     expect(actions.setDefaultPersona).toHaveBeenCalledWith("investor");
+  });
+});
+
+/** Issue #19: a demo visitor sees the four personas read-only. Switching the
+ *  rail still works — it is local selection — and every write is turned off. */
+describe("PersonasShell in the demo", () => {
+  const demo = () =>
+    render(
+      <DemoMode demo>
+        <PersonasShell screen={screenData} />
+      </DemoMode>,
+    );
+  const OFF = "Not available in the demo.";
+
+  it("turns off every write and says why", async () => {
+    demo();
+    const writes = [
+      ...screen.getAllByRole("button", { name: /^(brief|dense|exhaustive)$/i }),
+      ...screen.getAllByRole("button", { name: /^Remove quick action/ }),
+      screen.getByRole("textbox", { name: "New quick action" }),
+      screen.getByRole("button", { name: "Add" }),
+    ];
+    for (const control of writes) {
+      expect(control).toBeDisabled();
+      expect(control).toHaveAccessibleDescription(OFF);
+    }
+    await userEvent.click(screen.getByRole("button", { name: /exhaustive/i }));
+    expect(actions.setPersonaDepth).not.toHaveBeenCalled();
+  });
+
+  it("turns off Set as default on a lens that is not the default", async () => {
+    demo();
+    await userEvent.click(tab(/Investor/));
+    const set = screen.getByRole("button", { name: "Set as default" });
+    expect(set).toBeDisabled();
+    expect(set).toHaveAccessibleDescription(OFF);
+  });
+
+  it("still switches the rail", async () => {
+    demo();
+    await userEvent.click(tab(/Investor/));
+    expect(tab(/Investor/)).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("is unchanged outside the demo", () => {
+    render(<PersonasShell screen={screenData} />);
+    expect(screen.getByRole("button", { name: /exhaustive/i })).toBeEnabled();
+    expect(screen.getByRole("textbox", { name: "New quick action" })).toBeEnabled();
+    expect(screen.queryByText(OFF)).toBeNull();
   });
 });

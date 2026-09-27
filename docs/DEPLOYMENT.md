@@ -238,7 +238,10 @@ where marked measured:
 
 | Setting | Value |
 |---|---|
-| Allow new users to sign up | **off**, set by the owner 2026-09-14. **Measured:** `signUp` → `422 signup_disabled`; existing accounts still sign in |
+| Allow new users to sign up | **on** since 2026-09-26 (issue #19), set through the management API, because anonymous sign-in refuses to run with it off. Off 2026-09-14 to 2026-09-26. Public signup stays closed by the hook below. **Measured:** email `signUp` → `403 Signups not allowed for this instance`; existing accounts still sign in |
+| Before user created hook | **on**, `pg-functions://postgres/public/hook_only_anonymous_signups` (`supabase/schemas/demo_visitors.sql`), enabled 2026-09-26 BEFORE signup was switched on. Lets only anonymous demo visitors through |
+| Allow anonymous sign-ins | **on** since 2026-09-15: demo visitors (issue #19) |
+| Anonymous sign-in rate limit | **30 an hour per IP**, read through the management API 2026-09-26 (`rate_limit_anonymous_users`). The demo's hourly cap. The demo button's Server Action is the caller, so the IP counted is the server's, not the visitor's |
 | Confirm email | on. **Measured:** an unconfirmed account's password sign-in returns `400 email_not_confirmed` |
 | Email OTP expiration | `3600` s. This one setting governs links too. It must equal `lib/auth/email-link-policy.ts` |
 | Email OTP length | `6`. **Measured** 6 with `generateLink`; it was **8** before the owner changed it. Unused, since the app sends links |

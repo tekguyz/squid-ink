@@ -248,7 +248,8 @@ console.log("");
 // account and can never be mistaken for one of the fixtures.
 const stamp = Date.now();
 const probeEmail = `provisioning-probe-${stamp}@example.test`;
-const probePassword = `probe-${stamp}-${Math.random().toString(36).slice(2)}`;
+// Lower, upper, digit and symbol: the hosted project demands all four.
+const probePassword = `probe-${stamp}-${Math.random().toString(36).slice(2)}-Aa1`;
 let probeId = null;
 
 try {
