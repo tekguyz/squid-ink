@@ -272,3 +272,60 @@ describe("ChatPanel — in-flight states", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/went wrong/i);
   });
 });
+
+/** Issue #19: the demo's ten questions, counted where the visitor can see
+ *  them, and the route's refusals shown in its own words. */
+describe("ChatPanel — demo questions", () => {
+  it("says how many questions are left", () => {
+    render(<ChatPanel {...base} demoQuestionsLeft={7} onCitationSelect={vi.fn()} />);
+    expect(screen.getByText("7 of 10 demo questions left")).toBeInTheDocument();
+  });
+
+  it("counts a question sent in this session", () => {
+    chatState = {
+      messages: [{ id: "m1", role: "user", parts: [{ type: "text", text: "q" }] }],
+    };
+    render(<ChatPanel {...base} demoQuestionsLeft={7} onCitationSelect={vi.fn()} />);
+    expect(screen.getByText("6 of 10 demo questions left")).toBeInTheDocument();
+  });
+
+  it("stops offering Ask when none are left, and says so", async () => {
+    render(<ChatPanel {...base} demoQuestionsLeft={0} onCitationSelect={vi.fn()} />);
+    await userEvent.type(screen.getByRole("textbox", { name: /ask/i }), "one more?");
+    expect(screen.getByRole("button", { name: /^ask$/i })).toBeDisabled();
+    expect(screen.getByText(/used all 10 demo questions/i)).toBeInTheDocument();
+  });
+
+  it("shows no count to a real account", () => {
+    render(<ChatPanel {...base} onCitationSelect={vi.fn()} />);
+    expect(screen.queryByText(/demo questions/)).toBeNull();
+  });
+
+  it("shows the route's own refusal, not the generic line", () => {
+    chatState = {
+      error: new Error(
+        JSON.stringify({ error: "The demo has answered all the questions it can this month." }),
+      ),
+    };
+    render(<ChatPanel {...base} demoQuestionsLeft={4} onCitationSelect={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The demo has answered all the questions it can this month.",
+    );
+  });
+
+  it("does not count a question that ended in an error", () => {
+    // Refused or rolled back by the route, so the server did not count it.
+    chatState = {
+      messages: [{ id: "m1", role: "user", parts: [{ type: "text", text: "q" }] }],
+      error: new Error(JSON.stringify({ error: "The demo has answered all the questions it can this month." })),
+    };
+    render(<ChatPanel {...base} demoQuestionsLeft={7} onCitationSelect={vi.fn()} />);
+    expect(screen.getByText("7 of 10 demo questions left")).toBeInTheDocument();
+  });
+
+  it("falls back to the generic line for an error with no message of its own", () => {
+    chatState = { error: new Error("Failed to fetch") };
+    render(<ChatPanel {...base} onCitationSelect={vi.fn()} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Something went wrong answering that.");
+  });
+});

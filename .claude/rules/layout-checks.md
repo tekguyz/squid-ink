@@ -63,6 +63,15 @@ session at all five widths, both themes — the same assertions, plus the page
 is the landing page and not a redirect, it offers no Record control, and its
 specimen's citation chips (links there, not buttons) have 24px targets.
 
+**Then it signs in again as a demo visitor** (issue #19) — anonymously, as
+the demo button does — and measures `/`, demo note 1, `/personas`,
+`/collections` and `/settings` with the same assertions, plus: the demo banner
+is on the page, the document is no taller than the viewport (the banner sits
+in flow and every signed-in screen is `h-app`), and every screen but
+Collections shows `ink-disabled`. Proved red first: it caught the HUD's
+turned-off Record painting its grey on a child span, and a `rule-strong` line
+under the banner at 1.51:1 against `tint` in dark. Each run is one real visit.
+
 Widths are `1440` and `1280` on every route. **`/` is also measured at `1024`,
 `768` and `390`**, because the Dashboard's stacked layout shipped 2026-09-15;
 `NARROW_WIDTHS` in the script lists which routes get narrow widths. No other

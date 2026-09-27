@@ -62,12 +62,25 @@ create policy chat_messages_select_own on public.chat_messages
 -- What bounds the cost is not this policy but two counts in
 -- app/api/chat/route.ts: the per-visitor cap, and the global monthly cap that
 -- demo_questions_this_month() below answers.
+--
+-- The note must be one the caller can READ (issue #19). note_id is a
+-- single-column foreign key, and a foreign key is validated as the referenced
+-- table's owner and is not subject to RLS, so on its own it accepts any note
+-- in the database. The subquery runs as the caller, under notes_select_own:
+-- a real account passes for its own notes, a demo visitor for the demo
+-- owner's, and nobody for anybody else's. The chat route checks the same
+-- thing first; this is the layer that holds if the route is ever bypassed.
 drop policy if exists chat_messages_insert_own on public.chat_messages;
 create policy chat_messages_insert_own on public.chat_messages
   for insert to authenticated
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and exists (select 1 from public.notes n where n.id = note_id)
+  );
 
--- Without with check, a user could rewrite user_id and hand the row away.
+-- Without with check, a user could rewrite user_id and hand the row away. The
+-- note clause is here for the reason it is on insert: an update could
+-- otherwise move a turn onto a note the caller cannot read.
 drop policy if exists chat_messages_update_own on public.chat_messages;
 create policy chat_messages_update_own on public.chat_messages
   for update to authenticated
@@ -78,6 +91,7 @@ create policy chat_messages_update_own on public.chat_messages
   with check (
     (select auth.uid()) = user_id
     and not public.is_anon_session()
+    and exists (select 1 from public.notes n where n.id = note_id)
   );
 
 drop policy if exists chat_messages_delete_own on public.chat_messages;

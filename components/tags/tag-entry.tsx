@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useDemo } from "@/components/demo/demo-mode";
 import { useRouter } from "next/navigation";
 import { addNoteTag, removeNoteTag } from "@/app/notes/actions/tags";
 import type { NoteTag } from "@/lib/notes/tags";
 import { TAG_CHIP } from "./tag-colors";
+import { NOTE_WRITES_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * The tag strip on Note Detail: what this note is filed under, and the one
@@ -41,6 +43,10 @@ export function TagEntry({
   const [draft, setDraft] = useState("");
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  // Issue #19: turned off for a demo visitor, frame rule-2. The reason is one
+  // note under this field and the collection field, rendered by the shell.
+  const demo = useDemo();
+  const describedBy = demo ? NOTE_WRITES_DEMO_OFF : undefined;
 
   const run = (work: () => Promise<unknown>) => {
     startTransition(async () => {
@@ -67,8 +73,9 @@ export function TagEntry({
           {tag.name}
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || demo}
             aria-label={`Remove tag ${tag.name}`}
+            aria-describedby={describedBy}
             className="focus-visible:outline-accent disabled:text-ink-disabled cursor-pointer leading-none focus-visible:outline-1 focus-visible:outline-offset-1"
             onClick={() => run(() => removeNoteTag(noteId, tag.id))}
           >
@@ -80,15 +87,16 @@ export function TagEntry({
       {/* The border is --control-edge because this IS an interactive control.
           --rule-2 is the edge of a decorative frame and would measure ~1.4:1
           here — see CLAUDE.md § Colour. */}
-      <span className="border-control-edge has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px]">
+      <span className={`${demo ? "border-rule-2" : "border-control-edge"} has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px]`}>
         <span aria-hidden className="font-mono text-muted text-[9px]">
           #
         </span>
         <input
           value={draft}
-          disabled={pending}
+          disabled={pending || demo}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="Add a tag"
+          aria-describedby={describedBy}
           placeholder="add tag"
           className={FIELD}
         />

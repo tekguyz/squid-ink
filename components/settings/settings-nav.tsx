@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { AppNav } from "@/components/app-nav";
 import { signOut } from "@/app/notes/actions/session";
+import { leaveDemo } from "@/app/notes/actions/demo";
+import { useDemo } from "@/components/demo/demo-mode";
+import { DEMO_VISITOR_LABEL } from "@/lib/auth/demo-visitor";
 
 /**
  * The Settings left rail, App Surfaces 06.
@@ -61,6 +64,11 @@ export function SettingsNav({
   active: SectionId;
   onSelect: (id: SectionId) => void;
 }) {
+  // Issue #19. A demo visitor has no address and no account to return to, so
+  // the identity line names the visit and the button leaves it — to the case
+  // study, not to /login.
+  const demo = useDemo();
+
   return (
     <nav
       aria-label="Settings"
@@ -69,7 +77,7 @@ export function SettingsNav({
       <AppNav current="settings" />
       <div className="px-[14px] pt-[14px] pb-[12px]">
         <span className="font-mono text-meta-2 block truncate text-[9px] uppercase">
-          {email ?? "Signed in"}
+          {demo ? DEMO_VISITOR_LABEL : (email ?? "Signed in")}
         </span>
       </div>
 
@@ -101,12 +109,15 @@ export function SettingsNav({
         {/* A form, so sign-out works before hydration and needs no client
             handler. The action signs out THIS browser only — see
             app/notes/actions/session.ts for why not every session. */}
-        <form action={signOut}>
+        <form action={demo ? leaveDemo : signOut}>
           <button
             type="submit"
-            className="border-danger text-danger hover:bg-raised focus-visible:outline-accent w-full cursor-pointer border px-[10px] py-[6px] text-center font-mono text-[9.5px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2"
+            // Leaving the demo destroys nothing, so it is not in danger red.
+            className={`${
+              demo ? "border-control-edge text-ink-2" : "border-danger text-danger"
+            } hover:bg-raised focus-visible:outline-accent w-full cursor-pointer border px-[10px] py-[6px] text-center font-mono text-[9.5px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2`}
           >
-            Log me out
+            {demo ? "Leave demo" : "Log me out"}
           </button>
         </form>
       </div>

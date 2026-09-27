@@ -31,6 +31,14 @@ security definer
 set search_path = ''
 as $$
 begin
+  -- A demo visitor gets no personas of their own (issue #19). They read the
+  -- demo owner's four through personas_select_own, and a visit must create
+  -- one small auth row, not five: a bot pressing the demo button in a loop
+  -- would otherwise write four persona rows per press.
+  if new.is_anonymous then
+    return new;
+  end if;
+
   insert into public.personas (user_id, slug, name, sub, depth, quick_actions, sort_order)
   values
     (new.id, 'neutral-analyst', 'Neutral Analyst', 'dense · no framing', 'dense',

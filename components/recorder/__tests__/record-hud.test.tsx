@@ -140,3 +140,38 @@ describe("RecordHud", () => {
     expect(screen.getByText(/SNAPS TO THE NEAREST CORNER/)).toBeInTheDocument();
   });
 });
+
+/** Issue #19: a demo visitor sees Record, turned off and saying why. Hiding it
+ *  would hide that the app records at all. */
+describe("RecordHud in the demo", () => {
+  beforeEach(() => state().discard());
+
+  it("shows Record turned off with the demo message, still reachable by Tab", async () => {
+    const c = controls();
+    render(<RecordHud controls={c} demo />);
+    const record = screen.getByRole("button", { name: /record/i });
+    expect(record).toHaveAttribute("aria-disabled", "true");
+    expect(record).toHaveAccessibleDescription("Not available in the demo.");
+    await userEvent.tab();
+    expect(record).toHaveFocus();
+    await userEvent.click(record);
+    expect(c.start).not.toHaveBeenCalled();
+  });
+
+  it("ignores the shortcut", async () => {
+    const c = controls();
+    render(<RecordHud controls={c} demo />);
+    await userEvent.keyboard("{Control>}{Shift>}R{/Shift}{/Control}");
+    expect(c.start).not.toHaveBeenCalled();
+  });
+
+  it("is unchanged outside the demo", async () => {
+    const c = controls();
+    render(<RecordHud controls={c} demo={false} />);
+    const record = screen.getByRole("button", { name: /record/i });
+    expect(record).toBeEnabled();
+    expect(screen.queryByText("Not available in the demo.")).toBeNull();
+    await userEvent.click(record);
+    expect(c.start).toHaveBeenCalled();
+  });
+});

@@ -155,24 +155,25 @@ async function handle(req: Request) {
     return bad(500, "Search is not configured.");
   }
 
-  // 4. Read the note BEFORE persisting anything. RLS returns null for a note
-  //    the caller does not own, so this doubles as the ownership check — and
-  //    doing it first means a bad note id cannot burn a rate-limit slot or
-  //    leave an orphaned row behind.
-  //    BOTH scopes are checked, which they were not until 2026-09-15. The
-  //    all_notes path never reads the note row, so it never proved ownership,
-  //    and the note_id foreign key does not prove it either — a foreign key is
-  //    validated as the referenced table's owner and is not subject to RLS. So
-  //    a caller could name somebody else's note, have the insert land under
-  //    their own user_id, and get a model call out of it. See
-  //    ports.noteBelongsToCaller. The same 404 either way: whether a note
-  //    exists is not a demo visitor's business.
-  const noteContext =
-    scope === "this_note" ? await ports.readNoteContext(noteId) : null;
-  if (scope === "this_note" && !noteContext) return bad(404, "Note not found.");
-  if (scope === "all_notes" && !(await ports.noteBelongsToCaller(noteId))) {
+  // 4. Check the note BEFORE persisting anything, for BOTH scopes, so a bad
+  //    note id cannot burn a rate-limit slot or leave an orphaned row behind.
+  //    RLS returns nothing for a note the caller cannot read. It CAN read one
+  //    it does not own: an anonymous session reads the demo owner's notes
+  //    (issue #19, ADR 0001). That is accepted from a demo visitor and from
+  //    nobody else, so a future widening of the select policy cannot widen
+  //    chat with it. The all_notes path had no check at all until 2026-09-15 —
+  //    see ports.noteAccess. The same 404 every way: whether a note exists is
+  //    not a demo visitor's business. The two reads are issued together: the
+  //    context does not depend on the access answer, and in sequence they
+  //    were two round trips on every single-note question.
+  const [access, noteContext] = await Promise.all([
+    ports.noteAccess(noteId, user.id),
+    scope === "this_note" ? ports.readNoteContext(noteId) : Promise.resolve(null),
+  ]);
+  if (access === null || (access === "demo" && !isDemo)) {
     return bad(404, "Note not found.");
   }
+  if (scope === "this_note" && !noteContext) return bad(404, "Note not found.");
 
   // 5. Persist the user's turn, then read history back. The insert lands
   //    first so the newest message is part of the history we send.

@@ -8,6 +8,7 @@ import { seedNotePersona, setNotePersona } from "@/app/notes/actions/persona";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 import { TagEntry } from "@/components/tags/tag-entry";
 import { CollectionPicker } from "@/components/collections/collection-picker";
+import { DemoOffNote, useDemo } from "@/components/demo/demo-mode";
 import { ActionItemsTable } from "./action-items-table";
 import { AudioPlayer } from "./audio-player";
 import { ChatPanel } from "./chat/chat-panel";
@@ -18,6 +19,7 @@ import { SummarySection } from "./summary-section";
 import { TakeawaysSection } from "./takeaways-section";
 import { TranscribeButton } from "./transcribe-button";
 import { TranscriptPane } from "./transcript-pane";
+import { NOTE_WRITES_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /** Segment 8 is the design's default selection. */
 const INITIAL_SEGMENT_ID = 8;
@@ -37,13 +39,17 @@ const SELECTABLE: ReadonlySet<string> = new Set(["local", "uploading"]);
 export function NoteDetailShell({
   note,
   history,
+  demoQuestionsLeft = null,
 }: {
   note: Note;
   history: ChatTurn[];
+  /** Issue #19: a demo visitor's remaining questions, or null. */
+  demoQuestionsLeft?: number | null;
 }) {
   const [activeSegmentId, setActiveSegmentId] = useState(INITIAL_SEGMENT_ID);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const demo = useDemo();
 
   // Frozen the moment generation is committed to. WIDER than "notegenStatus is
   // set": pressing Transcribe leaves notegenStatus null for the whole
@@ -116,7 +122,7 @@ export function NoteDetailShell({
   }, [activeSegmentId]);
 
   return (
-    <div className="grid h-dvh grid-cols-[136px_minmax(0,1fr)_404px] bg-canvas text-ink">
+    <div className="grid h-app grid-cols-[136px_minmax(0,1fr)_404px] bg-canvas text-ink">
       <PersonaRail
         personas={note.personas}
         selectedId={persona.id}
@@ -142,6 +148,12 @@ export function NoteDetailShell({
           collections={note.collections}
           options={note.collectionOptions}
         />
+        {/* Issue #19: the one reason for both fields above. */}
+        {demo ? (
+          <p className="px-[26px] pb-[13px]">
+            <DemoOffNote id={NOTE_WRITES_DEMO_OFF} />
+          </p>
+        ) : null}
         {/* Sits with the date/duration meta line, because that is where a
             reader looks for facts about the recording itself. Renders nothing
             when the note has no object. */}
@@ -180,6 +192,7 @@ export function NoteDetailShell({
           segments={note.segments}
           activeSegmentId={activeSegmentId}
           onCitationSelect={handleCitationSelect}
+          demoQuestionsLeft={demoQuestionsLeft}
         />
       </main>
 

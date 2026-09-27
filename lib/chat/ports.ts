@@ -65,29 +65,32 @@ export function createChatPorts(supabase: SupabaseClient) {
       return count ?? 0;
     },
 
-    /** Whether the caller owns this note. RLS answers it — no user_id filter.
+    /** How the caller may use this note: "own", "demo", or null for a note
+     *  it cannot read at all. RLS answers the read — no user_id filter.
      *
-     *  Exists for the all_notes path, which has no other reason to read the
-     *  note row and therefore had no ownership check at all until 2026-09-15.
-     *  A foreign key is validated as the REFERENCED table's owner and is not
-     *  subject to RLS, so `note_id references notes (id)` happily accepted a
-     *  note belonging to somebody else: the insert landed under the caller's
-     *  own user_id and the model call then ran. The answer was useless — the
-     *  search is RLS-scoped, so it found only the caller's own chunks — but it
-     *  was not free, and "costs money, returns nothing" is the shape of a bill
-     *  nobody notices.
+     *  The ownership check for both scopes. note_id's foreign key is validated
+     *  as the REFERENCED table's owner and is not subject to RLS, so it proves
+     *  nothing; until 2026-09-15 the all_notes path had no check at all, and a
+     *  caller could name somebody else's note and get a model call out of it.
      *
-     *  Low risk while signup was closed and the app had two accounts. Enabling
-     *  anonymous sign-ins for demo mode is what made it reachable by anyone
-     *  holding the publishable key, which ships in the browser bundle. */
-    async noteBelongsToCaller(noteId: string): Promise<boolean> {
+     *  Two answers rather than a boolean since issue #19. notes_select_own
+     *  lets an anonymous session read the demo owner's notes, so "RLS returned
+     *  the row" stopped meaning "the caller owns it". A readable row that is
+     *  not the caller's can only have come through that demo clause, and the
+     *  route accepts it only from an anonymous session. user_id is read to
+     *  COMPARE after RLS has scoped the row, not to filter. */
+    async noteAccess(
+      noteId: string,
+      callerId: string,
+    ): Promise<"own" | "demo" | null> {
       const { data, error } = await supabase
         .from("notes")
-        .select("id")
+        .select("user_id")
         .eq("id", noteId)
-        .maybeSingle();
+        .maybeSingle<{ user_id: string }>();
       if (error) throw error;
-      return data !== null;
+      if (!data) return null;
+      return data.user_id === callerId ? "own" : "demo";
     },
 
     /** DEMO MODE, per visitor: every question this anonymous session has ever

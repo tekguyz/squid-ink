@@ -6,6 +6,8 @@ import { HUD_SAFE_MARGIN } from "@/components/recorder/hud-safe-margin";
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
 import type { RecorderControls } from "@/lib/recorder/use-recorder";
+import { DemoOffNote } from "@/components/demo/demo-mode";
+import { RECORD_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * The record HUD, App Surfaces surface 02b.
@@ -37,13 +39,23 @@ const PILL =
 const MONO_ACTION =
   "font-mono text-[9px] tracking-[0.06em] uppercase cursor-pointer";
 
-export function RecordHud({ controls }: { controls: RecorderControls }) {
+/** `demo`: a demo visitor (issue #19) sees Record turned off, with the reason.
+ *  Hidden would say the app does not record; the database refuses the upload
+ *  either way. */
+export function RecordHud({
+  controls,
+  demo = false,
+}: {
+  controls: RecorderControls;
+  demo?: boolean;
+}) {
   const phase = useRecorderStore((s) => s.phase);
   const elapsedMs = useRecorderStore((s) => s.elapsedMs);
   const level = useRecorderStore((s) => s.level);
   const errorMessage = useRecorderStore((s) => s.errorMessage);
 
   useEffect(() => {
+    if (demo) return;
     const onKey = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || !event.shiftKey) return;
       if (event.key.toLowerCase() !== "r") return;
@@ -53,7 +65,7 @@ export function RecordHud({ controls }: { controls: RecorderControls }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [controls]);
+  }, [controls, demo]);
 
   const elapsed = formatElapsed(elapsedMs);
 
@@ -64,7 +76,37 @@ export function RecordHud({ controls }: { controls: RecorderControls }) {
       style={{ right: HUD_SAFE_MARGIN, bottom: HUD_SAFE_MARGIN }}
       className="pointer-events-none fixed z-50 flex flex-col items-end gap-[9px]"
     >
-      {phase === "idle" ? (
+      {phase === "idle" && demo ? (
+        // DESIGN.md § Buttons → Disabled: the label drops to ink-disabled and
+        // the frame to rule-2, never opacity. The note is the button's
+        // description, so a screen reader hears why as well as that. One row,
+        // so the pill keeps its drawn height inside the HUD_RESERVE strip —
+        // stacked, it measured 55px and rose 7px into the feed.
+        <div
+          className={`${PILL} bg-pane border-rule-2 gap-[11px] border px-[13px] py-[9px]`}
+        >
+          {/* aria-disabled, not disabled: it stays in the Tab order, so a
+              keyboard user reaches it and hears why it is off. It has no
+              click handler, so pressing it does nothing. */}
+          <button
+            type="button"
+            aria-disabled="true"
+            aria-describedby={RECORD_DEMO_OFF}
+            className="text-ink-disabled focus-visible:outline-accent flex cursor-not-allowed items-center gap-[11px] focus-visible:outline-2 focus-visible:outline-offset-1"
+          >
+            <span aria-hidden="true" className="bg-ink-disabled h-[9px] w-[9px]" />
+            <span className="font-header text-[13.5px] font-semibold">
+              Record
+            </span>
+          </button>
+          {/* Below sm the pill would run over the feed's footer line; the
+              banner already says Demo there, and the note stays the button's
+              description either way. */}
+          <DemoOffNote id={RECORD_DEMO_OFF} className="max-sm:hidden" />
+        </div>
+      ) : null}
+
+      {phase === "idle" && !demo ? (
         <button
           type="button"
           onClick={() => void controls.start()}

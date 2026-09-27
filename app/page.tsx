@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDashboardFeed } from "@/lib/notes/get-dashboard-feed";
 import { feedLimit, olderHref } from "@/lib/notes/feed-page";
+import { DEMO_VISITOR_LABEL, isDemoVisitor } from "@/lib/auth/demo-visitor";
 
 /**
  * The Dashboard, App Surfaces 01. This replaced the throwaway scaffold that
@@ -68,8 +69,9 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export default async function Root({ searchParams }: { searchParams: SearchParams }) {
   // No user means no RLS identity, so the Dashboard's queries would return
   // nothing or fail. The landing page reads nothing at all.
-  if (!(await getCurrentUser())) return <LandingPage />;
-  return dashboard(searchParams);
+  const user = await getCurrentUser();
+  if (!user) return <LandingPage />;
+  return dashboard(searchParams, isDemoVisitor(user));
 }
 
 /** A plain async function rather than a component: it runs only after the
@@ -77,6 +79,9 @@ export default async function Root({ searchParams }: { searchParams: SearchParam
 async function dashboard(
   // A Promise in the App Router, and awaited rather than read synchronously.
   searchParams: SearchParams,
+  // A demo visitor (issue #19): the rail names the visit, since an anonymous
+  // identity has no address. The header reads the fact from app/layout.tsx.
+  demo: boolean,
 ) {
   // `?tag=<slug>` is the whole filter. It lives in the URL so it survives a
   // refresh and can be linked, and it is applied by the same server query that
@@ -93,10 +98,10 @@ async function dashboard(
   const onScreen = feed.groups.reduce((sum, g) => sum + g.notes.length, 0);
 
   return (
-    <div className="h-dvh overflow-hidden">
+    <div className="h-app overflow-hidden">
       <div className="bg-canvas text-ink grid h-full grid-cols-[212px_minmax(0,1fr)] max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]">
         <IdentityRail
-          email={feed.email}
+          email={demo ? DEMO_VISITOR_LABEL : feed.email}
           totalNotes={feed.totalNotes}
           groups={feed.groups}
           tagChips={feed.tagChips}

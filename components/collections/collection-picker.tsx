@@ -7,6 +7,8 @@ import {
   removeNoteFromCollection,
 } from "@/app/notes/actions/collections";
 import type { NoteCollection } from "@/lib/notes/collections";
+import { useDemo } from "@/components/demo/demo-mode";
+import { NOTE_WRITES_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * What this note is filed under, and the one place a note is filed.
@@ -50,6 +52,10 @@ export function CollectionPicker({
   const [pending, startTransition] = useTransition();
   const listId = useId();
   const router = useRouter();
+  // Issue #19: turned off for a demo visitor, frame rule-2. The reason is one
+  // note under this field and the tag field, rendered by the shell.
+  const demo = useDemo();
+  const describedBy = demo ? NOTE_WRITES_DEMO_OFF : undefined;
 
   const run = (work: () => Promise<unknown>) => {
     startTransition(async () => {
@@ -79,8 +85,9 @@ export function CollectionPicker({
           {collection.name}
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || demo}
             aria-label={`Remove from ${collection.name}`}
+            aria-describedby={describedBy}
             className="focus-visible:outline-accent disabled:text-ink-disabled cursor-pointer leading-none focus-visible:outline-1 focus-visible:outline-offset-1"
             onClick={() =>
               run(() => removeNoteFromCollection(noteId, collection.id))
@@ -93,16 +100,17 @@ export function CollectionPicker({
 
       {/* --control-edge, because this is an interactive control and --rule-2
           is the edge of a decorative frame — see CLAUDE.md § Colour. */}
-      <span className="border-control-edge has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px]">
+      <span className={`${demo ? "border-rule-2" : "border-control-edge"} has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px]`}>
         <span aria-hidden className="font-mono text-muted text-[9px]">
           ⌷
         </span>
         <input
           value={draft}
           list={listId}
-          disabled={pending}
+          disabled={pending || demo}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="File this note in a collection"
+          aria-describedby={describedBy}
           placeholder="add to collection"
           className={FIELD}
         />

@@ -7,6 +7,7 @@ import type { ChatScope, ChatTurn, Citation } from "@/lib/chat/types";
 import { MAX_MESSAGE_CHARS } from "@/lib/chat/limits";
 import { ChatMessage } from "./chat-message";
 import { ScopeToggle } from "./scope-toggle";
+import { DemoQuestionsLine, questionsLeftNow, refusalText } from "./demo-questions";
 
 /** One row of the search tool's output, as the tool returns it. Narrowed here
  *  rather than trusted, because it crosses the wire as JSON. */
@@ -52,7 +53,11 @@ export function ChatPanel({
   segments,
   activeSegmentId,
   onCitationSelect,
+  demoQuestionsLeft = null,
 }: {
+  /** A demo visitor's remaining questions when the page was read, or null for
+   *  a real account. The route is what enforces the cap; this only shows it. */
+  demoQuestionsLeft?: number | null;
   noteId: string;
   personaLabel: string;
   history: ChatTurn[];
@@ -94,7 +99,13 @@ export function ChatPanel({
 
   const busy = status === "submitted" || status === "streaming";
   const tooLong = draft.length > MAX_MESSAGE_CHARS;
-  const canSubmit = draft.trim().length > 0 && !tooLong && !busy;
+  const questionsLeft = questionsLeftNow(
+    demoQuestionsLeft,
+    messages.filter((m) => m.role === "user").length,
+    error !== undefined,
+  );
+  const outOfQuestions = questionsLeft === 0;
+  const canSubmit = draft.trim().length > 0 && !tooLong && !busy && !outOfQuestions;
 
   const submit = useCallback(
     (event: React.FormEvent) => {
@@ -177,7 +188,7 @@ export function ChatPanel({
             role="alert"
             className="mb-2 bg-notice-bg px-[9px] py-[7px] text-[11.5px] text-notice"
           >
-            Something went wrong answering that. Try again.
+            {refusalText(error) ?? "Something went wrong answering that. Try again."}
           </p>
         ) : null}
       </div>
@@ -218,6 +229,8 @@ export function ChatPanel({
           Too long — keep it under {CAP.format(MAX_MESSAGE_CHARS)} characters.
         </p>
       ) : null}
+
+      {questionsLeft === null ? null : <DemoQuestionsLine left={questionsLeft} />}
     </div>
   );
 }

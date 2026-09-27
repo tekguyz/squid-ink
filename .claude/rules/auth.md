@@ -6,6 +6,7 @@ paths:
   - "app/login/**"
   - "proxy.ts"
   - "supabase/templates/**"
+  - "app/notes/actions/demo.ts"
 ---
 
 # Auth
@@ -29,6 +30,27 @@ because they bite from files this rule's globs do not cover:
   mirrored in `supabase/templates/` and `config.toml` and never pushed.
   `node scripts/verify-email-templates.mjs` diffs hosted against the repo.
   `docs/DEPLOYMENT.md` § Auth email.
+
+## Demo visitors (issue #19)
+
+A demo visitor is an **anonymous** sign-in, made only by `enterDemo` in
+`app/notes/actions/demo.ts`, the POST behind the landing page's button. Never
+on a GET. It refuses when any session exists (`getUser`, so a visitor the
+cleanup job deleted gets a fresh visit), and sets `onboarded_at` in the new
+identity's metadata so the proxy's onboarding gate lets it through.
+
+**"Allow new users to sign up" is ON, and public signup is still closed.**
+Anonymous sign-in does not run with the switch off. The before-user-created
+hook `public.hook_only_anonymous_signups` (`supabase/schemas/demo_visitors.sql`)
+refuses every non-anonymous signup with a 403, which `sign-up.ts` shows as
+`signup_closed`. **Never turn the hook off while the switch is on** — that
+reopens public signup. The admin API skips the hook, so dashboard "Add user",
+`/api/dev-login` and `scripts/load-demo-owner.mjs` still work.
+
+The one "is this a demo visitor" fact is `isDemoVisitor(user)` in
+`lib/auth/demo-visitor.ts` — the `is_anonymous` claim that
+`public.is_anon_session()` reads in every write policy. `leaveDemo` signs a
+visitor out and goes to tekguyz.com, never to `/login`.
 
 Test the sign-in FORM locally with `RLS_TEST_OWNER_EMAIL` /
 `RLS_TEST_OWNER_PASSWORD` from `.env.local` at `/login`. To just reach a

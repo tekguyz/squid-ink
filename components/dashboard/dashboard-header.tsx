@@ -2,6 +2,8 @@
 
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
+import { useDemo } from "@/components/demo/demo-mode";
+import { RECORD_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * The feed's header bar, App Surfaces 01.
@@ -70,6 +72,7 @@ export function DashboardHeader() {
   const elapsedMs = useRecorderStore((s) => s.elapsedMs);
   const requestRecording = useRecorderStore((s) => s.requestRecording);
   const busy = phase !== "idle" && phase !== "error";
+  const demo = useDemo();
 
   return (
     // Below md the header wraps: the dead search field drops to its own full
@@ -131,6 +134,21 @@ export function DashboardHeader() {
               </>
             ) : null}
           </div>
+        ) : demo ? (
+          // Issue #19. DESIGN.md § Buttons → Disabled: a filled button that is
+          // unavailable drops to raised on a rule-2 frame, label ink-disabled.
+          // Its reason is the Record pill's note, one on the page rather than
+          // two. aria-disabled keeps it in the Tab order; nothing handles a
+          // click.
+          <button
+            type="button"
+            aria-disabled="true"
+            aria-describedby={RECORD_DEMO_OFF}
+            className={`${MONO_ACTION} bg-raised border-rule-2 text-ink-disabled focus-visible:outline-accent flex cursor-not-allowed items-center gap-[7px] border px-[13px] py-[7px] font-medium focus-visible:outline-2 focus-visible:outline-offset-1`}
+          >
+            <span aria-hidden className="bg-ink-disabled h-[9px] w-[9px]" />
+            Record
+          </button>
         ) : (
           <button
             type="button"

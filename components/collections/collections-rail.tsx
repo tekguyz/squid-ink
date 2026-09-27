@@ -32,9 +32,13 @@ const COUNT = "font-mono text-muted ml-auto text-[9.5px] tabular-nums";
 export function CollectionsRail({
   chips,
   activeSlug,
+  demo = false,
 }: {
   chips: CollectionChip[];
   activeSlug: string | null;
+  /** Issue #19: a demo visitor cannot name one, so the empty line does not
+   *  tell them to. The field above says why. */
+  demo?: boolean;
 }) {
   return (
     <nav
@@ -53,7 +57,7 @@ export function CollectionsRail({
       <CollectionCreate />
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-[8px] pt-[6px] pb-[10px]">
-        {chips.length === 0 ? (
+        {chips.length === 0 && demo ? null : chips.length === 0 ? (
           <p className="font-body text-muted px-[8px] pt-[6px] text-[12px]">
             No collections yet. Name one above, then file notes into it from any
             note.

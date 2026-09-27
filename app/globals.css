@@ -455,3 +455,17 @@
     touch-action: manipulation;
   }
 }
+
+/* The demo banner's band (issue #19). A signed-in screen is one viewport tall
+   with its own scroll inside, so a banner in flow above it would push the
+   bottom off the screen and pass the recorder HUD's reserved strip under the
+   fold. Those screens are `h-app` instead of `h-dvh`: the viewport less this
+   band, which is 0 unless the banner is on the page. The banner reads the same
+   variable for its own height, so the two cannot disagree. */
+body:has([data-demo-banner]) {
+  --demo-banner-h: 32px;
+}
+
+@utility h-app {
+  height: calc(100dvh - var(--demo-banner-h, 0px));
+}

@@ -3,6 +3,8 @@
 import { planForDepth } from "@/lib/notegen/depth-policy";
 import { PERSONA_DEPTHS } from "@/lib/notes/persona-config";
 import type { PersonaDepth } from "@/lib/notes/view-types";
+import { useDemo } from "@/components/demo/demo-mode";
+import { PERSONAS_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * The Brief / Dense / Exhaustive segmented control, and the line under it that
@@ -41,13 +43,16 @@ export function DepthControl({
   onSelect: (depth: PersonaDepth) => void;
 }) {
   const plan = planForDepth(value);
+  // Issue #19: read-only for a demo visitor. The selected segment keeps its
+  // fill so the lens's real depth still reads; the frame drops to rule-2.
+  const demo = useDemo();
 
   return (
     <div>
       <span
         role="group"
         aria-label="Depth"
-        className="border-control-edge flex w-fit border"
+        className={`${demo ? "border-rule-2" : "border-control-edge"} flex w-fit border`}
       >
         {PERSONA_DEPTHS.map((option) => {
           const selected = option === value;
@@ -56,12 +61,13 @@ export function DepthControl({
               key={option}
               type="button"
               aria-pressed={selected}
-              disabled={pending}
+              disabled={pending || demo}
+              aria-describedby={demo ? PERSONAS_DEMO_OFF : undefined}
               onClick={() => onSelect(option)}
               className={[
                 "font-mono px-[13px] py-[6px] text-[10px] capitalize",
                 "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
-                pending ? "cursor-progress" : "cursor-pointer",
+                demo ? "cursor-not-allowed" : pending ? "cursor-progress" : "cursor-pointer",
                 selected
                   ? "bg-tint text-accent-text"
                   : "text-ink-2 hover:bg-raised disabled:text-ink-disabled",

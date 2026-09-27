@@ -144,6 +144,19 @@ a separate, still-open question (see Branding below).
   public-facing surface linked from the tekguyz.com case study. The 2–5 minute
   recording-cap idea is **rejected**: it is moot once live recording is never
   reachable from open signup. (2026-09-15)
+- **How signup stays closed changed 2026-09-26 (issue #19); that it stays
+  closed did not.** Supabase refuses `signInAnonymously` while "Allow new
+  users to sign up" is off — measured, `Signups not allowed for this
+  instance`, and the auth server's anonymous handler checks that switch first.
+  So the switch is ON, and a **before-user-created hook**,
+  `public.hook_only_anonymous_signups` in `supabase/schemas/demo_visitors.sql`,
+  refuses every signup that is not anonymous. Measured after: email `signUp`
+  → `403 Signups not allowed for this instance`, shown as "Squid Ink is not
+  taking new accounts right now." The admin API does not call the hook
+  (supabase/auth `internal/api/admin.go`), so **adding a person is still the
+  dashboard's Add user**. The hook was enabled before the switch, so there was
+  no open window. Chosen by the owner over creating a throwaway real account
+  per visit with the secret key.
 **Frontend + hosting**
 - Next.js + Vercel. Netlify is out. Root cause of the prior build's sync-processing
   failures was Netlify Functions' 10-second timeout (and no WebSocket

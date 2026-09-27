@@ -9,6 +9,7 @@ import { DirtyRegistryProvider } from "./dirty-registry";
 import { NotBuiltYet, SectionFrame } from "./section-frame";
 import { SettingsFooter } from "./settings-footer";
 import { SECTION_IDS, SettingsNav, type SectionId } from "./settings-nav";
+import { useDemo } from "@/components/demo/demo-mode";
 
 /**
  * Settings, App Surfaces 06.
@@ -34,6 +35,9 @@ const ACTIVE_OFFSET = 24;
 export function SettingsShell({ screen }: { screen: SettingsScreen }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<SectionId>("account");
+  // Issue #19: a demo visitor has no email and no password, so Account says
+  // what a visit is instead of pointing at a reset they cannot use.
+  const demo = useDemo();
 
   // Measured on scroll rather than with an IntersectionObserver: the last
   // sections are short, and "the last section whose top has passed the top
@@ -57,7 +61,7 @@ export function SettingsShell({ screen }: { screen: SettingsScreen }) {
   }, []);
 
   return (
-    <div className="scroll-thin h-dvh overflow-x-auto overflow-y-hidden">
+    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden">
       <div
         style={{ minWidth: MIN_SURFACE_WIDTH }}
         className="bg-paper text-ink grid h-full grid-cols-[210px_minmax(0,1fr)]"
@@ -77,13 +81,26 @@ export function SettingsShell({ screen }: { screen: SettingsScreen }) {
               <SectionFrame
                 id="account"
                 title="Account"
-                lede="You sign in with the email address shown in the rail."
+                lede={
+                  demo
+                    ? "A demo visit has no account."
+                    : "You sign in with the email address shown in the rail."
+                }
               >
-                <NotBuiltYet>
-                  There is no profile or display name to change. You sign in with your
-                  email and password; to change the password, use “Forgot your
-                  password?” on the sign-in page.
-                </NotBuiltYet>
+                {demo ? (
+                  // Not NotBuiltYet: nothing is missing here, a visit simply
+                  // has no account. Its body type, without the label.
+                  <p className="font-body text-muted max-w-[560px] py-[15px] text-[12.5px] leading-[1.5]">
+                    This visit reads sample notes and ends after seven days. Leave demo, in
+                    the rail, ends it now.
+                  </p>
+                ) : (
+                  <NotBuiltYet>
+                    There is no profile or display name to change. You sign in with your
+                    email and password; to change the password, use “Forgot your
+                    password?” on the sign-in page.
+                  </NotBuiltYet>
+                )}
               </SectionFrame>
 
               <CaptureSection />

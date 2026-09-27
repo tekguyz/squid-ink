@@ -85,13 +85,24 @@ revoke all on storage.buckets from anon, authenticated;
 -- without a policy matches no rows on an RLS-enabled table, so no authenticated
 -- user can delete an object. RLS is the layer where "no deletion this pass" is
 -- actually enforceable, and it is enforced.
+--
+-- SELECT is widened for demo visitors exactly as notes_select_own is (ADR
+-- 0001): an anonymous session may also read the demo owner's folder, which
+-- holds demo note 1's recording. Read only; the write policies below still
+-- refuse every anonymous session.
 
 drop policy if exists audio_recordings_select_own on storage.objects;
 create policy audio_recordings_select_own on storage.objects
   for select to authenticated
   using (
     bucket_id = 'audio-recordings'
-    and (storage.foldername(name))[1] = (select auth.uid())::text
+    and (
+      (storage.foldername(name))[1] = (select auth.uid())::text
+      or (
+        (select public.is_anon_session())
+        and (storage.foldername(name))[1] = (select public.demo_owner_id())::text
+      )
+    )
   );
 
 -- The two write policies also refuse an anonymous (demo) session. An upload is

@@ -3,6 +3,8 @@
 import { useOptimistic } from "react";
 import { setDefaultPersona } from "@/app/notes/actions/configure-persona";
 import { usePersonaWrite } from "./use-persona-write";
+import { useDemo } from "@/components/demo/demo-mode";
+import { PERSONAS_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * "Set as default" — which lens a NEW note is seeded with.
@@ -43,6 +45,8 @@ export function DefaultLensButton({
   const { pending, message, run } = usePersonaWrite();
   const [shown, setShown] = useOptimistic(defaultPersonaId);
   const isDefault = shown === slug;
+  // Issue #19: a demo visitor cannot move the default. "Default" still reads.
+  const off = useDemo() && !isDefault;
 
   return (
     <div className="flex items-center gap-[8px]">
@@ -55,8 +59,9 @@ export function DefaultLensButton({
       <span title={EXPLAINS}>
         <button
           type="button"
-          disabled={isDefault || pending}
+          disabled={isDefault || pending || off}
           aria-pressed={isDefault}
+          aria-describedby={off ? PERSONAS_DEMO_OFF : undefined}
           onClick={() =>
             run(async () => {
               setShown(slug);
@@ -68,7 +73,9 @@ export function DefaultLensButton({
             "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
             isDefault
               ? "border-control-edge bg-tint text-accent-text cursor-default"
-              : pending
+              : off
+                ? "border-rule-2 text-ink-disabled cursor-not-allowed"
+                : pending
                 ? "border-rule-2 text-ink-disabled cursor-progress"
                 : "border-control-edge text-ink-2 hover:bg-raised cursor-pointer",
           ].join(" ")}
