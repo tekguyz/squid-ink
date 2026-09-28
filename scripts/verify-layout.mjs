@@ -53,8 +53,24 @@ const WIDTHS = [1440, 1280];
 
 /** Narrow widths, measured only on the routes whose breakpoints have shipped.
  *  "/" stacks below 1024 since 2026-09-15 (app/page.tsx): 1024 is the last
- *  two-column width, 768 the last four-track row, 390 a phone. */
-const NARROW_WIDTHS = { "/": [1024, 768, 390] };
+ *  two-column width, 768 the last four-track row, 390 a phone. The note,
+ *  Personas, Collections and Settings joined with issue #23. A note and a
+ *  collection have ids in their URLs, so they are keyed by kind; see
+ *  narrowWidthsFor. */
+const NARROW_WIDTHS = {
+  "/": [1024, 768, 390],
+  note: [1024, 768, 390],
+  "/personas": [1024, 768, 390],
+  "/collections": [1024, 768, 390],
+  collection: [1024, 768, 390],
+  "/settings": [1024, 768, 390],
+};
+
+function narrowWidthsFor(route) {
+  if (route.startsWith("/notes/")) return NARROW_WIDTHS.note;
+  if (route.startsWith("/collections/")) return NARROW_WIDTHS.collection;
+  return NARROW_WIDTHS[route] ?? [];
+}
 
 /** The landing page (issue #60): "/" with no session, before signIn() runs.
  *  Every width, because a shared link is opened on a phone as often as not. */
@@ -496,6 +512,94 @@ function report(route, width, theme, probe, expectChips) {
   );
 }
 
+/** Sets the theme, and brings the first citation chip into view: on a phone
+ *  the note's chips sit below the fold of its own scroll area, where the
+ *  tap-target probe has nothing to measure. Only that scroll area moves —
+ *  scrollIntoView would also scroll the overflow-hidden columns around it,
+ *  which no reader can do. A no-op on a page with no chip. */
+const themeAndChips = (theme) =>
+  `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}");
+     const chip = document.querySelector('button[aria-label^="Jump to transcript"]');
+     const area = chip?.closest(".overflow-auto, .overflow-y-auto");
+     if (area) area.scrollTop += chip.getBoundingClientRect().top - area.getBoundingClientRect().top - area.clientHeight / 2; })()`;
+
+/** Issue #23: the two pane states a note can be in that a plain load never
+ *  shows. Driven by the buttons a reader presses, then put back, because the
+ *  choice is saved in this browser and every later route would inherit it.
+ *
+ *  - 1440px, both panes hidden: the note alone between two strips.
+ *  - 768px, the transcript overlay open. It covers the note BY DESIGN, so
+ *    "no fixed element covers flow text" skips it in this one state, and says
+ *    so. Every other assertion — overlap with the HUD, inside the viewport —
+ *    still runs on it. */
+async function measureNotePanes(cdp, sessionId, route, width) {
+  const press = (name) =>
+    evaluate(
+      cdp,
+      sessionId,
+      `(async () => { const b = document.querySelector('button[aria-label="${name}"]');
+         if (!b) throw new Error('no "${name}" button');
+         b.click(); await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 400))); })()`,
+    );
+  const setTheme = (theme) =>
+    evaluate(
+      cdp,
+      sessionId,
+      `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}"); })()`,
+    );
+
+  if (width === 1440) {
+    await press("Hide transcript");
+    await press("Hide lens rail");
+    const where = `${route} [both panes hidden] @ ${width}px`;
+    const grid = await evaluate(
+      cdp,
+      sessionId,
+      `({ cols: getComputedStyle(document.querySelector("main").parentElement).gridTemplateColumns,
+          transcript: getComputedStyle(document.getElementById("transcript-pane")).display,
+          lens: getComputedStyle(document.getElementById("lens-pane")).display })`,
+    );
+    check(
+      grid.transcript === "none" && grid.lens === "none" && /^28px \S+ 28px$/.test(grid.cols),
+      `${where} — both panes fold to 28px strips`,
+      `columns "${grid.cols}", transcript ${grid.transcript}, lens rail ${grid.lens}`,
+    );
+    for (const theme of ["light", "dark"]) {
+      await setTheme(theme);
+      report(`${route} [both panes hidden]`, width, theme, await evaluate(cdp, sessionId, PROBE), true);
+      reportContrast(check, `${where} ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE));
+    }
+    await press("Show transcript");
+    await press("Show lens rail");
+  }
+
+  if (width === 768) {
+    await press("Show transcript");
+    const where = `${route} [transcript overlay] @ ${width}px`;
+    for (const theme of ["light", "dark"]) {
+      await setTheme(theme);
+      const probe = await evaluate(cdp, sessionId, PROBE);
+      const isOverlay = (l) => l.startsWith("aside#transcript-pane");
+      check(
+        probe.fixedLabels.some(isOverlay),
+        `${where} ${theme} — the overlay is open`,
+        `fixed elements: ${probe.fixedLabels.join(", ")}`,
+      );
+      const exempt = probe.overlayHits.filter((h) => isOverlay(h.overlay)).length;
+      console.log(`  note: ${where} ${theme} — "covers flow text" skips #transcript-pane (${exempt} covered lines): the overlay covers the note by design`);
+      probe.overlayHits = probe.overlayHits.filter((h) => !isOverlay(h.overlay));
+      report(`${route} [transcript overlay]`, width, theme, probe, false);
+      reportContrast(check, `${where} ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE));
+    }
+    await evaluate(
+      cdp,
+      sessionId,
+      `(async () => { dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+         await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 100))); })()`,
+    );
+  }
+}
+
 /** Issue #19: the same screens as a DEMO VISITOR. The banner sits in flow
  *  above every screen, so each must still end at the bottom of the viewport
  *  (no vertical page overflow), and every write control is turned off, so
@@ -511,13 +615,17 @@ async function measureDemo(cdp, sessionId) {
   if (!noteHref) throw new Error("Signed in as a demo visitor, but the dashboard listed no demo note");
 
   const routes = ["/", noteHref, "/personas", "/collections", "/settings"];
-  for (const width of [...WIDTHS, ...NARROW_WIDTHS["/"]]) {
+  const narrow = [...new Set(routes.flatMap(narrowWidthsFor))];
+  for (const width of [...WIDTHS, ...narrow]) {
     await cdp.send(
       "Emulation.setDeviceMetricsOverride",
       { width, height: VIEWPORT.height, deviceScaleFactor: 1, mobile: false },
       sessionId,
     );
-    for (const route of WIDTHS.includes(width) ? routes : ["/"]) {
+    const atWidth = WIDTHS.includes(width)
+      ? routes
+      : routes.filter((route) => narrowWidthsFor(route).includes(width));
+    for (const route of atWidth) {
       await goto(cdp, sessionId, `${ORIGIN}${route}`);
       const where = `${route} (demo) @ ${width}px`;
       const page = await evaluate(
@@ -533,11 +641,7 @@ async function measureDemo(cdp, sessionId) {
         `document ${page.docH}px tall in a ${page.vh}px viewport`,
       );
       for (const theme of ["light", "dark"]) {
-        await evaluate(
-          cdp,
-          sessionId,
-          `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}"); })()`,
-        );
+        await evaluate(cdp, sessionId, themeAndChips(theme));
         report(`${route} (demo)`, width, theme, await evaluate(cdp, sessionId, PROBE), route === noteHref);
         reportContrast(
           check,
@@ -677,7 +781,7 @@ async function main() {
     const routes = ["/", noteHref, "/personas", "/collections", "/settings"];
     if (collectionHref) routes.push(collectionHref);
 
-    const narrow = [...new Set(Object.values(NARROW_WIDTHS).flat())];
+    const narrow = [...new Set(routes.flatMap(narrowWidthsFor))];
     for (const width of [...WIDTHS, ...narrow]) {
       await cdp.send(
         "Emulation.setDeviceMetricsOverride",
@@ -686,7 +790,7 @@ async function main() {
       );
       const atWidth = WIDTHS.includes(width)
         ? routes
-        : routes.filter((route) => NARROW_WIDTHS[route]?.includes(width));
+        : routes.filter((route) => narrowWidthsFor(route).includes(width));
       for (const route of atWidth) {
         await goto(cdp, sessionId, `${ORIGIN}${route}`);
         for (const theme of ["light", "dark"]) {
@@ -694,11 +798,7 @@ async function main() {
           // looking distinct in light theme is not evidence they differ in
           // dark, and a contrast defect that exists in only one theme is
           // exactly the kind nobody looking at one screen ever sees.
-          await evaluate(
-            cdp,
-            sessionId,
-            `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}"); })()`,
-          );
+          await evaluate(cdp, sessionId, themeAndChips(theme));
           const probe = await evaluate(cdp, sessionId, PROBE);
           report(route, width, theme, probe, route === noteHref);
           // Issue #22. The tokens each route is KNOWN to render at full
@@ -716,6 +816,7 @@ async function main() {
           reportContrast(check, `${route} @ ${width}px ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE), mustShow);
           await evaluate(cdp, sessionId, UNPLANT);
         }
+        if (route === noteHref) await measureNotePanes(cdp, sessionId, route, width);
       }
     }
 

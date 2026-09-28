@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { isDemoVisitor } from "@/lib/auth/demo-visitor";
 import { DemoMode } from "@/components/demo/demo-mode";
 import { ThemeBoot } from "@/components/theme-boot";
+import { PaneBoot } from "@/components/note-detail/panes/pane-boot";
 import "./globals.css";
 
 const bitter = Bitter({
@@ -64,6 +65,7 @@ export default async function RootLayout({
     >
       <head>
         <ThemeBoot />
+        <PaneBoot />
       </head>
       <body className="bg-canvas text-ink font-body antialiased">
         {/* Only for a demo visitor, and above everything: see

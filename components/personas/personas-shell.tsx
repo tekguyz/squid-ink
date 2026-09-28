@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
+import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 import type { PersonasScreen } from "@/lib/notes/get-personas-screen";
 import { PersonaAnatomy } from "./persona-anatomy";
@@ -16,12 +17,12 @@ import { PersonaSwitcherRail } from "./persona-switcher-rail";
  * live in the pane, and all go through
  * app/notes/actions/configure-persona.ts.
  *
- * Held at MIN_SURFACE_WIDTH and scrolled sideways below it, the same interim
- * treatment app/page.tsx documents: one design exists, at one width, and
- * inventing a narrow layout here would be guessing at a decision this file
- * does not own.
+ * Held at 1280px and scrolled sideways from there down to 1024px. Below
+ * 1024px the rail stacks above the content (issue #23), the Dashboard's
+ * pattern in app/page.tsx: an ordinary narrow layout, not a designed one, and
+ * every narrow rule is a max-lg:/max-md: variant so the drawn width is
+ * untouched.
  */
-const MIN_SURFACE_WIDTH = 1280;
 
 export function PersonasShell({ screen }: { screen: PersonasScreen }) {
   const [selectedId, setSelectedId] = useState(
@@ -37,10 +38,13 @@ export function PersonasShell({ screen }: { screen: PersonasScreen }) {
     screen.personas.find((p) => p.id === selectedId) ?? screen.personas[0];
 
   return (
-    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden">
+    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden max-lg:overflow-x-hidden">
+      {/* Stacked, the pane runs the full width, so the whole grid ends
+          HUD_RESERVE above the bottom and no row passes under the Record
+          pill. */}
       <div
-        style={{ minWidth: MIN_SURFACE_WIDTH }}
-        className="bg-paper text-ink grid h-full grid-cols-[236px_minmax(0,1fr)]"
+        style={{ "--hud-reserve": HUD_RESERVE } as CSSProperties}
+        className="bg-paper text-ink grid h-full min-w-[1280px] max-lg:pb-(--hud-reserve) grid-cols-[236px_minmax(0,1fr)] max-lg:min-w-0 max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]"
       >
         <PersonaSwitcherRail
           personas={screen.personas}

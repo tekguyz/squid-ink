@@ -2278,6 +2278,10 @@ Screenshot review against the shipped app, not the design file.
   fixed per the 2026-08-30 entry above (rail 136px, transcript pane 404px,
   no responsive breakpoint in scope). Confirmed still true. Hide, resize, and
   detach are all undecided, not just unbuilt.
+  **RESOLVED 2026-09-27 (#23): hide only.** Each pane hides to a 28px strip,
+  saved per browser, with `[` and `]`; no resize, and detach is `wontfix`.
+  Below 1024px the transcript is an overlay, below 768px the lens rail is a
+  tab row, and Personas, Collections and Settings stack their rails.
 - **Theme toggle and Record HUD both claim "fixed bottom-right"
   independently — RESOLVED 2026-09-05.** `components/theme-toggle.tsx` was
   placed there at the user's request (2026-08-30 entry, outside the design

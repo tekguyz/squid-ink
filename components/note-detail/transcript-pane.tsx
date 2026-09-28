@@ -1,6 +1,6 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
 import type { Note, ProcessingStatus } from "@/lib/notes/view-types";
 import { TranscriptSegment } from "./transcript-segment";
@@ -10,18 +10,39 @@ export interface TranscriptPaneProps {
   note: Note;
   activeSegmentId: number;
   scrollRef: RefObject<HTMLDivElement | null>;
+  /** Issue #23: the pane hides. The shell owns the state. */
+  id?: string;
+  hidden?: boolean;
+  /** Below 1024px the pane is an overlay, open only while this is true. */
+  overlay?: boolean;
+  hideButton?: ReactNode;
 }
 
 export function TranscriptPane({
   note,
   activeSegmentId,
   scrollRef,
+  id = "transcript-pane",
+  hidden = false,
+  overlay = false,
+  hideButton,
 }: TranscriptPaneProps) {
   return (
-    <aside className="flex min-h-0 min-w-0 flex-col overflow-hidden bg-pane">
+    // Below 1024px: out of the grid, closed by default, and slid in over the
+    // note from the right. It stops above the Record HUD's strip rather than
+    // passing under it, so the two fixed boxes never share a pixel, and it
+    // starts under the demo banner.
+    <aside
+      id={id}
+      hidden={hidden}
+      aria-labelledby={`${id}-title`}
+      data-overlay={overlay}
+      style={{ bottom: HUD_RESERVE }}
+      className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-pane in-data-[pane-transcript=hidden]:lg:hidden max-lg:fixed max-lg:top-[var(--demo-banner-h,0px)] max-lg:right-0 max-lg:z-40 max-lg:hidden max-lg:w-[min(404px,100%)] max-lg:border-b max-lg:border-l max-lg:border-rule-strong max-lg:motion-safe:transition-transform max-lg:motion-safe:duration-200 max-lg:motion-safe:starting:translate-x-full max-lg:data-[overlay=true]:flex"
+    >
       <div className="border-b border-rule-strong px-[18px] pt-[15px] pb-[11px]">
         <div className="flex items-baseline gap-2">
-          <h2 className="font-header text-[16px] leading-[24px] font-semibold">Transcript</h2>
+          <h2 id={`${id}-title`} className="font-header text-[16px] leading-[24px] font-semibold">Transcript</h2>
           <span className="font-mono text-[9px] text-meta-2">
             {note.turnCount} TURNS
           </span>
@@ -42,6 +63,7 @@ export function TranscriptPane({
               Soon
             </span>
           </button>
+          <span className="-mr-[10px] self-center">{hideButton}</span>
         </div>
 
         {!note.hasSpeakerLabels ? (
@@ -85,7 +107,7 @@ export function TranscriptPane({
       <div
         aria-hidden="true"
         style={{ height: HUD_RESERVE }}
-        className="flex-none border-t border-rule-strong bg-pane"
+        className="flex-none border-t border-rule-strong bg-pane max-lg:hidden"
       />
     </aside>
   );

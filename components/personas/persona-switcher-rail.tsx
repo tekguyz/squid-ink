@@ -37,9 +37,9 @@ export function PersonaSwitcherRail({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r">
+    <div className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r max-lg:border-r-0 max-lg:border-b">
       {/* The way back. Until 2026-09-13 this screen had none. */}
-      <AppNav current="personas" />
+      <AppNav current="personas" rowBelow="lg" />
       <div className="border-rule-3 border-b px-[15px] pt-[15px] pb-[11px]">
         <h1 className="font-header text-ink text-[16px] font-semibold">
           Personas
@@ -55,7 +55,7 @@ export function PersonaSwitcherRail({
         role="tablist"
         aria-label="Persona"
         aria-orientation="vertical"
-        className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto py-[8px]"
+        className="scroll-thin flex min-h-0 flex-1 flex-col overflow-y-auto py-[8px] max-lg:flex-none max-lg:flex-row max-lg:overflow-x-auto max-lg:overflow-y-hidden"
       >
         {personas.map((persona) => {
           const selected = persona.id === selectedId;
@@ -70,7 +70,7 @@ export function PersonaSwitcherRail({
                 // border-accent, not border-tint-hover and not border-rule-2:
                 // this is the edge of an INTERACTIVE control, and CLAUDE.md
                 // § Colour keeps the two families apart on purpose.
-                "cursor-pointer border-l-2 px-[14px] py-[10px] text-left",
+                "cursor-pointer border-l-2 px-[14px] py-[10px] text-left max-lg:flex-none max-lg:whitespace-nowrap",
                 "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
                 selected
                   ? "border-accent bg-raised"
@@ -93,7 +93,7 @@ export function PersonaSwitcherRail({
           );
         })}
 
-        <span title={NOT_YET} className="mt-[2px] block px-[8px]">
+        <span title={NOT_YET} className="mt-[2px] block px-[8px] max-lg:flex-none max-lg:self-center max-lg:whitespace-nowrap">
           <button
             type="button"
             disabled
@@ -107,7 +107,7 @@ export function PersonaSwitcherRail({
         </span>
       </div>
 
-      <div className="border-rule-3 font-mono text-meta mt-auto border-t px-[15px] py-[11px] text-[9px] leading-[1.7]">
+      <div className="border-rule-3 font-mono text-meta mt-auto border-t px-[15px] py-[11px] text-[9px] leading-[1.7] max-lg:hidden">
         <span className="flex">
           applies to
           <span className="text-notice ml-auto">new notes</span>
