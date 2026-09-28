@@ -16,6 +16,18 @@ _Avoid_: Meeting, session, document
 The audio captured for one note, from the system, the mic, or both.
 _Avoid_: Clip, file
 
+**Recording mode**:
+What a recording captures, chosen by the user before it starts: Meeting or Mic only. A cancelled or refused prompt never chooses it.
+_Avoid_: Capture type, source
+
+**Meeting** (recording mode):
+The shared tab's or system's sound plus the user's microphone.
+_Avoid_: System, system recording
+
+**Mic only** (recording mode):
+The user's microphone alone. The only mode on a device that cannot share sound, such as Android, where it starts without asking.
+_Avoid_: Local, local recording (reads as "kept on this device", which is a different thing)
+
 **Transcript**:
 The text of a recording, split into segments.
 

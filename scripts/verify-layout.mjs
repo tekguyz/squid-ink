@@ -599,6 +599,38 @@ async function measureNotePanes(cdp, sessionId, route, width) {
   }
 }
 
+/** Issue #20: the Meeting / Mic only choice, opened by pressing the HUD's
+ *  Record as a user does, then closed with Escape. It is a corner overlay
+ *  that replaces the idle pill, so every assertion runs on it unexempted —
+ *  above all "no fixed element covers flow text", which is what keeps the
+ *  choice to one row inside the HUD_RESERVE strip. Headless desktop Chrome
+ *  has getDisplayMedia at every width, so the choice opens at 390 too. */
+async function measureModeChoice(cdp, sessionId, route, width) {
+  const opened = await evaluate(
+    cdp,
+    sessionId,
+    `(async () => { const hud = [...document.querySelectorAll("div.fixed")].find((d) => d.style.bottom);
+       const b = hud && [...hud.querySelectorAll("button")].find((x) => x.textContent.trim().startsWith("Record"));
+       if (!b) return false;
+       b.click(); await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 300)));
+       return !!hud.querySelector('[role="group"]'); })()`,
+  );
+  const where = `${route} [mode choice] @ ${width}px`;
+  check(opened, `${where} — Record opens the choice`, "no HUD Record, or no role=group after pressing it");
+  if (!opened) return;
+  for (const theme of ["light", "dark"]) {
+    await evaluate(cdp, sessionId, themeAndChips(theme));
+    report(`${route} [mode choice]`, width, theme, await evaluate(cdp, sessionId, PROBE), "if-any");
+    reportContrast(check, `${where} ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE));
+  }
+  await evaluate(
+    cdp,
+    sessionId,
+    `(async () => { dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+       await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 100))); })()`,
+  );
+}
+
 /** Issue #19: the same screens as a DEMO VISITOR. The banner sits in flow
  *  above every screen, so each must still end at the bottom of the viewport
  *  (no vertical page overflow), and every write control is turned off, so
@@ -816,6 +848,7 @@ async function main() {
           await evaluate(cdp, sessionId, UNPLANT);
         }
         if (route === noteHref) await measureNotePanes(cdp, sessionId, route, width);
+        if (route === "/" || route === noteHref) await measureModeChoice(cdp, sessionId, route, width);
       }
     }
 

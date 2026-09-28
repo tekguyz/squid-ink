@@ -14,14 +14,31 @@ into a route or a provider — a store that resets on navigation defeats the
 whole "ambient, not calendar-gated" decision. There is a test asserting that
 importing the module twice yields the same state.
 
-`getDisplayMedia` is called with `video: true` even though nothing records
+**Two recording modes (#20): Meeting and Mic only** (`CONTEXT.md`). System
+audio is not mandatory. `startCapture(mode)` returns an outcome, not a throw,
+for every expected prompt result: `cancelled` (the share picker was dismissed
+— back to the choice, never on to Mic only), `no-sound` (a share with no
+audio track — stopped, back to the choice with a plain message), and
+`mic-refused` (a plain message, never the raw DOMException). Mic only never
+calls `getDisplayMedia`. A device without `getDisplayMedia` (Android, iOS)
+skips the choice and records Mic only — a **capability check** in
+`RecorderDeps.canShareSound`, never a user-agent sniff. The mode is not saved
+on the note.
+
+In Meeting, `getDisplayMedia` is called with `video: true` even though nothing records
 video. Chromium does not offer tab or system audio for an audio-only display
 request — the audio checkbox is simply not shown. The video track is stopped on
 arrival.
 
 `MediaRecorder` records the Web Audio destination node's stream, never the mic
 stream. That indirection is what lets `replaceMic()` swap a microphone
-mid-recording without ending the recording.
+mid-recording without ending the recording, in both modes — and what keeps a
+Meeting recording going on the mic after "Stop sharing" ends the shared track.
+
+The HUD's destructive controls — Stop, Discard, and the error pill's Dismiss
+when audio is kept — take two presses (`components/recorder/use-armed.ts`).
+They disarm on Escape, on blur, on any other HUD action and on any phase
+change. Never a native `confirm()`.
 
 The mic constraint is exactly `{ echoCancellation: true }`. That is the
 baseline `docs/ROADMAP.md` §8b names for the no-headphones echo case, and it is

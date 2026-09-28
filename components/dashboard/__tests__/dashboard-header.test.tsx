@@ -34,4 +34,11 @@ describe("DashboardHeader Record", () => {
     await userEvent.click(record);
     expect(useRecorderStore.getState().startRequests).toBe(before + 1);
   });
+
+  // #20: the choice opens in the HUD corner; the header says where.
+  it("points at the mode choice while it is open", () => {
+    useRecorderStore.getState().openChoice();
+    render(<DashboardHeader />);
+    expect(screen.getByRole("status")).toHaveTextContent(/choose a mode/i);
+  });
 });

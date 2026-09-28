@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { RecordingMode } from "@/lib/recorder/recording-mode";
 
 /**
  * Recorder state, held once at module scope.
@@ -17,9 +18,15 @@ import { create } from "zustand";
  * Every illegal transition is a no-op, never a throw. The HUD renders on every
  * route in the app; a stray event from a keyboard shortcut arriving one tick
  * late must not take the whole page down with it.
+ *
+ * `choosing` (#20) is the Meeting / Mic only choice. Every ask for a recording
+ * on a device that can share sound lands there first, and a cancelled share
+ * picker or a share with no sound goes back there — never to `error`, and
+ * never on to Mic only by itself.
  */
 export type RecorderPhase =
   | "idle"
+  | "choosing"
   | "requesting"
   | "recording"
   | "paused"
@@ -32,6 +39,12 @@ export interface RecorderState {
   /** Generated before capture starts, because it names the Storage object.
    *  Kept through `error` so a retry upserts the same path. */
   noteId: string | null;
+  /** The mode of the recording being requested or made. Only the HUD's
+   *  screen-reader line reads it; it is not saved on the note. */
+  mode: RecordingMode | null;
+  /** A plain-words line shown on the choice after a Meeting attempt came back
+   *  with no sound. Null when the choice opens fresh or after a Cancel. */
+  notice: string | null;
   elapsedMs: number;
   /** Mic level, 0..1. System audio is deliberately excluded — the meter
    *  answers "is my microphone working", which is the question a user has. */
@@ -53,7 +66,10 @@ export interface RecorderState {
   startRequests: number;
 
   requestRecording(): void;
-  requestStart(noteId: string): void;
+  openChoice(): void;
+  closeChoice(): void;
+  requestStart(noteId: string, mode: RecordingMode): void;
+  backToChoice(notice: string | null): void;
   confirmStart(mimeType: string): void;
   pause(): void;
   resume(): void;
@@ -72,7 +88,10 @@ type RecorderData = Omit<
   RecorderState,
   | "startRequests"
   | "requestRecording"
+  | "openChoice"
+  | "closeChoice"
   | "requestStart"
+  | "backToChoice"
   | "confirmStart"
   | "pause"
   | "resume"
@@ -88,6 +107,8 @@ type RecorderData = Omit<
 const CLEAN: RecorderData = {
   phase: "idle",
   noteId: null,
+  mode: null,
+  notice: null,
   elapsedMs: 0,
   level: 0,
   mimeType: null,
@@ -108,11 +129,25 @@ export const useRecorderStore = create<RecorderState>((set) => ({
         : s,
     ),
 
-  requestStart: (noteId) =>
+  openChoice: () =>
     set((s) =>
-      s.phase === "idle" || s.phase === "error"
-        ? { ...CLEAN, phase: "requesting", noteId }
+      s.phase === "idle" || s.phase === "error" ? { ...CLEAN, phase: "choosing" } : s,
+    ),
+
+  closeChoice: () => set((s) => (s.phase === "choosing" ? { ...CLEAN } : s)),
+
+  requestStart: (noteId, mode) =>
+    set((s) =>
+      s.phase === "idle" || s.phase === "choosing" || s.phase === "error"
+        ? { ...CLEAN, phase: "requesting", noteId, mode }
         : s,
+    ),
+
+  // The note id goes: nothing was recorded under it, and the next attempt
+  // mints its own.
+  backToChoice: (notice) =>
+    set((s) =>
+      s.phase === "requesting" ? { ...CLEAN, phase: "choosing", notice } : s,
     ),
 
   confirmStart: (mimeType) =>
@@ -139,7 +174,16 @@ export const useRecorderStore = create<RecorderState>((set) => ({
 
   finish: () => set((s) => (s.phase === "uploading" ? { ...CLEAN } : s)),
 
-  fail: (message) => set({ phase: "error", errorMessage: message, level: 0 }),
+  // A failure before recording began has no audio behind it, so it holds no
+  // note id — the HUD reads a note id in `error` as "audio kept on this
+  // device", and that would be false.
+  fail: (message) =>
+    set((s) => ({
+      phase: "error",
+      errorMessage: message,
+      level: 0,
+      noteId: s.phase === "requesting" ? null : s.noteId,
+    })),
 
   discard: () => set({ ...CLEAN }),
 

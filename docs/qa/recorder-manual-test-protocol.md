@@ -20,6 +20,10 @@ Chrome 148 says nothing about Safari 18.
    bottom-right. (Changed 2026-09-14: this step used `print-signin-link.mjs`,
    deleted with magic-link sign-in.)
 
+   Since #20 (2026-09-28): on desktop, **Record** opens a Meeting / Mic only
+   choice — pick **Meeting** wherever a row below shares a tab. Every
+   **Stop** below takes two presses: Stop, then **Confirm stop**.
+
 2. Have ready: headphones with a microphone, and a browser tab that plays sound
    (any video with speech).
 
@@ -49,14 +53,14 @@ continue, not die.
 
 | # | Do this | Expect |
 |---|---|---|
-| A1 | Play audio in another tab. Click **Record**. | Two prompts: the screen/tab picker, then the microphone. |
+| A1 | Play audio in another tab. Click **Record**, then **Meeting**. | Two prompts: the screen/tab picker, then the microphone. |
 | A2 | In the picker, choose the tab that is playing audio and make sure **"Also share tab audio"** is ON. | It defaults to on. Capture starts. |
 | A3 | Allow the microphone. **Check your mic is not muted in the OS.** | The HUD switches to the recording pill. |
 | A4 | Watch the HUD for 10 seconds while speaking. | The clock counts up. The level bars move **when you speak**, not when only the tab plays — the meter is wired to the mic branch, not the mix. |
 | A5 | With the recording still running, **plug in headphones with a mic** (or connect Bluetooth ones). | The clock **does not reset** and **does not stop**. The pill stays in its recording state. |
 | A6 | Speak again for 10 seconds. | The level bars move again. A sub-second dropout at the moment of the swap is expected and acceptable. |
 | A7 | **Unplug the headphones.** | Same as A5: recording continues, clock keeps counting. |
-| A8 | Speak for 10 more seconds, then click **Stop**. | The pill shows "Uploading", then returns to the **Record** idle pill. |
+| A8 | Speak for 10 more seconds, then click **Stop** and **Confirm stop**. | The pill shows "Uploading", then returns to the **Record** idle pill. |
 | A9 | Go to `/`. | A new note is in the list, titled "Untitled". |
 | A10 | Check the bitrate — see "Checking a recording" below. | Should be in the 25–130 kbit/s band. **If it is near 2 kbit/s the handoff silently killed the audio**, even though every visible step passed. |
 | A11 | Open the note. | It opens without error. **No transcript** — that is Track 3 and is correct here. |
@@ -77,7 +81,7 @@ prompt to add more masking.
 |---|---|---|
 | B1 | **Take headphones off.** Use laptop speakers and the built-in mic. | — |
 | B2 | Play a video with clear speech in another tab, at normal listening volume. | — |
-| B3 | Click **Record**, share that tab **with audio**, allow the mic. | Recording starts. |
+| B3 | Click **Record**, then **Meeting**. Share that tab **with audio**, allow the mic. | Recording starts. |
 | B4 | Stay silent for 20 seconds while the video plays. | Level bars stay low. Some movement is normal — the mic does hear the speakers. |
 | B5 | Talk over the video for 20 seconds. | Level bars clearly rise above the B4 level. |
 | B6 | **Stop.** Note the note id from the URL after opening it from `/`. | Upload completes. |
@@ -118,11 +122,11 @@ Chromium starts producing MP4.
 | C1 | Open the app in Safari. Sign in at `/login` with the fixture owner's password. | The **Record** pill appears. |
 | C2 | In Safari's Web Inspector console, run the snippet below. | Record the exact output. At least one `audio/mp4` entry should be `true`. Every `audio/webm` entry is expected to be `false`. |
 | C3 | If **every** entry is `false`. | The HUD should show "This browser cannot record audio." rather than crashing. That is `pickMimeType` returning null, handled. |
-| C4 | Click **Record**. | Safari prompts for screen/tab sharing, then the mic. **Safari's picker may not offer tab audio at all** — if so, record that fact; it is a Safari platform limit, not a bug in this code. |
-| C5 | Record 15 seconds of speech, then **Stop**. | Upload completes, the HUD returns to idle. |
+| C4 | Click **Record**, then **Meeting**. | Safari prompts for screen/tab sharing. **Safari's picker may not offer tab audio at all** — if so, the HUD returns to the choice with "No sound was shared…"; record that fact and choose **Mic only**. It is a Safari platform limit, not a bug in this code. |
+| C5 | Record 15 seconds of speech, then **Stop** and **Confirm stop**. | Upload completes, the HUD returns to idle. |
 | C6 | Go to `/`. | The new note is listed. |
 | C7 | Check the container — see "Checking a recording". | The file is MP4/AAC audio, not WebM, and `notes.audio_storage_path`'s object has `mimetype` starting `audio/mp4`. |
-| C8 | Press **⌘⇧R** with the HUD idle. | A recording starts. **The page must not reload.** ⌘⇧R / Ctrl+Shift+R is also the browser's hard-reload shortcut; the HUD calls `preventDefault()` to claim it. Verified working on Chrome 148 / Windows with a real keypress (`isTrusted: true`, no reload) — **unverified on macOS, Safari and Firefox.** If the page reloads instead, the browser reserved the combo and the `⌘⇧R` label in the idle pill is lying; report it rather than removing the handler, since the shortcut is the design's choice. |
+| C8 | Press **⌘⇧R** with the HUD idle. | The Meeting / Mic only choice opens. **The page must not reload.** ⌘⇧R / Ctrl+Shift+R is also the browser's hard-reload shortcut; the HUD calls `preventDefault()` to claim it. Verified working on Chrome 148 / Windows with a real keypress (`isTrusted: true`, no reload) — **unverified on macOS, Safari and Firefox.** If the page reloads instead, the browser reserved the combo and the `⌘⇧R` label in the idle pill is lying; report it rather than removing the handler, since the shortcut is the design's choice. |
 
 C2 snippet:
 
@@ -132,6 +136,28 @@ C2 snippet:
 
 **Record for the report:** Safari version, the full C2 output, whether C4
 offered tab audio, and the container from C7.
+
+---
+
+## Section M — Recording modes (#20)
+
+**Why:** Meeting and Mic only are chosen before recording starts. Android and
+iOS cannot be driven from the dev machine, and the "Share audio" checkbox and
+Chrome's "Stop sharing" bar are browser chrome no test can press.
+
+| # | Do this | Expect |
+|---|---|---|
+| M1 | **Android, Chrome.** Sign in, press **Record**. | **No choice appears.** Only the microphone prompt. Allow it; the HUD shows the recording pill. |
+| M2 | Speak for 20 seconds, press **Stop** twice ("Confirm stop"). | Upload completes. Check the bitrate — see "Checking a recording". Near 2 kbit/s is a failure. |
+| M3 | **iOS, Safari.** Repeat M1–M2. | The same. Note the container: expect MP4. |
+| M4 | **Desktop Chrome.** Press **Record**, choose **Meeting**. In the picker, pick a tab but **untick "Share audio"**. | Back on the choice, with "No sound was shared…". No red error. The share indicator is gone. |
+| M5 | Choose **Meeting** again and press **Cancel** in the picker. | Back on the choice, no message, no error. |
+| M6 | Choose **Mic only**. | Only the mic prompt. Record 15 s, stop twice, check the bitrate. |
+| M7 | Start a **Meeting** on a Google Meet tab with sound. After 20 s press Chrome's **"Stop sharing"** bar. Speak for 20 s more, then stop. | The clock never stops. The file holds the tab sound for the first 20 s and your voice throughout. Check the bitrate. |
+| M8 | Press **Record**, then **Escape**. | The choice closes and focus is back on Record. |
+
+**Record for the report:** device and browser versions, and the bitrate of
+every recording made in M2, M3, M6 and M7.
 
 ---
 
@@ -162,7 +188,7 @@ behind.
 | # | Do this | Expect |
 |---|---|---|
 | E1 | Start a recording. Let it run 15 seconds. | — |
-| E2 | DevTools → Network → **Offline**. Click **Stop**. | The HUD shows an error pill: the message, "The recording is kept on this device.", and **Dismiss**. |
+| E2 | DevTools → Network → **Offline**. Click **Stop**, then **Confirm stop**. | The HUD shows an error pill: the message, "The recording is kept on this device.", and **Dismiss** (two presses — it deletes that copy). |
 | E3 | Confirm there is **no retry button**. | Correct. Retry is deliberately out of scope — the requirement is that the failure be visible, not one-click recoverable. |
 | E4 | Check IndexedDB as in D3. | The blob is there. |
 | E5 | Network back to **Online**. Go to `/`. | **A note IS in the list.** The row is written as the upload starts, so it exists even though the upload failed. Intended. |

@@ -6,7 +6,7 @@ const NOTE = "11111111-2222-3333-4444-555555555555";
 
 /** Drive the store to a live recording, the starting point for most cases. */
 function toRecording() {
-  state().requestStart(NOTE);
+  state().requestStart(NOTE, "meeting");
   state().confirmStart("audio/webm;codecs=opus");
 }
 
@@ -25,7 +25,7 @@ describe("recorder store", () => {
   });
 
   it("holds the note id from the moment permission is requested", () => {
-    state().requestStart(NOTE);
+    state().requestStart(NOTE, "meeting");
     expect(state().phase).toBe("requesting");
     expect(state().noteId).toBe(NOTE);
   });
@@ -120,7 +120,7 @@ describe("recorder store", () => {
 
   it("refuses a second start while a recording is live", () => {
     toRecording();
-    state().requestStart("99999999-9999-9999-9999-999999999999");
+    state().requestStart("99999999-9999-9999-9999-999999999999", "mic");
     expect(state().phase).toBe("recording");
     expect(state().noteId).toBe(NOTE);
   });
@@ -128,10 +128,67 @@ describe("recorder store", () => {
   it("can start again from the error phase", () => {
     toRecording();
     state().fail("boom");
-    state().requestStart("99999999-9999-9999-9999-999999999999");
+    state().requestStart("99999999-9999-9999-9999-999999999999", "mic");
     expect(state().phase).toBe("requesting");
     expect(state().noteId).toBe("99999999-9999-9999-9999-999999999999");
     expect(state().errorMessage).toBeNull();
+  });
+
+  it("opens the mode choice from idle and closes it back to idle", () => {
+    state().openChoice();
+    expect(state().phase).toBe("choosing");
+    state().closeChoice();
+    expect(state().phase).toBe("idle");
+  });
+
+  it("opens the choice from the error phase, clearing the error", () => {
+    toRecording();
+    state().fail("boom");
+    state().openChoice();
+    expect(state().phase).toBe("choosing");
+    expect(state().errorMessage).toBeNull();
+  });
+
+  it("does not open the choice while a recording is live", () => {
+    toRecording();
+    state().openChoice();
+    expect(state().phase).toBe("recording");
+  });
+
+  it("starts from the choice and holds the chosen mode", () => {
+    state().openChoice();
+    state().requestStart(NOTE, "mic");
+    expect(state().phase).toBe("requesting");
+    expect(state().mode).toBe("mic");
+  });
+
+  it("goes back to the choice from requesting, with or without a notice", () => {
+    state().openChoice();
+    state().requestStart(NOTE, "meeting");
+    state().backToChoice("No sound was shared.");
+    expect(state().phase).toBe("choosing");
+    expect(state().notice).toBe("No sound was shared.");
+    expect(state().noteId).toBeNull();
+
+    state().requestStart(NOTE, "meeting");
+    expect(state().notice).toBeNull();
+    state().backToChoice(null);
+    expect(state().notice).toBeNull();
+  });
+
+  it("ignores backToChoice outside requesting", () => {
+    toRecording();
+    state().backToChoice(null);
+    expect(state().phase).toBe("recording");
+  });
+
+  // A prompt refused before any audio exists: there is nothing kept on this
+  // device, so the error must not carry a note id that says there is.
+  it("drops the note id when it fails before recording began", () => {
+    state().requestStart(NOTE, "mic");
+    state().fail("no mic");
+    expect(state().phase).toBe("error");
+    expect(state().noteId).toBeNull();
   });
 
   it("is one module-level store, so importing it twice is the same state", async () => {

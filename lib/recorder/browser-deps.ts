@@ -7,6 +7,7 @@ import {
   markUploadFailed,
 } from "@/app/notes/actions/recording";
 import { startCapture } from "@/lib/recorder/capture";
+import type { RecordingMode } from "@/lib/recorder/recording-mode";
 import { AUDIO_BUCKET, type StorageBucketLike } from "@/lib/recorder/upload-audio";
 
 /**
@@ -18,7 +19,13 @@ import { AUDIO_BUCKET, type StorageBucketLike } from "@/lib/recorder/upload-audi
  * older runtimes. The tests pass fakes; nothing here runs under test.
  */
 export interface RecorderDeps {
-  capture: typeof startCapture;
+  capture(mode: RecordingMode): ReturnType<typeof startCapture>;
+  /** #20: whether this device can share sound at all. False on Android and
+   *  iOS, where getDisplayMedia does not exist; Record then skips the choice
+   *  and records Mic only. Browsers that expose the API but share no sound
+   *  (Firefox, desktop Safari) answer true and are caught by capture's
+   *  "no-sound" outcome instead — no user-agent sniffing. */
+  canShareSound(): boolean;
   createRecorder(stream: MediaStream, mimeType: string): MediaRecorder;
   isTypeSupported(type: string): boolean;
   newNoteId(): string;
@@ -37,7 +44,8 @@ export interface RecorderDeps {
 
 export function browserDeps(): RecorderDeps {
   return {
-    capture: startCapture,
+    capture: (mode) => startCapture(mode),
+    canShareSound: () => typeof navigator.mediaDevices?.getDisplayMedia === "function",
     createRecorder: (stream, mimeType) => new MediaRecorder(stream, { mimeType }),
     isTypeSupported: (type) => MediaRecorder.isTypeSupported(type),
     newNoteId: () => crypto.randomUUID(),
