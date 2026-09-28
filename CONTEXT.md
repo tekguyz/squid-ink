@@ -28,6 +28,10 @@ _Avoid_: System, system recording
 The user's microphone alone. The only mode on a device that cannot share sound, such as Android, where it starts without asking.
 _Avoid_: Local, local recording (reads as "kept on this device", which is a different thing)
 
+**Rough notes**:
+What the user types during a recording. They merge into the note at stop and are never shown to others.
+_Avoid_: Jot, scratch notes
+
 **Transcript**:
 The text of a recording, split into segments.
 
@@ -102,6 +106,10 @@ _Avoid_: Page, view
 **Pane**:
 A side column of a surface, beside its main content. On a note, the lens rail and the transcript pane are panes; each can be hidden, and the note itself cannot.
 _Avoid_: Sidebar, panel, drawer
+
+**Record HUD**:
+The small always-on recorder control in the bottom-right corner, above every screen. It starts, pauses and stops a recording.
+_Avoid_: Pill, dock, widget
 
 **Demo mode**:
 A signed-in-anonymously tour of sample notes, with no live recording.
