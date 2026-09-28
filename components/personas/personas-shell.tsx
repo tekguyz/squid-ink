@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
-import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
+import { useState } from "react";
+import { HUD_RESERVE_VAR } from "@/components/recorder/hud-safe-margin";
 import { DEFAULT_PERSONA_ID } from "@/lib/notes/default-persona";
 import type { PersonasScreen } from "@/lib/notes/get-personas-screen";
 import { PersonaAnatomy } from "./persona-anatomy";
@@ -43,7 +43,7 @@ export function PersonasShell({ screen }: { screen: PersonasScreen }) {
           HUD_RESERVE above the bottom and no row passes under the Record
           pill. */}
       <div
-        style={{ "--hud-reserve": HUD_RESERVE } as CSSProperties}
+        style={HUD_RESERVE_VAR}
         className="bg-paper text-ink grid h-full min-w-[1280px] max-lg:pb-(--hud-reserve) grid-cols-[236px_minmax(0,1fr)] max-lg:min-w-0 max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]"
       >
         <PersonaSwitcherRail

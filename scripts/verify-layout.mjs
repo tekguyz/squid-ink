@@ -449,10 +449,12 @@ async function signIn(cdp, sessionId, { visitor = false } = {}) {
 function report(route, width, theme, probe, expectChips) {
   const where = `${route} @ ${width}px ${theme}`;
 
+  // "if-any": a state where every chip may be covered, so none measured is
+  // not a failure. Any chip that IS measured is held to 24px all the same.
   if (expectChips) {
     const short = probe.chips.filter((c) => c.misses > 0);
     check(
-      probe.chips.length > 0 && short.length === 0,
+      (probe.chips.length > 0 || expectChips === "if-any") && short.length === 0,
       `${where} — every citation chip has a 24px tap target`,
       probe.chips.length === 0
         ? "no citation chip had room to measure — the check measured nothing"
@@ -541,12 +543,7 @@ async function measureNotePanes(cdp, sessionId, route, width) {
          if (!b) throw new Error('no "${name}" button');
          b.click(); await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 400))); })()`,
     );
-  const setTheme = (theme) =>
-    evaluate(
-      cdp,
-      sessionId,
-      `(() => { const r = document.documentElement; r.classList.remove("light","dark"); r.classList.add("${theme}"); })()`,
-    );
+  const setTheme = (theme) => evaluate(cdp, sessionId, themeAndChips(theme));
 
   if (width === 1440) {
     await press("Hide transcript");
@@ -588,7 +585,9 @@ async function measureNotePanes(cdp, sessionId, route, width) {
       const exempt = probe.overlayHits.filter((h) => isOverlay(h.overlay)).length;
       console.log(`  note: ${where} ${theme} — "covers flow text" skips #transcript-pane (${exempt} covered lines): the overlay covers the note by design`);
       probe.overlayHits = probe.overlayHits.filter((h) => !isOverlay(h.overlay));
-      report(`${route} [transcript overlay]`, width, theme, probe, false);
+      // The overlay covers most chips, so only the ones left in view are
+      // measured — and there may be none.
+      report(`${route} [transcript overlay]`, width, theme, probe, "if-any");
       reportContrast(check, `${where} ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE));
     }
     await evaluate(

@@ -3,6 +3,7 @@
 import type { ReactNode, RefObject } from "react";
 import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
 import type { Note, ProcessingStatus } from "@/lib/notes/view-types";
+import { TRANSCRIPT_PANE_ID } from "./panes/use-note-panes";
 import { TranscriptSegment } from "./transcript-segment";
 import { Waveform } from "./waveform";
 
@@ -22,7 +23,7 @@ export function TranscriptPane({
   note,
   activeSegmentId,
   scrollRef,
-  id = "transcript-pane",
+  id = TRANSCRIPT_PANE_ID,
   hidden = false,
   overlay = false,
   hideButton,

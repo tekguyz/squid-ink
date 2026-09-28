@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 /**
  * The clearance the Record HUD keeps from the viewport edges, and the same
  * clearance anything else that renders against a viewport corner must keep.
@@ -37,3 +39,11 @@ export const HUD_SAFE_MARGIN = "24px";
  * permanent gap on every screen for a state that is normally not on it.
  */
 export const HUD_RESERVE = "72px";
+
+/**
+ * HUD_RESERVE as a CSS variable, for a column that must end above the HUD's
+ * strip only at some widths (issue #23). A `style` cannot sit behind a media
+ * query, so the element sets the variable here and a class such as
+ * `max-lg:pb-(--hud-reserve)` decides when it applies.
+ */
+export const HUD_RESERVE_VAR = { "--hud-reserve": HUD_RESERVE } as CSSProperties;

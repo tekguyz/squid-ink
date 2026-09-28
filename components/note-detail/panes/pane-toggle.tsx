@@ -1,6 +1,6 @@
 "use client";
 
-import type { Ref } from "react";
+import type { PaneControls } from "./use-note-panes";
 
 /**
  * The two controls that hide and show a pane (issue #23): the hide button in
@@ -14,15 +14,6 @@ import type { Ref } from "react";
  * the strip would be missing until hydration. Tailwind cannot build those
  * variant classes at runtime, so the caller passes them in whole.
  */
-
-export interface PaneToggleProps {
-  /** "lens rail" or "transcript": read aloud as "Hide lens rail". */
-  label: string;
-  controls: string;
-  expanded: boolean;
-  onToggle: () => void;
-  ref?: Ref<HTMLButtonElement>;
-}
 
 /** Points toward the edge the pane lives on when it hides, away from it
  *  when it shows. `left` is the lens rail's edge. */
@@ -49,11 +40,11 @@ export function PaneHideButton({
   expanded,
   onToggle,
   edge,
-  ref,
-}: PaneToggleProps & { edge: "left" | "right" }) {
+  hideRef,
+}: PaneControls & { edge: "left" | "right" }) {
   return (
     <button
-      ref={ref}
+      ref={hideRef}
       type="button"
       aria-expanded={expanded}
       aria-controls={controls}
@@ -77,15 +68,15 @@ export function PaneStrip({
   onToggle,
   edge,
   className,
-  ref,
-}: PaneToggleProps & {
+  showRef,
+}: PaneControls & {
   edge: "left" | "right";
   className: string;
 }) {
   return (
     <div className={`min-h-0 w-[28px] flex-none flex-col ${className}`}>
       <button
-        ref={ref}
+        ref={showRef}
         type="button"
         aria-expanded={expanded}
         aria-controls={controls}

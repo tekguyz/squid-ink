@@ -38,7 +38,8 @@ import { PERSONAS_DEMO_OFF } from "@/lib/auth/demo-visitor";
  * "summary ×1".
  */
 
-const ROW = "border-rule-2 grid grid-cols-[110px_minmax(0,1fr)] gap-[18px] border-b py-[16px]";
+// Below 768px the label folds above its value (issue #23).
+const ROW = "border-rule-2 grid grid-cols-[110px_minmax(0,1fr)] gap-[18px] border-b py-[16px] max-md:grid-cols-1 max-md:gap-[8px]";
 const ROW_LABEL =
   "font-mono text-meta text-[9px] leading-[1.7] tracking-[0.11em] uppercase";
 const CHIP = "font-mono bg-pane text-ink-2 px-[10px] py-[5px] text-[9.5px]";
@@ -113,7 +114,7 @@ export function PersonaAnatomy({
         </div>
       </header>
 
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-[26px] pb-[24px]">
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-[26px] pb-[24px] max-md:px-[16px]">
         <div className={ROW}>
           <p className={ROW_LABEL}>Lens</p>
           <div>
@@ -148,7 +149,7 @@ export function PersonaAnatomy({
           <QuickActionsEditor slug={persona.id} actions={persona.actions} />
         </div>
 
-        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-[18px] py-[16px]">
+        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-[18px] py-[16px] max-md:grid-cols-1 max-md:gap-[8px]">
           <p className={ROW_LABEL}>Output shape</p>
           <div>
             <div className="flex flex-wrap gap-[6px]">

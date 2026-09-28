@@ -7,9 +7,16 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type RefObject,
 } from "react";
 import { flushSync } from "react-dom";
-import { applySavedPanes, setPane, showPaneForNow, usePane } from "./pane-state";
+import {
+  applySavedPanes,
+  setPane,
+  showPaneForNow,
+  usePane,
+  type PaneName,
+} from "./pane-state";
 
 /**
  * Everything the note shell needs to hide, show and open its two panes
@@ -27,14 +34,21 @@ import { applySavedPanes, setPane, showPaneForNow, usePane } from "./pane-state"
 const NARROW = "(width < 64rem)";
 const PHONE = "(width < 48rem)";
 
+export const LENS_PANE_ID = "lens-pane";
+export const TRANSCRIPT_PANE_ID = "transcript-pane";
+
 function useMedia(query: string) {
-  return useSyncExternalStore(
-    (onChange) => {
+  const subscribe = useCallback(
+    (onChange: () => void) => {
       if (typeof matchMedia !== "function") return () => {};
       const list = matchMedia(query);
       list.addEventListener("change", onChange);
       return () => list.removeEventListener("change", onChange);
     },
+    [query],
+  );
+  return useSyncExternalStore(
+    subscribe,
     () => typeof matchMedia === "function" && matchMedia(query).matches,
     () => false,
   );
@@ -47,6 +61,17 @@ function isTyping(target: EventTarget | null) {
     target.matches("input, textarea, select") ||
     target.closest('[contenteditable]:not([contenteditable="false"])') !== null
   );
+}
+
+/** What the pane's two buttons share: spread onto `PaneHideButton` and
+ *  `PaneStrip`, with each one's own ref. */
+export interface PaneControls {
+  label: string;
+  controls: string;
+  expanded: boolean;
+  onToggle: () => void;
+  hideRef: RefObject<HTMLButtonElement | null>;
+  showRef: RefObject<HTMLButtonElement | null>;
 }
 
 export function useNotePanes(noteId: string) {
@@ -86,27 +111,31 @@ export function useNotePanes(noteId: string) {
 
   /** Saves the choice, then moves focus to the control that took the place
    *  of the one pressed — the pressed one has just been hidden. */
+  const togglePane = useCallback(
+    (
+      pane: PaneName,
+      shown: boolean,
+      hide: RefObject<HTMLButtonElement | null>,
+      show: RefObject<HTMLButtonElement | null>,
+    ) => {
+      const hadFocus = document.activeElement;
+      flushSync(() => setPane(pane, shown ? "hidden" : "shown"));
+      if (hadFocus === hide.current || hadFocus === show.current)
+        (shown ? show : hide).current?.focus();
+    },
+    [],
+  );
+
   const toggleLens = useCallback(() => {
-    if (phone) return;
-    const next = lens === "shown" ? "hidden" : "shown";
-    const hadFocus = document.activeElement;
-    flushSync(() => setPane("lens", next));
-    if (hadFocus === lensHide.current || hadFocus === lensShow.current)
-      (next === "hidden" ? lensShow : lensHide).current?.focus();
-  }, [lens, phone]);
+    if (!phone) togglePane("lens", lens === "shown", lensHide, lensShow);
+  }, [lens, phone, togglePane]);
 
   const toggleTranscript = useCallback(() => {
-    if (narrow) {
-      if (overlayOpen) closeOverlay();
-      else openOverlay();
-      return;
-    }
-    const next = transcript === "shown" ? "hidden" : "shown";
-    const hadFocus = document.activeElement;
-    flushSync(() => setPane("transcript", next));
-    if (hadFocus === transcriptHide.current || hadFocus === transcriptShow.current)
-      (next === "hidden" ? transcriptShow : transcriptHide).current?.focus();
-  }, [narrow, overlayOpen, transcript, openOverlay, closeOverlay]);
+    if (!narrow)
+      togglePane("transcript", transcript === "shown", transcriptHide, transcriptShow);
+    else if (overlayOpen) closeOverlay();
+    else openOverlay();
+  }, [narrow, overlayOpen, transcript, togglePane, openOverlay, closeOverlay]);
 
   /** A citation always shows its source. This opens the pane for now and
    *  never writes the saved choice. */
@@ -118,28 +147,49 @@ export function useNotePanes(noteId: string) {
     }
   }, [narrow, overlayOpen, transcript, openOverlay]);
 
+  // The listener reads the latest handlers through a ref, so it is added
+  // once rather than on every toggle.
+  const keys = useRef({ overlay, closeOverlay, toggleLens, toggleTranscript });
+  useLayoutEffect(() => {
+    keys.current = { overlay, closeOverlay, toggleLens, toggleTranscript };
+  });
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && overlay) {
-        closeOverlay();
+      const k = keys.current;
+      if (event.key === "Escape" && k.overlay) {
+        k.closeOverlay();
         return;
       }
       if (event.ctrlKey || event.altKey || event.metaKey) return;
       if (event.isComposing || isTyping(event.target)) return;
-      if (event.key === "[") toggleLens();
-      else if (event.key === "]") toggleTranscript();
+      if (event.key === "[") k.toggleLens();
+      else if (event.key === "]") k.toggleTranscript();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [overlay, closeOverlay, toggleLens, toggleTranscript]);
+  }, []);
+
+  const lensControls: PaneControls = {
+    label: "lens rail",
+    controls: LENS_PANE_ID,
+    expanded: lensShown,
+    onToggle: toggleLens,
+    hideRef: lensHide,
+    showRef: lensShow,
+  };
+  const transcriptControls: PaneControls = {
+    label: "transcript",
+    controls: TRANSCRIPT_PANE_ID,
+    expanded: transcriptShown,
+    onToggle: toggleTranscript,
+    hideRef: transcriptHide,
+    showRef: transcriptShow,
+  };
 
   return {
-    lensShown,
-    transcriptShown,
+    lens: lensControls,
+    transcript: transcriptControls,
     overlay,
-    toggleLens,
-    toggleTranscript,
     revealTranscript,
-    refs: { lensHide, lensShow, transcriptHide, transcriptShow },
   };
 }

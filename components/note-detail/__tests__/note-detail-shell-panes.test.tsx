@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NoteDetailShell } from "../note-detail-shell";
 import { mockNote } from "@/lib/mock/note";
@@ -44,7 +44,22 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
+
+/** jsdom has no matchMedia, so the shell reads every width as wide. This
+ *  answers the two queries the shell asks — `(width < 64rem)` and
+ *  `(width < 48rem)` — as a window of `px` would. */
+function atWidth(px: number) {
+  vi.stubGlobal("matchMedia", (query: string) => {
+    const rem = /width < (\d+)rem/.exec(query);
+    return {
+      matches: rem ? px < Number(rem[1]) * 16 : false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    };
+  });
+}
 
 describe("hiding and showing a pane by button", () => {
   it("shows both panes by default", () => {
@@ -166,5 +181,62 @@ describe("a citation into a hidden transcript", () => {
     first.unmount();
     renderShell();
     expect(transcript()).not.toBeVisible();
+  });
+});
+
+describe("IME composition", () => {
+  it("ignores ] while a character is being composed", () => {
+    renderShell();
+    fireEvent.keyDown(window, { key: "]", isComposing: true });
+    expect(transcript()).toBeVisible();
+  });
+});
+
+describe("below 1024px, the transcript overlay", () => {
+  it("is closed on load, whatever the wide-screen choice", () => {
+    atWidth(800);
+    renderShell();
+    expect(transcript()).not.toBeVisible();
+    expect(button("Show transcript")).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("opens with focus inside, and Escape closes it back to the button", async () => {
+    atWidth(800);
+    renderShell();
+    await userEvent.click(button("Show transcript"));
+    expect(transcript()).toBeVisible();
+    expect(button("Hide transcript")).toHaveFocus();
+
+    await userEvent.keyboard("{Escape}");
+    expect(transcript()).not.toBeVisible();
+    expect(button("Show transcript")).toHaveFocus();
+    // Open or closed here is never the saved choice.
+    expect(localStorage.getItem("pane:transcript")).toBeNull();
+  });
+
+  it("closes by its own button too", async () => {
+    atWidth(800);
+    renderShell();
+    await userEvent.keyboard("]");
+    expect(transcript()).toBeVisible();
+    await userEvent.click(button("Hide transcript"));
+    expect(transcript()).not.toBeVisible();
+  });
+
+  it("opens at a citation's segment", async () => {
+    atWidth(800);
+    renderShell();
+    await userEvent.click(screen.getAllByRole("button", { name: /Jump to transcript at/ })[0]);
+    expect(transcript()).toBeVisible();
+  });
+});
+
+describe("below 768px, the lens rail", () => {
+  it("stays a row of tabs: [ does nothing", async () => {
+    atWidth(390);
+    renderShell();
+    await userEvent.keyboard("[[");
+    expect(lensTabs()).toBeVisible();
+    expect(localStorage.getItem("pane:lens")).toBeNull();
   });
 });

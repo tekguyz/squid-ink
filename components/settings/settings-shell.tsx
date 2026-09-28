@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState, type CSSProperties } from "react";
-import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
+import { useCallback, useRef, useState } from "react";
+import { HUD_RESERVE_VAR } from "@/components/recorder/hud-safe-margin";
 import type { SettingsScreen } from "@/lib/settings/settings-types";
 import { AppearanceSection } from "./appearance-section";
 import { CaptureSection } from "./capture-section";
@@ -67,7 +67,7 @@ export function SettingsShell({ screen }: { screen: SettingsScreen }) {
           HUD_RESERVE above the bottom — unless the footer is there, which
           already is that band. */}
       <div
-        style={{ "--hud-reserve": HUD_RESERVE } as CSSProperties}
+        style={HUD_RESERVE_VAR}
         className="bg-paper text-ink grid h-full min-w-[1280px] max-lg:pb-(--hud-reserve) max-lg:has-[footer]:pb-0 grid-cols-[210px_minmax(0,1fr)] max-lg:min-w-0 max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]"
       >
         <SettingsNav email={screen.email} active={active} onSelect={setActive} />
