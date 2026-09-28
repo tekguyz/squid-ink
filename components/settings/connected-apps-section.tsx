@@ -42,7 +42,7 @@ const APPS = [
 ] as const;
 
 const BUTTON =
-  "focus-visible:outline-accent cursor-pointer py-[8px] text-center max-md:w-[120px] max-md:w-[120px] font-mono text-[9.5px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2";
+  "focus-visible:outline-accent cursor-pointer py-[8px] text-center max-md:w-[120px] font-mono text-[9.5px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2";
 
 export function ConnectedAppsSection() {
   const [pressed, setPressed] = useState<ReadonlySet<string>>(new Set());

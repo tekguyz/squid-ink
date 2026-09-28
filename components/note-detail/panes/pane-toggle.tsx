@@ -40,6 +40,7 @@ export function PaneHideButton({
   expanded,
   onToggle,
   edge,
+  shortcut,
   hideRef,
 }: PaneControls & { edge: "left" | "right" }) {
   return (
@@ -49,7 +50,8 @@ export function PaneHideButton({
       aria-expanded={expanded}
       aria-controls={controls}
       aria-label={`Hide ${label}`}
-      title={`Hide ${label}`}
+      aria-keyshortcuts={shortcut}
+      title={`Hide ${label}  ${shortcut}`}
       onClick={onToggle}
       className={`${TARGET} h-6 w-6 flex-none`}
     >
@@ -60,7 +62,7 @@ export function PaneHideButton({
 
 /** The strip a hidden pane leaves: 28px wide, the full height of the screen,
  *  on the pane's own sheet, with the pane's name written down it so the
- *  reader can see what is folded there. The whole name is the target. */
+ *  reader can see what is folded there. The whole strip is the target. */
 export function PaneStrip({
   label,
   controls,
@@ -68,6 +70,7 @@ export function PaneStrip({
   onToggle,
   edge,
   className,
+  shortcut,
   showRef,
 }: PaneControls & {
   edge: "left" | "right";
@@ -81,9 +84,10 @@ export function PaneStrip({
         aria-expanded={expanded}
         aria-controls={controls}
         aria-label={`Show ${label}`}
-        title={`Show ${label}`}
+        aria-keyshortcuts={shortcut}
+        title={`Show ${label}  ${shortcut}`}
         onClick={onToggle}
-        className={`${TARGET} flex-col gap-[10px] pt-[12px] pb-[14px]`}
+        className={`${TARGET} flex-1 flex-col justify-start gap-[10px] pt-[12px] pb-[14px]`}
       >
         <Chevron toward={edge === "left" ? "right" : "left"} />
         <span className="font-mono text-[9px] tracking-[0.14em] uppercase [writing-mode:vertical-rl]">

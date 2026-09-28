@@ -67,6 +67,8 @@ function isTyping(target: EventTarget | null) {
  *  `PaneStrip`, with each one's own ref. */
 export interface PaneControls {
   label: string;
+  /** The key that does the same, shown in the tooltip and announced. */
+  shortcut: "[" | "]";
   controls: string;
   expanded: boolean;
   onToggle: () => void;
@@ -169,8 +171,23 @@ export function useNotePanes(noteId: string) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // While the overlay is open the note behind it is inert (the shell sets
+  // that), so a press anywhere outside the overlay is a press on nothing:
+  // it closes the overlay, as Escape does.
+  useEffect(() => {
+    if (!overlay) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const pane = document.getElementById(TRANSCRIPT_PANE_ID);
+      if (event.target instanceof Node && !pane?.contains(event.target))
+        keys.current.closeOverlay();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [overlay]);
+
   const lensControls: PaneControls = {
     label: "lens rail",
+    shortcut: "[",
     controls: LENS_PANE_ID,
     expanded: lensShown,
     onToggle: toggleLens,
@@ -179,6 +196,7 @@ export function useNotePanes(noteId: string) {
   };
   const transcriptControls: PaneControls = {
     label: "transcript",
+    shortcut: "]",
     controls: TRANSCRIPT_PANE_ID,
     expanded: transcriptShown,
     onToggle: toggleTranscript,

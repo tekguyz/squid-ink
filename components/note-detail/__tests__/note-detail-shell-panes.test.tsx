@@ -102,6 +102,12 @@ describe("hiding and showing a pane by button", () => {
 });
 
 describe("the keys", () => {
+  it("are announced on the buttons they stand for", () => {
+    renderShell();
+    expect(button("Hide transcript")).toHaveAttribute("aria-keyshortcuts", "]");
+    expect(button("Show lens rail")).toHaveAttribute("aria-keyshortcuts", "[");
+  });
+
   it("] toggles the transcript and [ toggles the lens rail", async () => {
     renderShell();
     await userEvent.keyboard("]");
@@ -221,6 +227,18 @@ describe("below 1024px, the transcript overlay", () => {
     expect(transcript()).toBeVisible();
     await userEvent.click(button("Hide transcript"));
     expect(transcript()).not.toBeVisible();
+  });
+
+  it("makes the note behind it inert, and a press outside closes it", async () => {
+    atWidth(800);
+    renderShell();
+    const main = screen.getByRole("main");
+    await userEvent.click(button("Show transcript"));
+    expect(main).toHaveAttribute("inert");
+
+    fireEvent.pointerDown(main);
+    expect(transcript()).not.toBeVisible();
+    expect(main).not.toHaveAttribute("inert");
   });
 
   it("opens at a citation's segment", async () => {

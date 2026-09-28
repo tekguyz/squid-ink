@@ -86,7 +86,7 @@ export function PersonaAnatomy({
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
-      <header className="border-rule-strong flex items-end gap-[14px] border-b px-[26px] pt-[20px] pb-[15px]">
+      <header className="border-rule-strong flex items-end gap-[14px] border-b px-[26px] pt-[20px] pb-[15px] max-md:flex-wrap max-md:px-[16px]">
         <div>
           <p className="font-mono text-meta text-[9px] tracking-[0.14em] uppercase">
             Persona
@@ -95,7 +95,7 @@ export function PersonaAnatomy({
             {persona.name}
           </h2>
         </div>
-        <div className="ml-auto flex flex-none items-center gap-[8px]">
+        <div className="ml-auto flex flex-none items-center gap-[8px] max-md:ml-0">
           <span title={NOT_YET}>
             <button
               type="button"

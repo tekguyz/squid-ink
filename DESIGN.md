@@ -658,10 +658,17 @@ bottom ends `HUD_RESERVE` (72px) above it. Padding the content is not
 sufficient — padding only moves the last row, and at any other scroll position
 a row still passes underneath.
 
-**Responsive behaviour is a floor, not a design.** One width is drawn. The
-Dashboard is held at a 1280px minimum and the page scrolls sideways below that;
-Note Detail is fixed-column at all widths. This is an interim guarantee that
-content stays reachable rather than clipped, not a responsive pass.
+**Responsive behaviour is a floor, not a design.** One width is drawn. Below
+it, every signed-in screen follows ordinary app patterns (issue #23), all as
+`max-lg:` / `max-md:` variants so the drawn width is untouched: below 1024px a
+side rail stacks above its content as a band whose lists become rows that
+scroll on their own, with the selection mark moving from a 2px left border to
+a 2px bottom border; below 768px two-column rows fold, label over value. On
+Note Detail the transcript pane leaves the grid below 1024px and slides in
+over the note as an overlay from the right, closed on every load, ending
+`HUD_RESERVE` above the bottom; the note behind it is inert. Below 768px the
+lens rail is one row of lens tabs with the quick actions under it. These are
+not a designed narrow layout; a designed one can replace them.
 `touch-action: manipulation` is set on buttons, inputs and tabs to kill the
 300ms double-tap delay without disabling zoom.
 
@@ -858,7 +865,13 @@ so the bar is 4.5:1, not 3:1. `faint` (2.93:1 light / 3.10:1 dark) and `meta`
   `paper` fill, `ink` text. Idle: transparent border, `rail-idle` text,
   `hover:bg-raised`. Group headings ("Lens", "Actions") are 8.5px mono at
   0.14em. A grounding footer sits at `mt-auto` above a `rule` top border.
-- **Mobile treatment:** none defined; see Layout.
+- **Hiding (issue #23):** the lens rail and the transcript pane each hide to
+  a 28px **strip** on the pane's own sheet — one full-height button holding a
+  hairline chevron and the pane's name set vertically in 9px mono slug. The
+  hide button is a 24px chevron in the pane's header. The choice is saved per
+  browser and drawn before first paint; `[` and `]` do the same. The note
+  itself never hides.
+- **Narrow:** see Layout.
 
 ### Signature component — the feed row
 

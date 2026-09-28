@@ -195,7 +195,7 @@ export function ChatPanel({
 
       <form
         onSubmit={submit}
-        className="mt-[11px] flex items-center gap-[9px] border border-control-edge bg-paper px-2.5 py-2 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent"
+        className="mt-[11px] flex items-center gap-[9px] max-md:flex-wrap max-md:gap-y-[7px] border border-control-edge bg-paper px-2.5 py-2 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent"
       >
         <input
           type="text"
@@ -209,7 +209,7 @@ export function ChatPanel({
           placeholder={
             scope === "this_note" ? "Ask this note…" : "Ask all notes…"
           }
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-placeholder"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-placeholder max-md:basis-full"
         />
         <ScopeToggle value={scope} disabled={busy} onChange={setScope} />
         <span className="flex-none font-mono text-[9px] uppercase tracking-[0.06em] text-accent">

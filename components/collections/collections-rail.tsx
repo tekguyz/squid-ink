@@ -72,7 +72,7 @@ export function CollectionsRail({
                   key={chip.id}
                   href={`/collections/${encodeURIComponent(chip.id)}`}
                   aria-current={active ? "page" : undefined}
-                  className={`${ROW} focus-visible:outline-accent truncate max-lg:flex-none max-lg:max-w-[220px] focus-visible:outline-2 focus-visible:-outline-offset-2 ${
+                  className={`${ROW} focus-visible:outline-accent truncate max-lg:flex-none max-lg:max-w-[220px] max-lg:border-b-2 max-lg:border-l-0 focus-visible:outline-2 focus-visible:-outline-offset-2 ${
                     active
                       ? "bg-raised border-accent text-ink"
                       : "text-ink-2 hover:bg-raised border-transparent"

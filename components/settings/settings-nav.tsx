@@ -52,7 +52,7 @@ export const SECTION_IDS = NAV_ITEMS.flatMap((item) =>
 );
 
 const ITEM =
-  "font-body focus-visible:outline-accent block border-l-2 px-[14px] py-[8px] text-[13px] max-lg:flex-none max-lg:whitespace-nowrap focus-visible:outline-2 focus-visible:-outline-offset-2";
+  "font-body focus-visible:outline-accent block border-l-2 px-[14px] py-[8px] text-[13px] max-lg:flex-none max-lg:whitespace-nowrap max-lg:border-b-2 max-lg:border-l-0 focus-visible:outline-2 focus-visible:-outline-offset-2";
 const IDLE = "text-ink-2 hover:bg-pane border-transparent";
 
 export function SettingsNav({

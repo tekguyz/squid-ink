@@ -70,7 +70,7 @@ export function PersonaSwitcherRail({
                 // border-accent, not border-tint-hover and not border-rule-2:
                 // this is the edge of an INTERACTIVE control, and CLAUDE.md
                 // § Colour keeps the two families apart on purpose.
-                "cursor-pointer border-l-2 px-[14px] py-[10px] text-left max-lg:flex-none max-lg:whitespace-nowrap",
+                "cursor-pointer border-l-2 px-[14px] py-[10px] text-left max-lg:flex-none max-lg:whitespace-nowrap max-lg:border-b-2 max-lg:border-l-0",
                 "focus-visible:outline-accent focus-visible:outline-2 focus-visible:-outline-offset-2",
                 selected
                   ? "border-accent bg-raised"

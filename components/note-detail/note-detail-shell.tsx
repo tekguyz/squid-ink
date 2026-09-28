@@ -140,7 +140,10 @@ export function NoteDetailShell({
     // pane hidden before React loads. Every narrow rule is a max-lg:/max-md:
     // variant: with both panes shown, the drawn desktop grid is unchanged.
     <div className="grid h-app grid-cols-[var(--lens-w)_minmax(0,1fr)_var(--transcript-w)] bg-canvas text-ink [--lens-w:136px] [--transcript-w:404px] in-data-[pane-lens=hidden]:[--lens-w:28px] in-data-[pane-transcript=hidden]:[--transcript-w:28px] max-lg:[--transcript-w:28px] max-md:grid-cols-[minmax(0,1fr)_28px] max-md:grid-rows-[auto_minmax(0,1fr)]">
-      <div className="flex min-h-0 min-w-0 max-md:col-span-2">
+      {/* Inert while the transcript overlay covers it: Tab stays in the
+          overlay, and a press here closes the overlay rather than landing on
+          a line the reader cannot see. */}
+      <div inert={panes.overlay} className="flex min-h-0 min-w-0 max-md:col-span-2">
         <PersonaRail
           id={LENS_PANE_ID}
           hidden={!panes.lens.expanded}
@@ -165,6 +168,7 @@ export function NoteDetailShell({
           owns the HUD's corner, so the note does: the column ends HUD_RESERVE
           above the bottom and the chat never passes under the Record pill. */}
       <main
+        inert={panes.overlay}
         style={HUD_RESERVE_VAR}
         className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule-strong bg-paper in-data-[pane-transcript=hidden]:pb-(--hud-reserve) max-lg:pb-(--hud-reserve)"
       >

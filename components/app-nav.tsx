@@ -30,11 +30,11 @@ const ITEMS: { id: AppSection; href: string; label: string }[] = [
 const ROW_BELOW = {
   md: {
     nav: "scroll-thin max-md:flex-row max-md:overflow-x-auto",
-    item: "max-md:flex-none max-md:whitespace-nowrap",
+    item: "max-md:flex-none max-md:whitespace-nowrap max-md:border-b-2 max-md:border-l-0",
   },
   lg: {
     nav: "scroll-thin max-lg:flex-row max-lg:overflow-x-auto",
-    item: "max-lg:flex-none max-lg:whitespace-nowrap",
+    item: "max-lg:flex-none max-lg:whitespace-nowrap max-lg:border-b-2 max-lg:border-l-0",
   },
 } as const;
 
