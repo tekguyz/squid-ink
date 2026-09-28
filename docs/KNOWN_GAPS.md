@@ -1424,9 +1424,8 @@ survive. Measured, not assumed: an `ArrayBuffer` round-trips exactly.
 The full encrypted 48-hour backup buffer (Core UX/UI phase — only the light
 version ships here, unencrypted, no expiry). Transcription and every
 `processing_status` transition past `'uploading'` (Track 3). Playback. Note
-deletion. Resume-upload after a failure. A mic-only mode — system+mic is
-mandatory, not optional; see "Cancelling the share picker kills the recording"
-below for what that costs and why it is now an open question.
+deletion. Resume-upload after a failure. (A mic-only mode shipped 2026-09-28,
+#20 — see "Cancelling the share picker kills the recording" below.)
 
 ### Verified in a real browser, and what that did not cover
 
@@ -1474,7 +1473,11 @@ Related: `MediaRecorder` is given the Web Audio destination node's stream, never
 the mic stream. That indirection is the only reason `replaceMic()` can swap a
 microphone mid-recording without ending the recording.
 
-### Cancelling the share picker kills the recording — there is no mic-only path (recorded 2026-09-01) → #20
+### Cancelling the share picker kills the recording — there is no mic-only path (recorded 2026-09-01) → #20 — CLOSED 2026-09-28
+
+Closed by #20; what shipped is at the end of this entry. The body below is
+the record as written, so its "not built" and "neither chosen" describe
+2026-09-01, not now.
 
 The line under "Not built at all" above — "A mic-only mode — system+mic is
 mandatory, not optional" — is accurate but too thin to plan against. It does not
@@ -1567,6 +1570,29 @@ settled; only its presentation is not. Two shapes were named, neither chosen:
 This is a design question, not an implementation one, and it is deliberately
 left to a design pass rather than settled in this file. Surface 02b has copy
 for neither, so whichever wins needs new copy as well as new controls.
+
+**CLOSED 2026-09-28 by #20. Neither shape above won.** The grilling session
+of 2026-09-28 chose a third: **one Record control that opens a quick choice,
+Meeting or Mic only**, every time, in the HUD corner
+(`components/recorder/hud-mode-choice.tsx`). Nothing is remembered, so the
+shortcut and the dashboard's Record never pick a mode for the user. The
+terms are in `CONTEXT.md` ("local" was renamed Mic only — it read as "kept on
+this device").
+
+- **Cancel is not an error.** A cancelled share picker returns to the choice,
+  one tap from Mic only, and never falls through to it.
+- **A share with no sound** ("Share audio" unticked, or Firefox and desktop
+  Safari, which share none) returns to the choice with a plain message
+  instead of crashing in the graph build.
+- **A refused microphone** shows a plain message, not the exception text,
+  and no longer claims a recording is kept on this device.
+- **Android and iOS** record Mic only at once, by the capability check
+  decided above. Still **not verified on a real device**: rows M1–M3 of
+  `docs/qa/recorder-manual-test-protocol.md`.
+- **Stop, Discard and the error pill's Dismiss** now take two presses.
+
+**The PWA question above is answered:** the PWA is not desktop-only, because
+Android records Mic only.
 
 ## Transcription pipeline (recorded 2026-08-31)
 

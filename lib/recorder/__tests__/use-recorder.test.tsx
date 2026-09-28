@@ -8,6 +8,7 @@ import {
   loadBackup,
   saveBackup,
 } from "@/lib/recorder/audio-backup";
+import { MIC_REFUSED, NO_SOUND_SHARED } from "@/lib/recorder/recording-mode";
 
 const USER = "8f1c2a3b-0000-4444-8888-aaaaaaaaaaaa";
 const NOTE = "11111111-2222-3333-4444-555555555555";
@@ -102,7 +103,14 @@ function makeDeps() {
     backupsSafeToDiscard,
     bucketApi,
     deps: {
-      capture: vi.fn(async () => captureHandles),
+      capture: vi.fn(async (_mode: string) => ({
+        kind: "started" as const,
+        handles: captureHandles,
+      })),
+      // Most cases here are about what happens once audio flows, so they run
+      // on a device that cannot share sound: start() records Mic only at once.
+      // The choice has its own block below.
+      canShareSound: () => false,
       createRecorder: () => recorder,
       isTypeSupported: (t: string) => t === "audio/webm;codecs=opus",
       newNoteId: () => NOTE,
@@ -169,13 +177,13 @@ describe("useRecorder", () => {
     expect(d.deps.capture).not.toHaveBeenCalled();
   });
 
-  it("fails cleanly when a permission prompt is refused", async () => {
+  it("fails with the raw message when capture throws something unexpected", async () => {
     const d = makeDeps();
     const { result } = renderHook(() =>
       useRecorder({
         ...d.deps,
         capture: async () => {
-          throw new Error("NotAllowedError");
+          throw new Error("AudioContext exploded");
         },
       } as never),
     );
@@ -183,7 +191,7 @@ describe("useRecorder", () => {
       await result.current.start();
     });
     expect(useRecorderStore.getState().phase).toBe("error");
-    expect(useRecorderStore.getState().errorMessage).toMatch(/NotAllowed/);
+    expect(useRecorderStore.getState().errorMessage).toMatch(/exploded/);
   });
 
   it("pauses and resumes both the recorder and the store", async () => {
@@ -265,6 +273,7 @@ describe("useRecorder", () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
     expect(Object.keys(result.current).sort()).toEqual([
+      "choose",
       "discard",
       "pause",
       "resume",
@@ -475,5 +484,125 @@ describe("useRecorder", () => {
     });
     expect(useRecorderStore.getState().phase).toBe("recording");
     error.mockRestore();
+  });
+});
+
+/** #20: the recording mode. */
+describe("useRecorder — choosing a mode", () => {
+  beforeEach(() => {
+    useRecorderStore.getState().discard();
+    vi.clearAllMocks();
+  });
+
+  function withOutcome(outcome: unknown, canShareSound = true) {
+    const d = makeDeps();
+    const capture = vi.fn(async (_mode: string) => outcome);
+    return { d, capture, deps: { ...d.deps, canShareSound: () => canShareSound, capture } };
+  }
+
+  it("opens the choice on a device that can share sound, and asks for nothing yet", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() =>
+      useRecorder({ ...d.deps, canShareSound: () => true } as never),
+    );
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(useRecorderStore.getState().phase).toBe("choosing");
+    expect(d.deps.capture).not.toHaveBeenCalled();
+  });
+
+  it("records Mic only at once on a device that cannot share sound", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(d.deps.capture).toHaveBeenCalledWith("mic");
+    expect(useRecorderStore.getState().phase).toBe("recording");
+    expect(useRecorderStore.getState().mode).toBe("mic");
+  });
+
+  it("records exactly the mode chosen", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() =>
+      useRecorder({ ...d.deps, canShareSound: () => true } as never),
+    );
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await result.current.choose("meeting");
+    });
+    expect(d.deps.capture).toHaveBeenCalledTimes(1);
+    expect(d.deps.capture).toHaveBeenCalledWith("meeting");
+    expect(useRecorderStore.getState().phase).toBe("recording");
+    expect(useRecorderStore.getState().mode).toBe("meeting");
+  });
+
+  it("goes back to the choice with no error when the share picker is cancelled", async () => {
+    const t = withOutcome({ kind: "cancelled" });
+    const { result } = renderHook(() => useRecorder(t.deps as never));
+    await act(async () => {
+      await result.current.start();
+      await result.current.choose("meeting");
+    });
+    const s = useRecorderStore.getState();
+    expect(s.phase).toBe("choosing");
+    expect(s.errorMessage).toBeNull();
+    expect(s.notice).toBeNull();
+    // Never falls through to Mic only by itself.
+    expect(t.capture).toHaveBeenCalledTimes(1);
+  });
+
+  it("goes back to the choice with the plain message when no sound was shared", async () => {
+    const t = withOutcome({ kind: "no-sound" });
+    const { result } = renderHook(() => useRecorder(t.deps as never));
+    await act(async () => {
+      await result.current.start();
+      await result.current.choose("meeting");
+    });
+    expect(useRecorderStore.getState().phase).toBe("choosing");
+    expect(useRecorderStore.getState().notice).toBe(NO_SOUND_SHARED);
+  });
+
+  it("shows the plain message, not the exception, when the mic is refused", async () => {
+    const t = withOutcome({ kind: "mic-refused" });
+    const { result } = renderHook(() => useRecorder(t.deps as never));
+    await act(async () => {
+      await result.current.start();
+      await result.current.choose("mic");
+    });
+    const s = useRecorderStore.getState();
+    expect(s.phase).toBe("error");
+    expect(s.errorMessage).toBe(MIC_REFUSED);
+    // No audio exists, so nothing claims to be kept on this device.
+    expect(s.noteId).toBeNull();
+  });
+
+  // The dock's start-request counter can call start() mid-recording. On a
+  // device that cannot share sound that goes straight to choose("mic"), which
+  // must not open a second capture over the running one.
+  it("does not capture again while a recording is running", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await act(async () => {
+      await result.current.start();
+    });
+    await act(async () => {
+      await result.current.start();
+      await result.current.choose("meeting");
+    });
+    expect(d.deps.capture).toHaveBeenCalledTimes(1);
+    expect(useRecorderStore.getState().phase).toBe("recording");
+  });
+
+  it("shows the same message on a device that cannot share sound", async () => {
+    const t = withOutcome({ kind: "mic-refused" }, false);
+    const { result } = renderHook(() => useRecorder(t.deps as never));
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(useRecorderStore.getState().errorMessage).toBe(MIC_REFUSED);
   });
 });

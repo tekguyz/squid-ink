@@ -2,12 +2,18 @@
 
 import { useEffect } from "react";
 import { HudLevelBars } from "@/components/recorder/hud-level-bars";
+import { HudDemoRecord } from "@/components/recorder/hud-demo-record";
+import { HudErrorPill } from "@/components/recorder/hud-error-pill";
+import { HudModeChoice } from "@/components/recorder/hud-mode-choice";
+import { FOCUS_RING, GHOST_ACTION, MONO_ACTION, PILL } from "@/components/recorder/hud-styles";
+import { useHudFocus } from "@/components/recorder/use-hud-focus";
+import { ArmedLabel } from "@/components/recorder/armed-label";
+import { useArmed } from "@/components/recorder/use-armed";
 import { HUD_SAFE_MARGIN } from "@/components/recorder/hud-safe-margin";
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
+import { RECORDING_ANNOUNCEMENT } from "@/lib/recorder/recording-mode";
 import type { RecorderControls } from "@/lib/recorder/use-recorder";
-import { DemoOffNote } from "@/components/demo/demo-mode";
-import { RECORD_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
 /**
  * The record HUD, App Surfaces surface 02b.
@@ -27,18 +33,17 @@ import { RECORD_DEMO_OFF } from "@/lib/auth/demo-visitor";
  *   - Drag and snap-to-corner. The caption is rendered because it is the
  *     design's copy; the dock itself is fixed bottom-right.
  *   - OPEN FULL PANE (surface 02) and CHANGE PERSONA. Both outside the fence.
- *   - Any retry affordance on the error state. The requirement is that a failed
- *     upload be VISIBLE, not recoverable in one click, and useRecorder exposes
- *     no retry to wire a button to.
+ *   - Any retry affordance on the error state (hud-error-pill.tsx says why).
+ *
+ * #20 added the Meeting / Mic only choice (hud-mode-choice.tsx) and made
+ * Stop, Discard and the error pill's Dismiss two-step (use-armed.ts): the
+ * first press arms and relabels the control ("Confirm stop"), the second acts.
+ * Each sits inside a live region (the status or alert pill), so the new label
+ * is announced.
  *
  * ⌘⇧R IS wired. The design renders the shortcut as a promise, and a label for a
  * key that does nothing is a lie in the UI.
  */
-const PILL =
-  "pointer-events-auto flex items-center shadow-[0_8px_24px_var(--shadow-hud)]";
-const MONO_ACTION =
-  "font-mono text-[9px] tracking-[0.06em] uppercase cursor-pointer";
-
 /** `demo`: a demo visitor (issue #19) sees Record turned off, with the reason.
  *  Hidden would say the app does not record; the database refuses the upload
  *  either way. */
@@ -53,15 +58,26 @@ export function RecordHud({
   const elapsedMs = useRecorderStore((s) => s.elapsedMs);
   const level = useRecorderStore((s) => s.level);
   const errorMessage = useRecorderStore((s) => s.errorMessage);
+  const mode = useRecorderStore((s) => s.mode);
+  const notice = useRecorderStore((s) => s.notice);
+  // In `error`, a note id means audio was recorded and is kept on this device
+  // (the store drops it on a failure before recording began).
+  const audioKept = useRecorderStore((s) => s.noteId !== null);
+  const closeChoice = useRecorderStore((s) => s.closeChoice);
+  const { armed, press, disarm } = useArmed(phase);
+  const { recordButton, dismissButton } = useHudFocus(phase);
 
   useEffect(() => {
     if (demo) return;
     const onKey = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || !event.shiftKey) return;
       if (event.key.toLowerCase() !== "r") return;
-      if (useRecorderStore.getState().phase !== "idle") return;
+      const current = useRecorderStore.getState().phase;
+      if (current !== "idle" && current !== "choosing") return;
+      // Ctrl+Shift+R is also the browser's hard reload. Claimed while the
+      // choice is open too, so a second press does not reload the page.
       event.preventDefault();
-      void controls.start();
+      if (current === "idle") void controls.start();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -76,41 +92,14 @@ export function RecordHud({
       style={{ right: HUD_SAFE_MARGIN, bottom: HUD_SAFE_MARGIN }}
       className="pointer-events-none fixed z-50 flex flex-col items-end gap-[9px]"
     >
-      {phase === "idle" && demo ? (
-        // DESIGN.md § Buttons → Disabled: the label drops to ink-disabled and
-        // the frame to rule-2, never opacity. The note is the button's
-        // description, so a screen reader hears why as well as that. One row,
-        // so the pill keeps its drawn height inside the HUD_RESERVE strip —
-        // stacked, it measured 55px and rose 7px into the feed.
-        <div
-          className={`${PILL} bg-pane border-rule-2 gap-[11px] border px-[13px] py-[9px]`}
-        >
-          {/* aria-disabled, not disabled: it stays in the Tab order, so a
-              keyboard user reaches it and hears why it is off. It has no
-              click handler, so pressing it does nothing. */}
-          <button
-            type="button"
-            aria-disabled="true"
-            aria-describedby={RECORD_DEMO_OFF}
-            className="text-ink-disabled focus-visible:outline-accent flex cursor-not-allowed items-center gap-[11px] focus-visible:outline-2 focus-visible:outline-offset-1"
-          >
-            <span aria-hidden="true" className="bg-ink-disabled h-[9px] w-[9px]" />
-            <span className="font-header text-[13.5px] font-semibold">
-              Record
-            </span>
-          </button>
-          {/* Below sm the pill would run over the feed's footer line; the
-              banner already says Demo there, and the note stays the button's
-              description either way. */}
-          <DemoOffNote id={RECORD_DEMO_OFF} className="max-sm:hidden" />
-        </div>
-      ) : null}
+      {phase === "idle" && demo ? <HudDemoRecord /> : null}
 
       {phase === "idle" && !demo ? (
         <button
+          ref={recordButton}
           type="button"
           onClick={() => void controls.start()}
-          className={`${PILL} bg-pane border-control-edge group gap-[11px] border px-[13px] py-[9px]`}
+          className={`${PILL} bg-pane border-control-edge group gap-[11px] border px-[13px] py-[9px] ${FOCUS_RING}`}
         >
           <span aria-hidden="true" className="bg-accent h-[9px] w-[9px]" />
           <span className="font-header text-ink text-[13.5px] font-semibold">
@@ -125,6 +114,14 @@ export function RecordHud({
             ⌘⇧R
           </span>
         </button>
+      ) : null}
+
+      {phase === "choosing" ? (
+        <HudModeChoice
+          notice={notice}
+          onChoose={(chosen) => void controls.choose(chosen)}
+          onCancel={closeChoice}
+        />
       ) : null}
 
       {phase === "requesting" ? (
@@ -145,7 +142,7 @@ export function RecordHud({
             className={`${PILL} bg-pane border-rule-2 gap-[13px] border py-[9px] pr-[11px] pl-[13px]`}
           >
             <span aria-hidden="true" className="bg-live h-[9px] w-[9px] rounded-full" />
-            <span className="sr-only">Recording system audio and microphone</span>
+            <span className="sr-only">{RECORDING_ANNOUNCEMENT[mode ?? "meeting"]}</span>
             <span className="font-mono text-ink text-[16px] font-medium tracking-[-0.01em]">
               {elapsed}
             </span>
@@ -153,17 +150,21 @@ export function RecordHud({
             <span aria-hidden="true" className="bg-rule h-[20px] w-px" />
             <button
               type="button"
-              onClick={controls.pause}
+              onClick={() => {
+                disarm();
+                controls.pause();
+              }}
               className={`${MONO_ACTION} border-control-edge text-notice border px-[8px] py-[5px]`}
             >
               Pause
             </button>
             <button
               type="button"
-              onClick={() => void controls.stop()}
-              className={`${MONO_ACTION} bg-accent text-on-accent px-[9px] py-[5px] font-medium`}
+              onClick={press("stop", () => void controls.stop())}
+              onBlur={disarm}
+              className={`${MONO_ACTION} ${armed === "stop" ? "bg-accent-pressed" : "bg-accent"} text-on-accent px-[9px] py-[5px] font-medium`}
             >
-              Stop
+              <ArmedLabel armed={armed === "stop"} idle="Stop" confirm="Confirm stop" />
             </button>
           </div>
           <p className="font-mono text-faint text-[9px] tracking-[0.04em]">
@@ -187,17 +188,21 @@ export function RecordHud({
           <span aria-hidden="true" className="bg-rule-3 h-[20px] w-px" />
           <button
             type="button"
-            onClick={controls.resume}
+            onClick={() => {
+              disarm();
+              controls.resume();
+            }}
             className={`${MONO_ACTION} border-accent text-accent-text border px-[9px] py-[5px]`}
           >
             Resume
           </button>
           <button
             type="button"
-            onClick={() => void controls.discard()}
-            className={`${MONO_ACTION} text-rail-idle px-[8px] py-[5px]`}
+            onClick={press("discard", () => void controls.discard())}
+            onBlur={disarm}
+            className={GHOST_ACTION}
           >
-            Discard
+            <ArmedLabel armed={armed === "discard"} idle="Discard" confirm="Confirm discard" />
           </button>
         </div>
       ) : null}
@@ -215,25 +220,19 @@ export function RecordHud({
       ) : null}
 
       {phase === "error" ? (
-        <div
-          role="alert"
-          className={`${PILL} bg-pane border-rule-2 max-w-sm items-start gap-[11px] border px-[13px] py-[9px]`}
-        >
-          <span aria-hidden="true" className="bg-live mt-[4px] h-[9px] w-[9px] shrink-0" />
-          <span className="font-body text-ink-2 text-[12px] leading-[1.5]">
-            {errorMessage}
-            {/* Not reassurance — a fact. The blob is written to IndexedDB
-                before the upload is attempted, so it really is still here. */}
-            <span className="text-meta block">The recording is kept on this device.</span>
-          </span>
-          <button
-            type="button"
-            onClick={() => void controls.discard()}
-            className={`${MONO_ACTION} text-rail-idle shrink-0 px-[8px] py-[5px]`}
-          >
-            Dismiss
-          </button>
-        </div>
+        <HudErrorPill
+          message={errorMessage}
+          audioKept={audioKept}
+          armed={armed === "dismiss"}
+          // Two-step only when it would delete the only copy of the audio.
+          onDismiss={
+            audioKept
+              ? press("dismiss", () => void controls.discard())
+              : () => void controls.discard()
+          }
+          onBlur={disarm}
+          dismissRef={dismissButton}
+        />
       ) : null}
     </div>
   );

@@ -8,6 +8,7 @@ const NOTE = "11111111-2222-3333-4444-555555555555";
 
 const controls = () => ({
   start: vi.fn(async () => {}),
+  choose: vi.fn(async (_mode: "meeting" | "mic") => {}),
   pause: vi.fn(),
   resume: vi.fn(),
   stop: vi.fn(async () => {}),
@@ -16,8 +17,8 @@ const controls = () => ({
 
 const state = () => useRecorderStore.getState();
 
-function toRecording() {
-  state().requestStart(NOTE);
+function toRecording(mode: "meeting" | "mic" = "meeting") {
+  state().requestStart(NOTE, mode);
   state().confirmStart("audio/webm;codecs=opus");
 }
 
@@ -47,10 +48,19 @@ describe("RecordHud", () => {
     expect(screen.queryByRole("button", { name: /record/i })).not.toBeInTheDocument();
   });
 
-  it("announces that it is capturing system audio and mic", () => {
-    toRecording();
+  it("announces a Meeting as shared sound and mic", () => {
+    toRecording("meeting");
     render(<RecordHud controls={controls()} />);
-    expect(screen.getByRole("status")).toHaveTextContent(/recording/i);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /recording shared sound and microphone/i,
+    );
+  });
+
+  it("announces Mic only as the microphone alone", () => {
+    toRecording("mic");
+    render(<RecordHud controls={controls()} />);
+    expect(screen.getByRole("status")).toHaveTextContent(/recording microphone/i);
+    expect(screen.getByRole("status")).not.toHaveTextContent(/shared/i);
   });
 
   it("pauses through the controls", async () => {
@@ -80,6 +90,7 @@ describe("RecordHud", () => {
     await userEvent.click(screen.getByRole("button", { name: /resume/i }));
     expect(c.resume).toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: /discard/i }));
+    await userEvent.click(screen.getByRole("button", { name: /confirm discard/i }));
     expect(c.discard).toHaveBeenCalled();
   });
 

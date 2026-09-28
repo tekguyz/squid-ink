@@ -9,6 +9,11 @@ import { type CaptureHandles } from "@/lib/recorder/capture";
 import { watchAudioInputs } from "@/lib/recorder/device-handoff";
 import { finishRecording } from "@/lib/recorder/finish-recording";
 import { useRecorderStore } from "@/lib/recorder/recorder-store";
+import {
+  MIC_REFUSED,
+  NO_SOUND_SHARED,
+  type RecordingMode,
+} from "@/lib/recorder/recording-mode";
 
 export type { RecorderDeps };
 
@@ -23,7 +28,12 @@ const TICK_MS = 200;
  * retry affordance would be inventing a feature the brief did not ask for.
  */
 export interface RecorderControls {
+  /** Ask for a recording. Opens the Meeting / Mic only choice, or records Mic
+   *  only at once on a device that cannot share sound (#20). Every entry — the
+   *  HUD button, ⌘⇧R, the dock's start-request counter — comes through here. */
   start(): Promise<void>;
+  /** Record in the chosen mode. Only the choice calls it. */
+  choose(mode: RecordingMode): Promise<void>;
   pause(): void;
   resume(): void;
   stop(): Promise<void>;
@@ -84,7 +94,7 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
     lastTick.current = 0;
   }, []);
 
-  const start = useCallback(async () => {
+  const choose = useCallback(async (mode: RecordingMode) => {
     const deps = depsRef.current;
     const state = store.getState();
 
@@ -95,10 +105,22 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
     }
 
     const noteId = deps.newNoteId();
-    state.requestStart(noteId);
+    state.requestStart(noteId, mode);
+    // requestStart is a no-op outside idle, choosing and error. A start that
+    // arrives mid-recording must not open a second capture over the first.
+    if (store.getState().phase !== "requesting") return;
 
     try {
-      const handles = await deps.capture();
+      const outcome = await deps.capture(mode);
+      // Cancel is a normal choice, not a crash: back to the choice, one tap
+      // from Mic only. "No sound shared" goes back there too, with the reason.
+      if (outcome.kind === "cancelled") return store.getState().backToChoice(null);
+      if (outcome.kind === "no-sound") {
+        return store.getState().backToChoice(NO_SOUND_SHARED);
+      }
+      if (outcome.kind === "mic-refused") return store.getState().fail(MIC_REFUSED);
+
+      const { handles } = outcome;
       capture.current = handles;
       chunks.current = [];
 
@@ -130,6 +152,11 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
       store.getState().fail(error instanceof Error ? error.message : String(error));
     }
   }, [store, teardown]);
+
+  const start = useCallback(async () => {
+    if (depsRef.current.canShareSound()) store.getState().openChoice();
+    else await choose("mic");
+  }, [store, choose]);
 
   const pause = useCallback(() => {
     recorder.current?.pause();
@@ -189,7 +216,7 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
   // keydown effect depends on this object, so an unstable identity tore the
   // window listener down and re-added it on every tick.
   return useMemo(
-    () => ({ start, pause, resume, stop, discard }),
-    [start, pause, resume, stop, discard],
+    () => ({ start, choose, pause, resume, stop, discard }),
+    [start, choose, pause, resume, stop, discard],
   );
 }

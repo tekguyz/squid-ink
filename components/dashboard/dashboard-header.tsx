@@ -56,10 +56,12 @@ const MONO_ACTION = "font-mono text-[10px] tracking-[0.06em] uppercase";
 /** What the readout says for each in-flight phase, and whether the recorder is
  *  far enough along that Stop is on screen. `requesting` has no HUD control yet
  *  — the browser's own permission prompt is in front of the user — and
- *  `stopping`/`uploading` are already past the point of stopping. */
+ *  `stopping`/`uploading` are already past the point of stopping. `choosing`
+ *  (#20) points at the Meeting / Mic only choice in the HUD corner. */
 const LIVE_PHASES = new Set(["recording", "paused"]);
 
 const READOUT: Record<string, string> = {
+  choosing: "Choose a mode in the recorder ↘",
   requesting: "Waiting for permission",
   recording: "Recording",
   paused: "Paused",

@@ -103,6 +103,14 @@ stacked or widened column ran under the HUD's strip; and the demo note at 390
 measured no chip, because its chips sat below the fold. After the reserve
 (`max-lg:pb-(--hud-reserve)`) and the chip scroll: 1335 green, 0 failed (1337 after review added the overlay chip check).
 
+**The Meeting / Mic only choice (issue #20)** is opened on `/` and the note
+at every width they are measured, both themes, by pressing the HUD's Record,
+then closed with Escape. Every assertion runs on it with no exemption — above
+all "covers flow text", which is what holds the choice to one row inside the
+reserve strip. Proved red first (2026-09-28): the first run failed twice —
+the choice covered the Dashboard's "End of feed" line at 390px, both themes —
+until the row tightened below `sm`.
+
 Next's dev-tools badge is a real fixed element in the bottom-left corner and
 is excluded by name; it does not ship.
 

@@ -911,6 +911,22 @@ ladder — `[5,11,15,8,13,4,9]` px scaled by live level — tinted in three tier
 **There is exactly one Stop.** The dashboard header's in-flight readout points
 at it and does not duplicate it.
 
+**The mode choice (#20)** is a seventh phase, between idle and requesting: one
+row on a `rule-2` frame, no taller than the idle pill so it stays inside the
+reserve — the accent square; from `md` up, an 11.5px Archivo `ink-2`
+caption saying what the focused or hovered mode records ("Tab sound + your
+mic", "Your mic alone"); two outline choices **Meeting** and **Mic only** on
+`control-edge` with `ink-2` labels; and a ghost **Cancel**. "Record" names
+the group for screen readers only. A plain-words notice pill sits above it
+after a share with no sound. A device that cannot share sound never shows it.
+The layout proof opens it on `/` and a note at every width.
+
+**Destructive HUD controls take two presses** — Stop, Discard, and Dismiss
+when it would delete kept audio. The first press relabels the control
+("Confirm stop") in place, the way collection Delete does; no dialog. Both
+labels share one grid cell, so the pill's width does not jump between the
+presses, and an armed Stop darkens to `accent-pressed`.
+
 ### Waveform
 
 68 fixed-height bars, `1.5px` gap, 32px tall, in `waveform`, above a mono 9px
