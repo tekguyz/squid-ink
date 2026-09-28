@@ -52,7 +52,7 @@ export const SECTION_IDS = NAV_ITEMS.flatMap((item) =>
 );
 
 const ITEM =
-  "font-body focus-visible:outline-accent block border-l-2 px-[14px] py-[8px] text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2";
+  "font-body focus-visible:outline-accent block border-l-2 px-[14px] py-[8px] text-[13px] max-lg:flex-none max-lg:whitespace-nowrap max-lg:border-b-2 max-lg:border-l-0 focus-visible:outline-2 focus-visible:-outline-offset-2";
 const IDLE = "text-ink-2 hover:bg-pane border-transparent";
 
 export function SettingsNav({
@@ -72,16 +72,17 @@ export function SettingsNav({
   return (
     <nav
       aria-label="Settings"
-      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r"
+      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r max-lg:border-r-0 max-lg:border-b"
     >
-      <AppNav current="settings" />
+      <AppNav current="settings" rowBelow="lg" />
       <div className="px-[14px] pt-[14px] pb-[12px]">
         <span className="font-mono text-meta-2 block truncate text-[9px] uppercase">
           {demo ? DEMO_VISITOR_LABEL : (email ?? "Signed in")}
         </span>
       </div>
 
-      <div className="flex flex-col">
+      {/* Below 1024px, one row that scrolls on its own. */}
+      <div className="scroll-thin flex flex-col max-lg:flex-row max-lg:overflow-x-auto">
         {NAV_ITEMS.map((item) =>
           item.kind === "link" ? (
             <Link key={item.href} href={item.href} className={`${ITEM} ${IDLE}`}>
@@ -105,7 +106,7 @@ export function SettingsNav({
         )}
       </div>
 
-      <div className="border-rule-3 mt-auto border-t px-[14px] py-[12px]">
+      <div className="border-rule-3 mt-auto border-t px-[14px] py-[12px] max-lg:py-[8px]">
         {/* A form, so sign-out works before hydration and needs no client
             handler. The action signs out THIS browser only — see
             app/notes/actions/session.ts for why not every session. */}

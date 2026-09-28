@@ -10,14 +10,13 @@ import { CollectionsRail } from "./collections-rail";
  * is not told the child route's params. One server component that both pages
  * pass their own slug to is the honest version of that.
  *
- * Held at MIN_SURFACE_WIDTH and scrolled sideways below it, the same interim
- * treatment app/page.tsx and components/personas/personas-shell.tsx document:
- * one design exists, at one width, and inventing a narrow layout here would be
- * guessing at a decision this file does not own.
+ * Held at 1280px and scrolled sideways from there down to 1024px. Below
+ * 1024px the rail stacks above the notes and the rule panel under them
+ * (issue #23), the Dashboard's pattern in app/page.tsx, so the panel is read
+ * in the same order as on a wide screen.
  *
  * Presentational and server-rendered: no state, no effect, no client boundary.
  */
-const MIN_SURFACE_WIDTH = 1280;
 
 export function CollectionsShell({
   chips,
@@ -38,13 +37,12 @@ export function CollectionsShell({
   children: ReactNode;
 }) {
   return (
-    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden">
+    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden max-lg:overflow-x-hidden">
       <div
-        style={{ minWidth: MIN_SURFACE_WIDTH }}
-        className={`bg-canvas text-ink grid h-full ${
+        className={`bg-canvas text-ink grid h-full min-w-[1280px] max-lg:min-w-0 max-lg:grid-cols-1 ${
           aside
-            ? "grid-cols-[236px_minmax(0,1fr)_296px]"
-            : "grid-cols-[236px_minmax(0,1fr)]"
+            ? "grid-cols-[236px_minmax(0,1fr)_296px] max-lg:grid-rows-[auto_minmax(0,1fr)_auto]"
+            : "grid-cols-[236px_minmax(0,1fr)] max-lg:grid-rows-[auto_minmax(0,1fr)]"
         }`}
       >
         <CollectionsRail chips={chips} activeSlug={activeSlug} demo={demo} />

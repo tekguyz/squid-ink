@@ -72,12 +72,39 @@ Collections shows `ink-disabled`. Proved red first: it caught the HUD's
 turned-off Record painting its grey on a child span, and a `rule-strong` line
 under the banner at 1.51:1 against `tint` in dark. Each run is one real visit.
 
-Widths are `1440` and `1280` on every route. **`/` is also measured at `1024`,
-`768` and `390`**, because the Dashboard's stacked layout shipped 2026-09-15;
-`NARROW_WIDTHS` in the script lists which routes get narrow widths. No other
-screen has breakpoint work, so add a route there when its breakpoints ship, not
-before. Next's dev-tools badge is a real fixed element in the bottom-left corner
-and is excluded by name; it does not ship.
+Widths are `1440` and `1280` on every route. **Every signed-in route is also
+measured at `1024`, `768` and `390`**: `/` since the Dashboard's stacked layout
+shipped 2026-09-15, and the note, `/personas`, `/collections` (index and
+detail) and `/settings` since issue #23. `NARROW_WIDTHS` in the script lists
+them; a note and a collection are keyed by kind (`note`, `collection`) because
+their URLs carry ids, and `narrowWidthsFor` maps a route to its list. The demo
+pass uses the same map. Add a route there when its breakpoints ship, not
+before.
+
+**Two pane states on the note route (issue #23)**, driven by pressing the
+same buttons a reader does, then put back — the choice is saved in the
+browser, and every later route would inherit it:
+
+- **1440px, both panes hidden.** Asserts both fold to 28px strips, then runs
+  every assertion above in both themes.
+- **768px, transcript overlay open.** Asserts the overlay is open, then runs
+  every assertion — except that "no fixed element covers flow text" skips
+  `#transcript-pane` in this one state, because the overlay covers the note by
+  design. The script prints that exemption as a `note:` line with the count of
+  lines it skipped. Overlap with the Record HUD and inside-the-viewport still
+  run on the overlay. The chip tap-target check still runs on every chip the
+  overlay leaves in view, but zero measured is not a failure here: the
+  overlay may cover them all.
+
+Proved red first (2026-09-27): the first run with these widths and states
+failed 16 times — the Record HUD covered text on Personas at 768 and 390,
+Settings at 768, and the note at 1440 with both panes hidden, because each
+stacked or widened column ran under the HUD's strip; and the demo note at 390
+measured no chip, because its chips sat below the fold. After the reserve
+(`max-lg:pb-(--hud-reserve)`) and the chip scroll: 1335 green, 0 failed (1337 after review added the overlay chip check).
+
+Next's dev-tools badge is a real fixed element in the bottom-left corner and
+is excluded by name; it does not ship.
 
 **Every route also gets four contrast assertions** (issues #22 and #65), from
 `scripts/layout-contrast.mjs`: every visible, unselected, non-busy disabled control IS

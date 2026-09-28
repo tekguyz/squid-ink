@@ -87,6 +87,10 @@ A short label on a note, separate from collections.
 One screen of the design reference, numbered 01 to 10.
 _Avoid_: Page, view
 
+**Pane**:
+A side column of a surface, beside its main content. On a note, the lens rail and the transcript pane are panes; each can be hidden, and the note itself cannot.
+_Avoid_: Sidebar, panel, drawer
+
 **Demo mode**:
 A signed-in-anonymously tour of sample notes, with no live recording.
 

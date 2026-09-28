@@ -43,11 +43,11 @@ export function CollectionsRail({
   return (
     <nav
       aria-label="Collections"
-      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r"
+      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r max-lg:border-r-0 max-lg:border-b"
     >
       {/* The shared app nav, since 2026-09-13. It replaces this rail's own
           one-off "All notes" link. */}
-      <AppNav current="collections" />
+      <AppNav current="collections" rowBelow="lg" />
       <div className="border-rule-3 flex items-center border-b px-[14px] pt-[14px] pb-[12px]">
         <p className="font-header text-ink text-[14px] font-semibold">
           Collections
@@ -56,14 +56,15 @@ export function CollectionsRail({
 
       <CollectionCreate />
 
-      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-[8px] pt-[6px] pb-[10px]">
+      {/* Below 1024px, one row that scrolls on its own. */}
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto px-[8px] pt-[6px] pb-[10px] max-lg:flex-none max-lg:overflow-x-auto max-lg:overflow-y-hidden">
         {chips.length === 0 && demo ? null : chips.length === 0 ? (
           <p className="font-body text-muted px-[8px] pt-[6px] text-[12px]">
             No collections yet. Name one above, then file notes into it from any
             note.
           </p>
         ) : (
-          <div className="flex flex-col gap-px">
+          <div className="flex flex-col gap-px max-lg:flex-row">
             {chips.map((chip) => {
               const active = chip.id === activeSlug;
               return (
@@ -71,7 +72,7 @@ export function CollectionsRail({
                   key={chip.id}
                   href={`/collections/${encodeURIComponent(chip.id)}`}
                   aria-current={active ? "page" : undefined}
-                  className={`${ROW} focus-visible:outline-accent truncate focus-visible:outline-2 focus-visible:-outline-offset-2 ${
+                  className={`${ROW} focus-visible:outline-accent truncate max-lg:flex-none max-lg:max-w-[220px] max-lg:border-b-2 max-lg:border-l-0 focus-visible:outline-2 focus-visible:-outline-offset-2 ${
                     active
                       ? "bg-raised border-accent text-ink"
                       : "text-ink-2 hover:bg-raised border-transparent"

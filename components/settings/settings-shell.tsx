@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { HUD_RESERVE_VAR } from "@/components/recorder/hud-safe-margin";
 import type { SettingsScreen } from "@/lib/settings/settings-types";
 import { AppearanceSection } from "./appearance-section";
 import { CaptureSection } from "./capture-section";
@@ -23,10 +24,10 @@ import { useDemo } from "@/components/demo/demo-mode";
  * labelled) and Appearance. Account, Capture & audio, Sharing and Data &
  * privacy are nav destinations with nothing built behind them, and say so.
  *
- * Held at MIN_SURFACE_WIDTH and scrolled sideways below it, the same interim
- * treatment app/page.tsx documents.
+ * Held at 1280px and scrolled sideways from there down to 1024px. Below
+ * 1024px the nav stacks above the settings (issue #23), the Dashboard's
+ * pattern in app/page.tsx.
  */
-const MIN_SURFACE_WIDTH = 1280;
 
 /** How far below the scroll container's top a section's top may sit and still
  *  count as the one being read. */
@@ -61,10 +62,13 @@ export function SettingsShell({ screen }: { screen: SettingsScreen }) {
   }, []);
 
   return (
-    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden">
+    <div className="scroll-thin h-app overflow-x-auto overflow-y-hidden max-lg:overflow-x-hidden">
+      {/* Stacked, the sections run under the Record pill, so the grid ends
+          HUD_RESERVE above the bottom — unless the footer is there, which
+          already is that band. */}
       <div
-        style={{ minWidth: MIN_SURFACE_WIDTH }}
-        className="bg-paper text-ink grid h-full grid-cols-[210px_minmax(0,1fr)]"
+        style={HUD_RESERVE_VAR}
+        className="bg-paper text-ink grid h-full min-w-[1280px] max-lg:pb-(--hud-reserve) max-lg:has-[footer]:pb-0 grid-cols-[210px_minmax(0,1fr)] max-lg:min-w-0 max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]"
       >
         <SettingsNav email={screen.email} active={active} onSelect={setActive} />
 

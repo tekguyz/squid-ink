@@ -65,7 +65,9 @@ export function RulePanel({
       // neither the footer nor a scrolled clause passes under the pill.
       // scripts/verify-layout.mjs failed on exactly this before the reserve.
       style={{ paddingBottom: HUD_RESERVE }}
-      className="bg-dock border-rule-strong flex min-h-0 flex-col overflow-hidden border-l px-[16px] pt-[15px]"
+      // Below 1024px it stacks under the notes, capped so the notes keep
+      // most of the screen; its own list scrolls inside the cap.
+      className="bg-dock border-rule-strong flex min-h-0 flex-col overflow-hidden border-l px-[16px] pt-[15px] max-lg:max-h-[40dvh] max-lg:border-t max-lg:border-l-0"
     >
       <h2 className={LABEL}>Auto-file rules</h2>
 

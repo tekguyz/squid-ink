@@ -19,7 +19,10 @@ import { SummarySection } from "./summary-section";
 import { TakeawaysSection } from "./takeaways-section";
 import { TranscribeButton } from "./transcribe-button";
 import { TranscriptPane } from "./transcript-pane";
+import { PaneHideButton, PaneStrip } from "./panes/pane-toggle";
+import { LENS_PANE_ID, TRANSCRIPT_PANE_ID, useNotePanes } from "./panes/use-note-panes";
 import { NOTE_WRITES_DEMO_OFF } from "@/lib/auth/demo-visitor";
+import { HUD_RESERVE_VAR } from "@/components/recorder/hud-safe-margin";
 
 /** Segment 8 is the design's default selection. */
 const INITIAL_SEGMENT_ID = 8;
@@ -47,6 +50,10 @@ export function NoteDetailShell({
   demoQuestionsLeft?: number | null;
 }) {
   const [activeSegmentId, setActiveSegmentId] = useState(INITIAL_SEGMENT_ID);
+  // Counts jumps, so a citation to the segment already active still scrolls
+  // to it — in a transcript pane that was hidden a moment ago, say.
+  const [jumps, setJumps] = useState(0);
+  const panes = useNotePanes(note.id);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const demo = useDemo();
@@ -105,9 +112,15 @@ export function NoteDetailShell({
     [locked, note.id, router],
   );
 
-  const handleCitationSelect = useCallback((segmentId: number) => {
-    setActiveSegmentId(segmentId);
-  }, []);
+  const { revealTranscript } = panes;
+  const handleCitationSelect = useCallback(
+    (segmentId: number) => {
+      revealTranscript();
+      setActiveSegmentId(segmentId);
+      setJumps((n) => n + 1);
+    },
+    [revealTranscript],
+  );
 
   useEffect(() => {
     const container = scrollRef.current;
@@ -119,20 +132,46 @@ export function NoteDetailShell({
       top: target.offsetTop - container.offsetTop - SCROLL_OFFSET,
       behavior: "smooth",
     });
-  }, [activeSegmentId]);
+  }, [activeSegmentId, jumps]);
 
   return (
-    <div className="grid h-app grid-cols-[136px_minmax(0,1fr)_404px] bg-canvas text-ink">
-      <PersonaRail
-        personas={note.personas}
-        selectedId={persona.id}
-        locked={locked}
-        quickActions={persona.actions}
-        spansLinked={note.spansLinked}
-        onSelect={handlePersonaSelect}
-      />
+    // Issue #23. Each pane's width is a variable the `data-pane-*` attribute
+    // on <html> narrows to its 28px strip, so the boot script draws a hidden
+    // pane hidden before React loads. Every narrow rule is a max-lg:/max-md:
+    // variant: with both panes shown, the drawn desktop grid is unchanged.
+    <div className="grid h-app grid-cols-[var(--lens-w)_minmax(0,1fr)_var(--transcript-w)] bg-canvas text-ink [--lens-w:136px] [--transcript-w:404px] in-data-[pane-lens=hidden]:[--lens-w:28px] in-data-[pane-transcript=hidden]:[--transcript-w:28px] max-lg:[--transcript-w:28px] max-md:grid-cols-[minmax(0,1fr)_28px] max-md:grid-rows-[auto_minmax(0,1fr)]">
+      {/* Inert while the transcript overlay covers it: Tab stays in the
+          overlay, and a press here closes the overlay rather than landing on
+          a line the reader cannot see. */}
+      <div inert={panes.overlay} className="flex min-h-0 min-w-0 max-md:col-span-2">
+        <PersonaRail
+          id={LENS_PANE_ID}
+          hidden={!panes.lens.expanded}
+          personas={note.personas}
+          selectedId={persona.id}
+          locked={locked}
+          quickActions={persona.actions}
+          spansLinked={note.spansLinked}
+          onSelect={handlePersonaSelect}
+          hideButton={
+            <PaneHideButton {...panes.lens} edge="left" />
+          }
+        />
+        <PaneStrip
+          {...panes.lens}
+          edge="left"
+          className="hidden border-r border-rule-strong bg-rail md:in-data-[pane-lens=hidden]:flex"
+        />
+      </div>
 
-      <main className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule-strong bg-paper">
+      {/* When the transcript pane is hidden, or below 1024px, it no longer
+          owns the HUD's corner, so the note does: the column ends HUD_RESERVE
+          above the bottom and the chat never passes under the Record pill. */}
+      <main
+        inert={panes.overlay}
+        style={HUD_RESERVE_VAR}
+        className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule-strong bg-paper in-data-[pane-transcript=hidden]:pb-(--hud-reserve) max-lg:pb-(--hud-reserve)"
+      >
         <NoteHeader meta={note.meta} title={note.title} />
         {/* Directly under the title, because a tag is a fact about what the
             note IS rather than about its recording — the transport and the
@@ -196,11 +235,26 @@ export function NoteDetailShell({
         />
       </main>
 
-      <TranscriptPane
-        note={note}
-        activeSegmentId={activeSegmentId}
-        scrollRef={scrollRef}
-      />
+      <div className="flex min-h-0 min-w-0">
+        <TranscriptPane
+          id={TRANSCRIPT_PANE_ID}
+          hidden={!panes.transcript.expanded}
+          overlay={panes.overlay}
+          note={note}
+          activeSegmentId={activeSegmentId}
+          scrollRef={scrollRef}
+          hideButton={
+            <PaneHideButton {...panes.transcript} edge="right" />
+          }
+        />
+        {/* Below 1024px this strip is always there: it is what opens the
+            transcript overlay. */}
+        <PaneStrip
+          {...panes.transcript}
+          edge="right"
+          className="hidden bg-pane in-data-[pane-transcript=hidden]:flex max-lg:flex"
+        />
+      </div>
     </div>
   );
 }

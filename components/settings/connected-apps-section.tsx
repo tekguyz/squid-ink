@@ -42,7 +42,7 @@ const APPS = [
 ] as const;
 
 const BUTTON =
-  "focus-visible:outline-accent cursor-pointer py-[8px] text-center font-mono text-[9.5px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2";
+  "focus-visible:outline-accent cursor-pointer py-[8px] text-center max-md:w-[120px] font-mono text-[9.5px] tracking-[0.06em] uppercase focus-visible:outline-2 focus-visible:outline-offset-2";
 
 export function ConnectedAppsSection() {
   const [pressed, setPressed] = useState<ReadonlySet<string>>(new Set());
@@ -58,7 +58,9 @@ export function ConnectedAppsSection() {
         return (
           <div
             key={app.id}
-            className="border-rule-3 grid grid-cols-[minmax(0,1fr)_300px_120px] items-center gap-[16px] border-b py-[15px]"
+            // Below 768px the three columns fold: name, then purpose, then the
+            // button under them, at its own width.
+            className="border-rule-3 grid grid-cols-[minmax(0,1fr)_300px_120px] items-center gap-[16px] border-b py-[15px] max-md:grid-cols-1 max-md:items-start max-md:justify-items-start max-md:gap-[8px]"
           >
             <div>
               <p className="font-header text-ink text-[15px] font-semibold">{app.name}</p>

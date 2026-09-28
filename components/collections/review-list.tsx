@@ -75,7 +75,8 @@ function ReviewRow({ match }: { match: PendingMatchView }) {
     });
 
   return (
-    <li className="border-rule-3 grid grid-cols-[74px_minmax(0,1fr)_auto] items-center gap-[14px] border-b px-[24px] py-[11px]">
+    // Below 768px the buttons fold under the title, as the Dashboard row does.
+    <li className="border-rule-3 grid grid-cols-[74px_minmax(0,1fr)_auto] items-center gap-[14px] border-b px-[24px] py-[11px] max-md:grid-cols-[52px_minmax(0,1fr)] max-md:gap-y-[8px] max-md:px-[16px]">
       <p className="font-mono text-meta-3 text-[10px] tabular-nums">
         {match.matchedOn}
       </p>
@@ -91,7 +92,7 @@ function ReviewRow({ match }: { match: PendingMatchView }) {
           {stale ? " · already handled" : ""}
         </p>
       </div>
-      <div className="flex gap-[6px]">
+      <div className="flex gap-[6px] max-md:col-start-2">
         <button
           type="button"
           disabled={pending}
