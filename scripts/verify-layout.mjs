@@ -631,6 +631,77 @@ async function measureModeChoice(cdp, sessionId, route, width) {
   );
 }
 
+/** Issue #24: the waiting, Saving, Saved and error pills. Each is set on the
+ *  recorder store through the dev-only `window.__recorderStore` hook
+ *  (recorder-dock.tsx) — no capture, no upload — then measured with every
+ *  assertion, unexempted, in both themes. The two-line pills (Saved with the
+ *  mic-lost line, the save-failed error, and the mic-refused error, the
+ *  longest copy) are the ones that can grow out of the HUD_RESERVE strip.
+ *  Saved is held open by a key pressed on its link, as a keyboard user
+ *  holds it (focus the HUD moved there itself does not hold it).
+ *
+ *  `overhang`: the error pills, and Saved with the mic-lost line, skip
+ *  "covers flow text", and only that, with a `note:` line. HUD_RESERVE's own
+ *  comment (hud-safe-margin.ts) allows the error phase to overhang the strip:
+ *  it is what the user is looking at, and reserving for it would leave a
+ *  permanent gap on every screen. The mic-lost Saved pill shares the
+ *  allowance by decision on #24 (2026-09-28): it is rare, it lasts six
+ *  seconds, and at 390px it measured just too wide for the Dashboard's
+ *  "End of feed" line. Plain Saved has no allowance and runs unexempted. */
+const HUD_STATES = {
+  "waiting (Meeting)": { phase: "requesting", mode: "meeting", noteId: "x" },
+  "waiting (Mic only)": { phase: "requesting", mode: "mic", noteId: "x" },
+  saving: { phase: "uploading", mode: "mic", noteId: "x", elapsedMs: 5_025_000 },
+  saved: { phase: "saved", noteId: "00000000-0000-4000-8000-000000000000", micLost: false },
+  "saved, mic lost": {
+    phase: "saved",
+    noteId: "00000000-0000-4000-8000-000000000000",
+    micLost: true,
+    overhang: true,
+  },
+  "save failed": { phase: "error", errorCause: "save-failed", noteId: "x", overhang: true },
+  "mic refused": { phase: "error", errorCause: "mic-refused", noteId: null, overhang: true },
+};
+const HUD_LABEL = "div.pointer-events-none.fixed.z-50";
+
+async function measureHudStates(cdp, sessionId, route, width) {
+  for (const [name, { overhang, ...patch }] of Object.entries(HUD_STATES)) {
+    const where = `${route} [HUD ${name}] @ ${width}px`;
+    const shown = await evaluate(
+      cdp,
+      sessionId,
+      `(async () => { const store = window.__recorderStore;
+         if (!store) return false;
+         store.setState(${JSON.stringify(patch)});
+         await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 100)));
+         const hud = [...document.querySelectorAll("div.fixed")].find((d) => d.style.bottom);
+         const link = hud?.querySelector('a[href^="/notes/"]');
+         link?.focus();
+         link?.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", bubbles: true }));
+         return !!hud?.querySelector('[role="status"], [role="alert"]'); })()`,
+    );
+    check(shown, `${where} — the pill is on screen`, "no window.__recorderStore, or no status/alert pill");
+    if (!shown) continue;
+    for (const theme of ["light", "dark"]) {
+      await evaluate(cdp, sessionId, themeAndChips(theme));
+      const probe = await evaluate(cdp, sessionId, PROBE);
+      if (overhang) {
+        const exempt = probe.overlayHits.filter((h) => h.overlay === HUD_LABEL).length;
+        if (exempt) console.log(`  note: ${where} ${theme} — "covers flow text" skips the HUD pill (${exempt} covered lines): it may overhang the reserve`);
+        probe.overlayHits = probe.overlayHits.filter((h) => h.overlay !== HUD_LABEL);
+      }
+      report(`${route} [HUD ${name}]`, width, theme, probe, "if-any");
+      reportContrast(check, `${where} ${theme}`, await evaluate(cdp, sessionId, CONTRAST_PROBE));
+    }
+    await evaluate(
+      cdp,
+      sessionId,
+      `(async () => { document.activeElement?.blur(); window.__recorderStore.getState().discard();
+         await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 100))); })()`,
+    );
+  }
+}
+
 /** Issue #19: the same screens as a DEMO VISITOR. The banner sits in flow
  *  above every screen, so each must still end at the bottom of the viewport
  *  (no vertical page overflow), and every write control is turned off, so
@@ -849,6 +920,7 @@ async function main() {
         }
         if (route === noteHref) await measureNotePanes(cdp, sessionId, route, width);
         if (route === "/" || route === noteHref) await measureModeChoice(cdp, sessionId, route, width);
+        if (route === "/" || route === noteHref) await measureHudStates(cdp, sessionId, route, width);
       }
     }
 

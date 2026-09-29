@@ -8,7 +8,7 @@ import {
   loadBackup,
   saveBackup,
 } from "@/lib/recorder/audio-backup";
-import { MIC_REFUSED, NO_SOUND_SHARED } from "@/lib/recorder/recording-mode";
+import { NO_SOUND_SHARED } from "@/lib/recorder/recording-mode";
 
 const USER = "8f1c2a3b-0000-4444-8888-aaaaaaaaaaaa";
 const NOTE = "11111111-2222-3333-4444-555555555555";
@@ -63,6 +63,7 @@ function makeDeps() {
   };
   const createNote = vi.fn(async (_i: unknown) => ({ id: NOTE }));
   const markUploadFailed = vi.fn(async (_noteId: string) => {});
+  const reopenFailedUpload = vi.fn(async (_noteId: string) => {});
   const backupsSafeToDiscard = vi.fn(async (_ids: string[]): Promise<string[]> => []);
 
   // Typed against the real StorageBucketLike result shapes, so `data: null`
@@ -100,6 +101,7 @@ function makeDeps() {
     captureHandles,
     createNote,
     markUploadFailed,
+    reopenFailedUpload,
     backupsSafeToDiscard,
     bucketApi,
     deps: {
@@ -119,6 +121,7 @@ function makeDeps() {
       bucket: () => bucketApi,
       createNote,
       markUploadFailed,
+      reopenFailedUpload,
       backupsSafeToDiscard,
     },
   };
@@ -146,12 +149,26 @@ async function recordAndStop(result: Rendered, d: Deps) {
   });
 }
 
+/** Tell the device watcher the recording mic went away. */
+async function loseMic() {
+  await act(async () => {
+    navigator.mediaDevices.dispatchEvent(new Event("devicechange"));
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+const phase = () => useRecorderStore.getState().phase;
+
 describe("useRecorder", () => {
   beforeEach(async () => {
     useRecorderStore.getState().discard();
     for (const b of await listBackups()) await discardBackup(b.noteId);
     deviceListeners.clear();
     vi.clearAllMocks();
+    // Every failure is logged where it is caught (#24). Silenced here, and
+    // asserted on where it matters.
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   it("moves the store to recording and records the negotiated mime type", async () => {
@@ -174,10 +191,11 @@ describe("useRecorder", () => {
       await result.current.start();
     });
     expect(useRecorderStore.getState().phase).toBe("error");
+    expect(useRecorderStore.getState().errorCause).toBe("unsupported");
     expect(d.deps.capture).not.toHaveBeenCalled();
   });
 
-  it("fails with the raw message when capture throws something unexpected", async () => {
+  it("stores a cause, not the exception, and logs the raw error", async () => {
     const d = makeDeps();
     const { result } = renderHook(() =>
       useRecorder({
@@ -191,7 +209,11 @@ describe("useRecorder", () => {
       await result.current.start();
     });
     expect(useRecorderStore.getState().phase).toBe("error");
-    expect(useRecorderStore.getState().errorMessage).toMatch(/exploded/);
+    expect(useRecorderStore.getState().errorCause).toBe("start-failed");
+    expect(console.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ message: "AudioContext exploded" }),
+    );
   });
 
   it("pauses and resumes both the recorder and the store", async () => {
@@ -244,16 +266,13 @@ describe("useRecorder", () => {
     });
   });
 
-  // The row is written once per recording, on the single path that reaches it.
-  // There is no retry control: a failed upload does NOT re-enter this code, so
-  // the action is never called twice for one note id from here. (The action is
-  // an upsert regardless — app/notes/__tests__/actions.test.ts guards that —
-  // but the hook must not rely on it to paper over a double call.)
+  // The row is written once per recording. Retry writes it again only when the
+  // first write never landed (below).
   it("calls the note action exactly once per recording", async () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
     await recordAndStop(result, d);
-    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("idle"));
+    await waitFor(() => expect(phase()).toBe("saved"));
     expect(d.createNote).toHaveBeenCalledTimes(1);
   });
 
@@ -269,31 +288,30 @@ describe("useRecorder", () => {
     expect(result.current).toBe(first);
   });
 
-  it("has no retry control — a failed upload is surfaced, not silently re-driven", () => {
+  it("ends in saved with the note id and the recording's length", async () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
-    expect(Object.keys(result.current).sort()).toEqual([
-      "choose",
-      "discard",
-      "pause",
-      "resume",
-      "start",
-      "stop",
-    ]);
-  });
-
-  it("returns to idle once the upload lands", async () => {
-    const d = makeDeps();
-    const { result } = renderHook(() => useRecorder(d.deps as never));
-    await recordAndStop(result, d);
-    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("idle"));
+    await act(async () => {
+      await result.current.start();
+    });
+    act(() => useRecorderStore.getState().tick(42_000));
+    await act(async () => {
+      const done = result.current.stop();
+      d.recorder.emit("stop", {});
+      await done;
+    });
+    const s = useRecorderStore.getState();
+    expect(s.phase).toBe("saved");
+    expect(s.noteId).toBe(NOTE);
+    expect(s.elapsedMs).toBe(42_000);
+    expect(s.micLost).toBe(false);
   });
 
   it("KEEPS the backup after a successful upload — only 'completed' discards it", async () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
     await recordAndStop(result, d);
-    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("idle"));
+    await waitFor(() => expect(phase()).toBe("saved"));
     expect((await listBackups()).map((b) => b.noteId)).toContain(NOTE);
   });
 
@@ -339,7 +357,7 @@ describe("useRecorder", () => {
     expect(d.markUploadFailed).toHaveBeenCalledWith(NOTE);
   });
 
-  it("still fires the store's fail() so the HUD error pill is unchanged", async () => {
+  it("fails as save-failed, not with the server's words, and logs the raw error", async () => {
     const d = makeDeps();
     d.bucketApi.upload.mockResolvedValue({
       data: null,
@@ -348,7 +366,11 @@ describe("useRecorder", () => {
     const { result } = renderHook(() => useRecorder(d.deps as never));
     await recordAndStop(result, d);
     await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
-    expect(useRecorderStore.getState().errorMessage).toMatch(/offline/);
+    expect(useRecorderStore.getState().errorCause).toBe("save-failed");
+    expect(console.error).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ message: expect.stringMatching(/offline/) }),
+    );
   });
 
   it("keeps the IndexedDB blob when it marks the note failed", async () => {
@@ -367,7 +389,7 @@ describe("useRecorder", () => {
     const d = makeDeps();
     const { result } = renderHook(() => useRecorder(d.deps as never));
     await recordAndStop(result, d);
-    await waitFor(() => expect(useRecorderStore.getState().phase).toBe("idle"));
+    await waitFor(() => expect(phase()).toBe("saved"));
     expect(d.markUploadFailed).not.toHaveBeenCalled();
   });
 
@@ -375,7 +397,8 @@ describe("useRecorder", () => {
   // object-existence check behind it, so it must only cover the Storage
   // transfer. If the row was never written there is nothing to fail, and
   // failing on an unrelated throw would strand a note that uploaded fine —
-  // 'failed' is terminal and there is no retry path.
+  // outside this session, nothing moves a 'failed' note back (Retry, #24,
+  // lives only in the session that recorded it).
   it("does not mark a note failed when the row was never written", async () => {
     const d = makeDeps();
     d.createNote.mockRejectedValue(new Error("row-level security"));
@@ -414,7 +437,7 @@ describe("useRecorder", () => {
     await recordAndStop(result, d);
     await waitFor(() => expect(useRecorderStore.getState().phase).toBe("error"));
     expect(d.markUploadFailed).toHaveBeenCalledTimes(1);
-    expect(useRecorderStore.getState().errorMessage).toMatch(/offline/);
+    expect(useRecorderStore.getState().errorCause).toBe("save-failed");
   });
 
   it("re-acquires the mic when the device watcher reports it lost", async () => {
@@ -423,13 +446,46 @@ describe("useRecorder", () => {
     await act(async () => {
       await result.current.start();
     });
-    await act(async () => {
-      navigator.mediaDevices.dispatchEvent(new Event("devicechange"));
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await loseMic();
     await waitFor(() => expect(d.captureHandles.replaceMic).toHaveBeenCalled());
     expect(useRecorderStore.getState().phase).toBe("recording");
+  });
+
+  it("stops and saves by itself when the mic is lost and none replaces it", async () => {
+    const d = makeDeps();
+    d.captureHandles.replaceMic.mockRejectedValue(new Error("NotReadableError"));
+    const order: string[] = [];
+    d.bucketApi.upload.mockImplementation(async () => {
+      order.push(`upload, backup kept: ${(await loadBackup(NOTE)) !== null}`);
+      return { data: { path: `${USER}/${NOTE}` }, error: null };
+    });
+    d.recorder.stop.mockImplementation(() => d.recorder.emit("stop", {}));
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await act(async () => {
+      await result.current.start();
+    });
+    await loseMic();
+    await waitFor(() => expect(phase()).toBe("saved"));
+    expect(useRecorderStore.getState().micLost).toBe(true);
+    expect(d.recorder.stop).toHaveBeenCalled();
+    expect(order).toEqual(["upload, backup kept: true"]);
+  });
+
+  it("really keeps the audio when the mic is lost and the save then fails", async () => {
+    const d = makeDeps();
+    d.captureHandles.replaceMic.mockRejectedValue(new Error("NotReadableError"));
+    d.bucketApi.upload.mockResolvedValue({ data: null, error: { message: "offline" } });
+    d.recorder.stop.mockImplementation(() => d.recorder.emit("stop", {}));
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await act(async () => {
+      await result.current.start();
+    });
+    await loseMic();
+    await waitFor(() => expect(phase()).toBe("error"));
+    const s = useRecorderStore.getState();
+    expect(s.errorCause).toBe("save-failed");
+    expect(s.noteId).toBe(NOTE);
+    expect(await loadBackup(NOTE)).not.toBeNull();
   });
 
   it("discard() stops capture, clears the store and drops the blob", async () => {
@@ -484,6 +540,93 @@ describe("useRecorder", () => {
     });
     expect(useRecorderStore.getState().phase).toBe("recording");
     error.mockRestore();
+  });
+});
+
+/** #24: Retry saves again from the audio kept on this device. */
+describe("useRecorder — retry", () => {
+  beforeEach(async () => {
+    useRecorderStore.getState().discard();
+    for (const b of await listBackups()) await discardBackup(b.noteId);
+    vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  it("exists, and does nothing outside a failed save", async () => {
+    const d = makeDeps();
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    expect(Object.keys(result.current)).toContain("retry");
+    await act(async () => {
+      await result.current.retry();
+    });
+    expect(phase()).toBe("idle");
+    expect(d.bucketApi.upload).not.toHaveBeenCalled();
+  });
+
+  it("re-uploads the kept audio to the same path and ends in saved", async () => {
+    const d = makeDeps();
+    d.bucketApi.upload.mockResolvedValueOnce({ data: null, error: { message: "offline" } });
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(phase()).toBe("error"));
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(phase()).toBe("saved");
+    expect(useRecorderStore.getState().noteId).toBe(NOTE);
+    expect(d.bucketApi.upload).toHaveBeenCalledTimes(2);
+    expect(d.bucketApi.upload.mock.calls[1][0]).toBe(`${USER}/${NOTE}`);
+    expect(await d.bucketApi.upload.mock.calls[1][1].text()).toBe("audio");
+    // The row exists at 'failed': it is moved back, not written again.
+    expect(d.reopenFailedUpload).toHaveBeenCalledWith(NOTE);
+    expect(d.createNote).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes the row first when the first save never wrote it", async () => {
+    const d = makeDeps();
+    const order: string[] = [];
+    d.createNote.mockRejectedValueOnce(new Error("offline"));
+    d.bucketApi.upload.mockImplementation(async () => {
+      order.push("upload");
+      return { data: { path: `${USER}/${NOTE}` }, error: null };
+    });
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(phase()).toBe("error"));
+    d.createNote.mockImplementation(async () => {
+      order.push("createNote");
+      return { id: NOTE };
+    });
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    expect(phase()).toBe("saved");
+    expect(order).toEqual(["createNote", "upload"]);
+    expect(d.reopenFailedUpload).not.toHaveBeenCalled();
+  });
+
+  it("returns to save-failed when it fails again, and marks the note failed once", async () => {
+    const d = makeDeps();
+    d.bucketApi.upload.mockResolvedValue({ data: null, error: { message: "offline" } });
+    const { result } = renderHook(() => useRecorder(d.deps as never));
+    await recordAndStop(result, d);
+    await waitFor(() => expect(phase()).toBe("error"));
+    expect(d.markUploadFailed).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await result.current.retry();
+    });
+
+    const s = useRecorderStore.getState();
+    expect(s.phase).toBe("error");
+    expect(s.errorCause).toBe("save-failed");
+    expect(s.noteId).toBe(NOTE);
+    expect(d.markUploadFailed).toHaveBeenCalledTimes(2);
+    expect(await loadBackup(NOTE)).not.toBeNull();
   });
 });
 
@@ -549,7 +692,7 @@ describe("useRecorder — choosing a mode", () => {
     });
     const s = useRecorderStore.getState();
     expect(s.phase).toBe("choosing");
-    expect(s.errorMessage).toBeNull();
+    expect(s.errorCause).toBeNull();
     expect(s.notice).toBeNull();
     // Never falls through to Mic only by itself.
     expect(t.capture).toHaveBeenCalledTimes(1);
@@ -575,7 +718,7 @@ describe("useRecorder — choosing a mode", () => {
     });
     const s = useRecorderStore.getState();
     expect(s.phase).toBe("error");
-    expect(s.errorMessage).toBe(MIC_REFUSED);
+    expect(s.errorCause).toBe("mic-refused");
     // No audio exists, so nothing claims to be kept on this device.
     expect(s.noteId).toBeNull();
   });
@@ -603,6 +746,6 @@ describe("useRecorder — choosing a mode", () => {
     await act(async () => {
       await result.current.start();
     });
-    expect(useRecorderStore.getState().errorMessage).toBe(MIC_REFUSED);
+    expect(useRecorderStore.getState().errorCause).toBe("mic-refused");
   });
 });

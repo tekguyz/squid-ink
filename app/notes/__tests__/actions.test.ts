@@ -252,6 +252,58 @@ describe("markUploadFailed", () => {
   });
 });
 
+/** #24: Retry moves a note the first save marked 'failed' back to
+ *  'uploading' before the bytes move again — the reverse of markUploadFailed,
+ *  with the same one-statement guard. */
+describe("reopenFailedUpload", () => {
+  let chain: ReturnType<typeof makeUpdateChain>;
+  const subject = async () =>
+    (await import("@/app/notes/actions/recording")).reopenFailedUpload;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    chain = makeUpdateChain();
+    update.mockReturnValue(chain);
+  });
+
+  it("refuses to write anything when there is no session", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    await expect((await subject())(NOTE)).rejects.toThrow(/not signed in/i);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("writes processing_status = 'uploading' and nothing else", async () => {
+    await (await subject())(NOTE);
+    expect(update.mock.calls[0][0]).toEqual({ processing_status: "uploading" });
+    expect(chain.eq.mock.calls).toContainEqual(["id", NOTE]);
+  });
+
+  // Without the guard a retry could drag an 'analyzing' or 'completed' note
+  // backwards.
+  it("guards on processing_status = 'failed'", async () => {
+    await (await subject())(NOTE);
+    expect(chain.eq.mock.calls).toContainEqual(["processing_status", "failed"]);
+  });
+
+  it("never filters on user_id — RLS supplies the owner", async () => {
+    await (await subject())(NOTE);
+    expect(chain.eq.mock.calls.map(([column]) => column)).not.toContain("user_id");
+  });
+
+  it("is quiet when zero rows matched", async () => {
+    chain = makeUpdateChain({ data: [], error: null });
+    update.mockReturnValue(chain);
+    await expect((await subject())(NOTE)).resolves.toBeUndefined();
+  });
+
+  it("surfaces a database error rather than reporting success", async () => {
+    chain = makeUpdateChain({ data: null, error: { message: "offline" } });
+    update.mockReturnValue(chain);
+    await expect((await subject())(NOTE)).rejects.toThrow(/offline/);
+  });
+});
+
 describe("triggerTranscription", () => {
   const noteRow = {
     id: NOTE,

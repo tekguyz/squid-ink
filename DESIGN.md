@@ -899,11 +899,12 @@ scrolls this row to 56px below the pane header and marks it `aria-current`.
 
 ### Signature component — the recorder HUD
 
-One pill, six mutually exclusive phases (idle, requesting, recording, paused,
-stopping/uploading, error), each with its own border token, fill and 9px status
-marker. The marker encodes state by *shape*: accent square (idle, uploading),
-red circle (recording), hollow `faint` square with a 1.5px border (paused), red
-square (error). The recording phase adds a seven-bar mic meter on a fixed
+One pill, seven mutually exclusive phases (idle, requesting, recording, paused,
+saving, saved, error), each with its own border token, fill and 9px status
+marker. The marker encodes state by *shape*: accent square (idle, saving,
+saved), hollow accent square with a 1.5px border (requesting), red circle
+(recording), hollow `faint` square with a 1.5px border (paused), red square
+(error). The recording phase adds a seven-bar mic meter on a fixed
 ladder — `[5,11,15,8,13,4,9]` px scaled by live level — tinted in three tiers
 (`accent` / `tint-hover` / `waveform`) by bar height. Its `role="status"` and
 `role="alert"` pills are not controls and keep `rule-2`.
@@ -920,6 +921,23 @@ mic", "Your mic alone"); two outline choices **Meeting** and **Mic only** on
 the group for screen readers only. A plain-words notice pill sits above it
 after a share with no sound. A device that cannot share sound never shows it.
 The layout proof opens it on `/` and a note at every width.
+
+**The states around a recording (#24).** None was in 02b; each was designed
+inside its geometry and tokens. *Requesting* says what the browser's prompt
+needs, in 12px Archivo `ink-2`: "Choose a tab to share" (Meeting) or "Allow
+your microphone" (Mic only) — no control, because nothing in the HUD can close
+the browser's prompt. *Saving* is one mono `notice` word for the two internal
+steps (stop, upload), with the length frozen beside it in mono `muted`.
+*Saved* reads "SAVED · OPEN NOTE", the link in `accent-text`, and adds the
+Archivo `meta` line "Microphone lost. Saved what was recorded." when the
+recording stopped itself; it returns to Record after about six seconds, held
+while the pointer or focus is inside, or at once on a click. *Error* is one
+plain sentence per cause; only a failed save says "It is kept on this
+device." and offers an accent-outlined **Retry** (one press — it deletes
+nothing) before Dismiss. The two-line pills use 6px vertical padding and 1.35
+leading. Saved fits the reserve strip at every width; an error pill, and
+Saved with its mic-lost line on a phone, may overhang it
+(`hud-safe-margin.ts`).
 
 **Destructive HUD controls take two presses** — Stop, Discard, and Dismiss
 when it would delete kept audio. The first press relabels the control

@@ -111,6 +111,39 @@ export async function markUploadFailed(noteId: string): Promise<void> {
 }
 
 /**
+ * Retry's first write (#24): a note the first save marked 'failed' goes back
+ * to 'uploading' before its kept audio moves again. The reverse of
+ * markUploadFailed, with the same guard for the same reason —
+ * `.eq('processing_status', 'failed')` is a one-statement atomic claim, so it
+ * can never drag an 'analyzing' or 'completed' note backwards. Zero rows
+ * matched is not an error: a row still at 'uploading' (the failed write never
+ * landed) is already where Retry needs it.
+ *
+ * The write refreshes updated_at, which restarts the seven-day backup cleanup
+ * clock (lib/recorder/backup-cleanup.ts). That is correct: the audio is live
+ * again. Authenticated client, no `user_id` filter, as markUploadFailed.
+ */
+export async function reopenFailedUpload(noteId: string): Promise<void> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Cannot retry a note: not signed in.");
+
+  const { error } = await supabase
+    .from("notes")
+    .update({ processing_status: "uploading" })
+    .eq("id", noteId)
+    .eq("processing_status", "failed")
+    .select("id");
+
+  if (error) throw new Error(`Failed to reopen the note for upload: ${error.message}`);
+
+  revalidatePath("/");
+}
+
+/**
  * Which of the browser's IndexedDB audio backups may be deleted (#12). The
  * browser sends the note ids it holds; this reads their rows and applies
  * `backupsToDiscard` against the SERVER's clock, so a wrong browser clock can

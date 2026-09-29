@@ -1367,6 +1367,17 @@ problem the original entry names is therefore **narrowed, not closed**.
 
 ### Three HUD states are INVENTED, not from the design → #24
 
+**RESOLVED 2026-09-28 (#24).** Each state now has a deliberate design inside
+02b's pill geometry and tokens, recorded in DESIGN.md § the recorder HUD: the
+waiting pill says what the browser's prompt needs ("Choose a tab to share" /
+"Allow your microphone") beside a hollow accent square; `stopping` and
+`uploading` show as one "Saving" with the length frozen; a new `saved` phase
+shows "Saved · Open note" for about six seconds; the error pill speaks a
+plain sentence per cause (the store holds a cause, never raw text) and offers
+**Retry** when the audio is kept. A mic lost with no replacement now stops and
+saves instead of failing — before, the pill claimed audio was kept that had
+never been backed up. The record below is the state before #24.
+
 Verified by reading `design-reference/App Surfaces.dc.html`, not from memory.
 Surface 02b defines exactly four state labels — `Idle · docked bottom-right,
 above every app`, `Recording · collapsed`, `Paused · capture held, nothing
@@ -1424,7 +1435,8 @@ survive. Measured, not assumed: an `ArrayBuffer` round-trips exactly.
 The full encrypted 48-hour backup buffer (Core UX/UI phase — only the light
 version ships here, unencrypted, no expiry). Transcription and every
 `processing_status` transition past `'uploading'` (Track 3). Playback. Note
-deletion. Resume-upload after a failure. (A mic-only mode shipped 2026-09-28,
+deletion. Resume-upload after a page reload (#73) — Retry (#24) resumes one
+only within the session that recorded it. (A mic-only mode shipped 2026-09-28,
 #20 — see "Cancelling the share picker kills the recording" below.)
 
 ### Verified in a real browser, and what that did not cover

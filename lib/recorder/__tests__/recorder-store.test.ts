@@ -21,7 +21,7 @@ describe("recorder store", () => {
     expect(state().elapsedMs).toBe(0);
     expect(state().level).toBe(0);
     expect(state().mimeType).toBeNull();
-    expect(state().errorMessage).toBeNull();
+    expect(state().errorCause).toBeNull();
   });
 
   it("holds the note id from the moment permission is requested", () => {
@@ -58,7 +58,7 @@ describe("recorder store", () => {
     expect(state().level).toBe(0);
   });
 
-  it("walks stop -> upload -> finish back to a clean idle", () => {
+  it("walks stop -> upload -> saved, holding the note id and the frozen length", () => {
     toRecording();
     state().tick(1000);
     state().beginStop();
@@ -66,29 +66,75 @@ describe("recorder store", () => {
     state().beginUpload();
     expect(state().phase).toBe("uploading");
     state().finish();
+    expect(state().phase).toBe("saved");
+    expect(state().noteId).toBe(NOTE);
+    expect(state().elapsedMs).toBe(1000);
+    expect(state().micLost).toBe(false);
+  });
+
+  it("carries micLost from the stop to the saved result", () => {
+    toRecording();
+    state().beginStop(true);
+    state().beginUpload();
+    state().finish();
+    expect(state().phase).toBe("saved");
+    expect(state().micLost).toBe(true);
+  });
+
+  it("closes the saved state back to a clean idle", () => {
+    toRecording();
+    state().beginStop();
+    state().beginUpload();
+    state().finish();
+    state().closeSaved();
     expect(state().phase).toBe("idle");
     expect(state().noteId).toBeNull();
     expect(state().elapsedMs).toBe(0);
   });
 
-  it("keeps the note id after a failure so a retry reuses the same object path", () => {
+  it("starts a new recording straight from saved, as from idle", () => {
     toRecording();
     state().beginStop();
     state().beginUpload();
-    state().fail("network died");
-    expect(state().phase).toBe("error");
-    expect(state().noteId).toBe(NOTE);
-    expect(state().errorMessage).toBe("network died");
+    state().finish();
+    state().openChoice();
+    expect(state().phase).toBe("choosing");
+    expect(state().noteId).toBeNull();
   });
 
-  it("does not re-enter the upload from the error phase — there is no retry", () => {
+  it("keeps the note id after a failed save so a retry reuses the same object path", () => {
     toRecording();
     state().beginStop();
     state().beginUpload();
-    state().fail("network died");
-    state().beginUpload();
+    state().fail("save-failed");
     expect(state().phase).toBe("error");
-    expect(state().errorMessage).toBe("network died");
+    expect(state().noteId).toBe(NOTE);
+    expect(state().errorCause).toBe("save-failed");
+  });
+
+  it("re-enters Saving from a failed save, and only from a failed save", () => {
+    toRecording();
+    state().beginStop();
+    state().beginUpload();
+    state().fail("save-failed");
+    state().beginRetry();
+    expect(state().phase).toBe("uploading");
+    expect(state().noteId).toBe(NOTE);
+    expect(state().errorCause).toBeNull();
+
+    state().discard();
+    state().requestStart(NOTE, "mic");
+    state().fail("mic-refused");
+    state().beginRetry();
+    expect(state().phase).toBe("error");
+  });
+
+  // Only a failed save has audio behind it. Every other cause must not carry a
+  // note id, because the HUD reads one as "kept on this device".
+  it("drops the note id for every cause but a failed save", () => {
+    toRecording();
+    state().fail("start-failed");
+    expect(state().noteId).toBeNull();
   });
 
   it("discards everything from any phase", () => {
@@ -127,11 +173,11 @@ describe("recorder store", () => {
 
   it("can start again from the error phase", () => {
     toRecording();
-    state().fail("boom");
+    state().fail("start-failed");
     state().requestStart("99999999-9999-9999-9999-999999999999", "mic");
     expect(state().phase).toBe("requesting");
     expect(state().noteId).toBe("99999999-9999-9999-9999-999999999999");
-    expect(state().errorMessage).toBeNull();
+    expect(state().errorCause).toBeNull();
   });
 
   it("opens the mode choice from idle and closes it back to idle", () => {
@@ -143,10 +189,10 @@ describe("recorder store", () => {
 
   it("opens the choice from the error phase, clearing the error", () => {
     toRecording();
-    state().fail("boom");
+    state().fail("start-failed");
     state().openChoice();
     expect(state().phase).toBe("choosing");
-    expect(state().errorMessage).toBeNull();
+    expect(state().errorCause).toBeNull();
   });
 
   it("does not open the choice while a recording is live", () => {
@@ -186,7 +232,7 @@ describe("recorder store", () => {
   // device, so the error must not carry a note id that says there is.
   it("drops the note id when it fails before recording began", () => {
     state().requestStart(NOTE, "mic");
-    state().fail("no mic");
+    state().fail("mic-refused");
     expect(state().phase).toBe("error");
     expect(state().noteId).toBeNull();
   });

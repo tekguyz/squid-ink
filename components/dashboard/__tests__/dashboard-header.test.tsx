@@ -41,4 +41,35 @@ describe("DashboardHeader Record", () => {
     render(<DashboardHeader />);
     expect(screen.getByRole("status")).toHaveTextContent(/choose a mode/i);
   });
+
+  // #24: the same words as the HUD's waiting pill.
+  it("says what the browser's prompt needs while it is open", () => {
+    useRecorderStore.getState().requestStart("11111111-2222-3333-4444-555555555555", "meeting");
+    render(<DashboardHeader />);
+    expect(screen.getByRole("status")).toHaveTextContent("Choose a tab to share");
+  });
+
+  // #24: one "Saving" for the two internal steps, as the HUD shows.
+  it("says Saving while a recording saves", () => {
+    const s = useRecorderStore.getState();
+    s.requestStart("11111111-2222-3333-4444-555555555555", "mic");
+    s.confirmStart("audio/webm");
+    s.beginStop();
+    render(<DashboardHeader />);
+    expect(screen.getByRole("status")).toHaveTextContent(/^saving$/i);
+  });
+
+  // #24: Saved is at rest — a new recording can start from it.
+  it("offers Record again once the recording is saved", async () => {
+    const s = useRecorderStore.getState();
+    s.requestStart("11111111-2222-3333-4444-555555555555", "mic");
+    s.confirmStart("audio/webm");
+    s.beginStop();
+    s.beginUpload();
+    s.finish();
+    const before = useRecorderStore.getState().startRequests;
+    render(<DashboardHeader />);
+    await userEvent.click(screen.getByRole("button", { name: "Record" }));
+    expect(useRecorderStore.getState().startRequests).toBe(before + 1);
+  });
 });

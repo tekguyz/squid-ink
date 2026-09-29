@@ -5,13 +5,15 @@ import { HudLevelBars } from "@/components/recorder/hud-level-bars";
 import { HudDemoRecord } from "@/components/recorder/hud-demo-record";
 import { HudErrorPill } from "@/components/recorder/hud-error-pill";
 import { HudModeChoice } from "@/components/recorder/hud-mode-choice";
+import { HudSavingPill, HudWaitingPill } from "@/components/recorder/hud-progress-pills";
+import { HudSavedPill } from "@/components/recorder/hud-saved-pill";
 import { FOCUS_RING, GHOST_ACTION, MONO_ACTION, PILL } from "@/components/recorder/hud-styles";
 import { useHudFocus } from "@/components/recorder/use-hud-focus";
 import { ArmedLabel } from "@/components/recorder/armed-label";
 import { useArmed } from "@/components/recorder/use-armed";
 import { HUD_SAFE_MARGIN } from "@/components/recorder/hud-safe-margin";
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
-import { useRecorderStore } from "@/lib/recorder/recorder-store";
+import { isAtRest, useRecorderStore } from "@/lib/recorder/recorder-store";
 import { RECORDING_ANNOUNCEMENT } from "@/lib/recorder/recording-mode";
 import type { RecorderControls } from "@/lib/recorder/use-recorder";
 
@@ -33,7 +35,12 @@ import type { RecorderControls } from "@/lib/recorder/use-recorder";
  *   - Drag and snap-to-corner. The caption is rendered because it is the
  *     design's copy; the dock itself is fixed bottom-right.
  *   - OPEN FULL PANE (surface 02) and CHANGE PERSONA. Both outside the fence.
- *   - Any retry affordance on the error state (hud-error-pill.tsx says why).
+ *
+ * #24 designed the states 02b left out: the waiting pill says what the
+ * browser's prompt needs, `stopping` and `uploading` show as one "Saving",
+ * a `saved` pill links to the new note, and the error pill speaks a plain
+ * sentence per cause, with Retry when the audio is kept
+ * (hud-progress-pills.tsx, hud-saved-pill.tsx, hud-error-pill.tsx).
  *
  * #20 added the Meeting / Mic only choice (hud-mode-choice.tsx) and made
  * Stop, Discard and the error pill's Dismiss two-step (use-armed.ts): the
@@ -57,15 +64,15 @@ export function RecordHud({
   const phase = useRecorderStore((s) => s.phase);
   const elapsedMs = useRecorderStore((s) => s.elapsedMs);
   const level = useRecorderStore((s) => s.level);
-  const errorMessage = useRecorderStore((s) => s.errorMessage);
+  const errorCause = useRecorderStore((s) => s.errorCause);
   const mode = useRecorderStore((s) => s.mode);
   const notice = useRecorderStore((s) => s.notice);
-  // In `error`, a note id means audio was recorded and is kept on this device
-  // (the store drops it on a failure before recording began).
-  const audioKept = useRecorderStore((s) => s.noteId !== null);
+  const noteId = useRecorderStore((s) => s.noteId);
+  const micLost = useRecorderStore((s) => s.micLost);
   const closeChoice = useRecorderStore((s) => s.closeChoice);
+  const closeSaved = useRecorderStore((s) => s.closeSaved);
   const { armed, press, disarm } = useArmed(phase);
-  const { recordButton, dismissButton } = useHudFocus(phase);
+  const focus = useHudFocus(phase);
 
   useEffect(() => {
     if (demo) return;
@@ -73,11 +80,13 @@ export function RecordHud({
       if (!(event.metaKey || event.ctrlKey) || !event.shiftKey) return;
       if (event.key.toLowerCase() !== "r") return;
       const current = useRecorderStore.getState().phase;
-      if (current !== "idle" && current !== "choosing") return;
+      // Not from `error`: its pill asks for Retry or Dismiss first.
+      if (current === "error" || (!isAtRest(current) && current !== "choosing")) return;
       // Ctrl+Shift+R is also the browser's hard reload. Claimed while the
       // choice is open too, so a second press does not reload the page.
+      // From Saved it starts a new recording, as from idle (#24).
       event.preventDefault();
-      if (current === "idle") void controls.start();
+      if (current !== "choosing") void controls.start();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -87,6 +96,7 @@ export function RecordHud({
 
   return (
     <div
+      ref={focus.root}
       // The corner this HUD owns. The inset is the shared safe margin, not a
       // spacing step chosen here — see hud-safe-margin.ts.
       style={{ right: HUD_SAFE_MARGIN, bottom: HUD_SAFE_MARGIN }}
@@ -96,7 +106,7 @@ export function RecordHud({
 
       {phase === "idle" && !demo ? (
         <button
-          ref={recordButton}
+          ref={focus.recordButton}
           type="button"
           onClick={() => void controls.start()}
           className={`${PILL} bg-pane border-control-edge group gap-[11px] border px-[13px] py-[9px] ${FOCUS_RING}`}
@@ -124,16 +134,7 @@ export function RecordHud({
         />
       ) : null}
 
-      {phase === "requesting" ? (
-        <div
-          role="status"
-          className={`${PILL} bg-pane border-rule gap-[11px] border px-[13px] py-[9px]`}
-        >
-          <span className="font-mono text-meta-4 text-[9.5px] tracking-[0.1em] uppercase">
-            Waiting for permission
-          </span>
-        </div>
-      ) : null}
+      {phase === "requesting" ? <HudWaitingPill mode={mode ?? "mic"} /> : null}
 
       {phase === "recording" ? (
         <>
@@ -207,31 +208,34 @@ export function RecordHud({
         </div>
       ) : null}
 
-      {phase === "stopping" || phase === "uploading" ? (
-        <div
-          role="status"
-          className={`${PILL} bg-pane border-rule gap-[11px] border px-[13px] py-[9px]`}
-        >
-          <span aria-hidden="true" className="bg-accent h-[9px] w-[9px]" />
-          <span className="font-mono text-notice text-[9.5px] tracking-[0.1em] uppercase">
-            {phase === "stopping" ? "Finishing" : "Uploading"}
-          </span>
-        </div>
+      {phase === "stopping" || phase === "uploading" ? <HudSavingPill elapsed={elapsed} /> : null}
+
+      {phase === "saved" && noteId ? (
+        <HudSavedPill
+          noteId={noteId}
+          micLost={micLost}
+          onClose={closeSaved}
+          openNoteRef={focus.openNoteLink}
+        />
       ) : null}
 
-      {phase === "error" ? (
+      {phase === "error" && errorCause ? (
         <HudErrorPill
-          message={errorMessage}
-          audioKept={audioKept}
+          cause={errorCause}
           armed={armed === "dismiss"}
+          onRetry={() => {
+            disarm();
+            void controls.retry();
+          }}
           // Two-step only when it would delete the only copy of the audio.
           onDismiss={
-            audioKept
+            errorCause === "save-failed"
               ? press("dismiss", () => void controls.discard())
               : () => void controls.discard()
           }
           onBlur={disarm}
-          dismissRef={dismissButton}
+          retryRef={focus.retryButton}
+          dismissRef={focus.dismissButton}
         />
       ) : null}
     </div>
