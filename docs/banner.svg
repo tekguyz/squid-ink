@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-label="Squid Ink">
+  <rect width="1280" height="300" fill="#fcf8f0"/>
+  <g transform="translate(120 150)" fill="#006a17">
+    <path d="M0 -70 C40 -40 48 10 24 36 L-24 36 C-48 10 -40 -40 0 -70 Z"/>
+    <rect x="-24" y="44" width="8" height="34" rx="0"/>
+    <rect x="-8" y="44" width="8" height="42"/>
+    <rect x="8" y="44" width="8" height="42"/>
+    <rect x="24" y="44" width="8" height="34"/>
+  </g>
+  <text x="230" y="158" font-family="Georgia, serif" font-size="96" font-weight="700" fill="#006a17">Squid Ink</text>
+  <text x="234" y="214" font-family="Arial, sans-serif" font-size="30" fill="#241a11">A bot-free AI meeting notepad.</text>
+  <rect y="298" width="1280" height="2" fill="#006a17"/>
+</svg>
