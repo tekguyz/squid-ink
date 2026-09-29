@@ -112,10 +112,10 @@ describe("RecordHud", () => {
     expect(c.start).not.toHaveBeenCalled();
   });
 
-  it("does not promise drag or snap while recording, because the HUD has neither", () => {
+  it("renders the design's drag caption while recording", () => {
     toRecording();
     render(<RecordHud controls={controls()} />);
-    expect(screen.queryByText(/SNAPS TO THE NEAREST CORNER/)).not.toBeInTheDocument();
+    expect(screen.getByText(/SNAPS TO THE NEAREST CORNER/)).toBeInTheDocument();
   });
 });
 

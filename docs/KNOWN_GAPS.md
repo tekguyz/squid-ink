@@ -1426,9 +1426,8 @@ survive. Measured, not assumed: an `ArrayBuffer` round-trips exactly.
   exists for them — `notes.raw_transcript` is the transcript, not the user's
   notes. Building the UI without a home for its data would be guessing at a
   schema decision this track does not own.
-- **Drag and snap-to-corner.** The dock is fixed bottom-right. The design's
-  caption promising drag was removed in the #24 design pass (2026-09-29): it
-  claimed what the HUD does not do. Bring it back with the drag.
+- **Drag and snap-to-corner.** The caption is rendered because it is the
+  design's copy; the dock is fixed bottom-right.
 - **`OPEN FULL PANE`** (surface 02) and **`CHANGE PERSONA`** at capture time.
 
 ### Not built at all

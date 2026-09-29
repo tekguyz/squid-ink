@@ -105,6 +105,7 @@ export function useRecorder(overrides: Partial<RecorderDeps> = {}): RecorderCont
 
     const noteId = deps.newNoteId();
     state.requestStart(noteId, mode);
+    if (store.getState().phase === "requesting") rowWritten.current = false;
     // requestStart is a no-op outside idle, choosing and error. A start that
     // arrives mid-recording must not open a second capture over the first.
     if (store.getState().phase !== "requesting") return;
