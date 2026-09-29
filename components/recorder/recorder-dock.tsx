@@ -43,6 +43,15 @@ export function RecorderDock({ demo = false }: { demo?: boolean }) {
     void controls.start();
   }, [startRequests, controls, demo]);
 
+  // Development only (#24): scripts/verify-layout.mjs sets the HUD's phases
+  // through this to measure each pill. `next build` replaces NODE_ENV, so the
+  // branch is dead code in production.
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    (window as { __recorderStore?: typeof useRecorderStore }).__recorderStore =
+      useRecorderStore;
+  }, []);
+
   const hidden = HIDDEN_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );

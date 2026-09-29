@@ -23,6 +23,10 @@ import type { RecordingMode } from "@/lib/recorder/recording-mode";
  * on a device that can share sound lands there first, and a cancelled share
  * picker or a share with no sound goes back there — never to `error`, and
  * never on to Mic only by itself.
+ *
+ * `stopping` and `uploading` are two internal steps the HUD shows as one
+ * "Saving" (#24). `saved` follows a successful save and holds the note id and
+ * the frozen length until the HUD closes it or a new recording starts.
  */
 export type RecorderPhase =
   | "idle"
@@ -32,12 +36,27 @@ export type RecorderPhase =
   | "paused"
   | "stopping"
   | "uploading"
+  | "saved"
   | "error";
+
+/** Why the HUD is in `error` (#24). The store holds a cause, never raw browser
+ *  or server text; the HUD maps each cause to plain words, and the raw error
+ *  is logged where it was caught. Only `save-failed` has audio behind it. */
+export type RecorderErrorCause =
+  | "mic-refused"
+  | "unsupported"
+  | "save-failed"
+  | "start-failed";
+
+/** Phases a new recording may start from: nothing is running. */
+const AT_REST: readonly RecorderPhase[] = ["idle", "saved", "error"];
+export const isAtRest = (phase: RecorderPhase) => AT_REST.includes(phase);
 
 export interface RecorderState {
   phase: RecorderPhase;
   /** Generated before capture starts, because it names the Storage object.
-   *  Kept through `error` so a retry upserts the same path. */
+   *  Kept through a failed save so Retry upserts the same path, and through
+   *  `saved` so the HUD can link to the new note. */
   noteId: string | null;
   /** The mode of the recording being requested or made. Only the HUD's
    *  screen-reader line reads it; it is not saved on the note. */
@@ -50,7 +69,10 @@ export interface RecorderState {
    *  answers "is my microphone working", which is the question a user has. */
   level: number;
   mimeType: string | null;
-  errorMessage: string | null;
+  errorCause: RecorderErrorCause | null;
+  /** The recording stopped by itself because its mic was lost and no other
+   *  was found (#24). Carried from the stop to `saved`. */
+  micLost: boolean;
 
   /** How many times something outside the dock has asked for a recording to
    *  begin. It is a counter rather than a boolean so two asks in a row are two
@@ -73,10 +95,12 @@ export interface RecorderState {
   confirmStart(mimeType: string): void;
   pause(): void;
   resume(): void;
-  beginStop(): void;
+  beginStop(micLost?: boolean): void;
   beginUpload(): void;
   finish(): void;
-  fail(message: string): void;
+  closeSaved(): void;
+  beginRetry(): void;
+  fail(cause: RecorderErrorCause): void;
   discard(): void;
   tick(deltaMs: number): void;
   setLevel(level: number): void;
@@ -98,6 +122,8 @@ type RecorderData = Omit<
   | "beginStop"
   | "beginUpload"
   | "finish"
+  | "closeSaved"
+  | "beginRetry"
   | "fail"
   | "discard"
   | "tick"
@@ -112,7 +138,8 @@ const CLEAN: RecorderData = {
   elapsedMs: 0,
   level: 0,
   mimeType: null,
-  errorMessage: null,
+  errorCause: null,
+  micLost: false,
 };
 
 export const useRecorderStore = create<RecorderState>((set) => ({
@@ -123,22 +150,16 @@ export const useRecorderStore = create<RecorderState>((set) => ({
   // already running is a no-op, not a throw. The dock is mounted on every
   // route, so a stray click arriving one tick late must not take the page down.
   requestRecording: () =>
-    set((s) =>
-      s.phase === "idle" || s.phase === "error"
-        ? { startRequests: s.startRequests + 1 }
-        : s,
-    ),
+    set((s) => (AT_REST.includes(s.phase) ? { startRequests: s.startRequests + 1 } : s)),
 
   openChoice: () =>
-    set((s) =>
-      s.phase === "idle" || s.phase === "error" ? { ...CLEAN, phase: "choosing" } : s,
-    ),
+    set((s) => (AT_REST.includes(s.phase) ? { ...CLEAN, phase: "choosing" } : s)),
 
   closeChoice: () => set((s) => (s.phase === "choosing" ? { ...CLEAN } : s)),
 
   requestStart: (noteId, mode) =>
     set((s) =>
-      s.phase === "idle" || s.phase === "choosing" || s.phase === "error"
+      AT_REST.includes(s.phase) || s.phase === "choosing"
         ? { ...CLEAN, phase: "requesting", noteId, mode }
         : s,
     ),
@@ -157,32 +178,42 @@ export const useRecorderStore = create<RecorderState>((set) => ({
 
   resume: () => set((s) => (s.phase === "paused" ? { phase: "recording" } : s)),
 
-  beginStop: () =>
+  beginStop: (micLost = false) =>
     set((s) =>
       s.phase === "recording" || s.phase === "paused"
-        ? { phase: "stopping", level: 0 }
+        ? { phase: "stopping", level: 0, micLost }
         : s,
     ),
 
-  // Reachable only from `stopping`. There is no retry: a failed upload is
-  // surfaced and left alone, because this track's requirement is that the
-  // failure be VISIBLE, not that it be recoverable in one click. `noteId` still
-  // survives a failure — that is how the error state knows which IndexedDB blob
-  // is the orphaned one — but nothing re-enters the upload from here.
   beginUpload: () =>
     set((s) => (s.phase === "stopping" ? { phase: "uploading" } : s)),
 
-  finish: () => set((s) => (s.phase === "uploading" ? { ...CLEAN } : s)),
+  // Keeps the note id, the frozen length and micLost: the Saved pill shows
+  // all three.
+  finish: () => set((s) => (s.phase === "uploading" ? { phase: "saved" } : s)),
 
-  // A failure before recording began has no audio behind it, so it holds no
-  // note id — the HUD reads a note id in `error` as "audio kept on this
-  // device", and that would be false.
-  fail: (message) =>
+  closeSaved: () => set((s) => (s.phase === "saved" ? { ...CLEAN } : s)),
+
+  // Retry (#24) is reachable only from a failed save, the one error with audio
+  // kept on this device. It re-enters the same "Saving" the first save showed.
+  beginRetry: () =>
+    set((s) =>
+      s.phase === "error" && s.errorCause === "save-failed" && s.noteId
+        ? { phase: "uploading", errorCause: null }
+        : s,
+    ),
+
+  // Only a failed save has audio behind it, so only it keeps the note id — the
+  // HUD reads a note id in `error` as "audio kept on this device", and for any
+  // other cause that would be false. micLost is dropped: a failed save shows
+  // the normal save-failed pill.
+  fail: (cause) =>
     set((s) => ({
       phase: "error",
-      errorMessage: message,
+      errorCause: cause,
       level: 0,
-      noteId: s.phase === "requesting" ? null : s.noteId,
+      micLost: false,
+      noteId: cause === "save-failed" ? s.noteId : null,
     })),
 
   discard: () => set({ ...CLEAN }),

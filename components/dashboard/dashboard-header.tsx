@@ -1,7 +1,8 @@
 "use client";
 
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
-import { useRecorderStore } from "@/lib/recorder/recorder-store";
+import { isAtRest, useRecorderStore, type RecorderPhase } from "@/lib/recorder/recorder-store";
+import { WAITING_PROMPT } from "@/lib/recorder/recording-mode";
 import { useDemo } from "@/components/demo/demo-mode";
 import { RECORD_DEMO_OFF } from "@/lib/auth/demo-visitor";
 
@@ -56,24 +57,26 @@ const MONO_ACTION = "font-mono text-[10px] tracking-[0.06em] uppercase";
 /** What the readout says for each in-flight phase, and whether the recorder is
  *  far enough along that Stop is on screen. `requesting` has no HUD control yet
  *  — the browser's own permission prompt is in front of the user — and
- *  `stopping`/`uploading` are already past the point of stopping. `choosing`
- *  (#20) points at the Meeting / Mic only choice in the HUD corner. */
+ *  `stopping`/`uploading` are already past the point of stopping, and read as
+ *  one "Saving", as the HUD shows them (#24). `choosing` (#20) points at the
+ *  Meeting / Mic only choice in the HUD corner. */
 const LIVE_PHASES = new Set(["recording", "paused"]);
 
-const READOUT: Record<string, string> = {
+const READOUT: Partial<Record<RecorderPhase, string>> = {
   choosing: "Choose a mode in the recorder ↘",
-  requesting: "Waiting for permission",
   recording: "Recording",
   paused: "Paused",
-  stopping: "Finishing",
-  uploading: "Uploading",
+  stopping: "Saving",
+  uploading: "Saving",
 };
 
 export function DashboardHeader() {
   const phase = useRecorderStore((s) => s.phase);
   const elapsedMs = useRecorderStore((s) => s.elapsedMs);
+  const mode = useRecorderStore((s) => s.mode);
   const requestRecording = useRecorderStore((s) => s.requestRecording);
-  const busy = phase !== "idle" && phase !== "error";
+  // `saved` is at rest (#24): a new recording starts from it as from idle.
+  const busy = !isAtRest(phase);
   const demo = useDemo();
 
   return (
@@ -123,7 +126,9 @@ export function DashboardHeader() {
                 LIVE_PHASES.has(phase) ? "bg-live rounded-full" : "bg-accent"
               }`}
             />
-            <span>{READOUT[phase]}</span>
+            {/* While the browser's prompt is open, the same words the HUD's
+                waiting pill uses: what the prompt needs (#24). */}
+            <span>{phase === "requesting" ? WAITING_PROMPT[mode ?? "mic"] : READOUT[phase]}</span>
             {LIVE_PHASES.has(phase) ? (
               <>
                 <span className="text-ink tabular-nums">

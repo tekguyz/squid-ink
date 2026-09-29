@@ -13,6 +13,11 @@
  * caching CDN and a download() straight after an upsert returns the
  * pre-overwrite body (docs/KNOWN_GAPS.md). Size comes from list() metadata.
  *
+ * #24 adds Retry's first write: reopenFailedUpload's guarded update moves a
+ * 'failed' note back to 'uploading', never an 'analyzing' or 'completed' one,
+ * and never another user's (RLS). The statuses it starts from are set with the
+ * admin client; the update under test runs as the owner and the intruder.
+ *
  * NOT COVERED HERE: the browser HUD, the cookie plumbing through proxy.ts, and
  * real MediaRecorder capture. Those are the browser pass and the manual
  * protocol. Neither substitutes for the other.
@@ -196,6 +201,60 @@ try {
     "new note is in the feed",
     Boolean(feed.data?.some((n) => n.id === noteId)),
     `rows=${feed.data?.length ?? 0}`,
+  );
+  console.log("");
+
+  // --- Retry reopens a failed note, and nothing else (#24) ---------------
+  console.log("--- reopenFailedUpload: 'failed' -> 'uploading', guarded ---");
+  // The exact statement app/notes/actions/recording.ts runs. No user_id filter.
+  const reopen = (client) =>
+    client
+      .from("notes")
+      .update({ processing_status: "uploading" })
+      .eq("id", noteId)
+      .eq("processing_status", "failed")
+      .select("id");
+  const setStatus = (status) =>
+    admin.from("notes").update({ processing_status: status }).eq("id", noteId);
+  const statusNow = async () =>
+    (await admin.from("notes").select("processing_status").eq("id", noteId)).data?.[0]
+      ?.processing_status;
+
+  await setStatus("failed");
+  const moved = await reopen(owner);
+  check(
+    "a 'failed' note moves back to 'uploading'",
+    !moved.error && moved.data?.length === 1 && (await statusNow()) === "uploading",
+    `rows=${moved.data?.length} error=${JSON.stringify(moved.error?.message ?? null)}`,
+  );
+
+  for (const status of ["analyzing", "completed"]) {
+    await setStatus(status);
+    const held = await reopen(owner);
+    const now = await statusNow();
+    check(
+      `${status === "analyzing" ? "an" : "a"} '${status}' note does not move`,
+      !held.error && held.data?.length === 0 && now === status,
+      `rows=${held.data?.length} status=${now}`,
+    );
+  }
+
+  const { data: intruderSignIn, error: intruderError } = await anon.auth.signInWithPassword({
+    email: env.RLS_TEST_INTRUDER_EMAIL,
+    password: env.RLS_TEST_INTRUDER_PASSWORD,
+  });
+  if (intruderError) throw intruderError;
+  const intruder = createClient(url, publishableKey, {
+    global: { headers: { Authorization: `Bearer ${intruderSignIn.session.access_token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  await setStatus("failed");
+  const stolen = await reopen(intruder);
+  const afterIntruder = await statusNow();
+  check(
+    "another user's 'failed' note does not move (RLS)",
+    !stolen.error && stolen.data?.length === 0 && afterIntruder === "failed",
+    `rows=${stolen.data?.length} status=${afterIntruder} error=${JSON.stringify(stolen.error?.message ?? null)}`,
   );
   console.log("");
 } finally {

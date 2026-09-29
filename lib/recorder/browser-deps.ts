@@ -5,6 +5,7 @@ import {
   backupsSafeToDiscard,
   createRecordedNote,
   markUploadFailed,
+  reopenFailedUpload,
 } from "@/app/notes/actions/recording";
 import { startCapture } from "@/lib/recorder/capture";
 import type { RecordingMode } from "@/lib/recorder/recording-mode";
@@ -37,6 +38,9 @@ export interface RecorderDeps {
    *  on a caught Storage error, guarded server-side by the 'uploading'
    *  precondition. Injectable for the same reason as everything else here. */
   markUploadFailed: typeof markUploadFailed;
+  /** Retry's first write when the row exists (#24): 'failed' back to
+   *  'uploading', guarded server-side on the 'failed' precondition. */
+  reopenFailedUpload: typeof reopenFailedUpload;
   /** #12: which IndexedDB backups the server says may go. The rule and the
    *  clock are server-side; see lib/recorder/backup-cleanup.ts. */
   backupsSafeToDiscard: typeof backupsSafeToDiscard;
@@ -59,6 +63,7 @@ export function browserDeps(): RecorderDeps {
       createClient().storage.from(AUDIO_BUCKET) as unknown as StorageBucketLike,
     createNote: createRecordedNote,
     markUploadFailed,
+    reopenFailedUpload,
     backupsSafeToDiscard,
   };
 }

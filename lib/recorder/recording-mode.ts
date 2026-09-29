@@ -34,3 +34,11 @@ export const RECORDING_ANNOUNCEMENT: Record<RecordingMode, string> = {
   meeting: "Recording shared sound and microphone",
   mic: "Recording microphone",
 };
+
+/** The waiting pill (#24): what the browser's prompt needs from the user while
+ *  the HUD waits on it. Meeting opens the share picker; Mic only, the mic
+ *  prompt. */
+export const WAITING_PROMPT: Record<RecordingMode, string> = {
+  meeting: "Choose a tab to share",
+  mic: "Allow your microphone",
+};

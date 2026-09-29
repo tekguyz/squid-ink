@@ -37,6 +37,9 @@ export const HUD_SAFE_MARGIN = "24px";
  * overhang the reserve — they exist for seconds to minutes, they are what the
  * user is looking at, and reserving for the tallest phase would leave a
  * permanent gap on every screen for a state that is normally not on it.
+ * #24 (2026-09-28): the Saved pill fits the strip at every width, except with
+ * its "Microphone lost" line on a phone, which is allowed to overhang for the
+ * same reasons and lasts six seconds.
  */
 export const HUD_RESERVE = "72px";
 

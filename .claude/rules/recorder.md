@@ -35,6 +35,35 @@ stream. That indirection is what lets `replaceMic()` swap a microphone
 mid-recording without ending the recording, in both modes — and what keeps a
 Meeting recording going on the mic after "Stop sharing" ends the shared track.
 
+**Save, Saved, Retry (#24).** The store's error holds a **cause**
+(`mic-refused`, `unsupported`, `save-failed`, `start-failed`), never raw
+browser or server text; the HUD maps each to plain words, and the raw error is
+`console.error`-ed where it is caught. Only `save-failed` keeps a note id,
+because only it has audio behind it — the HUD says "kept on this device" and
+offers Retry for that cause alone. A successful save ends in `saved` (note id,
+frozen length, `micLost`), which the HUD closes after about six seconds; a new
+recording may start from it as from idle.
+
+**Retry** (`useRecorder().retry`, `retrySave` in `finish-recording.ts`) is one
+press and deletes nothing. It reads the audio back from the IndexedDB backup
+and saves it again to the same note id and path. If the failed attempt wrote
+the row, `reopenFailedUpload()` moves it `'failed'` → `'uploading'` first,
+guarded by `.eq('processing_status', 'failed')` so it can never drag an
+`'analyzing'` or `'completed'` note back; if it did not, Retry writes the row
+as the first save does. Never `createNote` over an existing row: it is an
+upsert that would set `'uploading'` over anything. A Retry that fails at the
+Storage transfer marks the note `'failed'` again, once. There is no automatic
+retry — always a user press.
+
+**Mic lost.** When the device watcher reports the mic gone and `replaceMic()`
+fails, the recorder runs the normal stop path (backup, row, upload) with
+`micLost`, instead of failing. Before #24 it failed, and the pill claimed audio
+was kept that had never been backed up.
+
+In development the dock sets `window.__recorderStore` so
+`scripts/verify-layout.mjs` can put the HUD in each phase. It is dead code in
+a production build.
+
 The HUD's destructive controls — Stop, Discard, and the error pill's Dismiss
 when audio is kept — take two presses (`components/recorder/use-armed.ts`).
 They disarm on Escape, on blur, on any other HUD action and on any phase

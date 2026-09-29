@@ -16,6 +16,7 @@ const controls = () => ({
   pause: vi.fn(),
   resume: vi.fn(),
   stop: vi.fn(async () => {}),
+  retry: vi.fn(async () => {}),
   discard: vi.fn(async () => {}),
 });
 
@@ -78,7 +79,7 @@ describe("RecordHud — the mode choice", () => {
       ...controls(),
       choose: vi.fn(async () => {
         state().requestStart(NOTE, "mic");
-        state().fail(MIC_REFUSED);
+        state().fail("mic-refused");
       }),
     };
     render(<RecordHud controls={{ ...c, start: vi.fn(async () => state().openChoice()) }} />);
@@ -206,19 +207,19 @@ describe("RecordHud — two-step controls", () => {
 
   it("Dismiss needs two presses when it would delete kept audio, and says so", async () => {
     toRecording();
-    state().fail("Audio upload failed: offline");
+    state().fail("save-failed");
     const c = controls();
     render(<RecordHud controls={c} />);
     await userEvent.click(screen.getByRole("button", { name: /^dismiss$/i }));
     expect(c.discard).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent(/deletes it from this device/i);
+    expect(screen.getByRole("alert")).toHaveTextContent(/second press deletes it/i);
     await userEvent.click(screen.getByRole("button", { name: /^confirm dismiss$/i }));
     expect(c.discard).toHaveBeenCalledTimes(1);
   });
 
   it("Dismiss is one press when no audio exists, and claims nothing is kept", async () => {
     state().requestStart(NOTE, "mic");
-    state().fail(MIC_REFUSED);
+    state().fail("mic-refused");
     const c = controls();
     render(<RecordHud controls={c} />);
     expect(screen.getByRole("alert")).toHaveTextContent(MIC_REFUSED);

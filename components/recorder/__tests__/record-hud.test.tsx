@@ -12,6 +12,7 @@ const controls = () => ({
   pause: vi.fn(),
   resume: vi.fn(),
   stop: vi.fn(async () => {}),
+  retry: vi.fn(async () => {}),
   discard: vi.fn(async () => {}),
 });
 
@@ -94,41 +95,7 @@ describe("RecordHud", () => {
     expect(c.discard).toHaveBeenCalled();
   });
 
-  it("shows an uploading state with no controls to press", () => {
-    toRecording();
-    state().beginStop();
-    state().beginUpload();
-    render(<RecordHud controls={controls()} />);
-    expect(screen.getByRole("status")).toHaveTextContent(/uploading/i);
-    expect(screen.queryByRole("button", { name: /stop/i })).not.toBeInTheDocument();
-  });
-
-  it("surfaces the error message", () => {
-    toRecording();
-    state().fail("Audio upload failed: offline");
-    render(<RecordHud controls={controls()} />);
-    expect(screen.getByRole("alert")).toHaveTextContent(/offline/);
-  });
-
-  // Scope fence: the brief asks that a failed upload be VISIBLE, not that it be
-  // recoverable in one click. A retry button would be a feature nobody asked
-  // for, and there is no retry control on the hook to wire it to.
-  it("offers no retry — only a dismiss", () => {
-    toRecording();
-    state().fail("Audio upload failed: offline");
-    render(<RecordHud controls={controls()} />);
-    expect(
-      screen.queryByRole("button", { name: /try again|retry/i }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /dismiss/i })).toBeInTheDocument();
-  });
-
-  it("says the recording is kept, because the audio really is still on disk", () => {
-    toRecording();
-    state().fail("Audio upload failed: offline");
-    render(<RecordHud controls={controls()} />);
-    expect(screen.getByRole("alert")).toHaveTextContent(/kept on this device/i);
-  });
+  // The waiting, Saving, Saved and error pills: record-hud-states.test.tsx.
 
   it("starts recording on the ⌘⇧R / Ctrl+Shift+R shortcut", async () => {
     const c = controls();
