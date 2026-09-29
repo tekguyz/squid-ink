@@ -11,6 +11,13 @@
 
 [Live site](https://squid-ink.vercel.app) · press Try the demo
 
+## Screenshots
+
+<p align="center">
+  <img src="showcase/dashboard-desktop-light.png" alt="The Dashboard: all notes by day" width="49%">
+  <img src="showcase/note-desktop-light.png" alt="A note beside its transcript" width="49%">
+</p>
+
 ## Status
 
 | Row | |
