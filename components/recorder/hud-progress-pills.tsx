@@ -30,7 +30,9 @@ export function HudSavingPill({ elapsed }: { elapsed: string }) {
       role="status"
       className={`${PILL} bg-pane border-rule gap-[11px] border px-[13px] py-[9px]`}
     >
-      <span aria-hidden="true" className="bg-accent h-[9px] w-[9px]" />
+      {/* A slow pulse says the save is working, not hung. It stops under
+          reduced motion, and the words carry the state without it. */}
+      <span aria-hidden="true" className="bg-accent h-[9px] w-[9px] motion-safe:animate-pulse" />
       <span className="font-mono text-notice text-[9.5px] tracking-[0.1em] uppercase">
         Saving
       </span>

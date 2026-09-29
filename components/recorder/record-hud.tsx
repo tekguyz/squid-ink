@@ -32,8 +32,9 @@ import type { RecorderControls } from "@/lib/recorder/use-recorder";
  *     exists for them — notes.raw_transcript is the transcript, not the user's
  *     notes. Building the UI without a home for its data would be guessing at a
  *     schema decision this track does not own.
- *   - Drag and snap-to-corner. The caption is rendered because it is the
- *     design's copy; the dock itself is fixed bottom-right.
+ *   - Drag and snap-to-corner. The dock is fixed bottom-right, so the design's
+ *     "DRAG ANYWHERE · SNAPS TO THE NEAREST CORNER" caption is not rendered:
+ *     it promised what the HUD does not do. Bring it back with the drag.
  *   - OPEN FULL PANE (surface 02) and CHANGE PERSONA. Both outside the fence.
  *
  * #24 designed the states 02b left out: the waiting pill says what the
@@ -137,41 +138,36 @@ export function RecordHud({
       {phase === "requesting" ? <HudWaitingPill mode={mode ?? "mic"} /> : null}
 
       {phase === "recording" ? (
-        <>
-          <div
-            role="status"
-            className={`${PILL} bg-pane border-rule-2 gap-[13px] border py-[9px] pr-[11px] pl-[13px]`}
+        <div
+          role="status"
+          className={`${PILL} bg-pane border-rule-2 gap-[13px] border py-[9px] pr-[11px] pl-[13px]`}
+        >
+          <span aria-hidden="true" className="bg-live h-[9px] w-[9px] rounded-full" />
+          <span className="sr-only">{RECORDING_ANNOUNCEMENT[mode ?? "meeting"]}</span>
+          <span className="font-mono text-ink text-[16px] font-medium tracking-[-0.01em]">
+            {elapsed}
+          </span>
+          <HudLevelBars level={level} />
+          <span aria-hidden="true" className="bg-rule h-[20px] w-px" />
+          <button
+            type="button"
+            onClick={() => {
+              disarm();
+              controls.pause();
+            }}
+            className={`${MONO_ACTION} border-control-edge text-notice border px-[8px] py-[5px]`}
           >
-            <span aria-hidden="true" className="bg-live h-[9px] w-[9px] rounded-full" />
-            <span className="sr-only">{RECORDING_ANNOUNCEMENT[mode ?? "meeting"]}</span>
-            <span className="font-mono text-ink text-[16px] font-medium tracking-[-0.01em]">
-              {elapsed}
-            </span>
-            <HudLevelBars level={level} />
-            <span aria-hidden="true" className="bg-rule h-[20px] w-px" />
-            <button
-              type="button"
-              onClick={() => {
-                disarm();
-                controls.pause();
-              }}
-              className={`${MONO_ACTION} border-control-edge text-notice border px-[8px] py-[5px]`}
-            >
-              Pause
-            </button>
-            <button
-              type="button"
-              onClick={press("stop", () => void controls.stop())}
-              onBlur={disarm}
-              className={`${MONO_ACTION} ${armed === "stop" ? "bg-accent-pressed" : "bg-accent"} text-on-accent px-[9px] py-[5px] font-medium`}
-            >
-              <ArmedLabel armed={armed === "stop"} idle="Stop" confirm="Confirm stop" />
-            </button>
-          </div>
-          <p className="font-mono text-faint text-[9px] tracking-[0.04em]">
-            DRAG ANYWHERE · SNAPS TO THE NEAREST CORNER · NEVER OVER A SHARED SCREEN
-          </p>
-        </>
+            Pause
+          </button>
+          <button
+            type="button"
+            onClick={press("stop", () => void controls.stop())}
+            onBlur={disarm}
+            className={`${MONO_ACTION} ${armed === "stop" ? "bg-accent-pressed" : "bg-accent"} text-on-accent px-[9px] py-[5px] font-medium`}
+          >
+            <ArmedLabel armed={armed === "stop"} idle="Stop" confirm="Confirm stop" />
+          </button>
+        </div>
       ) : null}
 
       {phase === "paused" ? (
