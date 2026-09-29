@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-09-26
+**Last updated:** 2026-09-29
 Update this line whenever this file changes — don't let it drift from reality.
 
 **This file states standing rules and pointers. It loads into every message.**
@@ -27,6 +27,7 @@ Node v24.18.0, npm 11.16.0.
 
 `fake-indexeddb` and `@google/genai` on 2026-08-31; `ai`, `@ai-sdk/anthropic`,
 `@ai-sdk/react` and `zod` on 2026-09-04, all four still `latest` that day.
+`playwright-core` on 2026-09-29, for `scripts/showcase.mjs` only.
 
 | Package | Version |
 |---|---|
@@ -52,6 +53,7 @@ Node v24.18.0, npm 11.16.0.
 | @ai-sdk/anthropic | 4.0.49 |
 | @ai-sdk/react | 4.0.95 |
 | zod | 4.5.4 |
+| playwright-core | 1.63.0 |
 
 
 ## Colour
@@ -266,6 +268,8 @@ below is what a human types. Why it matters: `docs/CONVENTIONS_DETAIL.md`.
                                                    # paces itself, minutes
     node scripts/verify-layout.mjs                 # layout proof, needs `npm run dev`
                                                    # and .env.local
+    npm run showcase                               # re-takes showcase/ from the live demo;
+                                                   # `-- http://localhost:3000` for dev
     node scripts/capture-og-image.mjs              # re-shoots app/opengraph-image.png from
                                                    # the landing page; needs `npm run dev`
     node scripts/verify-email-templates.mjs        # hosted auth email templates vs

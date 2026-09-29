@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node -e \"console.error('Do not run the aggregate test command. Use: npm run test:unit, then npm run test:integration. See CLAUDE.md.'); process.exit(1)\"",
     "test:unit": "vitest run --project unit",
-    "test:integration": "vitest run --project integration --no-file-parallelism --passWithNoTests"
+    "test:integration": "vitest run --project integration --no-file-parallelism --passWithNoTests",
+    "showcase": "node scripts/showcase.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.49",
@@ -35,6 +36,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "fake-indexeddb": "6.2.5",
     "jsdom": "30.0.1",
+    "playwright-core": "1.63.0",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
