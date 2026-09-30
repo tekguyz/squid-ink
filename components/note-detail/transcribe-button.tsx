@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   triggerTranscription,
   type TranscriptionTrigger,
 } from "@/app/notes/actions/transcription";
 import { useTranscriptionPoll } from "@/components/note-detail/use-transcription-poll";
-import type { ProcessingStatus } from "@/lib/notes/view-types";
+import { isNoteWriting } from "@/lib/notes/notegen-progress";
+import type { NotegenStatus, ProcessingStatus } from "@/lib/notes/view-types";
 
 /**
  * The on-demand transcription trigger — the option docs/KNOWN_GAPS.md left open
@@ -104,9 +105,14 @@ const OUTCOME_NOTICE: Record<Exclude<TranscriptionTrigger, "started">, string> =
 export function TranscribeButton({
   noteId,
   status,
+  notegenStatus,
+  onGaveUp,
 }: {
   noteId: string;
   status: ProcessingStatus;
+  notegenStatus: NotegenStatus | null;
+  /** Called once when the poll's time cap passes with the note unfinished. */
+  onGaveUp?: () => void;
 }) {
   const router = useRouter();
   const [requested, setRequested] = useState(false);
@@ -116,6 +122,11 @@ export function TranscribeButton({
   const eligible = status === "uploading" || status === "analyzing";
   const working = eligible && (status === "analyzing" || requested);
 
+  // Note generation runs after transcription and is not done until
+  // notegenStatus is terminal; null means "not started", not "done" (issue
+  // #79). Keep polling through it.
+  const generating = isNoteWriting(status, notegenStatus);
+
   // `working`, not `working && !gaveUp`. The hook stops itself at its own time
   // cap, so subtracting gaveUp here would only restate that — and it cannot be
   // read before the hook that produces it anyway.
@@ -123,9 +134,13 @@ export function TranscribeButton({
   // The transcript pane is a Server Component reading through
   // lib/notes/get-note.ts. Refresh it rather than building a second,
   // client-side path to the same rows.
-  const { gaveUp } = useTranscriptionPoll(noteId, working, () =>
+  const { gaveUp } = useTranscriptionPoll(noteId, working || generating, () =>
     router.refresh(),
   );
+
+  useEffect(() => {
+    if (gaveUp) onGaveUp?.();
+  }, [gaveUp, onGaveUp]);
 
   const start = useCallback(() => {
     // aria-disabled does not stop a click the way the native attribute does,

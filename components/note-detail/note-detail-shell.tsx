@@ -13,6 +13,7 @@ import { ActionItemsTable } from "./action-items-table";
 import { AudioPlayer } from "./audio-player";
 import { ChatPanel } from "./chat/chat-panel";
 import { NoteHeader } from "./note-header";
+import { NotegenPending } from "./notegen-pending";
 import { PersonaRail } from "./persona-rail";
 import { SpeakerInsights } from "./speaker-insights";
 import { SummarySection } from "./summary-section";
@@ -53,6 +54,9 @@ export function NoteDetailShell({
   // Counts jumps, so a citation to the segment already active still scrolls
   // to it — in a transcript pane that was hidden a moment ago, say.
   const [jumps, setJumps] = useState(0);
+  // The transcription poll's time cap, for the banner that promises text.
+  const [pollGaveUp, setPollGaveUp] = useState(false);
+  const handleGaveUp = useCallback(() => setPollGaveUp(true), []);
   const panes = useNotePanes(note.id);
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -200,9 +204,24 @@ export function NoteDetailShell({
         {/* Directly under the transport, because both are facts about the
             recording rather than about its content. Renders nothing once the
             note is 'completed' or 'failed' — see transcribe-button.tsx. */}
-        <TranscribeButton noteId={note.id} status={note.processingStatus} />
+        <TranscribeButton
+          noteId={note.id}
+          status={note.processingStatus}
+          notegenStatus={note.notegenStatus}
+          onGaveUp={handleGaveUp}
+        />
 
         <div className="scroll-thin min-h-0 flex-1 overflow-auto px-[26px]">
+          <NotegenPending
+            processing={note.processingStatus}
+            notegen={note.notegenStatus}
+            sectionsEmpty={
+              note.summary.length === 0 ||
+              persona.takeaways.length === 0 ||
+              note.actionItems.length === 0
+            }
+            gaveUp={pollGaveUp}
+          />
           <SummarySection
             runs={note.summary}
             activeSegmentId={activeSegmentId}
