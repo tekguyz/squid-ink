@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
-import type { ProcessingStatus } from "@/lib/notes/view-types";
+import type { NotegenStatus, ProcessingStatus } from "@/lib/notes/view-types";
 
 /**
- * Read one note's `processing_status` from the browser.
+ * Read one note's `processing_status` and `notegen_status` from the browser.
  *
  * Same shape as lib/notes/audio-playback.ts, for the same reason: the BROWSER
  * Supabase client, so the read runs as the signed-in user and the four policies
@@ -39,7 +39,10 @@ export interface StatusReader {
          *  the compiler was right that the shapes did not overlap, and the cast
          *  silenced it rather than fixing it. `await` needs only a thenable. */
         maybeSingle(): PromiseLike<{
-          data: { processing_status: string } | null;
+          data: {
+            processing_status: string;
+            notegen_status: string | null;
+          } | null;
           error: { message: string } | null;
         }>;
       };
@@ -90,37 +93,15 @@ function browserReader(): StatusReader {
   };
 }
 
-/** Null means "no row visible to this user" — not an error to throw. A genuine
- *  transport or permission failure still throws, so a poll that is quietly
- *  broken cannot look like a note that is quietly still working. */
-export async function readProcessingStatus(
-  noteId: string,
-  reader: StatusReader = browserReader(),
-): Promise<ProcessingStatus | null> {
-  const { data, error } = await reader
-    .from("notes")
-    .select("processing_status")
-    .eq("id", noteId)
-    .maybeSingle();
+/** The runtime half of NotegenStatus, cross-checked the same way. */
+const NOTEGEN_STATUSES = [
+  "generating",
+  "completed",
+  "failed",
+] as const satisfies readonly NotegenStatus[];
 
-  if (error) {
-    throw new Error(`Could not read the note's status: ${error.message}`);
-  }
-
-  if (!data) return null;
-
-  // Throw rather than pass an unrecognised value through. Same rule as the
-  // error branch above: a poll that is quietly broken must not be able to look
-  // like a note that is quietly still working. A status the app does not know
-  // would otherwise reach the component's fallthrough and read as "still
-  // analyzing" forever.
-  if (!isProcessingStatus(data.processing_status)) {
-    throw new Error(
-      `Unknown processing_status "${data.processing_status}" for note ${noteId}.`,
-    );
-  }
-
-  return data.processing_status;
+function isNotegenStatus(value: string): value is NotegenStatus {
+  return (NOTEGEN_STATUSES as readonly string[]).includes(value);
 }
 
 /** Both halves of a note's pipeline, read in one row. The poll needs them
@@ -128,14 +109,18 @@ export async function readProcessingStatus(
  *  after it and sets `notegen_status` (null until it claims the note). */
 export interface NoteProgress {
   processing: ProcessingStatus;
-  /** Raw wire value; null means "generation has not started", NOT "done". */
-  notegen: string | null;
+  /** null means "generation has not started", NOT "done". */
+  notegen: NotegenStatus | null;
 }
 
+/** Null means "no row visible to this user" — not an error to throw. A genuine
+ *  transport or permission failure still throws, so a poll that is quietly
+ *  broken cannot look like a note that is quietly still working. */
 export async function readNoteProgress(
   noteId: string,
+  reader: StatusReader = browserReader(),
 ): Promise<NoteProgress | null> {
-  const { data, error } = await createClient()
+  const { data, error } = await reader
     .from("notes")
     .select("processing_status, notegen_status")
     .eq("id", noteId)
@@ -144,11 +129,21 @@ export async function readNoteProgress(
   if (error) {
     throw new Error(`Could not read the note's progress: ${error.message}`);
   }
+
   if (!data) return null;
 
+  // Throw rather than pass an unrecognised value through. Same rule as the
+  // error branch above: a poll that is quietly broken must not be able to look
+  // like a note that is quietly still working. A status the app does not know
+  // would otherwise read as "still analyzing" (or "still writing") forever.
   if (!isProcessingStatus(data.processing_status)) {
     throw new Error(
       `Unknown processing_status "${data.processing_status}" for note ${noteId}.`,
+    );
+  }
+  if (data.notegen_status !== null && !isNotegenStatus(data.notegen_status)) {
+    throw new Error(
+      `Unknown notegen_status "${data.notegen_status}" for note ${noteId}.`,
     );
   }
 

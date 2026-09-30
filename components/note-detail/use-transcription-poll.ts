@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isPipelineDone } from "@/lib/notes/notegen-progress";
 import { readNoteProgress } from "@/lib/notes/transcription-status";
 
 /**
@@ -80,15 +81,9 @@ export function useTranscriptionPoll(
             return;
           }
 
-          // Generation never runs for a failed transcription. After a
-          // 'completed' one it is done only at 'completed' or 'failed' —
-          // null means "not started yet", not "done".
-          const generationDone =
-            next.processing === "failed" ||
-            next.notegen === "completed" ||
-            next.notegen === "failed";
-
-          if (!generationDone) {
+          // After a 'completed' transcription the note is done only once
+          // generation is terminal — null means "not started yet".
+          if (!isPipelineDone(next.processing, next.notegen)) {
             // Show the transcript now, once; keep polling for the rest.
             if (!transcriptShown) {
               transcriptShown = true;

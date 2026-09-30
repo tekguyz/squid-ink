@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  readProcessingStatus,
+  readNoteProgress,
   type StatusReader,
 } from "@/lib/notes/transcription-status";
 
 const NOTE = "11111111-2222-3333-4444-555555555555";
 
+type Row = { processing_status: string; notegen_status: string | null };
+
 function reader(result: {
-  data: { processing_status: string } | null;
+  data: Row | null;
   error: { message: string } | null;
 }) {
   const maybeSingle = vi.fn(async () => result);
@@ -17,48 +19,77 @@ function reader(result: {
   return { reader: { from } as unknown as StatusReader, from, select, eq };
 }
 
-describe("readProcessingStatus", () => {
-  it("returns the row's status", async () => {
-    const stub = reader({ data: { processing_status: "analyzing" }, error: null });
+describe("readNoteProgress", () => {
+  it("returns both statuses from one row", async () => {
+    const stub = reader({
+      data: { processing_status: "completed", notegen_status: "generating" },
+      error: null,
+    });
 
-    await expect(readProcessingStatus(NOTE, stub.reader)).resolves.toBe(
-      "analyzing",
-    );
+    await expect(readNoteProgress(NOTE, stub.reader)).resolves.toEqual({
+      processing: "completed",
+      notegen: "generating",
+    });
 
     expect(stub.from).toHaveBeenCalledWith("notes");
-    expect(stub.select).toHaveBeenCalledWith("processing_status");
+    expect(stub.select).toHaveBeenCalledWith("processing_status, notegen_status");
     expect(stub.eq).toHaveBeenCalledWith("id", NOTE);
+  });
+
+  it("passes a null notegen_status through as null, not as done", async () => {
+    const stub = reader({
+      data: { processing_status: "completed", notegen_status: null },
+      error: null,
+    });
+    await expect(readNoteProgress(NOTE, stub.reader)).resolves.toEqual({
+      processing: "completed",
+      notegen: null,
+    });
   });
 
   it("returns null when RLS shows the caller no row", async () => {
     // Somebody else's note is an empty result, not an error, and must read the
     // same as a note that does not exist.
     const stub = reader({ data: null, error: null });
-    await expect(readProcessingStatus(NOTE, stub.reader)).resolves.toBeNull();
+    await expect(readNoteProgress(NOTE, stub.reader)).resolves.toBeNull();
   });
 
   it("throws on a transport failure rather than looking like 'still working'", async () => {
     const stub = reader({ data: null, error: { message: "network down" } });
-    await expect(readProcessingStatus(NOTE, stub.reader)).rejects.toThrow(
+    await expect(readNoteProgress(NOTE, stub.reader)).rejects.toThrow(
       /network down/,
     );
   });
 
-  it("throws on a status the app has no case for", async () => {
+  it("throws on a processing status the app has no case for", async () => {
     // A value added to notes_processing_status_check in SQL but not to
-    // ProcessingStatus would otherwise flow through as a valid one and reach
-    // the polling component's fallthrough, reading as "still analyzing"
-    // forever. Same rule as the transport failure above: quietly broken must
-    // not look like quietly working.
-    const stub = reader({ data: { processing_status: "summarising" }, error: null });
-    await expect(readProcessingStatus(NOTE, stub.reader)).rejects.toThrow(
+    // ProcessingStatus would otherwise read as "still analyzing" forever.
+    const stub = reader({
+      data: { processing_status: "summarising", notegen_status: null },
+      error: null,
+    });
+    await expect(readNoteProgress(NOTE, stub.reader)).rejects.toThrow(
       /unknown processing_status "summarising"/i,
     );
   });
 
+  it("throws on a notegen status the app has no case for", async () => {
+    // Same rule: an unknown value must not read as "still writing" forever.
+    const stub = reader({
+      data: { processing_status: "completed", notegen_status: "queued" },
+      error: null,
+    });
+    await expect(readNoteProgress(NOTE, stub.reader)).rejects.toThrow(
+      /unknown notegen_status "queued"/i,
+    );
+  });
+
   it("never filters on user_id — RLS supplies ownership", async () => {
-    const stub = reader({ data: { processing_status: "uploading" }, error: null });
-    await readProcessingStatus(NOTE, stub.reader);
+    const stub = reader({
+      data: { processing_status: "uploading", notegen_status: null },
+      error: null,
+    });
+    await readNoteProgress(NOTE, stub.reader);
 
     // A redundant application filter would mask an RLS failure instead of
     // exposing it. Exactly one eq, and it is the id.

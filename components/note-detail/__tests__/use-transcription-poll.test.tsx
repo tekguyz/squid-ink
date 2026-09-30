@@ -79,6 +79,37 @@ describe("useTranscriptionPoll", () => {
     expect(onSettled).toHaveBeenCalledTimes(2);
   });
 
+  it("stops reading once the caller turns it off after the final refresh", async () => {
+    const onSettled = vi.fn();
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "completed",
+    });
+
+    const { rerender } = renderHook(
+      ({ active }) => useTranscriptionPoll(NOTE, active, onSettled),
+      { initialProps: { active: true } },
+    );
+    await tick(1);
+    expect(onSettled).toHaveBeenCalledTimes(1);
+
+    // The refresh carried the finished row, so the parent deactivates the poll.
+    rerender({ active: false });
+    const reads = readNoteProgress.mock.calls.length;
+    await tick(3);
+    expect(readNoteProgress.mock.calls.length).toBe(reads);
+    expect(onSettled).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats a failed generation as terminal", async () => {
+    const onSettled = vi.fn();
+    readNoteProgress.mockResolvedValue({ processing: "completed", notegen: "failed" });
+
+    renderHook(() => useTranscriptionPoll(NOTE, true, onSettled));
+    await tick(1);
+    expect(onSettled).toHaveBeenCalledTimes(1);
+  });
+
   it("stops for good at the time cap and reports gaveUp", async () => {
     // THE REGRESSION THIS PINS, and the reason onSettled is held in a ref
     // rather than listed as an effect dependency. VERIFIED by putting it back

@@ -65,7 +65,7 @@ afterEach(() => {
 describe("TranscribeButton — when it exists at all", () => {
   it("is ABSENT from the DOM for a completed note", () => {
     const { container } = render(
-      <TranscribeButton noteId={NOTE} status="completed" />,
+      <TranscribeButton noteId={NOTE} status="completed" notegenStatus={null} />,
     );
     // Absent, not disabled and not hidden: there is nothing to press.
     expect(container).toBeEmptyDOMElement();
@@ -74,26 +74,26 @@ describe("TranscribeButton — when it exists at all", () => {
   it("offers NO control for a failed note — 'failed' is terminal", () => {
     // No retry affordance. This is the explicit design decision, not an
     // oversight, and this test is what stops one being added by accident.
-    render(<TranscribeButton noteId={NOTE} status="failed" />);
+    render(<TranscribeButton noteId={NOTE} status="failed" notegenStatus={null} />);
     expect(screen.queryByRole("button")).toBeNull();
   });
 
   it("still SAYS what happened to a failed note", () => {
     // The decision was "no retry", not "no status". A control silently
     // ceasing to exist is not how the outcome of a press gets reported.
-    render(<TranscribeButton noteId={NOTE} status="failed" />);
+    render(<TranscribeButton noteId={NOTE} status="failed" notegenStatus={null} />);
     expect(screen.getByText(/could not be transcribed/i)).toBeInTheDocument();
   });
 
   it("is ABSENT for a note that never started uploading", () => {
     const { container } = render(
-      <TranscribeButton noteId={NOTE} status="local" />,
+      <TranscribeButton noteId={NOTE} status="local" notegenStatus={null} />,
     );
     expect(container).toBeEmptyDOMElement();
   });
 
   it("offers a pressable Transcribe for an 'uploading' note", () => {
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
     const button = screen.getByRole("button", { name: /transcribe/i });
     expect(button).not.toHaveAttribute("aria-disabled", "true");
   });
@@ -113,6 +113,16 @@ describe("TranscribeButton — note generation (issue #79)", () => {
     expect(readNoteProgress).toHaveBeenCalledTimes(2);
   });
 
+  it("treats null generation on a completed note as not done yet", async () => {
+    readNoteProgress.mockResolvedValue({ processing: "completed", notegen: null });
+    render(
+      <TranscribeButton noteId={NOTE} status="completed" notegenStatus={null} />,
+    );
+
+    await tick(2);
+    expect(readNoteProgress).toHaveBeenCalledTimes(2);
+  });
+
   it("does not poll a completed note that is already finished", async () => {
     render(
       <TranscribeButton noteId={NOTE} status="completed" notegenStatus="completed" />,
@@ -121,11 +131,61 @@ describe("TranscribeButton — note generation (issue #79)", () => {
     await tick(2);
     expect(readNoteProgress).not.toHaveBeenCalled();
   });
+
+  it("refreshes when generation finishes, then stops once the page says so", async () => {
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "generating",
+    });
+    const { rerender } = render(
+      <TranscribeButton noteId={NOTE} status="completed" notegenStatus="generating" />,
+    );
+    await tick(2);
+    // The transcript refreshes early, once, while generation still runs.
+    expect(refresh).toHaveBeenCalledTimes(1);
+
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "completed",
+    });
+    await tick(1);
+    expect(refresh).toHaveBeenCalledTimes(2);
+
+    // The refresh brings back the finished row: the prop flips and polling ends.
+    rerender(
+      <TranscribeButton noteId={NOTE} status="completed" notegenStatus="completed" />,
+    );
+    const reads = readNoteProgress.mock.calls.length;
+    await tick(3);
+    expect(readNoteProgress.mock.calls.length).toBe(reads);
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it("tells its parent when the poll gives up", async () => {
+    const onGaveUp = vi.fn();
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "generating",
+    });
+    render(
+      <TranscribeButton
+        noteId={NOTE}
+        status="completed"
+        notegenStatus="generating"
+        onGaveUp={onGaveUp}
+      />,
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_LIMIT_MS + POLL_INTERVAL_MS);
+    });
+    expect(onGaveUp).toHaveBeenCalled();
+  });
 });
 
 describe("TranscribeButton — pressing it", () => {
   it("calls the Server Action with the note id", async () => {
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
 
     await press();
 
@@ -133,7 +193,7 @@ describe("TranscribeButton — pressing it", () => {
   });
 
   it("shows a working state and starts polling", async () => {
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
 
     await press();
     expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
@@ -143,7 +203,7 @@ describe("TranscribeButton — pressing it", () => {
   });
 
   it("refreshes the server-rendered page when the note completes", async () => {
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
 
     await press();
 
@@ -161,7 +221,7 @@ describe("TranscribeButton — pressing it", () => {
     // effect's dependencies had not changed, so nothing restarted it and the
     // button sat on "Transcribing…" for the rest of the session. Unmounting is
     // the stop condition — see the test below — not the first terminal read.
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
 
     await press();
     readNoteProgress.mockResolvedValue({ processing: "failed", notegen: "completed" });
@@ -176,7 +236,7 @@ describe("TranscribeButton — pressing it", () => {
 
   it("says so, and stops working, when another caller already claimed the row", async () => {
     triggerTranscription.mockResolvedValue("not-claimed");
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
 
     await press();
 
@@ -187,7 +247,7 @@ describe("TranscribeButton — pressing it", () => {
 
   it("says the recording never landed when the object is missing", async () => {
     triggerTranscription.mockResolvedValue("no-audio");
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
 
     await press();
 
@@ -200,13 +260,13 @@ describe("TranscribeButton — accessibility", () => {
   it("keeps a live region mounted before it has anything to say", async () => {
     // A role="status" that appears at the same instant as its text is not
     // reliably announced. The region must already be in the tree.
-    render(<TranscribeButton noteId={NOTE} status="uploading" />);
+    render(<TranscribeButton noteId={NOTE} status="uploading" notegenStatus={null} />);
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("ignores a press while it is already working", async () => {
     // aria-disabled does not block the click the native attribute would.
-    render(<TranscribeButton noteId={NOTE} status="analyzing" />);
+    render(<TranscribeButton noteId={NOTE} status="analyzing" notegenStatus={null} />);
     await press();
     expect(triggerTranscription).not.toHaveBeenCalled();
   });
@@ -216,7 +276,7 @@ describe("TranscribeButton — an 'analyzing' note", () => {
   it("polls on mount without a click, and offers nothing to press", async () => {
     // The cron, or another tab, may have claimed it. The UI should reflect
     // that without the user having been the one who triggered it.
-    render(<TranscribeButton noteId={NOTE} status="analyzing" />);
+    render(<TranscribeButton noteId={NOTE} status="analyzing" notegenStatus={null} />);
 
     // aria-disabled, not the native attribute: the element must stay in the
     // tab order and the accessibility tree so the label change is announced.
@@ -233,7 +293,7 @@ describe("TranscribeButton — an 'analyzing' note", () => {
 
   it("clears its interval on unmount", async () => {
     const { unmount } = render(
-      <TranscribeButton noteId={NOTE} status="analyzing" />,
+      <TranscribeButton noteId={NOTE} status="analyzing" notegenStatus={null} />,
     );
 
     await tick();
@@ -246,7 +306,7 @@ describe("TranscribeButton — an 'analyzing' note", () => {
   });
 
   it("gives up with a neutral message rather than polling forever", async () => {
-    render(<TranscribeButton noteId={NOTE} status="analyzing" />);
+    render(<TranscribeButton noteId={NOTE} status="analyzing" notegenStatus={null} />);
 
     // One tick past the wall-clock cap. vi's fake timers move Date.now()
     // with the scheduler, so this is the real elapsed bound, not a tick count.
