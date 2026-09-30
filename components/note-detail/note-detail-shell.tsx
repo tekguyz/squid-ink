@@ -200,9 +200,33 @@ export function NoteDetailShell({
         {/* Directly under the transport, because both are facts about the
             recording rather than about its content. Renders nothing once the
             note is 'completed' or 'failed' — see transcribe-button.tsx. */}
-        <TranscribeButton noteId={note.id} status={note.processingStatus} />
+        <TranscribeButton
+          noteId={note.id}
+          status={note.processingStatus}
+          notegenStatus={note.notegenStatus}
+        />
 
         <div className="scroll-thin min-h-0 flex-1 overflow-auto px-[26px]">
+          {/* Transcript is in, the note is not written yet. Null counts as
+              "not started", so the page does not look finished in the gap. */}
+          <p
+            role="status"
+            className={
+              note.processingStatus === "completed" &&
+              (note.notegenStatus === null ||
+                note.notegenStatus === "generating") &&
+              note.summary.length === 0
+                ? "mb-4 bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice"
+                : "sr-only"
+            }
+          >
+            {note.processingStatus === "completed" &&
+            (note.notegenStatus === null ||
+              note.notegenStatus === "generating") &&
+            note.summary.length === 0
+              ? "Writing the note. The summary, takeaways and action items will appear here."
+              : null}
+          </p>
           <SummarySection
             runs={note.summary}
             activeSegmentId={activeSegmentId}

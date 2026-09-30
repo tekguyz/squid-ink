@@ -6,9 +6,9 @@ import {
   POLL_LIMIT_MS,
 } from "@/components/note-detail/use-transcription-poll";
 
-const readProcessingStatus = vi.fn();
+const readNoteProgress = vi.fn();
 vi.mock("@/lib/notes/transcription-status", () => ({
-  readProcessingStatus: (...args: unknown[]) => readProcessingStatus(...args),
+  readNoteProgress: (...args: unknown[]) => readNoteProgress(...args),
 }));
 
 const NOTE = "11111111-2222-3333-4444-555555555555";
@@ -24,8 +24,8 @@ async function tick(count: number) {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  readProcessingStatus.mockReset();
-  readProcessingStatus.mockResolvedValue("analyzing");
+  readNoteProgress.mockReset();
+  readNoteProgress.mockResolvedValue({ processing: "analyzing", notegen: "completed" });
 });
 
 afterEach(() => {
@@ -39,12 +39,44 @@ describe("useTranscriptionPoll", () => {
     // refresh can come back still saying 'uploading', and nothing would
     // restart a poll that had already cleared itself.
     const onSettled = vi.fn();
-    readProcessingStatus.mockResolvedValue("completed");
+    readNoteProgress.mockResolvedValue({ processing: "completed", notegen: "completed" });
 
     renderHook(() => useTranscriptionPoll(NOTE, true, onSettled));
 
     await tick(3);
     expect(onSettled).toHaveBeenCalledTimes(3);
+  });
+
+  it("keeps polling while generation is not done, refreshing the transcript once", async () => {
+    // Issue #79: transcription 'completed' is not the end. notegen null means
+    // "not started", not "done".
+    const onSettled = vi.fn();
+    readNoteProgress.mockResolvedValue({ processing: "completed", notegen: null });
+
+    renderHook(() => useTranscriptionPoll(NOTE, true, onSettled));
+
+    await tick(3);
+    expect(onSettled).toHaveBeenCalledTimes(1);
+    expect(readNoteProgress).toHaveBeenCalledTimes(3);
+  });
+
+  it("refreshes again once generation is terminal", async () => {
+    const onSettled = vi.fn();
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "generating",
+    });
+
+    renderHook(() => useTranscriptionPoll(NOTE, true, onSettled));
+    await tick(2);
+    expect(onSettled).toHaveBeenCalledTimes(1);
+
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "completed",
+    });
+    await tick(1);
+    expect(onSettled).toHaveBeenCalledTimes(2);
   });
 
   it("stops for good at the time cap and reports gaveUp", async () => {
@@ -67,21 +99,21 @@ describe("useTranscriptionPoll", () => {
     await tick(POLL_LIMIT_MS / POLL_INTERVAL_MS + 1);
     expect(result.current.gaveUp).toBe(true);
 
-    const reads = readProcessingStatus.mock.calls.length;
+    const reads = readNoteProgress.mock.calls.length;
     await tick(3);
-    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+    expect(readNoteProgress.mock.calls.length).toBe(reads);
   });
 
   it("reads nothing while inactive", async () => {
     renderHook(() => useTranscriptionPoll(NOTE, false, () => {}));
     await tick(3);
-    expect(readProcessingStatus).not.toHaveBeenCalled();
+    expect(readNoteProgress).not.toHaveBeenCalled();
   });
 
   it("survives a failed read rather than letting it look like progress", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const onSettled = vi.fn();
-    readProcessingStatus.mockRejectedValue(new Error("network down"));
+    readNoteProgress.mockRejectedValue(new Error("network down"));
 
     renderHook(() => useTranscriptionPoll(NOTE, true, onSettled));
 
@@ -97,11 +129,11 @@ describe("useTranscriptionPoll", () => {
     );
 
     await tick(2);
-    const reads = readProcessingStatus.mock.calls.length;
+    const reads = readNoteProgress.mock.calls.length;
     expect(reads).toBeGreaterThan(0);
 
     unmount();
     await tick(3);
-    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+    expect(readNoteProgress.mock.calls.length).toBe(reads);
   });
 });

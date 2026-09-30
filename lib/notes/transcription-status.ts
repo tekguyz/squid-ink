@@ -122,3 +122,35 @@ export async function readProcessingStatus(
 
   return data.processing_status;
 }
+
+/** Both halves of a note's pipeline, read in one row. The poll needs them
+ *  together: transcription finishing is not the end, note generation runs
+ *  after it and sets `notegen_status` (null until it claims the note). */
+export interface NoteProgress {
+  processing: ProcessingStatus;
+  /** Raw wire value; null means "generation has not started", NOT "done". */
+  notegen: string | null;
+}
+
+export async function readNoteProgress(
+  noteId: string,
+): Promise<NoteProgress | null> {
+  const { data, error } = await createClient()
+    .from("notes")
+    .select("processing_status, notegen_status")
+    .eq("id", noteId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Could not read the note's progress: ${error.message}`);
+  }
+  if (!data) return null;
+
+  if (!isProcessingStatus(data.processing_status)) {
+    throw new Error(
+      `Unknown processing_status "${data.processing_status}" for note ${noteId}.`,
+    );
+  }
+
+  return { processing: data.processing_status, notegen: data.notegen_status };
+}

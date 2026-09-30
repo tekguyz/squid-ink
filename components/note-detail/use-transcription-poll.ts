@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { readProcessingStatus } from "@/lib/notes/transcription-status";
+import { readNoteProgress } from "@/lib/notes/transcription-status";
 
 /**
- * Watches one note's processing_status until it goes terminal, and refreshes
- * the server-rendered page when it does.
+ * Watches one note until transcription AND note generation are terminal, and
+ * refreshes the server-rendered page when they are. Generation runs seconds
+ * after transcription finishes (issue #79), so 'completed' alone is not done.
  *
  * It lived inside transcribe-button.tsx until 2026-09-01. It moved because it
  * is a behaviour, not a piece of that button: its own interval, its own time
@@ -30,7 +31,8 @@ export const POLL_LIMIT_MS = 10 * 60 * 1000;
  * @param noteId the note to watch.
  * @param active whether to be watching at all. Flipping it false stops the
  *   poll; unmounting does too.
- * @param onSettled called when the note reaches 'completed' or 'failed'.
+ * @param onSettled called when transcription finishes (once, so the transcript
+ *   shows early), then on every tick once generation is terminal too.
  * @returns `gaveUp`, true once the time cap has passed with no terminal
  *   reading. The caller owns what to say about that — this hook has no opinion
  *   on copy.
@@ -62,6 +64,7 @@ export function useTranscriptionPoll(
 
     let cancelled = false;
     const startedAt = Date.now();
+    let transcriptShown = false;
 
     const timer = setInterval(() => {
       if (Date.now() - startedAt > POLL_LIMIT_MS) {
@@ -70,10 +73,29 @@ export function useTranscriptionPoll(
         return;
       }
 
-      void readProcessingStatus(noteId)
+      void readNoteProgress(noteId)
         .then((next) => {
           if (cancelled || next === null) return;
-          if (next !== "completed" && next !== "failed") return;
+          if (next.processing !== "completed" && next.processing !== "failed") {
+            return;
+          }
+
+          // Generation never runs for a failed transcription. After a
+          // 'completed' one it is done only at 'completed' or 'failed' —
+          // null means "not started yet", not "done".
+          const generationDone =
+            next.processing === "failed" ||
+            next.notegen === "completed" ||
+            next.notegen === "failed";
+
+          if (!generationDone) {
+            // Show the transcript now, once; keep polling for the rest.
+            if (!transcriptShown) {
+              transcriptShown = true;
+              settled.current();
+            }
+            return;
+          }
 
           // DELIBERATELY NOT clearInterval HERE. Clearing on the first
           // terminal reading left a dead poll whenever the caller's refresh

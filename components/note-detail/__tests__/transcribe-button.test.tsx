@@ -14,14 +14,14 @@ vi.mock("@/app/notes/actions/transcription", () => ({
   triggerTranscription: (...args: unknown[]) => triggerTranscription(...args),
 }));
 
-const readProcessingStatus = vi.fn();
+const readNoteProgress = vi.fn();
 vi.mock("@/lib/notes/transcription-status", () => ({
-  readProcessingStatus: (...args: unknown[]) => readProcessingStatus(...args),
+  readNoteProgress: (...args: unknown[]) => readNoteProgress(...args),
 }));
 
 const NOTE = "11111111-2222-3333-4444-555555555555";
 
-/** Advance the poll by whole ticks, flushing the promise each readProcessingStatus
+/** Advance the poll by whole ticks, flushing the promise each readNoteProgress
  *  returns. advanceTimersByTimeAsync alone is not enough — the .then() chain
  *  inside the interval callback settles on a later microtask turn. */
 /** fireEvent, not userEvent: user-event schedules its own timers and
@@ -54,7 +54,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useFakeTimers();
   triggerTranscription.mockResolvedValue("started");
-  readProcessingStatus.mockResolvedValue("uploading");
+  readNoteProgress.mockResolvedValue({ processing: "uploading", notegen: "completed" });
 });
 
 afterEach(() => {
@@ -99,6 +99,30 @@ describe("TranscribeButton — when it exists at all", () => {
   });
 });
 
+describe("TranscribeButton — note generation (issue #79)", () => {
+  it("keeps polling a completed note whose generation is running", async () => {
+    readNoteProgress.mockResolvedValue({
+      processing: "completed",
+      notegen: "generating",
+    });
+    render(
+      <TranscribeButton noteId={NOTE} status="completed" notegenStatus="generating" />,
+    );
+
+    await tick(2);
+    expect(readNoteProgress).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not poll a completed note that is already finished", async () => {
+    render(
+      <TranscribeButton noteId={NOTE} status="completed" notegenStatus="completed" />,
+    );
+
+    await tick(2);
+    expect(readNoteProgress).not.toHaveBeenCalled();
+  });
+});
+
 describe("TranscribeButton — pressing it", () => {
   it("calls the Server Action with the note id", async () => {
     render(<TranscribeButton noteId={NOTE} status="uploading" />);
@@ -115,7 +139,7 @@ describe("TranscribeButton — pressing it", () => {
     expect(screen.getByRole("button")).toHaveAttribute("aria-disabled", "true");
 
     await tick();
-    expect(readProcessingStatus).toHaveBeenCalledWith(NOTE);
+    expect(readNoteProgress).toHaveBeenCalledWith(NOTE);
   });
 
   it("refreshes the server-rendered page when the note completes", async () => {
@@ -123,7 +147,7 @@ describe("TranscribeButton — pressing it", () => {
 
     await press();
 
-    readProcessingStatus.mockResolvedValue("completed");
+    readNoteProgress.mockResolvedValue({ processing: "completed", notegen: "completed" });
     await tick();
 
     // router.refresh(), never a client-side fetch of the transcript: the
@@ -140,14 +164,14 @@ describe("TranscribeButton — pressing it", () => {
     render(<TranscribeButton noteId={NOTE} status="uploading" />);
 
     await press();
-    readProcessingStatus.mockResolvedValue("failed");
+    readNoteProgress.mockResolvedValue({ processing: "failed", notegen: "completed" });
 
     await tick();
-    const afterFirst = readProcessingStatus.mock.calls.length;
+    const afterFirst = readNoteProgress.mock.calls.length;
     expect(refresh).toHaveBeenCalled();
 
     await tick(3);
-    expect(readProcessingStatus.mock.calls.length).toBeGreaterThan(afterFirst);
+    expect(readNoteProgress.mock.calls.length).toBeGreaterThan(afterFirst);
   });
 
   it("says so, and stops working, when another caller already claimed the row", async () => {
@@ -204,7 +228,7 @@ describe("TranscribeButton — an 'analyzing' note", () => {
     expect(triggerTranscription).not.toHaveBeenCalled();
 
     await tick();
-    expect(readProcessingStatus).toHaveBeenCalledWith(NOTE);
+    expect(readNoteProgress).toHaveBeenCalledWith(NOTE);
   });
 
   it("clears its interval on unmount", async () => {
@@ -213,12 +237,12 @@ describe("TranscribeButton — an 'analyzing' note", () => {
     );
 
     await tick();
-    const reads = readProcessingStatus.mock.calls.length;
+    const reads = readNoteProgress.mock.calls.length;
     expect(reads).toBeGreaterThan(0);
 
     unmount();
     await tick(3);
-    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+    expect(readNoteProgress.mock.calls.length).toBe(reads);
   });
 
   it("gives up with a neutral message rather than polling forever", async () => {
@@ -234,8 +258,8 @@ describe("TranscribeButton — an 'analyzing' note", () => {
     expect(screen.getByRole("button")).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(/refresh to check/i);
 
-    const reads = readProcessingStatus.mock.calls.length;
+    const reads = readNoteProgress.mock.calls.length;
     await tick(3);
-    expect(readProcessingStatus.mock.calls.length).toBe(reads);
+    expect(readNoteProgress.mock.calls.length).toBe(reads);
   });
 });
