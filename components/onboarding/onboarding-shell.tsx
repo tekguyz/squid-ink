@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signOut } from "@/app/notes/actions/session";
+import { BrandMark } from "@/components/brand/brand-mark";
 import type { PersonaConfig } from "@/lib/notes/get-personas-screen";
 import { AudioStep } from "./audio-step";
 import { CalendarStep } from "./calendar-step";
@@ -50,7 +51,7 @@ export function OnboardingShell({
       >
         <aside className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r px-[22px] py-[26px]">
           <p className="font-header text-ink flex items-center gap-[8px] text-[14px] font-bold">
-            <span aria-hidden="true" className="bg-accent h-[16px] w-[16px]" />
+            <BrandMark size={16} />
             Squid Ink
           </p>
 

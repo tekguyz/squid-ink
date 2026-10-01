@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { NoteSpecimen } from "./note-specimen";
 import { PersonaTable } from "./persona-table";
 import { DemoButton } from "./demo-button";
@@ -69,7 +70,7 @@ export function LandingPage() {
     <div className="bg-paper text-ink min-h-dvh">
       <header className={`${WRAP} flex items-center justify-between gap-4 py-[16px]`}>
         <p className="font-header text-ink flex items-center gap-[8px] text-[16px] font-bold tracking-[-0.01em]">
-          <span aria-hidden="true" className="bg-accent h-[18px] w-[18px]" />
+          <BrandMark />
           <span translate="no">Squid Ink</span>
         </p>
         <Link href="/login" className={OUTLINE_BUTTON}>

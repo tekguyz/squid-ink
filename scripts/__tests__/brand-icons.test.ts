@@ -28,7 +28,7 @@ describe("oklchToHex", () => {
 describe("readTokens", () => {
   it("reads the light and the dark value of every colour the mark uses", () => {
     const t = readTokens(css);
-    for (const name of ["paper", "ink", "accent", "rule-strong"] as const) {
+    for (const name of ["accent", "on-accent"] as const) {
       expect(t.light[name]).toMatch(/^#[0-9a-f]{6}$/);
       expect(t.dark[name]).toMatch(/^#[0-9a-f]{6}$/);
       expect(t.dark[name]).not.toBe(t.light[name]);

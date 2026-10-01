@@ -28,8 +28,8 @@ const png = (svg, size) =>
 writeFileSync(out("app/icon.svg"), buildIconSvg(tokens));
 
 // Old browsers and anything that asks for /favicon.ico. It lives in public/, not
-// app/, so Next does not link it and tabs use the dark-aware icon.svg. ICO has no dark mode,
-// and the hairline frame keeps the paper tile visible on a dark tab strip.
+// app/, so Next does not link it and tabs use the dark-aware icon.svg. ICO has
+// no dark mode; the light green tile reads on a dark tab strip too.
 const framed = standaloneSvg(tokens.light);
 writeFileSync(
   out("public/favicon.ico"),
