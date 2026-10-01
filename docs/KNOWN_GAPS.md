@@ -3236,6 +3236,15 @@ The demo consequence above is therefore narrower than it reads: notes authored
 by `scripts/author-demo-fixture.mjs` run real notegen, so a demo seeded after
 today gets real takeaway citations.
 
+**That last sentence was true and still missed the demo (issue #86, 2026-10-01).**
+The three fixtures in `lib/demo/` were authored 2026-09-15/16, before the fix,
+and nothing re-authored them. The live demo and the showcase screenshots
+carried 21 inert `00:00` chips for ten days. Fixed 2026-10-01 with
+`author-demo-fixture.mjs --fixture lib/demo/<name>.json --out <name>` (keeps
+the cleared transcript, regenerates the rest), then `--confirm`. **Re-run both
+whenever notegen changes what it writes onto a chunk**, then
+`load-demo-owner.mjs` and `npm run showcase`.
+
 ## `handoff` → `status-sync`, and what Job 3 deliberately left (recorded 2026-09-20)
 
 Job 3 of `C:\Projects\tekguyz-one\docs\WORKFLOW-PLAN-2026-09-20.md` ran here
