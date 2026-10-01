@@ -308,7 +308,8 @@ manual Transcribe-button trigger is unchanged.
 
 ## 7. Explicit out of scope
 
-- Payments / Stripe, anywhere.
+- Payments / Stripe, anywhere. **Under reconsideration 2026-09-30** (issue
+  #83); still out of scope until a decision lands in `docs/DECISIONS.md`.
 - Data, user, or auth migration from the prior build.
 - Google OAuth tied to login (stays a separate "Connect Calendar/Drive"
   action per existing locked decision).

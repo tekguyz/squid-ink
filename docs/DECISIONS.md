@@ -150,6 +150,11 @@ a separate, still-open question (see Branding below).
   public-facing surface linked from the tekguyz.com case study. The 2–5 minute
   recording-cap idea is **rejected**: it is moot once live recording is never
   reachable from open signup. (2026-09-15)
+- **Under reconsideration 2026-09-30 — not decided.** The owner is thinking
+  about selling Squid Ink (rough price ideas $6, $10 or $15 a month). That
+  would reverse the two entries above and `docs/ROADMAP.md` § 7 ("Payments /
+  Stripe, anywhere"). Nothing changes until a decision is written here.
+  Questions and plan: issue #83.
 - **How signup stays closed changed 2026-09-26 (issue #19); that it stays
   closed did not.** Supabase refuses `signInAnonymously` while "Allow new
   users to sign up" is off — measured, `Signups not allowed for this
