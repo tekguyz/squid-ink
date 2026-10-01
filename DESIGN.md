@@ -406,7 +406,7 @@ An icon file cannot hold a `var()`, so the hex values are **generated** from
 `app/globals.css` by `node scripts/build-brand-icons.mjs`, and
 `scripts/__tests__/brand-icons.test.ts` fails when a committed icon no longer
 matches the tokens. Files: `app/icon.svg` (follows the browser's light or dark),
-`app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and
+`public/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and
 `public/icons/` (192, 512 and a maskable 512, ready for #34). There is no
 wordmark yet.
 

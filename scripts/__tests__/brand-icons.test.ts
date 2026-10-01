@@ -62,8 +62,8 @@ describe("the committed brand assets", () => {
     expect(svg).toContain(t.dark.accent);
   });
 
-  it("app/favicon.ico holds 16, 32 and 48 px images", () => {
-    const ico = read("app/favicon.ico");
+  it("public/favicon.ico holds 16, 32 and 48 px images", () => {
+    const ico = read("public/favicon.ico");
     expect(ico.readUInt16LE(4)).toBe(3);
     expect([6, 22, 38].map((o) => ico.readUInt8(o))).toEqual([16, 32, 48]);
   });

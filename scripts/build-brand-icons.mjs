@@ -27,11 +27,12 @@ const png = (svg, size) =>
 // Tab strip and bookmarks: one SVG that follows the browser's light or dark.
 writeFileSync(out("app/icon.svg"), buildIconSvg(tokens));
 
-// Old browsers and anything that asks for /favicon.ico. ICO has no dark mode,
+// Old browsers and anything that asks for /favicon.ico. It lives in public/, not
+// app/, so Next does not link it and tabs use the dark-aware icon.svg. ICO has no dark mode,
 // and the hairline frame keeps the paper tile visible on a dark tab strip.
 const framed = standaloneSvg(tokens.light);
 writeFileSync(
-  out("app/favicon.ico"),
+  out("public/favicon.ico"),
   icoFromPngs(await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await png(framed, size) })))),
 );
 
