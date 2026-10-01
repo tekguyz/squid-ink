@@ -391,6 +391,25 @@ user-facing copy, page titles and application code. There is deliberately still
 no wordmark, logotype or brand-colour obligation: the identity is the sheet, the
 ink and the type, and the name sits inside that system rather than on top of it.
 
+### The mark
+
+**The mark** (issue #80, chosen 2026-09-30) is Bitter 700's opening quote on an
+`accent` bar, on a `paper` tile, with a hairline of `rule-strong` where the tile
+must be seen against a paper page. The quote is what a note is made of; the
+bar is its source, the same green that always means "grounded in the source".
+It uses one face, Bitter, and no new colour: `paper`, `ink`,
+`accent` and `rule-strong`, in their light and dark values. Square corners, as
+everywhere. Five directions were drawn and the other four are kept in
+`docs/brand/logo-directions/`.
+
+An icon file cannot hold a `var()`, so the hex values are **generated** from
+`app/globals.css` by `node scripts/build-brand-icons.mjs`, and
+`scripts/__tests__/brand-icons.test.ts` fails when a committed icon no longer
+matches the tokens. Files: `app/icon.svg` (follows the browser's light or dark),
+`app/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and
+`public/icons/` (192, 512 and a maskable 512, ready for #34). There is no
+wordmark yet.
+
 This section previously recorded the name as an open decision and forbade any
 name string in code. That restriction was correct while naming was reopened
 between 2026-08-30 and the lock, and it no longer applies.

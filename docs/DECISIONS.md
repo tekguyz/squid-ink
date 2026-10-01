@@ -44,6 +44,12 @@ a separate, still-open question (see Branding below).
   carryover of the prior build's visual language ("Organic"
   cream/rust-orange/Newsreader), logo, icons, copy, or docs. Design starts
   fresh in Claude Design, no KB-doc import.
+  **The mark was chosen 2026-09-30 (#80):** Bitter's opening quote mark over a
+  green bar — the quote is what a note is made of, the bar is its source. Five
+  directions were drawn; the other four (a slab S, a nib, a squid, a masthead)
+  are kept in `docs/brand/logo-directions/`. There is still no wordmark. The
+  squid and the idea of the two commas as a squid's eyes are open for a later
+  wordmark.
 **Multi-tenancy**
 - Confirmed 2026-08-30: **staying single-owner/solo indefinitely.** No
   organizations/workspace table, no admin roles, no seats.
