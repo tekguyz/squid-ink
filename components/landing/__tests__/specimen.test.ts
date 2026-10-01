@@ -20,6 +20,7 @@ interface Chunk {
   metadata: {
     n?: string;
     seq: number;
+    segment_id?: number;
     ts_start?: string;
     speaker?: { name: string; token: string };
   };
@@ -54,6 +55,16 @@ describe("the landing specimen", () => {
       expect(chunk?.content).toBe(seg.text);
       expect(chunk?.metadata.ts_start).toBe(seg.time);
       expect(chunk?.metadata.speaker).toMatchObject({ name: seg.speaker.name, token: seg.speaker.token });
+    }
+  });
+
+  it.each([
+    ["takeaway", SPECIMEN_TAKEAWAYS],
+    ["action_item", SPECIMEN_ACTIONS],
+  ] as const)("cites the segment the pipeline wrote on each %s chunk", (type, claims) => {
+    for (const claim of claims) {
+      const chunk = chunks(type).find((c) => c.metadata.n === claim.n);
+      expect(claim.cites).toEqual([chunk?.metadata.segment_id]);
     }
   });
 

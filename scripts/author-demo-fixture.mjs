@@ -64,15 +64,17 @@ function arg(name, fallback = null) {
 
 const audioPath = arg("audio");
 const transcriptPath = arg("transcript");
+const fixtureSource = arg("fixture");
 const title = arg("title", "Demo recording");
 const out = arg("out", "demo-note-1");
 const confirmed = process.argv.includes("--confirm");
 
-if (!confirmed && !audioPath && !transcriptPath) {
+if (!confirmed && !audioPath && !transcriptPath && !fixtureSource) {
   console.error(
     "usage:\n" +
       "  stage 1, from audio : --audio <path> --duration <seconds> --out <name>\n" +
       "  stage 1, from text  : --transcript <path> --out <name>\n" +
+      "  stage 1, from fixture : --fixture lib/demo/<name>.json --out <name>\n" +
       "  stage 2             : --confirm --out <name>\n",
   );
   process.exit(2);
@@ -394,6 +396,66 @@ if (transcriptPath) {
   console.log(`duration : ${lastEnd}s`);
   console.log(`audio    : none`);
   console.log(`\nStage 1b done. State written to ${statePath()}`);
+  console.log(`Run again with --confirm --out ${out} to generate and embed.`);
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------------------
+// Stage 1c — from an EXISTING fixture: keep the transcript, regenerate the rest
+// ---------------------------------------------------------------------------
+//
+// For when the notegen pipeline changes and the demo has to catch up (issue
+// #86: the fixtures were authored before takeaways carried segment citations).
+// The cleared transcript is kept exactly as it is — same segments, same speakers,
+// same embeddings — so nothing new goes public and no transcription call is made.
+// Only the summary, takeaways and action items are generated again, by the real
+// notegen in stage 2. A visitor-facing note therefore never differs from what
+// the shipped pipeline produces today.
+
+if (fixtureSource) {
+  const old = JSON.parse(readFileSync(fixtureSource, "utf8"));
+  const segments = old.chunks.filter((c) => c.chunkType === "transcript_segment");
+  if (segments.length === 0) throw new Error("the fixture has no transcript segments");
+
+  const noteId = randomUUID();
+
+  const { error: insertError } = await owner.from("notes").insert({
+    id: noteId,
+    user_id: userId,
+    // Null so notegen names it again, as in stage 1b.
+    title: null,
+    audio_storage_path: null,
+    audio_duration_seconds: old.note.audioDurationSeconds,
+    raw_transcript: old.note.rawTranscript,
+    processing_status: "completed",
+    diarization_enabled: old.note.diarizationEnabled,
+  });
+  if (insertError) throw new Error(`insert failed: ${insertError.message}`);
+
+  const { error: chunkError } = await owner.from("note_chunks").insert(
+    segments.map((c) => ({
+      note_id: noteId,
+      user_id: userId,
+      chunk_type: "transcript_segment",
+      persona_id: null,
+      // Kept, so stage 2 spends Voyage calls only on the new chunks.
+      embedding: c.embedding,
+      content: c.content,
+      metadata: c.metadata,
+    })),
+  );
+  if (chunkError) throw new Error(`chunk insert failed: ${chunkError.message}`);
+
+  mkdirSync("scratch", { recursive: true });
+  writeFileSync(
+    statePath(),
+    JSON.stringify({ noteId, userId, path: null, duration: old.note.audioDurationSeconds }, null, 2),
+  );
+
+  console.log(`\nsource   : ${fixtureSource}`);
+  console.log(`note     : ${noteId}`);
+  console.log(`segments : ${segments.length} (kept, with embeddings)`);
+  console.log(`\nStage 1c done. State written to ${statePath()}`);
   console.log(`Run again with --confirm --out ${out} to generate and embed.`);
   process.exit(0);
 }
