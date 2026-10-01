@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import Link from "next/link";
 
 /**
@@ -30,7 +31,7 @@ export function AuthSheet({ children }: { children: ReactNode }) {
           href="/"
           className={`font-header text-ink flex items-center gap-[8px] self-start text-[15px] font-bold tracking-[-0.01em] underline-offset-[3px] hover:underline ${FOCUS}`}
         >
-          <span aria-hidden="true" className="bg-accent h-[18px] w-[18px]" />
+          <BrandMark />
           <span translate="no">Squid Ink</span>
         </Link>
         {children}

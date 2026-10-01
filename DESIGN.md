@@ -388,18 +388,20 @@ proof rather than a drawing of one.
 The product name is **Squid Ink**, locked 2026-09-07 (`docs/DECISIONS.md`
 § Locked decisions → Branding; `docs/ROADMAP.md` § 9). It may be used in
 user-facing copy, page titles and application code. There is deliberately still
-no wordmark, logotype or brand-colour obligation: the identity is the sheet, the
+no logotype or brand-colour obligation (the mark is in § The mark): the identity is the sheet, the
 ink and the type, and the name sits inside that system rather than on top of it.
 
 ### The mark
 
-**The mark** (issue #80, chosen 2026-09-30) is Bitter 700's opening quote on an
-`accent` bar, on a `paper` tile, with a hairline of `rule-strong` where the tile
-must be seen against a paper page. The quote is what a note is made of; the
-bar is its source, the same green that always means "grounded in the source".
-It uses one face, Bitter, and no new colour: `paper`, `ink`,
-`accent` and `rule-strong`, in their light and dark values. Square corners, as
-everywhere. Five directions were drawn and the other four are kept in
+**The mark** (issue #80, chosen 2026-09-30; recoloured the same day) is Bitter
+700's opening quote on an `accent` bar, on a tile that **looks like the primary
+button**: an `accent` fill with `on-accent` marks, the quote and the bar both.
+In dark that is bright green with near-black marks, which is what makes it pop
+on a dark page and a dark tab strip; in light it is the deep green with cream
+marks. The quote is what a note is made of; the bar is its source. It uses one
+face, Bitter, and two tokens, `accent` and `on-accent`. No frame, square
+corners, as everywhere. An earlier paper tile vanished on a dark page. Five
+directions were drawn and the other four are kept in
 `docs/brand/logo-directions/`.
 
 An icon file cannot hold a `var()`, so the hex values are **generated** from
@@ -407,8 +409,16 @@ An icon file cannot hold a `var()`, so the hex values are **generated** from
 `scripts/__tests__/brand-icons.test.ts` fails when a committed icon no longer
 matches the tokens. Files: `app/icon.svg` (follows the browser's light or dark),
 `public/favicon.ico` (16, 32, 48), `app/apple-icon.png` (180), and
-`public/icons/` (192, 512 and a maskable 512, ready for #34). There is no
-wordmark yet.
+`public/icons/` (192, 512 and a maskable 512, ready for #34).
+
+**In the app** the mark sits left of the words "Squid Ink" in three places —
+the landing header (18px), the sign-in sheet (18px) and the onboarding rail
+(16px) — through one component, `components/brand/brand-mark.tsx`, so they
+cannot drift. It draws the same outlined quote as `scripts/brand-icons.mjs`
+(a test fails if the paths differ) and colours every part with a token class
+(`fill-paper`, `fill-ink`, `fill-accent`, `stroke-rule-strong`), so light and
+dark follow the theme with no branching. It is decorative: the words beside it
+carry the name. There is still no separate wordmark or logotype.
 
 This section previously recorded the name as an open decision and forbade any
 name string in code. That restriction was correct while naming was reopened

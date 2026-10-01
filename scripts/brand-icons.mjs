@@ -1,7 +1,7 @@
 /**
  * The Squid Ink mark, as code (issue #80).
  *
- * The mark is Bitter 700's opening quote on a green bar, on a paper tile:
+ * The mark is Bitter 700's opening quote on a green tile:
  * the quote is the thing a note is made of, the bar is its source. Colours are
  * read from `app/globals.css` and turned into hex, because an icon file cannot
  * hold a `var()`. `scripts/__tests__/brand-icons.test.ts` fails when a
@@ -16,7 +16,7 @@
 const QUOTE_PATH =
   "M29.18 32.56Q29.18 35.74 27.24 37.37Q25.29 39 22.91 39Q20.44 39 18.37 37.19Q16.29 35.38 16.29 31.76Q16.29 28.41 18.68 23.38Q21.06 18.35 26.88 12L31.03 14.74Q28.47 19.24 27.54 21.53Q26.62 23.82 26.62 24.97Q26.62 26.12 27.28 27.18Q27.94 28.24 28.56 29.47Q29.18 30.71 29.18 32.56ZM45.85 32.56Q45.85 35.74 43.91 37.37Q41.97 39 39.59 39Q37.12 39 35.09 37.19Q33.06 35.38 33.06 31.76Q33.06 28.41 35.4 23.38Q37.74 18.35 43.56 12L47.71 14.74Q45.15 19.24 44.22 21.53Q43.29 23.82 43.29 24.97Q43.29 26.12 43.96 27.18Q44.62 28.24 45.24 29.47Q45.85 30.71 45.85 32.56Z";
 
-const TOKEN_NAMES = ["paper", "ink", "accent", "rule-strong"];
+const TOKEN_NAMES = ["accent", "on-accent"];
 
 /** `oklch(L C H)` to `#rrggbb`, clamped to sRGB. */
 export function oklchToHex(value) {
@@ -72,15 +72,14 @@ export function markSvg(colours, { frame = true } = {}) {
 }
 
 /** A full SVG for a given colour set. Used for the PNG renders. */
-export function standaloneSvg(colours, options) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">${markSvg(colours, options)}</svg>\n`;
+export function standaloneSvg(colours) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">${markSvg(colours)}</svg>\n`;
 }
 
 /** `app/icon.svg`: one file that follows the browser's own light or dark
  *  setting, which is what a tab strip is drawn in. */
 export function buildIconSvg(tokens) {
-  const rule = (c) =>
-    `.t{fill:${c.paper}}.f{stroke:${c["rule-strong"]}}.i{fill:${c.ink}}.a{fill:${c.accent}}`;
+  const rule = (c) => `.t{fill:${c.accent}}.m{fill:${c["on-accent"]}}`;
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">` +
     `<style>${rule(tokens.light)}@media (prefers-color-scheme: dark){${rule(tokens.dark)}}</style>` +

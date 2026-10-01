@@ -23,7 +23,7 @@
 | Row | |
 |---|---|
 | Phase | In build. The core chain works end to end. |
-| Shipped | Brand mark and icons, Recorder, Gemini transcription, note generation, embeddings, ask-your-notes chat, Dashboard, Personas, Collections, Settings, Onboarding, Auth, Record HUD |
+| Shipped | Brand mark, icons and in-app header mark, Recorder, Gemini transcription, note generation, embeddings, ask-your-notes chat, Dashboard, Personas, Collections, Settings, Onboarding, Auth, Record HUD |
 | Next | [#72](https://github.com/tekguyz/squid-ink/issues/72) Record HUD rough notes pane. Order is tracked in [#39](https://github.com/tekguyz/squid-ink/issues/39). |
 | Updated | 2026-09-30 |
 
