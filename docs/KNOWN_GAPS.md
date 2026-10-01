@@ -403,7 +403,10 @@ transcription or RAG data, PWA setup, brand assets, and routing beyond
 three of its items have since closed: Supabase, auth and the `/login` +
 `/auth/confirm` routes shipped on 2026-08-30, and surface 02b shipped on
 2026-08-31. Still unbuilt: the remaining nine App Surfaces screens, RAG,
-PWA setup and brand assets. **The composer's send path closed on 2026-09-03**
+PWA setup and brand assets. **Brand assets closed on 2026-09-30 (#80):** the mark,
+favicon, Apple icon and PWA icons are built; `DESIGN.md` § The mark has the
+detail. Not built: a wordmark, and the PWA manifest that uses the icons (#34).
+**The composer's send path closed on 2026-09-03**
 — it posts to `/api/chat`, streams an answer, cites it, and persists the
 thread in `chat_messages`. **Transcription closed
 too, in two steps:** the cron sweep on 2026-08-31 and the user-pressed
