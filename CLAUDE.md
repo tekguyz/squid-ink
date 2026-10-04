@@ -139,6 +139,57 @@ local stack and `db pull` / `db dump` both fail. Everything runs against the
 linked project through the management API. Schema workflow, apply and migration
 recipes, grant blocks: `.claude/rules/supabase-schema.md`.
 
+### Supabase account and token
+
+Moved here from the global rules on 2026-10-04 (claude-config#43).
+
+- The founder has **three Supabase accounts**. This project (`pbwvvakzbrimmdntqxxn`) is in
+  the same account as `meet4weed`. Checked 2026-10-04 with `supabase projects list`.
+- Claude Code reads the token from `SUPABASE_ACCESS_TOKEN` under `env` in
+  `.claude/settings.local.json`. That file is git-ignored and per laptop.
+  Never put the token in git, `.env` or a commit. An empty value falls back
+  to the saved login, which is the wrong account. Tokens are named by laptop:
+  `DELL-claude` and `ALEX-claude`.
+- **Only Claude Code reads that file.** The founder's terminal does not, so a
+  bare `supabase ...` there uses the saved login and fails with
+  `401 Unauthorized`. **Never hand the founder a bare `supabase` command.**
+  Hand an npm script that reads the token from that file. **This repo has no
+  such script yet.** Before handing over a Supabase command, add `supabase`
+  and `db:push` scripts as a small separate commit, copied from the
+  tekguyz-command repo's wrapper (scripts/supabase.ts there).
+- **One migration in flight at a time.** The history is linear: `db push`
+  refuses two open branches that each carry a migration.
+- When a token is new or changed, run `supabase projects list` and check
+  this project is in it. A token from another account cannot see it.
+- No Supabase MCP here. If one is added later, it is read-only and pinned to
+  `pbwvvakzbrimmdntqxxn`.
+
+### Integration tests and leaked test users
+
+- **Two commands, never the aggregate:** `npm run test:unit`, then
+  `npm run test:integration`. `npm test` fails on purpose.
+- **Integration tests run serially.** Hosted Supabase rate-limits sign-up and
+  sign-in. In parallel, suites die in `beforeAll` with `Request rate limit
+  reached`, which reads like a failure and is not one. Before calling an
+  integration red a real red, re-run it serially and say which it was.
+- **A run that dies in setup leaks its users.** `afterAll` does not run when
+  `beforeAll` throws. After any red integration run, say whether a sweep is
+  needed.
+- Test users use the reserved `squid-ink.test` domain. **Integration test emails
+  start with `it-`.** Demo users (`guest-`, `team-`, `demo-`) and dev-login
+  users (`dev-`) share the domain, so never sweep the whole domain. Select
+  first, read the list, then delete:
+
+  ```sql
+  select email from auth.users where email like 'it-%@squid-ink.test';
+  delete from auth.users where email like 'it-%@squid-ink.test';
+  ```
+- There are no integration suites yet; the database proofs are
+  `scripts/verify-*.mjs`. These rules apply to the first suite that lands.
+- **A reaper or sweep that deletes across the project lives in ONE test
+  file.** Files run in parallel; two files sweeping delete each other's
+  fixtures.
+
 ### Pinned versions
 
 Exact pins, verified against the live npm registry on 2026-08-30.
