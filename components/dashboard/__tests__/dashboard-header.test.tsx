@@ -73,3 +73,16 @@ describe("DashboardHeader Record", () => {
     expect(useRecorderStore.getState().startRequests).toBe(before + 1);
   });
 });
+
+/** Issue #91: below 768px the header is the whole masthead. */
+describe("DashboardHeader on a phone", () => {
+  it("carries the menu it is given", () => {
+    render(<DashboardHeader menu={<button type="button">Menu</button>} />);
+    expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
+  });
+
+  it("names the note count for a screen reader", () => {
+    render(<DashboardHeader notesCount={3} />);
+    expect(screen.getByLabelText("3 notes")).toHaveTextContent("3");
+  });
+});

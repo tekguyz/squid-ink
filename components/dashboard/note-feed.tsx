@@ -25,7 +25,7 @@ import type { DayGroup } from "@/lib/notes/group-notes-by-day";
 export function NoteFeed({ groups }: { groups: DayGroup[] }) {
   if (groups.length === 0) {
     return (
-      <div className="flex flex-col gap-[9px] px-[24px] pt-[40px]">
+      <div className="flex flex-col gap-[9px] px-[24px] pt-[40px] max-md:px-[16px]">
         <p className="font-header text-ink text-[16px] font-semibold">No notes yet</p>
         <p className="font-body text-muted max-w-[46ch] text-[13px]">
           Press Record and this feed fills in. A recording appears here the moment
@@ -39,8 +39,8 @@ export function NoteFeed({ groups }: { groups: DayGroup[] }) {
     <>
       {groups.map((group) => (
         <section key={group.key}>
-          <h2 className="flex items-center px-[24px] pt-[26px] pb-[9px]">
-            <span className="font-mono text-muted text-[8.5px] tracking-[0.16em] uppercase">
+          <h2 className="flex items-center px-[24px] pt-[26px] pb-[9px] max-md:px-[16px] max-md:pt-[22px] max-md:pb-[4px]">
+            <span className="font-mono text-muted text-[8.5px] tracking-[0.16em] uppercase max-md:text-[11px] max-md:tracking-[0.1em]">
               {group.label}
             </span>
           </h2>
