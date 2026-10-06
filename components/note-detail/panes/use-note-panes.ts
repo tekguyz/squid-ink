@@ -173,13 +173,17 @@ export function useNotePanes(noteId: string) {
 
   // While the overlay is open the note behind it is inert (the shell sets
   // that), so a press anywhere outside the overlay is a press on nothing:
-  // it closes the overlay, as Escape does.
+  // it closes the overlay, as Escape does. The strip's own button is the
+  // exception: it closes the overlay by its click, and closing on the press
+  // as well made that click open it again.
   useEffect(() => {
     if (!overlay) return;
     const onPointerDown = (event: PointerEvent) => {
       const pane = document.getElementById(TRANSCRIPT_PANE_ID);
-      if (event.target instanceof Node && !pane?.contains(event.target))
-        keys.current.closeOverlay();
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (pane?.contains(target) || transcriptShow.current?.contains(target)) return;
+      keys.current.closeOverlay();
     };
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
