@@ -378,3 +378,12 @@ Default five: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`
 ### Domain docs
 
 Single-context: `CONTEXT.md` + `docs/adr/` at the repo root, created lazily as terms/decisions resolve. See `docs/agents/domain.md`.
+
+## Status work
+
+- Run the global `status-sync` skill. Then run `node scripts/check-docs.mjs` and read its output, not the docs it checks. Exit 2 means it could not run. That is not a pass.
+- Before a commit that edits docs, run `node scripts/check-docs.mjs`. There is no npm script for it.
+- The pinned tracking issue holds the work order. If it disagrees with the skill's next 3, say so. An issue's own state wins over its box.
+- Never open `design-reference/*.dc.html` (about 58k tokens), `docs/DECISIONS.md` or `docs/DEPLOYMENT.md` for a status sync. Open only the first 15 lines of `docs/ROADMAP.md`.
+- Do not grep `docs/KNOWN_GAPS.md` for open work. It is frozen. Never read `docs/_archive/*` for current state.
+- Never repair a doc during a status sync. If the script reports drift, name it and run the `doc-audit` skill.

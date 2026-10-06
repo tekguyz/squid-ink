@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Status-sync doc checks for squid-ink.
+ * Doc checks for squid-ink. Run during status work (status-sync, global skill).
  *
  * Repo-only. No browser, no dev server, no network. Covers the claims that can
  * be measured mechanically, so they cannot be reasoned past under context
- * pressure. Everything else in the status-sync audit is a judgement call and stays
- * in SKILL.md.
+ * pressure. Everything else is a judgement call and stays with the reader; the
+ * repo's status rules are in `CLAUDE.md` § Status work.
  *
  * Exit 0 = clean, 1 = findings, 2 = could not run (NOT a pass).
  */
