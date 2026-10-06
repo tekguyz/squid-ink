@@ -38,7 +38,7 @@ export function NotegenPending({
       role="status"
       className={
         visible
-          ? "mb-4 bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice"
+          ? "mb-4 bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice max-md:text-[13px]"
           : "sr-only"
       }
     >

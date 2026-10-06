@@ -695,11 +695,59 @@ scroll on their own, with the selection mark moving from a 2px left border to
 a 2px bottom border; below 768px two-column rows fold, label over value. On
 Note Detail the transcript pane leaves the grid below 1024px and slides in
 over the note as an overlay from the right, closed on every load, ending
-`HUD_RESERVE` above the bottom; the note behind it is inert. Below 768px the
-lens rail is one row of lens tabs with the quick actions under it. These are
-not a designed narrow layout; a designed one can replace them.
+`HUD_RESERVE` above the bottom; the note behind it is inert. For Personas,
+Collections and Settings these are still not a designed narrow layout; a
+designed one can replace them, as it has for the two screens below.
 `touch-action: manipulation` is set on buttons, inputs and tabs to kill the
 300ms double-tap delay without disabling zoom.
+
+**The phone layout of All notes and Note is designed** (issue #91, option A
+"app shell with a dock", chosen by the owner 2026-10-05). Below 768px both
+screens keep the `h-app` shell and inner scrolling, so the recorder corner rule
+holds unchanged, and every rule is a `max-md:` variant or an element that is
+`md:hidden`, so 768px and up keeps its layout (measured at 1440px against
+`main`: every visible element box matched, apart from two `contents`
+wrappers that draw nothing of their own).
+
+- **Masthead, not a band.** Each screen opens with one 48px row on its own
+  sheet: All notes carries the page title, the note count and **Menu**; a note
+  carries **‹ All notes** and **Menu**. Menu is a native `popover`
+  (`components/phone-menu.tsx`) — a full-width `rail` sheet dropping from the
+  masthead's bottom edge and ending `HUD_RESERVE` above the viewport bottom —
+  holding the app nav as 44px rows and, on All notes, the tag filter.
+  Choosing a link inside it closes it, since a tag or Clear stays on "/" and
+  the page does not remount. The dead search field and the header's Record
+  go; the HUD's Record is on screen.
+- **The feed row is one column.** The title wraps to two lines at 16px rather
+  than being cut, the preview is one 13px line, any status pill sits under it,
+  and the time, length and counts share one mono line:
+  `05:43 · 3 MIN · 2 ACTIONS · 7 SPANS`.
+- **The note reads first.** Under the masthead, one 42px row scrolls sideways
+  with a `Lens` slug, the lens tabs and, past a `rule-2` divider, the quick
+  actions. Tags, collection and the demo's reason share one wrapping row.
+  Gutters are 16px. Action items wrap to text over owner, due and citation;
+  per-speaker cards stack one per row.
+- **The bottom band is a dock.** The note's last grid row is the
+  `HUD_RESERVE` band itself, on `canvas` under a `rule-strong` seam, as the
+  feed's footer is: the **Transcript** button at its left opens the overlay,
+  and the recorder owns its right. The 28px strip does not show on a phone.
+- **Ask is one line** — the field and Ask — until it holds focus; then the
+  scope and the lens take a second line together, and the field keeps its
+  width. A press on Ask does not take focus from the field. Answers above it
+  stop at `18dvh`. The field is 16px.
+- **The phone type floor.** Below 768px every mono label in these two screens
+  — slugs, stamps, counts, pills, tag badges, citation chips, section rules,
+  the transcript's times — is at least **11px**, up from 8.5–10px, and keeps
+  the Slug Rule's tracking (0.06em or wider; the slugs that were 0.14em take
+  0.1em). Archivo is never under 13px there.
+- **What it must show.** At 540 × 675, the size of the feed picture, the
+  pictured note (Haas group) shows its title, its summary and its whole first
+  takeaway with no scroll, even with the demo banner on. Every demo note shows
+  its title and summary; a longer generated summary can push the first
+  takeaway below the fold, and no layout promises otherwise.
+  `scripts/verify-layout.mjs` asserts exactly that, checks the focused Ask
+  field keeps its width at 375, 390 and 540, and measures `/` and the note at
+  540 as well as 390.
 
 **Scrollbars are part of the design.** `.scroll-thin` themes every scroll
 container in **both** rendering engines, which are not alternatives: Firefox

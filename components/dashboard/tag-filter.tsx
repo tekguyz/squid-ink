@@ -34,13 +34,13 @@ export function TagFilter({
   return (
     <div className="pt-[16px]">
       <div className="flex items-center px-[14px] pb-[6px]">
-        <p className="font-mono text-muted text-[8.5px] tracking-[0.14em] uppercase">
+        <p className="font-mono text-muted text-[8.5px] tracking-[0.14em] uppercase max-md:text-[11px] max-md:tracking-[0.1em]">
           Tags
         </p>
         {activeTag ? (
           <Link
             href="/"
-            className="font-mono text-accent-text focus-visible:outline-accent ml-auto text-[8.5px] tracking-[0.14em] uppercase focus-visible:outline-2 focus-visible:-outline-offset-2"
+            className="font-mono text-accent-text focus-visible:outline-accent ml-auto text-[8.5px] tracking-[0.14em] uppercase focus-visible:outline-2 focus-visible:-outline-offset-2 max-md:py-[6px] max-md:text-[11px] max-md:tracking-[0.1em]"
           >
             Clear
           </Link>
@@ -58,7 +58,7 @@ export function TagFilter({
               href={active ? "/" : `/?tag=${encodeURIComponent(chip.id)}`}
               aria-current={active ? "page" : undefined}
               aria-label={`${chip.name}, ${chip.count} ${chip.count === 1 ? "note" : "notes"}`}
-              className={`${TAG_CHIP[chip.token]} font-mono focus-visible:outline-accent flex items-center gap-[6px] px-[8px] py-[3px] text-[9.5px] focus-visible:outline-2 focus-visible:-outline-offset-2 ${active ? "outline-accent outline-1 -outline-offset-1" : ""}`}
+              className={`${TAG_CHIP[chip.token]} font-mono focus-visible:outline-accent flex items-center gap-[6px] px-[8px] py-[3px] text-[9.5px] max-md:py-[6px] max-md:text-[11px] focus-visible:outline-2 focus-visible:-outline-offset-2 ${active ? "outline-accent outline-1 -outline-offset-1" : ""}`}
             >
               <span aria-hidden>{chip.name}</span>
               <span aria-hidden className="tabular-nums opacity-70">

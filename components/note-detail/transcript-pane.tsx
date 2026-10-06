@@ -44,7 +44,7 @@ export function TranscriptPane({
       <div className="border-b border-rule-strong px-[18px] pt-[15px] pb-[11px]">
         <div className="flex items-baseline gap-2">
           <h2 id={`${id}-title`} className="font-header text-[16px] leading-[24px] font-semibold">Transcript</h2>
-          <span className="font-mono text-[9px] text-meta-2">
+          <span className="font-mono text-[9px] text-meta-2 max-md:text-[11px]">
             {note.turnCount} TURNS
           </span>
           {/* Disabled, not live: there is no transcript search yet (#29 builds
@@ -57,10 +57,10 @@ export function TranscriptPane({
           <button
             type="button"
             disabled
-            className="ml-auto flex cursor-not-allowed items-center gap-[6px] font-mono text-[9px] text-ink-disabled"
+            className="ml-auto flex cursor-not-allowed items-center gap-[6px] font-mono text-[9px] text-ink-disabled max-md:text-[11px]"
           >
             SEARCH
-            <span className="text-[8.5px] tracking-[0.14em] text-muted uppercase">
+            <span className="text-[8.5px] tracking-[0.14em] text-muted uppercase max-md:text-[11px] max-md:tracking-[0.1em]">
               Soon
             </span>
           </button>

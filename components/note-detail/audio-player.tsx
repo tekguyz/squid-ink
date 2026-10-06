@@ -26,7 +26,7 @@ import { loadNoteAudio } from "@/lib/notes/audio-playback";
  *
  *  Spacing is the odd-number ladder (5 / 7 / 9 / 11 / 13 / 26), and 26px is the
  *  note column's gutter, so the bar lines up with the meta line above it. */
-const TRANSPORT = "flex items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
+const TRANSPORT = "flex items-center gap-[11px] px-[26px] pt-[3px] pb-[15px] max-md:px-[16px]";
 
 /** The recorder HUD's action-button voice, reused rather than reinvented:
  *  9px mono, uppercase, 0.06em, square border.
@@ -43,7 +43,7 @@ const TRANSPORT = "flex items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
  *  to `accent` at the same time. transcribe-button.tsx carries the reasoning
  *  in full; do not change one of these two constants without the other. */
 const BUTTON =
-  "font-mono text-[9px] tracking-[0.06em] uppercase cursor-pointer " +
+  "font-mono text-[9px] tracking-[0.06em] uppercase cursor-pointer max-md:text-[11px] " +
   "flex items-center gap-[7px] border border-control-edge bg-raised text-notice " +
   "px-[9px] py-[5px] transition-colors " +
   "hover:border-accent hover:bg-tint hover:text-accent-text " +
@@ -69,10 +69,10 @@ const SEEK =
   "[&::-moz-range-track]:h-[3px] [&::-moz-range-track]:bg-rule-2";
 
 /** The 9–10px mono slug the rest of the metadata ladder uses. */
-const CLOCK = "font-mono text-[10px] tabular-nums tracking-[0.04em] text-meta";
+const CLOCK = "font-mono text-[10px] tabular-nums tracking-[0.04em] text-meta max-md:text-[11px]";
 
 const NOTICE =
-  "px-[26px] pt-[3px] pb-[15px] font-mono text-[9px] tracking-[0.14em] uppercase text-meta";
+  "px-[26px] pt-[3px] pb-[15px] font-mono text-[9px] tracking-[0.14em] uppercase text-meta max-md:px-[16px] max-md:text-[11px] max-md:tracking-[0.1em]";
 
 /** Matches the note meta line's clock format, and carries tabular-nums where
  *  it is rendered — DESIGN.md's Tabular Rule. */

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { formatElapsed } from "@/lib/recorder/format-elapsed";
 import { isAtRest, useRecorderStore, type RecorderPhase } from "@/lib/recorder/recorder-store";
 import { WAITING_PROMPT } from "@/lib/recorder/recording-mode";
@@ -70,7 +71,17 @@ const READOUT: Partial<Record<RecorderPhase, string>> = {
   uploading: "Saving",
 };
 
-export function DashboardHeader() {
+export function DashboardHeader({
+  menu,
+  notesCount,
+}: {
+  /** Issue #91: below 768px the rail is gone and this header is the whole
+   *  masthead, so the app nav comes in here as the phone menu. */
+  menu?: ReactNode;
+  /** Shown beside the title below 768px only, where the rail that carries
+   *  it at every other width is not on screen. */
+  notesCount?: number;
+} = {}) {
   const phase = useRecorderStore((s) => s.phase);
   const elapsedMs = useRecorderStore((s) => s.elapsedMs);
   const mode = useRecorderStore((s) => s.mode);
@@ -80,19 +91,29 @@ export function DashboardHeader() {
   const demo = useDemo();
 
   return (
-    // Below md the header wraps: the dead search field drops to its own full
-    // line under the title and Record, and Import audio — dead too — goes.
-    <header className="border-rule-strong flex items-center gap-[14px] border-b px-[24px] pt-[18px] pb-[13px] max-md:flex-wrap max-md:gap-y-[10px] max-md:px-[16px]">
+    // Below md (issue #91) the header is the phone's masthead: one 48px row
+    // of the title, the count and Menu. The dead search field and Import
+    // audio go, and so does Record — the recorder's own Record pill is on
+    // screen in the corner, and so is its state while a recording runs.
+    <header className="border-rule-strong flex items-center gap-[14px] border-b px-[24px] pt-[18px] pb-[13px] max-md:h-[48px] max-md:gap-[10px] max-md:px-[16px] max-md:pt-0 max-md:pb-0">
       <h1 className="font-header text-ink flex-none text-[22px] font-semibold tracking-[-0.01em]">
         All notes
       </h1>
+      {notesCount === undefined ? null : (
+        <span
+          className="font-mono text-muted text-[11px] tabular-nums md:hidden"
+          aria-label={`${notesCount} notes`}
+        >
+          {notesCount}
+        </span>
+      )}
 
       {/* The leading `/` glyph is gone. No key binding exists, so it taught a
           shortcut that did nothing — the same fault as the `⌘,` the rail used
           to carry. The badge replaces it and says the true thing instead. */}
       <div
         aria-hidden
-        className={`${DISABLED_CONTROL} min-w-0 max-w-[320px] flex-1 gap-[8px] px-[10px] py-[6px] max-md:order-last max-md:max-w-none max-md:basis-full`}
+        className={`${DISABLED_CONTROL} min-w-0 max-w-[320px] flex-1 gap-[8px] px-[10px] py-[6px] max-md:hidden`}
       >
         <span className="font-body truncate text-[12.5px]">
           Search notes, speakers, sources
@@ -100,7 +121,7 @@ export function DashboardHeader() {
         <span className={`${SOON_BADGE} ml-auto flex-none`}>Soon</span>
       </div>
 
-      <div className="ml-auto flex flex-none items-center gap-[8px]">
+      <div className="ml-auto flex flex-none items-center gap-[8px] max-md:hidden">
         {/* `title` removed: browsers suppress pointer events on a disabled
             element, so "Not available yet" provably never rendered and this
             control carried no explanation at all. The badge is visible. */}
@@ -169,6 +190,7 @@ export function DashboardHeader() {
           </button>
         )}
       </div>
+      {menu ? <div className="ml-auto flex md:hidden">{menu}</div> : null}
     </header>
   );
 }

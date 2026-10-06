@@ -18,7 +18,7 @@ function WaveformBars({ bars, playhead, duration }: WaveformProps) {
           />
         ))}
       </div>
-      <div className="mt-1 flex justify-between font-mono text-[9px] text-meta-4">
+      <div className="mt-1 flex justify-between font-mono text-[9px] text-meta-4 max-md:text-[11px]">
         <span>00:00</span>
         <span className="text-accent-pressed">▮ {playhead}</span>
         <span>{duration}</span>

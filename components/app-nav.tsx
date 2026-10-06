@@ -41,12 +41,18 @@ const ROW_BELOW = {
 const ITEM =
   "font-body focus-visible:outline-accent flex items-center gap-[9px] border-l-2 px-[8px] py-[6px] text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2";
 
+/** Inside the phone menu (issue #91): a list read with a thumb, so each link
+ *  is a 44px row at 15px rather than the rail's 13px. */
+const ROOMY = "py-[12px] text-[15px] px-[12px]";
+
 export function AppNav({
   current,
   notesCount,
   rowBelow,
+  roomy = false,
 }: {
   current?: AppSection;
+  roomy?: boolean;
   rowBelow?: keyof typeof ROW_BELOW;
   /** Shown beside All notes on the Dashboard, which is the one screen that
    *  has the number to hand. */
@@ -64,7 +70,7 @@ export function AppNav({
             key={item.id}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            className={`${ITEM} ${rowBelow ? ROW_BELOW[rowBelow].item : ""} ${
+            className={`${ITEM} ${rowBelow ? ROW_BELOW[rowBelow].item : ""} ${roomy ? ROOMY : ""} ${
               active
                 ? "bg-raised border-accent text-ink"
                 : "text-ink-2 hover:bg-raised border-transparent"
@@ -73,7 +79,7 @@ export function AppNav({
             {item.label}
             {item.id === "notes" && notesCount !== undefined ? (
               <span
-                className="font-mono text-muted ml-auto text-[9.5px] tabular-nums"
+                className={`font-mono text-muted ml-auto tabular-nums ${roomy ? "text-[11px]" : "text-[9.5px]"}`}
                 aria-label={`${notesCount} notes`}
               >
                 {notesCount}

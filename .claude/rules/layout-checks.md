@@ -79,7 +79,19 @@ detail) and `/settings` since issue #23. `NARROW_WIDTHS` in the script lists
 them; a note and a collection are keyed by kind (`note`, `collection`) because
 their URLs carry ids, and `narrowWidthsFor` maps a route to its list. The demo
 pass uses the same map. Add a route there when its breakpoints ship, not
-before.
+before. **`/` and the note are also measured at `540`** (issue #91): the width
+of the social pictures, and the widest phone layout.
+
+**The feed-picture fold (issue #91).** At the end of the demo pass,
+`measureFeedFold` sets 540 × 675 and asserts that on `/` the first note row
+starts under the masthead (top under 160px), that on every demo note the
+title and the summary end inside the note's own scroll box before any scroll,
+and that on the note the pictures are taken of ("Haas group") the whole first
+takeaway does too. Not on every note: the first run failed the two longer
+demo summaries by 43 and 51px, and a generated summary has no fixed length. It runs with the demo banner on, which the
+pictures hide, so a pass here leaves 32px of slack in the picture. Watched red
+in the browser pane first: before the phone spacing was tightened, the Haas
+note's first takeaway ended 1px below the fold.
 
 **Two pane states on the note route (issue #23)**, driven by pressing the
 same buttons a reader does, then put back — the choice is saved in the

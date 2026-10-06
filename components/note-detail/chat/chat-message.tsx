@@ -43,8 +43,8 @@ export function ChatMessage({
   if (role === "user" || !parsed) {
     return (
       <div className="flex items-baseline gap-[9px] pb-2">
-        <span className="flex-none font-mono text-[9px] text-meta">YOU</span>
-        <span className="min-w-0 text-[13px] break-words text-ink-2">
+        <span className="flex-none font-mono text-[9px] text-meta max-md:text-[11px]">YOU</span>
+        <span className="min-w-0 text-[13px] break-words text-ink-2 max-md:text-[14px]">
           {content}
         </span>
       </div>
@@ -53,8 +53,8 @@ export function ChatMessage({
 
   return (
     <div className="flex items-baseline gap-[9px] pb-2">
-      <span className="flex-none font-mono text-[9px] text-accent">NOTE</span>
-      <span className="min-w-0 text-[13px] leading-[1.55] break-words text-ink-2">
+      <span className="flex-none font-mono text-[9px] text-accent max-md:text-[11px]">NOTE</span>
+      <span className="min-w-0 text-[13px] leading-[1.55] break-words text-ink-2 max-md:text-[14px]">
         <CiteRuns
           runs={parsed.runs}
           activeSegmentId={activeSegmentId}
@@ -65,7 +65,7 @@ export function ChatMessage({
             withholding it would be worse, but it is not allowed to read as
             sourced. DESIGN.md § Components → Cards notice-block treatment. */}
         {settled && parsed.ungrounded ? (
-          <span className="mt-1.5 block bg-notice-bg px-[9px] py-[7px] text-[11.5px] text-notice">
+          <span className="mt-1.5 block bg-notice-bg px-[9px] py-[7px] text-[11.5px] text-notice max-md:text-[13px]">
             Sources unavailable — the notes this cited may have been deleted.
           </span>
         ) : null}

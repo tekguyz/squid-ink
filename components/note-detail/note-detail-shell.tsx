@@ -143,11 +143,19 @@ export function NoteDetailShell({
     // on <html> narrows to its 28px strip, so the boot script draws a hidden
     // pane hidden before React loads. Every narrow rule is a max-lg:/max-md:
     // variant: with both panes shown, the drawn desktop grid is unchanged.
-    <div className="grid h-app grid-cols-[var(--lens-w)_minmax(0,1fr)_var(--transcript-w)] bg-canvas text-ink [--lens-w:136px] [--transcript-w:404px] in-data-[pane-lens=hidden]:[--lens-w:28px] in-data-[pane-transcript=hidden]:[--transcript-w:28px] max-lg:[--transcript-w:28px] max-md:grid-cols-[minmax(0,1fr)_28px] max-md:grid-rows-[auto_minmax(0,1fr)]">
+    //
+    // Below 768px (issue #91) it is one column of three rows: the rail's
+    // masthead and lens row, the note, and a HUD_RESERVE band at the bottom
+    // that holds the Transcript button on the left while the recorder owns
+    // the right. The band replaces the note's own reserve padding there.
+    <div
+      style={HUD_RESERVE_VAR}
+      className="grid h-app grid-cols-[var(--lens-w)_minmax(0,1fr)_var(--transcript-w)] bg-canvas text-ink [--lens-w:136px] [--transcript-w:404px] in-data-[pane-lens=hidden]:[--lens-w:28px] in-data-[pane-transcript=hidden]:[--transcript-w:28px] max-lg:[--transcript-w:28px] max-md:grid-cols-1 max-md:grid-rows-[auto_minmax(0,1fr)_var(--hud-reserve)]"
+    >
       {/* Inert while the transcript overlay covers it: Tab stays in the
           overlay, and a press here closes the overlay rather than landing on
           a line the reader cannot see. */}
-      <div inert={panes.overlay} className="flex min-h-0 min-w-0 max-md:col-span-2">
+      <div inert={panes.overlay} className="flex min-h-0 min-w-0">
         <PersonaRail
           id={LENS_PANE_ID}
           hidden={!panes.lens.expanded}
@@ -174,13 +182,17 @@ export function NoteDetailShell({
       <main
         inert={panes.overlay}
         style={HUD_RESERVE_VAR}
-        className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule-strong bg-paper in-data-[pane-transcript=hidden]:pb-(--hud-reserve) max-lg:pb-(--hud-reserve)"
+        className="flex min-h-0 min-w-0 flex-col overflow-hidden border-r border-rule-strong bg-paper md:in-data-[pane-transcript=hidden]:pb-(--hud-reserve) md:max-lg:pb-(--hud-reserve) max-md:border-r-0"
       >
         <NoteHeader meta={note.meta} title={note.title} />
         {/* Directly under the title, because a tag is a fact about what the
             note IS rather than about its recording — the transport and the
             Transcribe button below are the recording's own facts. This is the
             only place a tag is applied; the rail's chips only filter. */}
+        {/* Below 768px the tags, the collection and the demo's reason share
+            one wrapping row; above it the wrapper is `contents` and each
+            keeps its own line. */}
+        <div className="contents max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-[8px] max-md:gap-y-[6px] max-md:px-[16px] max-md:pb-[12px]">
         <TagEntry noteId={note.id} tags={note.tags} />
         {/* Directly under the tags, because both answer "what is this note
             filed under" and a reader looking for one is looking for the other.
@@ -193,10 +205,11 @@ export function NoteDetailShell({
         />
         {/* Issue #19: the one reason for both fields above. */}
         {demo ? (
-          <p className="px-[26px] pb-[13px]">
-            <DemoOffNote id={NOTE_WRITES_DEMO_OFF} />
+          <p className="px-[26px] pb-[13px] max-md:p-0">
+            <DemoOffNote id={NOTE_WRITES_DEMO_OFF} className="max-md:text-[11px]" />
           </p>
         ) : null}
+        </div>
         {/* Sits with the date/duration meta line, because that is where a
             reader looks for facts about the recording itself. Renders nothing
             when the note has no object. */}
@@ -211,7 +224,7 @@ export function NoteDetailShell({
           onGaveUp={handleGaveUp}
         />
 
-        <div className="scroll-thin min-h-0 flex-1 overflow-auto px-[26px]">
+        <div className="scroll-thin min-h-0 flex-1 overflow-auto px-[26px] max-md:px-[16px]">
           <NotegenPending
             processing={note.processingStatus}
             notegen={note.notegenStatus}

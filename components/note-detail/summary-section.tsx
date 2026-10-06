@@ -18,7 +18,7 @@ export function SummarySection({
   return (
     <section>
       <SectionRule label="Summary" />
-      <p className="pb-5 text-[14.5px] leading-[1.66] text-pretty text-ink-prose">
+      <p className="pb-5 text-[14.5px] leading-[1.66] text-pretty text-ink-prose max-md:pb-[12px]">
         {runs.map((run, i) => (
           <span key={i}>
             {run.text}

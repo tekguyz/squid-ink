@@ -100,4 +100,11 @@ describe("PersonaRail — locked", () => {
     render(<PersonaRail {...base} locked onSelect={vi.fn()} />);
     expect(screen.getByText("Extract decisions only")).toBeInTheDocument();
   });
+
+  // Issue #91: below 768px the rail opens with a masthead, not a link band.
+  it("gives a phone a way back and a menu", () => {
+    render(<PersonaRail {...base} onSelect={vi.fn()} />);
+    expect(screen.getByRole("link", { name: "Back to all notes" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
+  });
 });

@@ -29,13 +29,13 @@ export function TranscriptSegment({
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
           {diarized ? (
-            <span className={`text-[12px] leading-[16px] ${SPEAKER_TEXT[segment.speaker.token]}`}>
+            <span className={`text-[12px] leading-[16px] max-md:text-[13px] ${SPEAKER_TEXT[segment.speaker.token]}`}>
               {segment.speaker.name}
             </span>
           ) : null}
           {diarized ? (
             // meta-3, not meta-4: meta-4 measured 4.20:1 on the pane.
-            <span className="font-mono text-[9.5px] text-meta-3">{segment.time}</span>
+            <span className="font-mono text-[9.5px] text-meta-3 max-md:text-[11px]">{segment.time}</span>
           ) : null}
         </div>
         <p className="mt-[3px] text-[13px] leading-[1.56] text-pretty text-ink-2">

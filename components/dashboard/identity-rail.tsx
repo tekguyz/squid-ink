@@ -91,8 +91,9 @@ export function IdentityRail({
       aria-label="Notes"
       // Below lg the rail sits ABOVE the feed (app/page.tsx), so its edge moves
       // to the bottom and it is capped, scrolling itself, so a long tag list
-      // cannot push the feed off the screen.
-      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r scroll-thin max-lg:max-h-[40dvh] max-lg:overflow-y-auto max-lg:border-r-0 max-lg:border-b max-lg:pb-[12px]"
+      // cannot push the feed off the screen. Below md it is gone: the phone
+      // masthead's Menu carries the nav and the tags (issue #91).
+      className="bg-rail border-rule-strong flex min-h-0 flex-col overflow-hidden border-r scroll-thin max-lg:max-h-[40dvh] max-lg:overflow-y-auto max-lg:border-r-0 max-lg:border-b max-lg:pb-[12px] max-md:hidden"
     >
       <div className="border-rule-3 max-lg:hidden flex items-center gap-[9px] border-b px-[14px] pt-[14px] pb-[12px]">
         {/* Square, not a circle. Circles are for people's faces in a

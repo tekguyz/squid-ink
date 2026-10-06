@@ -1,5 +1,8 @@
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { IdentityRail } from "@/components/dashboard/identity-rail";
+import { TagFilter } from "@/components/dashboard/tag-filter";
+import { AppNav } from "@/components/app-nav";
+import { PhoneMenu } from "@/components/phone-menu";
 import { NoteFeed } from "@/components/dashboard/note-feed";
 import { HUD_RESERVE } from "@/components/recorder/hud-safe-margin";
 import { LandingPage } from "@/components/landing/landing-page";
@@ -33,8 +36,11 @@ import { DEMO_VISITOR_LABEL, isDemoVisitor } from "@/lib/auth/demo-visitor";
  *  - below lg: the rail sits above the feed, reduced to the app nav and the
  *    tag filter. The account line, the two "Soon" items and the recents drop
  *    out — the recents repeat the feed directly underneath them.
- *  - below md (768): each feed row folds to two tracks (note-row.tsx) and the
- *    header wraps (dashboard-header.tsx).
+ *  - below md (768), a designed phone layout (issue #91, option A, chosen by
+ *    the owner 2026-10-05): the rail goes, and the header is a 48px masthead
+ *    whose Menu opens the app nav and the tag filter in a popover
+ *    (components/phone-menu.tsx). Each feed row is one column with its facts
+ *    on one mono line (note-row.tsx).
  *
  * The page stays one viewport tall with the feed scrolling inside it, at every
  * width, so the footer strip still reserves the recorder HUD's corner.
@@ -99,7 +105,7 @@ async function dashboard(
 
   return (
     <div className="h-app overflow-hidden">
-      <div className="bg-canvas text-ink grid h-full grid-cols-[212px_minmax(0,1fr)] max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)]">
+      <div className="bg-canvas text-ink grid h-full grid-cols-[212px_minmax(0,1fr)] max-lg:grid-cols-1 max-lg:grid-rows-[auto_minmax(0,1fr)] max-md:grid-rows-[minmax(0,1fr)]">
         <IdentityRail
           email={demo ? DEMO_VISITOR_LABEL : feed.email}
           totalNotes={feed.totalNotes}
@@ -123,17 +129,29 @@ async function dashboard(
           but the space now says something. Its one line is left-aligned
           deliberately: the HUD owns the right end of this exact band. */}
         <main className="bg-paper flex min-h-0 min-w-0 flex-col overflow-hidden">
-          <DashboardHeader />
+          <DashboardHeader
+            notesCount={feed.totalNotes}
+            menu={
+              <PhoneMenu id="app-menu">
+                <AppNav
+                  roomy
+                  current={feed.activeTag ? undefined : "notes"}
+                  notesCount={feed.totalNotes}
+                />
+                <TagFilter chips={feed.tagChips} activeTag={feed.activeTag} />
+              </PhoneMenu>
+            }
+          />
           <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
             <NoteFeed groups={feed.groups} />
             {/* scroll={false}: the next page lands under the reader's eye, and
               the inner scroll area keeps its place across the soft navigation. */}
             {feed.hasOlder && (
-              <div className="px-[24px] pt-[18px] pb-[24px]">
+              <div className="px-[24px] pt-[18px] pb-[24px] max-md:px-[16px]">
                 <Link
                   href={olderHref(limit, feed.activeTag)}
                   scroll={false}
-                  className="font-body text-ink border-control-edge hover:bg-raised focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-1 inline-flex min-h-[32px] items-center border px-[12px] text-[12.5px]"
+                  className="font-body text-ink border-control-edge hover:bg-raised focus-visible:outline-accent focus-visible:outline-2 focus-visible:outline-offset-1 inline-flex min-h-[32px] items-center border px-[12px] text-[12.5px] max-md:min-h-[40px] max-md:text-[13.5px]"
                 >
                   Show older notes
                 </Link>
@@ -142,9 +160,9 @@ async function dashboard(
           </div>
           <footer
             style={{ height: HUD_RESERVE }}
-            className="bg-canvas border-rule-strong flex flex-none items-center border-t px-[24px]"
+            className="bg-canvas border-rule-strong flex flex-none items-center border-t px-[24px] max-md:px-[16px]"
           >
-            <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase">
+            <p className="font-mono text-muted text-[9.5px] tracking-[0.14em] tabular-nums uppercase max-md:text-[11px] max-md:tracking-[0.1em]">
               {feed.hasOlder
                 ? `Showing ${onScreen} of ${feed.shownNotes} notes`
                 : `End of feed · ${feed.shownNotes} ${feed.shownNotes === 1 ? "note" : "notes"}`}
