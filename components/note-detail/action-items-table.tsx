@@ -32,10 +32,10 @@ function Row({
         className="size-[11px] cursor-pointer appearance-none border border-faint checked:border-accent checked:bg-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
       />
       {/* Label wraps the text so the whole row title is a hit target. */}
-      <label htmlFor={id} className="cursor-pointer max-md:min-w-0 max-md:flex-1 max-md:basis-[calc(100%-29px)]">
+      <label htmlFor={id} className="cursor-pointer max-md:min-w-0 max-md:flex-1 max-md:basis-[calc(100%-22px)]">
         {item.text}
       </label>
-      <span className="font-mono text-[10px] tabular-nums text-meta-3 max-md:ml-[18px] max-md:text-[11px]">{item.owner}</span>
+      <span className="font-mono text-[10px] tabular-nums text-meta-3 max-md:ml-[22px] max-md:text-[11px]">{item.owner}</span>
       <span className="font-mono text-[10px] tabular-nums text-meta-3 max-md:text-[11px]">{item.due}</span>
       <CitationChip
         time={item.time}

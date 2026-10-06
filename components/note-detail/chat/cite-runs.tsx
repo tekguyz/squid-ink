@@ -44,7 +44,7 @@ export function CiteRuns({
               aria-label={`Open ${run.cite.label}`}
               className={
                 "mx-0.5 inline-block bg-tint px-[5px] py-px align-[1px] " +
-                "font-mono text-[10px] text-accent-text transition-colors " +
+                "font-mono text-[10px] max-md:text-[11px] text-accent-text transition-colors " +
                 "hover:bg-tint-hover focus-visible:outline-2 " +
                 "focus-visible:outline-offset-1 focus-visible:outline-accent"
               }

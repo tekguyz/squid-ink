@@ -69,7 +69,7 @@ const SEEK =
   "[&::-moz-range-track]:h-[3px] [&::-moz-range-track]:bg-rule-2";
 
 /** The 9–10px mono slug the rest of the metadata ladder uses. */
-const CLOCK = "font-mono text-[10px] tabular-nums tracking-[0.04em] text-meta";
+const CLOCK = "font-mono text-[10px] tabular-nums tracking-[0.04em] text-meta max-md:text-[11px]";
 
 const NOTICE =
   "px-[26px] pt-[3px] pb-[15px] font-mono text-[9px] tracking-[0.14em] uppercase text-meta max-md:px-[16px] max-md:text-[11px] max-md:tracking-[0.1em]";

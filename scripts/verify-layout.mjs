@@ -703,11 +703,6 @@ async function measureHudStates(cdp, sessionId, route, width) {
   }
 }
 
-/** Issue #19: the same screens as a DEMO VISITOR. The banner sits in flow
- *  above every screen, so each must still end at the bottom of the viewport
- *  (no vertical page overflow), and every write control is turned off, so
- *  each screen must show ink-disabled. The demo owner's note 1 is measured
- *  because it is the one with audio. */
 /** Issue #91: the feed picture is 540 x 675, and it has to show the app.
  *  On every demo note, before any scroll, the title and the whole summary sit
  *  inside the note's own scroll box; on the note the pictures are taken of
@@ -768,8 +763,42 @@ async function measureFeedFold(cdp, sessionId) {
       );
     }
   }
+
+  // The phone composer grows a second line on focus (issue #91 review): the
+  // field must keep most of the form's width, at the narrowest phone width.
+  // Watched red first: the scope and lens joined the FIRST line, and the
+  // field fell from 293px to 5px at 390.
+  for (const width of [375, 390, 540]) {
+    await cdp.send(
+      "Emulation.setDeviceMetricsOverride",
+      { width, height: 844, deviceScaleFactor: 1, mobile: false },
+      sessionId,
+    );
+    await goto(cdp, sessionId, `${ORIGIN}${feed.pictured}`);
+    const ask = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const field = document.querySelector('input[name="note-question"]');
+        if (!field) return null;
+        field.focus();
+        const form = field.closest("form").getBoundingClientRect().width;
+        return { field: Math.round(field.getBoundingClientRect().width), form: Math.round(form) };
+      })()`,
+    );
+    check(
+      ask !== null && ask.field >= ask.form * 0.6,
+      `${feed.pictured} (demo) @ ${width}px — the focused Ask field keeps its width`,
+      ask === null ? "no Ask field" : `field ${ask.field}px of a ${ask.form}px form`,
+    );
+  }
 }
 
+/** Issue #19: the same screens as a DEMO VISITOR. The banner sits in flow
+ *  above every screen, so each must still end at the bottom of the viewport
+ *  (no vertical page overflow), and every write control is turned off, so
+ *  each screen must show ink-disabled. The demo owner's note 1 is measured
+ *  because it is the one with audio. */
 async function measureDemo(cdp, sessionId) {
   await signIn(cdp, sessionId, { visitor: true });
   const noteHref = await evaluate(

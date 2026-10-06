@@ -15,7 +15,7 @@ import { TAG_CHIP } from "./tag-colors";
 export function TagBadge({ tag }: { tag: NoteTag }) {
   return (
     <span
-      className={`${TAG_CHIP[tag.token]} font-mono px-[7px] py-[2px] text-[9px]`}
+      className={`${TAG_CHIP[tag.token]} font-mono px-[7px] py-[2px] text-[9px] max-md:text-[11px]`}
     >
       {tag.name}
     </span>

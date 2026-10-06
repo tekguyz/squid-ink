@@ -20,7 +20,7 @@ const HIT_AREA =
   "relative before:absolute before:inset-x-0 before:top-1/2 before:h-6 before:-translate-y-1/2";
 
 const BASE =
-  `${HIT_AREA} font-mono text-[10px] cursor-pointer transition-colors ` +
+  `${HIT_AREA} font-mono text-[10px] max-md:text-[11px] cursor-pointer transition-colors ` +
   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent";
 
 const FILLED =

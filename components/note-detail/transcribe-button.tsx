@@ -91,7 +91,7 @@ const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]
  *  (detect.mjs flags 11.5px as off the type ramp; DESIGN.md line 471 is the
  *  ramp entry it does not know about, so that advisory is a false positive.) */
 const NOTICE =
-  "bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice";
+  "bg-notice-bg px-[9px] py-[7px] text-[11.5px] leading-[1.5] text-notice max-md:text-[13px]";
 
 /** Every outcome the action can report other than "started". Each is a fact
  *  about someone else's action, never an invitation to press again. Full

@@ -35,7 +35,7 @@ import type { ProcessingStatus } from "@/lib/notes/view-types";
 
 const PILL =
   "inline-flex items-center gap-[5px] border px-[7px] py-[2px] " +
-  "font-mono text-[9px] tracking-[0.14em] uppercase";
+  "font-mono text-[9px] tracking-[0.14em] uppercase max-md:text-[11px] max-md:tracking-[0.1em]";
 
 interface Look {
   label: string;

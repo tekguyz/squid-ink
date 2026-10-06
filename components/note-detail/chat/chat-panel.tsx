@@ -134,12 +134,12 @@ export function ChatPanel({
   return (
     // Below 768px (issue #91) the composer is one line, the field and Ask,
     // until it holds focus: then the scope and the lens join it on a second
-    // line. The answers above it stop at a quarter of the screen, so a long
+    // line. The answers above it stop at 18% of the screen, so a long
     // exchange never buries the note.
     <div className="group/chat border-t border-rule-strong bg-dock px-[26px] pt-3 pb-3.5 max-md:px-[16px] max-md:pt-[6px] max-md:pb-[6px]">
       <div
         ref={listRef}
-        className="scroll-thin max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain max-md:max-h-[25dvh]"
+        className="scroll-thin max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain max-md:max-h-[18dvh]"
       >
         {/* Persisted turns first, then anything streaming in this session. */}
         {history.map((turn) => (
@@ -215,15 +215,21 @@ export function ChatPanel({
           }
           className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-placeholder max-md:order-1 max-md:text-[16px]"
         />
-        <span className="flex max-md:order-3 max-md:hidden max-md:group-focus-within/chat:flex">
+        {/* One box for the scope and the lens, so below 768px they take a
+            whole second line together (`basis-full`) rather than squeezing
+            the field on the first. `contents` above it: unchanged there. */}
+        <span className="contents max-md:order-3 max-md:hidden max-md:basis-full max-md:items-center max-md:gap-[9px] max-md:group-focus-within/chat:flex">
           <ScopeToggle value={scope} disabled={busy} onChange={setScope} />
-        </span>
-        <span className="flex-none font-mono text-[9px] uppercase tracking-[0.06em] text-accent max-md:order-4 max-md:hidden max-md:text-[11px] max-md:group-focus-within/chat:inline">
-          {personaLabel}
+          <span className="flex-none font-mono text-[9px] uppercase tracking-[0.06em] text-accent max-md:text-[11px]">
+            {personaLabel}
+          </span>
         </span>
         <button
           type="submit"
           disabled={!canSubmit}
+          // A press on Ask keeps focus in the field, so the composer does not
+          // fold to one line under the finger between press and release.
+          onPointerDown={(e) => e.preventDefault()}
           className="flex-none touch-manipulation font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed max-md:order-2 max-md:min-h-[32px] max-md:px-[6px] max-md:text-[11px] disabled:cursor-not-allowed disabled:text-ink-disabled focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
         >
           Ask

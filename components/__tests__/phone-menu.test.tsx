@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { PhoneMenu } from "../phone-menu";
 
 describe("PhoneMenu", () => {
@@ -27,5 +27,24 @@ describe("PhoneMenu", () => {
     render(<PhoneMenu id="test-menu">x</PhoneMenu>);
     const sheet = document.getElementById("test-menu")!;
     expect(sheet.className).not.toMatch(/(^|\s)(flex|grid|block|inline-flex)(\s|$)/);
+  });
+
+  // Review of #91: a tag, Clear or All notes goes to "/" again, the page does
+  // not remount, and a press INSIDE a popover is not a light-dismiss — so the
+  // sheet stayed open over the feed it had just filtered.
+  it("closes when a link inside it is chosen", () => {
+    render(
+      <PhoneMenu id="test-menu">
+        <a href="/?tag=x">x</a>
+        <span>not a link</span>
+      </PhoneMenu>,
+    );
+    const sheet = document.getElementById("test-menu")!;
+    const hide = vi.fn();
+    Object.assign(sheet, { hidePopover: hide });
+    fireEvent.click(screen.getByText("not a link"));
+    expect(hide).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("x"));
+    expect(hide).toHaveBeenCalledOnce();
   });
 });

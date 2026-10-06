@@ -39,7 +39,7 @@ export function questionsLeftNow(
  *  so it reads as prose rather than as 9px capitals. */
 export function DemoQuestionsLine({ left }: { left: number }) {
   return left === 0 ? (
-    <p className="pt-1.5 text-[11.5px] leading-[1.5] text-ink-2">
+    <p className="pt-1.5 text-[11.5px] leading-[1.5] text-ink-2 max-md:text-[13px]">
       You have used all {DEMO_MAX_QUESTIONS_PER_VISITOR} demo questions. Everything else on the
       page still works.
     </p>

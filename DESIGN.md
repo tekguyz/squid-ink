@@ -705,16 +705,19 @@ designed one can replace them, as it has for the two screens below.
 "app shell with a dock", chosen by the owner 2026-10-05). Below 768px both
 screens keep the `h-app` shell and inner scrolling, so the recorder corner rule
 holds unchanged, and every rule is a `max-md:` variant or an element that is
-`md:hidden`, so 768px and up is the same layout to the pixel (measured: every
-element box at 1440px matched `main`).
+`md:hidden`, so 768px and up keeps its layout (measured at 1440px against
+`main`: every visible element box matched, apart from two `contents`
+wrappers that draw nothing of their own).
 
 - **Masthead, not a band.** Each screen opens with one 48px row on its own
   sheet: All notes carries the page title, the note count and **Menu**; a note
   carries **‹ All notes** and **Menu**. Menu is a native `popover`
   (`components/phone-menu.tsx`) — a full-width `rail` sheet dropping from the
   masthead's bottom edge and ending `HUD_RESERVE` above the viewport bottom —
-  holding the app nav as 44px rows and, on All notes, the tag filter. The
-  dead search field and the header's Record go; the HUD's Record is on screen.
+  holding the app nav as 44px rows and, on All notes, the tag filter.
+  Choosing a link inside it closes it, since a tag or Clear stays on "/" and
+  the page does not remount. The dead search field and the header's Record
+  go; the HUD's Record is on screen.
 - **The feed row is one column.** The title wraps to two lines at 16px rather
   than being cut, the preview is one 13px line, any status pill sits under it,
   and the time, length and counts share one mono line:
@@ -729,15 +732,22 @@ element box at 1440px matched `main`).
   feed's footer is: the **Transcript** button at its left opens the overlay,
   and the recorder owns its right. The 28px strip does not show on a phone.
 - **Ask is one line** — the field and Ask — until it holds focus; then the
-  scope and the lens join it on a second line. Answers above it stop at
-  `25dvh`. The field is 16px.
+  scope and the lens take a second line together, and the field keeps its
+  width. A press on Ask does not take focus from the field. Answers above it
+  stop at `18dvh`. The field is 16px.
 - **The phone type floor.** Below 768px every mono label in these two screens
-  — slugs, stamps, counts, section rules, the transcript's times — is at least
-  **11px** at `0.1em`, up from 8.5–10px; Archivo is never under 13px.
-- **What it must show.** At 540 × 675, the size of the feed picture, a note
-  shows its title, its summary and its whole first takeaway with no scroll,
-  even with the demo banner on; `scripts/verify-layout.mjs` asserts it on
-  every demo note, and measures `/` and the note at 540 as well as 390.
+  — slugs, stamps, counts, pills, tag badges, citation chips, section rules,
+  the transcript's times — is at least **11px**, up from 8.5–10px, and keeps
+  the Slug Rule's tracking (0.06em or wider; the slugs that were 0.14em take
+  0.1em). Archivo is never under 13px there.
+- **What it must show.** At 540 × 675, the size of the feed picture, the
+  pictured note (Haas group) shows its title, its summary and its whole first
+  takeaway with no scroll, even with the demo banner on. Every demo note shows
+  its title and summary; a longer generated summary can push the first
+  takeaway below the fold, and no layout promises otherwise.
+  `scripts/verify-layout.mjs` asserts exactly that, checks the focused Ask
+  field keeps its width at 375, 390 and 540, and measures `/` and the note at
+  540 as well as 390.
 
 **Scrollbars are part of the design.** `.scroll-thin` themes every scroll
 container in **both** rendering engines, which are not alternatives: Firefox

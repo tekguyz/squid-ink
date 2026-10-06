@@ -29,7 +29,7 @@ export function TranscriptSegment({
       <div className="min-w-0">
         <div className="flex items-baseline gap-2">
           {diarized ? (
-            <span className={`text-[12px] leading-[16px] ${SPEAKER_TEXT[segment.speaker.token]}`}>
+            <span className={`text-[12px] leading-[16px] max-md:text-[13px] ${SPEAKER_TEXT[segment.speaker.token]}`}>
               {segment.speaker.name}
             </span>
           ) : null}
