@@ -56,10 +56,11 @@ const WIDTHS = [1440, 1280];
  *  two-column width, 768 the last four-track row, 390 a phone. The note,
  *  Personas, Collections and Settings joined with issue #23. A note and a
  *  collection have ids in their URLs, so they are keyed by kind; see
- *  narrowWidthsFor. */
+ *  narrowWidthsFor. 540 joined "/" and the note with issue #91: it is the
+ *  width the social pictures are taken at, and the phone layout's widest. */
 const NARROW_WIDTHS = {
-  "/": [1024, 768, 390],
-  note: [1024, 768, 390],
+  "/": [1024, 768, 540, 390],
+  note: [1024, 768, 540, 390],
   "/personas": [1024, 768, 390],
   "/collections": [1024, 768, 390],
   collection: [1024, 768, 390],
@@ -707,6 +708,68 @@ async function measureHudStates(cdp, sessionId, route, width) {
  *  (no vertical page overflow), and every write control is turned off, so
  *  each screen must show ink-disabled. The demo owner's note 1 is measured
  *  because it is the one with audio. */
+/** Issue #91: the feed picture is 540 x 675, and it has to show the app.
+ *  On every demo note, before any scroll, the title and the whole summary sit
+ *  inside the note's own scroll box; on the note the pictures are taken of
+ *  (claude-config tools/capture/apps/squid-ink.json clicks "Haas group"), so
+ *  does the whole first takeaway. Not on every note: a summary is generated
+ *  text, and the first run proved two longer demo summaries push it 43 and
+ *  51px past the fold — no layout promises that for any length. On "/" the
+ *  first note row starts under the masthead, not under a band of links.
+ *  Measured with the demo banner on, which the pictures hide, so there is
+ *  32px of slack in the picture itself. */
+async function measureFeedFold(cdp, sessionId) {
+  await cdp.send(
+    "Emulation.setDeviceMetricsOverride",
+    { width: 540, height: 675, deviceScaleFactor: 1, mobile: false },
+    sessionId,
+  );
+  await goto(cdp, sessionId, `${ORIGIN}/`);
+  const feed = await evaluate(
+    cdp,
+    sessionId,
+    `(() => {
+      const row = document.querySelector('main a[href^="/notes/"]');
+      const links = [...document.querySelectorAll('main a[href^="/notes/"]')];
+      const hrefs = [...new Set(links.map((a) => a.getAttribute("href")))];
+      const pictured = links.find((a) => a.textContent.includes("Haas group"))?.getAttribute("href") ?? null;
+      return { rowTop: row ? Math.round(row.getBoundingClientRect().top) : null, hrefs, pictured };
+    })()`,
+  );
+  check(
+    feed.rowTop !== null && feed.rowTop < 160,
+    "/ (demo) @ 540x675 — the first note starts under the masthead",
+    `first row top ${feed.rowTop}px`,
+  );
+  check(feed.pictured !== null, "/ (demo) @ 540x675 — lists the pictured note", "no \"Haas group\" row");
+  for (const href of feed.hrefs) {
+    await goto(cdp, sessionId, `${ORIGIN}${href}`);
+    const fold = await evaluate(
+      cdp,
+      sessionId,
+      `(() => {
+        const box = document.querySelector("main .overflow-auto");
+        const bottom = Math.min(innerHeight, box ? box.getBoundingClientRect().bottom : 0);
+        const parts = {
+          title: document.querySelector("main h1"),
+          summary: document.querySelector("main section p"),
+          takeaway: document.querySelector("main ol li"),
+        };
+        return Object.fromEntries(Object.entries(parts).map(([k, el]) =>
+          [k, el ? Math.round(bottom - el.getBoundingClientRect().bottom) : null]));
+      })()`,
+    );
+    if (href !== feed.pictured) delete fold.takeaway;
+    for (const [part, slack] of Object.entries(fold)) {
+      check(
+        slack !== null && slack >= 0,
+        `${href} (demo) @ 540x675 — the ${part} shows with no scroll`,
+        slack === null ? `no ${part} on the page` : `ends ${-slack}px below the fold`,
+      );
+    }
+  }
+}
+
 async function measureDemo(cdp, sessionId) {
   await signIn(cdp, sessionId, { visitor: true });
   const noteHref = await evaluate(
@@ -754,6 +817,7 @@ async function measureDemo(cdp, sessionId) {
       }
     }
   }
+  await measureFeedFold(cdp, sessionId);
 }
 
 async function main() {
