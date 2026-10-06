@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PersonaRail } from "../persona-rail";
@@ -99,6 +99,38 @@ describe("PersonaRail — locked", () => {
     // scope — they act on the note as generated.
     render(<PersonaRail {...base} locked onSelect={vi.fn()} />);
     expect(screen.getByText("Extract decisions only")).toBeInTheDocument();
+  });
+
+  // Issue #91: below 768px the lens tabs sit in a row that scrolls sideways,
+  // so the chosen lens can start past its right edge. jsdom has no layout:
+  // the row's width and each box are answered by hand.
+  describe("on a phone, the chosen lens in the sideways row", () => {
+    const row = () => screen.getByRole("tablist").parentElement as HTMLElement;
+
+    function layOut(chosen: { left: number; right: number }) {
+      vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(600);
+      vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(300);
+      vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+        const box = this.matches('[role="tab"][aria-selected="true"]')
+          ? chosen
+          : { left: 0, right: 300 };
+        return { ...box, top: 0, bottom: 40, width: box.right - box.left, height: 40, x: box.left, y: 0, toJSON() {} };
+      });
+    }
+
+    afterEach(() => vi.restoreAllMocks());
+
+    it("scrolls the row so a lens past the right edge shows", () => {
+      layOut({ left: 500, right: 620 });
+      render(<PersonaRail {...base} selectedId="investor" onSelect={vi.fn()} />);
+      expect(row().scrollLeft).toBe(320);
+    });
+
+    it("leaves the row alone when the chosen lens already shows", () => {
+      layOut({ left: 60, right: 180 });
+      render(<PersonaRail {...base} onSelect={vi.fn()} />);
+      expect(row().scrollLeft).toBe(0);
+    });
   });
 
   // Issue #91: below 768px the rail opens with a masthead, not a link band.

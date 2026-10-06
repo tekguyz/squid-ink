@@ -241,6 +241,20 @@ describe("below 1024px, the transcript overlay", () => {
     expect(main).not.toHaveAttribute("inert");
   });
 
+  it("closes by the same strip button that opened it", async () => {
+    // A press on the strip lands outside the pane, so the outside-press rule
+    // closed the overlay on pointerdown and the click then opened it again.
+    // The strip is the dock's Transcript button on a phone.
+    atWidth(390);
+    renderShell();
+    await userEvent.click(button("Show transcript"));
+    expect(transcript()).toBeVisible();
+
+    await userEvent.click(button("Show transcript"));
+    expect(transcript()).not.toBeVisible();
+    expect(button("Show transcript")).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("opens at a citation's segment", async () => {
     atWidth(800);
     renderShell();

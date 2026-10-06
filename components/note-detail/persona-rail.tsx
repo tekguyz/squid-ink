@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import Link from "next/link";
 import { AppNav } from "@/components/app-nav";
 import { PhoneMenu } from "@/components/phone-menu";
@@ -50,6 +50,21 @@ export function PersonaRail({
   hidden = false,
   hideButton,
 }: PersonaRailProps) {
+  // On a phone the tabs sit in a row that scrolls sideways, and the chosen
+  // lens can start past its edge. Bring it into view, moving this row only:
+  // from 768px up the row is `contents`, has no width, and the early return
+  // leaves the rail alone.
+  const row = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const scroller = row.current;
+    const chosen = scroller?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    if (!scroller || !chosen || scroller.scrollWidth <= scroller.clientWidth) return;
+    const edge = scroller.getBoundingClientRect();
+    const tab = chosen.getBoundingClientRect();
+    if (tab.left < edge.left) scroller.scrollLeft += tab.left - edge.left;
+    else if (tab.right > edge.right) scroller.scrollLeft += tab.right - edge.right;
+  }, [selectedId]);
+
   return (
     // Below 768px (issue #91) the rail is two rows above the note: a 48px
     // masthead (the way back and the phone menu), then ONE row that scrolls
@@ -86,7 +101,7 @@ export function PersonaRail({
         {hideButton}
       </div>
 
-      <div className="scroll-thin md:contents max-md:flex max-md:h-[42px] max-md:flex-none max-md:items-stretch max-md:overflow-x-auto max-md:pr-[16px]">
+      <div ref={row} className="scroll-thin md:contents max-md:flex max-md:h-[42px] max-md:flex-none max-md:items-stretch max-md:overflow-x-auto max-md:pr-[16px]">
       <span className={`flex flex-none items-center pr-[4px] pl-[16px] md:hidden ${LABEL} max-md:text-[11px] max-md:tracking-[0.1em]`}>
         Lens
       </span>

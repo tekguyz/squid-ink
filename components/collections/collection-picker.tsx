@@ -103,9 +103,15 @@ export function CollectionPicker({
       {/* --control-edge, because this is an interactive control and --rule-2
           is the edge of a decorative frame — see CLAUDE.md § Colour. */}
       <span className={`${demo ? "border-rule-2" : "border-control-edge"} has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px] max-md:min-h-[32px]`}>
-        <span aria-hidden className="font-mono text-muted text-[9px] max-md:text-[11px]">
-          ⌷
-        </span>
+        {/* An SVG, not the character U+2337: IBM Plex Mono has no such glyph,
+            so it drew as an empty box in the phone pictures. */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 10 10"
+          className="h-[9px] w-[9px] flex-none text-muted max-md:h-[11px] max-md:w-[11px]"
+        >
+          <path d="M1.5 1.5h7v7h-7z" fill="none" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
         <input
           value={draft}
           list={listId}
