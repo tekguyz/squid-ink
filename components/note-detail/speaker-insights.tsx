@@ -16,18 +16,18 @@ export function SpeakerInsights({ stats }: { stats: SpeakerStat[] }) {
   return (
     <section className="pb-6">
       <SectionRule label="Per-speaker" />
-      <ul className="grid grid-cols-3 gap-[9px]">
+      <ul className="grid grid-cols-3 gap-[9px] max-md:grid-cols-1">
         {stats.map((stat) => (
           <li
             key={stat.speaker.name}
-            className="border border-rule-2 bg-canvas px-[11px] py-2.5"
+            className="border border-rule-2 bg-canvas px-[11px] py-2.5 max-md:flex max-md:items-baseline max-md:justify-between max-md:gap-[13px]"
           >
             <div
               className={`font-header text-[14px] leading-[20px] font-semibold ${SPEAKER_TEXT[stat.speaker.token]}`}
             >
               {stat.speaker.name}
             </div>
-            <div className="mt-[7px] flex gap-[13px] font-mono text-[9px] text-meta-5">
+            <div className="mt-[7px] flex gap-[13px] font-mono text-[9px] text-meta-5 max-md:mt-0 max-md:text-[11px]">
               <Stat label="talk" value={stat.talk} />
               <Stat label="asked" value={stat.asked} />
               <Stat label="fillers" value={stat.fillers} />

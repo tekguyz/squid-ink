@@ -44,7 +44,7 @@ export function DemoQuestionsLine({ left }: { left: number }) {
       page still works.
     </p>
   ) : (
-    <p className="pt-1 font-mono text-[9px] uppercase tracking-[0.06em] text-meta tabular-nums">
+    <p className="pt-1 font-mono text-[9px] uppercase tracking-[0.06em] text-meta tabular-nums max-md:pt-[3px] max-md:text-[11px]">
       {left} of {DEMO_MAX_QUESTIONS_PER_VISITOR} demo questions left
     </p>
   );

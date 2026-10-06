@@ -31,7 +31,7 @@ import { NOTE_WRITES_DEMO_OFF } from "@/lib/auth/demo-visitor";
  */
 
 const FIELD =
-  "font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-[110px] bg-transparent text-[9px] tracking-[0.04em] uppercase outline-none";
+  "font-mono text-ink disabled:text-ink-disabled placeholder:text-placeholder w-[110px] bg-transparent text-[9px] tracking-[0.04em] uppercase outline-none max-md:w-[110px] max-md:text-[11px]";
 
 export function TagEntry({
   noteId,
@@ -57,7 +57,9 @@ export function TagEntry({
 
   return (
     <form
-      className="flex flex-wrap items-center gap-[5px] px-[26px] pb-[13px]"
+      // Below 768px the note shell sets this in one row with its neighbours
+      // (issue #91), so it gives up its own gutter there.
+      className="flex flex-wrap items-center gap-[5px] px-[26px] pb-[13px] max-md:p-0"
       onSubmit={(event) => {
         event.preventDefault();
         const raw = draft;
@@ -68,7 +70,7 @@ export function TagEntry({
       {tags.map((tag) => (
         <span
           key={tag.id}
-          className={`${TAG_CHIP[tag.token]} font-mono flex items-center gap-[5px] px-[7px] py-[2px] text-[9px]`}
+          className={`${TAG_CHIP[tag.token]} font-mono flex items-center gap-[5px] px-[7px] py-[2px] text-[9px] max-md:py-[5px] max-md:text-[11px]`}
         >
           {tag.name}
           <button
@@ -87,8 +89,8 @@ export function TagEntry({
       {/* The border is --control-edge because this IS an interactive control.
           --rule-2 is the edge of a decorative frame and would measure ~1.4:1
           here — see CLAUDE.md § Colour. */}
-      <span className={`${demo ? "border-rule-2" : "border-control-edge"} has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px]`}>
-        <span aria-hidden className="font-mono text-muted text-[9px]">
+      <span className={`${demo ? "border-rule-2" : "border-control-edge"} has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent flex items-center gap-[4px] border px-[7px] py-[2px] max-md:min-h-[32px]`}>
+        <span aria-hidden className="font-mono text-muted text-[9px] max-md:text-[11px]">
           #
         </span>
         <input

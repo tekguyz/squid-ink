@@ -132,10 +132,14 @@ export function ChatPanel({
     );
 
   return (
-    <div className="border-t border-rule-strong bg-dock px-[26px] pt-3 pb-3.5">
+    // Below 768px (issue #91) the composer is one line, the field and Ask,
+    // until it holds focus: then the scope and the lens join it on a second
+    // line. The answers above it stop at a quarter of the screen, so a long
+    // exchange never buries the note.
+    <div className="group/chat border-t border-rule-strong bg-dock px-[26px] pt-3 pb-3.5 max-md:px-[16px] max-md:pt-[6px] max-md:pb-[6px]">
       <div
         ref={listRef}
-        className="scroll-thin max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain"
+        className="scroll-thin max-h-[220px] touch-manipulation overflow-y-auto overscroll-contain max-md:max-h-[25dvh]"
       >
         {/* Persisted turns first, then anything streaming in this session. */}
         {history.map((turn) => (
@@ -176,7 +180,7 @@ export function ChatPanel({
             nothing, so there is no visual cost to keeping it. */}
         <p
           aria-live="polite"
-          className="font-mono text-[9px] uppercase tracking-[0.06em] text-meta empty:hidden pb-2"
+          className="font-mono text-[9px] uppercase tracking-[0.06em] text-meta empty:hidden pb-2 max-md:text-[11px]"
         >
           {searching ? "Searching your notes…" : ""}
         </p>
@@ -195,7 +199,7 @@ export function ChatPanel({
 
       <form
         onSubmit={submit}
-        className="mt-[11px] flex items-center gap-[9px] max-md:flex-wrap max-md:gap-y-[7px] border border-control-edge bg-paper px-2.5 py-2 has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent"
+        className="mt-[11px] flex items-center gap-[9px] max-md:mt-0 max-md:flex-wrap max-md:gap-y-[7px] border border-control-edge bg-paper px-2.5 py-2 max-md:py-[5px] has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-1 has-[input:focus-visible]:outline-accent"
       >
         <input
           type="text"
@@ -209,23 +213,25 @@ export function ChatPanel({
           placeholder={
             scope === "this_note" ? "Ask this note…" : "Ask all notes…"
           }
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-placeholder max-md:basis-full"
+          className="min-w-0 flex-1 bg-transparent text-[13px] text-ink outline-none placeholder:text-placeholder max-md:order-1 max-md:text-[16px]"
         />
-        <ScopeToggle value={scope} disabled={busy} onChange={setScope} />
-        <span className="flex-none font-mono text-[9px] uppercase tracking-[0.06em] text-accent">
+        <span className="flex max-md:order-3 max-md:hidden max-md:group-focus-within/chat:flex">
+          <ScopeToggle value={scope} disabled={busy} onChange={setScope} />
+        </span>
+        <span className="flex-none font-mono text-[9px] uppercase tracking-[0.06em] text-accent max-md:order-4 max-md:hidden max-md:text-[11px] max-md:group-focus-within/chat:inline">
           {personaLabel}
         </span>
         <button
           type="submit"
           disabled={!canSubmit}
-          className="flex-none touch-manipulation font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed disabled:cursor-not-allowed disabled:text-ink-disabled focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
+          className="flex-none touch-manipulation font-mono text-[9px] uppercase tracking-[0.06em] text-accent-pressed max-md:order-2 max-md:min-h-[32px] max-md:px-[6px] max-md:text-[11px] disabled:cursor-not-allowed disabled:text-ink-disabled focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent"
         >
           Ask
         </button>
       </form>
 
       {tooLong ? (
-        <p role="alert" className="pt-1 font-mono text-[9px] text-notice">
+        <p role="alert" className="pt-1 font-mono text-[9px] text-notice max-md:text-[11px]">
           Too long — keep it under {CAP.format(MAX_MESSAGE_CHARS)} characters.
         </p>
       ) : null}

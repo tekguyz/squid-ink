@@ -45,7 +45,7 @@ export function NoteRow({ note }: { note: FeedNote }) {
       // the counts on ONE mono line. `order` does the moving, so the drawn
       // four-track row above md is untouched. An empty status or count cell
       // is hidden there, because a phone row has no column to hold.
-      className="border-rule-3 hover:bg-pane focus-visible:outline-accent grid grid-cols-[62px_minmax(0,1fr)_148px_96px] items-center gap-[14px] max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-[14px] max-md:gap-y-[6px] max-md:px-[16px] max-md:py-[13px] border-b px-[24px] py-[11px] last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2"
+      className="border-rule-3 hover:bg-pane focus-visible:outline-accent grid grid-cols-[62px_minmax(0,1fr)_148px_96px] items-center gap-[14px] max-md:flex max-md:flex-wrap max-md:items-baseline max-md:gap-x-[7px] max-md:gap-y-[6px] max-md:px-[16px] max-md:py-[13px] border-b px-[24px] py-[11px] last:border-b-0 focus-visible:outline-2 focus-visible:-outline-offset-2"
     >
       <span className="font-mono text-meta-3 text-[10.5px] tabular-nums max-md:order-3 max-md:text-[11px] max-md:tracking-[0.1em] max-md:uppercase">
         {note.time}
@@ -92,6 +92,7 @@ export function NoteRow({ note }: { note: FeedNote }) {
       <span className={`${COUNT} block text-right max-md:order-4 max-md:text-left max-md:text-[11px] max-md:tracking-[0.1em] max-md:empty:hidden`}>
         {note.actionCount === 0 && note.spanCount === 0 ? null : (
           <>
+            <span className="md:hidden">· </span>
             {note.actionCount} {note.actionCount === 1 ? "action" : "actions"}
             <br className="max-md:hidden" />
             <span className="md:hidden"> · </span>

@@ -77,7 +77,10 @@ export function PaneStrip({
   className: string;
 }) {
   return (
-    <div className={`min-h-0 w-[28px] flex-none flex-col ${className}`}>
+    // Below 768px (issue #91) only the transcript's strip shows, and it is the
+    // bottom band instead: one outlined button at the band's left, the
+    // recorder's pill at its right.
+    <div className={`min-h-0 w-[28px] flex-none flex-col max-md:w-full max-md:flex-row max-md:items-center max-md:border-t max-md:border-rule-strong max-md:bg-canvas max-md:px-[16px] ${className}`}>
       <button
         ref={showRef}
         type="button"
@@ -87,10 +90,10 @@ export function PaneStrip({
         aria-keyshortcuts={shortcut}
         title={`Show ${label}  ${shortcut}`}
         onClick={onToggle}
-        className={`${TARGET} flex-1 flex-col justify-start gap-[10px] pt-[12px] pb-[14px]`}
+        className={`${TARGET} flex-1 flex-col justify-start gap-[10px] pt-[12px] pb-[14px] max-md:h-[40px] max-md:flex-none max-md:flex-row max-md:gap-[8px] max-md:border max-md:border-control-edge max-md:bg-raised max-md:px-[12px] max-md:py-0 max-md:text-ink-2`}
       >
         <Chevron toward={edge === "left" ? "right" : "left"} />
-        <span className="font-mono text-[9px] tracking-[0.14em] uppercase [writing-mode:vertical-rl]">
+        <span className="font-mono text-[9px] tracking-[0.14em] uppercase [writing-mode:vertical-rl] max-md:text-[11px] max-md:tracking-[0.1em] max-md:[writing-mode:horizontal-tb]">
           {label}
         </span>
       </button>

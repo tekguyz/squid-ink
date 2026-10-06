@@ -71,7 +71,7 @@ import type { NotegenStatus, ProcessingStatus } from "@/lib/notes/view-types";
  *  busy, not unavailable (issue #22 critique): it keeps its look, sets
  *  `aria-busy`, says "Transcribing…", and only its hover is switched off. */
 const BUTTON =
-  "font-mono text-[9px] tracking-[0.06em] uppercase " +
+  "font-mono text-[9px] tracking-[0.06em] uppercase max-md:text-[11px] " +
   "flex items-center gap-[7px] border border-control-edge bg-raised text-notice " +
   "px-[9px] py-[5px] transition-colors cursor-pointer " +
   "hover:border-accent hover:bg-tint hover:text-accent-text " +
@@ -80,7 +80,7 @@ const BUTTON =
   "aria-busy:hover:border-control-edge aria-busy:hover:bg-raised " +
   "aria-busy:hover:text-notice";
 
-const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px]";
+const ROW = "flex flex-wrap items-center gap-[11px] px-[26px] pt-[3px] pb-[15px] max-md:px-[16px]";
 
 /** PROSE, not a slug. DESIGN.md's Slug Rule governs labels; these are
  *  sentences, and 9px uppercase at 0.14em is the least readable setting in the

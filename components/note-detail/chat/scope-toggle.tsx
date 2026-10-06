@@ -65,7 +65,7 @@ export function ScopeToggle({
           onKeyDown={onKeyDown}
           className={
             "-ml-px touch-manipulation border px-[7px] py-[3px] font-mono " +
-            "text-[9px] uppercase tracking-[0.06em] transition-colors " +
+            "text-[9px] uppercase tracking-[0.06em] transition-colors max-md:py-[6px] max-md:text-[11px] " +
             "first:ml-0 disabled:cursor-not-allowed " +
             "focus-visible:outline-2 focus-visible:outline-offset-1 " +
             "focus-visible:outline-accent " +
