@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { BrandMark } from "@/components/brand/brand-mark";
 import Link from "next/link";
+import { BrandPanel } from "./brand-panel";
 
 /**
  * The Auth surface, App Surfaces 04: one paper sheet on the canvas, the mark
@@ -22,7 +23,8 @@ import Link from "next/link";
  */
 export function AuthSheet({ children }: { children: ReactNode }) {
   return (
-    <main className="bg-canvas text-ink flex min-h-dvh items-center justify-center px-4 py-10">
+    <div className="bg-canvas text-ink lg:grid lg:grid-cols-2">
+    <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="bg-paper border-rule flex min-h-[520px] w-full max-w-[392px] flex-col border px-[32px] py-[34px]">
         {/* The quiet way back to the landing page (issue #60): someone who
             opened /login directly can find out what the app is. A link, not a
@@ -42,6 +44,8 @@ export function AuthSheet({ children }: { children: ReactNode }) {
         </p>
       </div>
     </main>
+    <BrandPanel />
+    </div>
   );
 }
 
