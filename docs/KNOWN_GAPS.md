@@ -3,11 +3,10 @@
 **Frozen 2026-09-23. New work goes to GitHub Issues, not here.** Every open
 work item in this file was moved to an issue that day. What stays here is the
 record: decisions, measurements, and things left as they are on purpose. Do
-not add new gaps to this file — open an issue (`docs/agents/issue-tracker.md`).
+not add new gaps to this file — open an issue.
 
-Each issue carries a size label. `size:small`: `/implement #N` directly.
-`size:feature`: grill, spec, implement. `size:big`: grill, spec, to-tickets,
-implement. A heading below that ends in `→ #N` is tracked in that issue.
+Each issue carries a size label. What each one means is in the global rules.
+A heading below that ends in `→ #N` is tracked in that issue.
 
 ## Moved to GitHub Issues (2026-09-23)
 

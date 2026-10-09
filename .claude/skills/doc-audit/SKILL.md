@@ -18,7 +18,6 @@ documents before writing a word, and up to **127k** when a citation leads into a
 - a session shipped work that leaves a doc claim untrue — a figure, a rule,
   or a frozen `KNOWN_GAPS.md` section that now needs a dated `RESOLVED` line.
   A new gap is **not** a reason to run this: it goes to a GitHub issue
-  (`docs/agents/issue-tracker.md`)
 - the user asks for a doc audit, or says something in the docs looks wrong
 
 The `status-sync` skill runs the same script but reads only its **output**. It never
@@ -259,8 +258,7 @@ Repair whichever doc is stale, in that doc's own established format:
   for `docs/ROADMAP.md`'s header and `docs/DECISIONS.md`'s "Working state as of"
   line — a doc this job repairs is a doc whose date it stamps.
 - **`docs/KNOWN_GAPS.md`** — frozen since 2026-09-23. **Never add a section.**
-  Anything newly deferred goes to a GitHub issue instead
-  (`docs/agents/issue-tracker.md`). You may still mark an old section
+  Anything newly deferred goes to a GitHub issue instead. You may still mark an old section
   `**RESOLVED YYYY-MM-DD.**` in place, with what closed it, when it is part of
   the record and not already moved to an issue (a heading ending `→ #N` is
   tracked there — close the issue, not the heading).

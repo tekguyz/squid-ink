@@ -365,19 +365,11 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 <!-- END:nextjs-agent-rules -->
 
 
-## Agent skills
+## Issues and labels
 
-### Issue tracker
+New work goes to GitHub Issues (`gh` CLI). Labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`, and `size:small`, `size:feature`, `size:big`. What each `size:` label means is in the global rules.
 
-New work goes to GitHub Issues (`gh` CLI). See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Default five: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: `CONTEXT.md` + `docs/adr/` at the repo root, created lazily as terms/decisions resolve. See `docs/agents/domain.md`.
+Terms go in `CONTEXT.md` and decisions in `docs/adr/`, at the repo root, created lazily as they resolve.
 
 ## Status work
 
