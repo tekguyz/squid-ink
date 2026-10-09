@@ -19,7 +19,7 @@
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.112.4",
     "ai": "7.0.92",
-    "next": "16.3.6",
+    "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "4.5.4",
