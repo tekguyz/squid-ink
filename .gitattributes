@@ -5,3 +5,8 @@
 # the shebang with "bad interpreter: /usr/bin/env bash^M" — so the very hook
 # meant to warn a second machine that it is behind would not run there.
 *.sh text eol=lf
+
+# Generated brand assets that scripts/__tests__/brand-icons.test.ts compares
+# byte for byte with what scripts/brand-icons.mjs writes (LF). With autocrlf
+# on Windows, app/icon.svg checked out with CRLF and the test failed (#88).
+app/icon.svg text eol=lf
