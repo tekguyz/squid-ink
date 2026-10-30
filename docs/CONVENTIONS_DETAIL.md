@@ -87,23 +87,15 @@ rather than trusting a count — a new script moves the second number.
 
 The hard rule is in `CLAUDE.md` § Two machines, one repo. The automation:
 
-`.claude/hooks/git-behind.sh` runs on `SessionStart`, fetches, and warns when
+`git-behind.sh` runs on `SessionStart`, fetches, and warns when
 HEAD is behind its upstream — naming the count, and adding a stop when the tree
 is dirty. It **warns only**: it never pulls and never touches the working tree,
 because a pull into uncommitted work is the one way this check could cause harm.
 Offline or with no upstream it exits silently rather than nagging.
 
-The hook is wired into `~/.claude/settings.json`, which is per-machine and which
-git does not carry, so **each laptop runs `bash .claude/hooks/install.sh`
-once**. The script it installs lives in this repo, so a later fix to the check
-reaches both machines by pull. The installer is idempotent and merges into
-existing settings rather than replacing them.
+Since 2026-10-30 the hook is installed and owned by `claude-config/install.sh`, for every repo. This repo's own copy and installer were removed (tekguyz/squid-ink#100). A fix to the check goes in `claude-config/hooks/git-behind.sh` and reaches both laptops through `sync-repos.sh`.
 
-`.gitattributes` pins `*.sh` to `eol=lf` for this reason and no other:
-`core.autocrlf` is true on these Windows machines, so without it the hook
-scripts check out with CRLF and bash fails at the shebang with
-`bad interpreter: /usr/bin/env bash^M`. The check that exists to warn a second
-machine would be the one thing that does not run there.
+`.gitattributes` pins `*.sh` to `eol=lf`: `core.autocrlf` is true on these Windows machines, so without it a shell script checks out with CRLF and bash fails at the shebang with `bad interpreter: /usr/bin/env bash^M`.
 
 ## Why the dev server is started through `.claude/launch.json`
 

@@ -66,3 +66,13 @@ schema files. Before 2026-08-31 it held only `REFERENCES, TRIGGER, TRUNCATE`,
 so every cron read failed with `permission denied for table notes`. A grant is
 not a policy: `service_role` already bypasses RLS, what it lacked was
 reachability.
+
+# RLS rules
+
+Moved here from `CLAUDE.md` on 2026-10-30 (tekguyz/squid-ink#100). Four per-operation policies per table — select, insert, update, delete. Never one blanket `for all`.
+
+- Predicate is always `(select auth.uid()) = user_id`, wrapped. Bare `auth.uid()` is re-evaluated per row.
+- Every policy carries `to authenticated` **and** an ownership predicate. `to authenticated` alone is authentication without authorization.
+- UPDATE needs both `using` and `with check`. Without `with check` a user can reassign `user_id` and hand their row to somebody else.
+- Grants are separate from RLS. Each table `revoke all` first, then grants `authenticated` explicitly. `anon` is granted nothing.
+- **A foreign key between two user-owned tables is composite, carrying `user_id`.** Foreign keys are validated as the referenced table's owner and are **not** subject to RLS, so a single-column reference lets one user point their row at another user's row.
