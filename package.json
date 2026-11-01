@@ -21,10 +21,10 @@
     "@supabase/ssr": "0.12.5",
     "@supabase/supabase-js": "2.112.4",
     "ai": "7.0.92",
-    "next": "16.3.6",
+    "next": "16.4.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "zod": "4.5.4",
+    "zod": "4.6.7",
     "zustand": "5.0.15"
   },
   "devDependencies": {
@@ -41,6 +41,6 @@
     "playwright-core": "1.63.0",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   }
 }

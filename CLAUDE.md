@@ -1,6 +1,6 @@
 # Conventions
 
-**Last updated:** 2026-10-30
+**Last updated:** 2026-11-01
 Update this line whenever this file changes — don't let it drift from reality.
 
 **This file states standing rules and pointers. It loads into every message.** Bulk lives in `.claude/rules/` with `paths:` frontmatter, which costs nothing until Claude reads a matching file, or in `docs/`, read on demand. Reasoning, corrections and dated measurements: `docs/CONVENTIONS_DETAIL.md`.
@@ -13,11 +13,11 @@ Next.js App Router with React Server Components, TypeScript, Tailwind CSS v4. Th
 
 **Exact pins, no `^` or `~` ranges.** When bumping, check the live npm registry again (`npm view <pkg> dist-tags`) — never take a version from memory, never loosen a pin to a range. `scripts/check-docs.mjs` check 1 parses this table from this file against `package.json`, so it does not move and a second copy anywhere is the drift it exists to catch. Verified 2026-08-30 / 08-31 / 09-04; built on Node v24.18.0, npm 11.16.0.
 
-`fake-indexeddb` and `@google/genai` on 2026-08-31; `ai`, `@ai-sdk/anthropic`, `@ai-sdk/react` and `zod` on 2026-09-04, all four still `latest` that day. `playwright-core` on 2026-09-29, for `scripts/showcase.mjs` only.
+`fake-indexeddb` and `@google/genai` on 2026-08-31; `ai`, `@ai-sdk/anthropic`, `@ai-sdk/react` and `zod` on 2026-09-04, all four still `latest` that day. `playwright-core` on 2026-09-29, for `scripts/showcase.mjs` only. `next`, `vitest` and `zod` bumped on 2026-11-01 to clear Dependabot alerts.
 
 | Package | Version |
 |---|---|
-| next | 16.3.6 |
+| next | 16.4.3 |
 | react | 19.2.8 |
 | react-dom | 19.2.8 |
 | typescript | 7.0.2 |
@@ -26,7 +26,7 @@ Next.js App Router with React Server Components, TypeScript, Tailwind CSS v4. Th
 | @types/react | 19.2.18 |
 | @types/react-dom | 19.2.5 |
 | @types/node | 26.4.0 |
-| vitest | 4.1.11 |
+| vitest | 4.1.12 |
 | @vitejs/plugin-react | 6.1.1 |
 | @testing-library/react | 16.3.3 |
 | @testing-library/user-event | 14.6.6 |
@@ -38,7 +38,7 @@ Next.js App Router with React Server Components, TypeScript, Tailwind CSS v4. Th
 | ai | 7.0.92 |
 | @ai-sdk/anthropic | 4.0.49 |
 | @ai-sdk/react | 4.0.95 |
-| zod | 4.5.4 |
+| zod | 4.6.7 |
 | playwright-core | 1.63.0 |
 
 ## Colour
