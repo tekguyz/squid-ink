@@ -1,3 +1,4 @@
+import Script from "next/script";
 import Link from "next/link";
 import { BrandMark } from "@/components/brand/brand-mark";
 import { NoteSpecimen } from "./note-specimen";
@@ -68,6 +69,10 @@ function SectionHead({ slug, title, id }: { slug: string; title: string; id: str
 export function LandingPage() {
   return (
     <div className="bg-paper text-ink min-h-dvh">
+      <Script src="https://www.googletagmanager.com/gtag/js?id=G-NH1HKS344J" strategy="afterInteractive" />
+      <Script id="ga4-init" strategy="afterInteractive">
+        {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NH1HKS344J');`}
+      </Script>
       <header className={`${WRAP} flex items-center justify-between gap-4 py-[16px]`}>
         <p className="font-header text-ink flex items-center gap-[8px] text-[16px] font-bold tracking-[-0.01em]">
           <BrandMark />
