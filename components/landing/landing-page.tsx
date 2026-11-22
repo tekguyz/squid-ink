@@ -112,14 +112,12 @@ export function LandingPage() {
               it writes the transcript, a summary, takeaways and action items — and each
               takeaway and action item links back to the line it came from.
             </p>
-            {/* The demo entry goes first (#19). It is a button in a form, never
-                a link: docs/adr/0001. The studio that built it is the second
-                step; Sign in stays in the masthead, for the few it is for. */}
+            {/* The demo entry is the one action here (#19). It is a button in a
+                form, never a link: docs/adr/0001. Sign in stays in the
+                masthead, for the few it is for. TEKGUYZ appears only in the
+                footer's small "Built by" credit (DEMO-STANDARD.md, #99). */}
             <div className="mt-[26px] flex flex-wrap items-center gap-x-[16px] gap-y-[10px]">
               <DemoButton />
-              <a href={TEKGUYZ} className={OUTLINE_BUTTON}>
-                Talk to&nbsp;<span translate="no">TEKGUYZ</span>
-              </a>
               <p className="text-muted text-[12.5px] leading-[1.5]">
                 Accounts are by invitation. There is no public sign-up.
               </p>
@@ -171,14 +169,13 @@ export function LandingPage() {
       </main>
 
       <footer className="bg-canvas border-rule-strong border-t">
-        <div className={`${WRAP} flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-[22px]`}>
-          <p className="text-ink-2 text-[13px] leading-[1.5]">
-            <span translate="no">Squid Ink</span> is designed and built by{" "}
-            <span translate="no">TEKGUYZ</span>, South Florida.
+        <div className={`${WRAP} py-[22px]`}>
+          <p className="text-muted text-[12.5px] leading-[1.5]">
+            Built by{" "}
+            <a href={TEKGUYZ} className={`inline-flex min-h-[24px] items-center ${TEXT_LINK}`}>
+              <span translate="no">TEKGUYZ</span>
+            </a>
           </p>
-          <a href={TEKGUYZ} className={`inline-flex min-h-[24px] items-center text-[13px] ${TEXT_LINK}`}>
-            tekguyz.com
-          </a>
         </div>
       </footer>
     </div>
