@@ -37,13 +37,16 @@ describe("LandingPage", () => {
     expect(screen.queryByRole("link", { name: /demo/i })).toBeNull();
   });
 
-  it("names TEKGUYZ and links to tekguyz.com", () => {
+  it("names TEKGUYZ only in the small Built by credit, linked to tekguyz.com", () => {
     render(<LandingPage />);
 
-    expect(document.body).toHaveTextContent(/built by TEKGUYZ/);
-    for (const link of screen.getAllByRole("link", { name: /tekguyz/i })) {
-      expect(link).toHaveAttribute("href", "https://tekguyz.com");
-    }
+    expect(document.body).toHaveTextContent(/Built by TEKGUYZ/);
+    const links = screen.getAllByRole("link", { name: /tekguyz/i });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "https://tekguyz.com");
+    expect(document.body).not.toHaveTextContent(/Talk to/i);
+    expect(document.body).not.toHaveTextContent(/South Florida/i);
+    expect(document.body.textContent!.match(/TEKGUYZ/g)).toHaveLength(1);
   });
 
   it("links each citation chip to the transcript line it cites", () => {
